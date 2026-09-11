@@ -19,7 +19,9 @@
         "maison",
         "accessoires",
         "cadeaux",
-        "lifestyle"
+        "lifestyle",
+        "\u00e9quipement",
+        "accessoire"
       ]
     },
     "subcategory": {
@@ -47,7 +49,8 @@
         "actif",
         "discontinue",
         "rupture",
-        "nouveau"
+        "nouveau",
+        "dormant"
       ]
     },
     "monthly_sales": {
