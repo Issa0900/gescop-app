@@ -4,7 +4,9 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import KpiCard from "@/components/kpis/KpiCard";
 import KpiTrendChart from "@/components/kpis/KpiTrendChart";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { downloadCSV } from "@/lib/exportUtils";
 
 const domainLabels = {
   finance: "Finance",
@@ -255,6 +257,25 @@ export default function Kpis() {
     });
   }, [transactions, orders]);
 
+  const exportKpis = () => {
+    const rows = allKpis.map((k) => ({
+      Domaine: domainLabels[k.domain] || k.domain,
+      Indicateur: k.name,
+      Valeur: k.value,
+      Unite: k.unit || "",
+      Precedent: k.previous ?? "",
+      Tendance: k.trend || "",
+    }));
+    downloadCSV(`GESCOP_KPIs_${new Date().toISOString().slice(0, 10)}`, rows, {
+      Domaine: "Domaine",
+      Indicateur: "Indicateur",
+      Valeur: "Valeur",
+      Unite: "Unité",
+      Precedent: "Précédent",
+      Tendance: "Tendance",
+    });
+  };
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
 
   if (allKpis.length === 0) {
@@ -269,9 +290,14 @@ export default function Kpis() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Indicateurs clés (KPI)</h1>
-        <p className="mt-1 text-muted-foreground">Indicateurs calculés en temps réel à partir de vos données, par domaine.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Indicateurs clés (KPI)</h1>
+          <p className="mt-1 text-muted-foreground">Indicateurs calculés en temps réel à partir de vos données, par domaine.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={exportKpis} disabled={allKpis.length === 0}>
+          <Download className="mr-1.5 h-4 w-4" /> Exporter CSV
+        </Button>
       </div>
 
       {trendData.length > 0 && <KpiTrendChart data={trendData} />}

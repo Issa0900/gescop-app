@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { FileText, Loader2, Calendar, Trash2 } from "lucide-react";
+import { FileText, Loader2, Calendar, Trash2, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/exportUtils";
 import ReactMarkdown from "react-markdown";
 
 const reportTypes = [
@@ -46,6 +47,35 @@ export default function Rapports() {
     }
   };
 
+  const exportReport = (report) => {
+    const rows = [
+      { Champ: "Type", Valeur: report.type || "" },
+      { Champ: "Période", Valeur: report.period || "" },
+      { Champ: "Date de génération", Valeur: report.created_date ? new Date(report.created_date).toLocaleString("fr-CA") : "" },
+      { Champ: "Résumé exécutif", Valeur: report.summary || "" },
+      { Champ: "Contenu", Valeur: report.content || "" },
+    ];
+    const safePeriod = (report.period || "rapport").replace(/[^a-zA-Z0-9]/g, "_");
+    downloadCSV(`GESCOP_Rapport_${safePeriod}`, rows, { Champ: "Champ", Valeur: "Valeur" });
+  };
+
+  const exportReportsList = () => {
+    const rows = (reports || []).map((r) => ({
+      Type: r.type || "",
+      Période: r.period || "",
+      "Date de génération": r.created_date ? new Date(r.created_date).toLocaleString("fr-CA") : "",
+      "Résumé exécutif": r.summary || "",
+      Contenu: r.content || "",
+    }));
+    downloadCSV(`GESCOP_Rapports_${new Date().toISOString().slice(0, 10)}`, rows, {
+      Type: "Type",
+      Période: "Période",
+      "Date de génération": "Date de génération",
+      "Résumé exécutif": "Résumé exécutif",
+      Contenu: "Contenu",
+    });
+  };
+
   const remove = async (id) => {
     await base44.entities.Report.delete(id);
     qc.invalidateQueries(["reports"]);
@@ -54,9 +84,14 @@ export default function Rapports() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Rapports</h1>
-        <p className="mt-1 text-muted-foreground">Rapports générés automatiquement à partir de vos données.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Rapports</h1>
+          <p className="mt-1 text-muted-foreground">Rapports générés automatiquement à partir de vos données.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={exportReportsList} disabled={!reports || reports.length === 0}>
+          <Download className="mr-1.5 h-4 w-4" /> Exporter tout (CSV)
+        </Button>
       </div>
 
       {/* Generate buttons */}
@@ -90,9 +125,14 @@ export default function Rapports() {
               <h2 className="text-lg font-semibold">{selected.period}</h2>
               <p className="text-sm text-muted-foreground">Rapport {selected.type}</p>
             </div>
-            <button onClick={() => setSelected(null)} className="text-sm text-muted-foreground hover:text-foreground">
-              Fermer
-            </button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportReport(selected)}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Exporter CSV
+              </Button>
+              <button onClick={() => setSelected(null)} className="text-sm text-muted-foreground hover:text-foreground">
+                Fermer
+              </button>
+            </div>
           </div>
           {selected.summary && (
             <div className="mb-4 rounded-lg bg-primary/5 p-4">
@@ -126,6 +166,9 @@ export default function Rapports() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="ghost" onClick={() => setSelected(r)}>Consulter</Button>
+                  <Button size="sm" variant="ghost" onClick={() => exportReport(r)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
                   <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-red-600">
                     <Trash2 className="h-4 w-4" />
                   </button>
