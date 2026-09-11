@@ -50,7 +50,7 @@ export default function Produits() {
 
   const total = products.length;
   const lowMargin = products.filter((p) => (p.gross_margin || 0) < 15);
-  const dormant = products.filter((p) => (p.inventory_level || 0) > 20 && (p.monthly_sales || 0) < 5);
+  const dormantCount = inventory.filter((i) => i.stock_status === "dormant").length;
   const nearRupture = products.filter((p) => p.reorder_point > 0 && (p.inventory_level || 0) <= (p.reorder_point || 0));
 
   const topBySales = [...products].sort((a, b) => (b.monthly_sales || 0) - (a.monthly_sales || 0)).slice(0, 10);
@@ -82,7 +82,7 @@ export default function Produits() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
         <StatCard label="Faible marge (<15%)" value={lowMargin.length} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Stock dormant" value={dormant.length} icon={Boxes} accent={dormant.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Stock dormant" value={dormantCount} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Proches rupture" value={nearRupture.length} icon={AlertTriangle} accent={nearRupture.length > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
       </div>
 
