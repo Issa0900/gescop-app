@@ -8,6 +8,16 @@ import { BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
+import {
+  monthlyAgg,
+  monthlyAggComplete,
+  lastVal,
+  prevVal,
+  trendDir,
+  sumLast,
+  sumPrev,
+  latestByKey,
+} from "@/lib/periods";
 
 const domainLabels = {
   finance: "Finance",
@@ -24,28 +34,6 @@ const domainColors = {
   operations: "#9333ea",
   clients: "#0891b2",
 };
-
-function monthlyAgg(items, dateField, valueField, mode = "sum") {
-  const map = {};
-  items.forEach((it) => {
-    const m = (it[dateField] || "").slice(0, 7);
-    if (!m) return;
-    if (!map[m]) map[m] = 0;
-    const v = Number(it[valueField]) || 0;
-    if (mode === "sum") map[m] += v;
-    else if (mode === "count") map[m] += 1;
-    else if (mode === "last") map[m] = v;
-  });
-  return Object.entries(map)
-    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([month, val]) => ({ month, val }));
-}
-
-function trendDir(curr, prev) {
-  if (curr > prev) return "up";
-  if (curr < prev) return "down";
-  return "stable";
-}
 
 export default function Kpis() {
   const { data: kpisLLM, isLoading } = useQuery({
@@ -113,46 +101,62 @@ export default function Kpis() {
     },
     staleTime: 0,
   });
+  const { data: campaignDaily } = useQuery({
+    queryKey: ["campaign-daily-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.CampaignDaily.list("-date", 500);
+      return list || [];
+    },
+    staleTime: 0,
+  });
 
   const computedKpis = useMemo(() => {
     const result = [];
 
-    // Helper: get last N months that have data from a monthly aggregation array
-    const lastMonths = (monthly, n) => monthly.slice(-n);
-    const lastVal = (monthly) => (monthly.length > 0 ? monthly[monthly.length - 1].val : 0);
-    const prevVal = (monthly) => (monthly.length > 1 ? monthly[monthly.length - 2].val : 0);
-
     // === FINANCE === (only if transactions exist)
+    // All month-over-month figures use COMPLETE months: the in-progress month
+    // holds only a few days of data and would look like a collapse.
     if ((transactions || []).length > 0) {
       const incomes = transactions.filter((t) => t.type === "income");
       const expenses = transactions.filter((t) => t.type === "expense");
-      const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
-      const totalExpenses = expenses.reduce((s, t) => s + (t.amount || 0), 0);
-      const marginPct = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
 
-      const revMonthly = monthlyAgg(incomes, "date", "amount");
-      const expMonthly = monthlyAgg(expenses, "date", "amount");
+      const revMonthly = monthlyAggComplete(incomes, "date", "amount");
+      const expMonthly = monthlyAggComplete(expenses, "date", "amount");
       const currRev = lastVal(revMonthly);
       const prevRev = prevVal(revMonthly);
       const currExp = lastVal(expMonthly);
       const prevExp = prevVal(expMonthly);
-      const latestCash = (cashflow || [])[0]?.closing_cash || 0;
-      const prevCash = (cashflow || [])[1]?.closing_cash || 0;
       const currMarginPct = currRev > 0 ? ((currRev - currExp) / currRev) * 100 : 0;
       const prevMarginPct = prevRev > 0 ? ((prevRev - prevExp) / prevRev) * 100 : 0;
 
-      result.push({ name: "Revenus (dernier mois)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
-      result.push({ name: "Dépenses (dernier mois)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
-      result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
-      if (latestCash > 0 || (cashflow || []).length > 0) {
-        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: prevCash > 0 ? Math.round(prevCash) : null, trend: trendDir(latestCash, prevCash), unit: "$" });
+      // Cash: latest balance, compared on a 7-day average to avoid daily noise.
+      const cfSorted = (cashflow || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+      const avgCash = (arr) =>
+        arr.length > 0 ? arr.reduce((s, c) => s + (Number(c.closing_cash) || 0), 0) / arr.length : 0;
+      const latestCash = cfSorted[0]?.closing_cash || 0;
+      const cash7 = avgCash(cfSorted.slice(0, 7));
+      const cashPrev7 = avgCash(cfSorted.slice(7, 14));
+
+      result.push({ name: "Revenus (dernier mois complet)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
+      result.push({ name: "Dépenses (dernier mois complet)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
+      result.push({ name: "Marge brute (dernier mois complet)", domain: "finance", value: Math.round(currMarginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
+      if ((cashflow || []).length > 0) {
+        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: cashPrev7 > 0 ? Math.round(cashPrev7) : null, trend: trendDir(cash7, cashPrev7, 1), unit: "$" });
+        // Runway: months of cover at the recent burn rate.
+        const recentBurn = expMonthly.slice(-3).length
+          ? expMonthly.slice(-3).reduce((s, e) => s + e.val, 0) / expMonthly.slice(-3).length
+          : 0;
+        if (recentBurn > 0) {
+          const runway = latestCash / recentBurn;
+          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: runway >= 6 ? "up" : runway < 3 ? "down" : "stable", unit: " mois" });
+        }
       }
     }
 
     // === VENTES === (only if orders exist)
     if ((orders || []).length > 0) {
-      const orderRevMonthly = monthlyAgg(orders, "date", "total");
-      const orderCntMonthly = monthlyAgg(orders, "date", "total", "count");
+      const orderRevMonthly = monthlyAggComplete(orders, "date", "total");
+      const orderCntMonthly = monthlyAggComplete(orders, "date", "total", "count");
       const currOrders = lastVal(orderCntMonthly);
       const prevOrders = prevVal(orderCntMonthly);
       const currOrderRev = lastVal(orderRevMonthly);
@@ -167,9 +171,14 @@ export default function Kpis() {
       );
       const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
+      // 3-month blocks: less sensitive to a single outlier month than 1-vs-1.
+      const rev3 = sumLast(orderRevMonthly, 3);
+      const revPrev3 = sumPrev(orderRevMonthly, 3);
+
       result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
-      result.push({ name: "Commandes (dernier mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
+      result.push({ name: "Commandes (dernier mois complet)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
       result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: returnRate > 10 ? "down" : "up", unit: "%" });
+      result.push({ name: "CA sur 3 mois", domain: "ventes", value: Math.round(rev3), previous: revPrev3 > 0 ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
       result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
     }
 
@@ -181,12 +190,27 @@ export default function Kpis() {
       const totalCampRev = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
       const totalClicks = campaigns.reduce((s, c) => s + (Number(c.clicks) || 0), 0);
       const totalImpressions = campaigns.reduce((s, c) => s + (Number(c.impressions) || 0), 0);
-      const roas = totalSpend > 0 ? totalCampRev / totalSpend : 0;
       const cac = totalNewCust > 0 ? totalSpend / totalNewCust : 0;
       const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
       const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
 
-      result.push({ name: "ROAS moyen", domain: "marketing", value: Math.round(roas * 10) / 10, previous: null, trend: roas >= 3 ? "up" : roas < 1 ? "down" : "stable", unit: "x" });
+      // ROAS on a recent window with a real computed trend, from dated daily
+      // rows when available; campaign totals are all-time and have no trend.
+      const spendM = monthlyAggComplete(campaignDaily || [], "date", "spend");
+      const cRevM = monthlyAggComplete(campaignDaily || [], "date", "revenue");
+      const s3 = sumLast(spendM, 3);
+      const sp3 = sumPrev(spendM, 3);
+      const roas = s3 > 0 ? sumLast(cRevM, 3) / s3 : totalSpend > 0 ? totalCampRev / totalSpend : 0;
+      const roasPrev = sp3 > 0 ? sumPrev(cRevM, 3) / sp3 : 0;
+
+      result.push({
+        name: s3 > 0 ? "ROAS (3 derniers mois)" : "ROAS moyen",
+        domain: "marketing",
+        value: Math.round(roas * 10) / 10,
+        previous: roasPrev > 0 ? Math.round(roasPrev * 10) / 10 : null,
+        trend: roasPrev > 0 ? trendDir(roas, roasPrev) : "stable",
+        unit: "x",
+      });
       result.push({ name: "CAC moyen", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
       result.push({ name: "Taux de clic (CTR)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
       result.push({ name: "Taux de conversion", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
@@ -194,8 +218,11 @@ export default function Kpis() {
 
     // === OPÉRATIONS === (only if products or inventory exist)
     if ((products || []).length > 0 || (inventory || []).length > 0) {
-      const dormantStock = (inventory || []).filter((i) => i.stock_status === "dormant").length;
-      const ruptureStock = (inventory || []).filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
+      // Latest snapshot per product — counting every historical inventory row
+      // over-counts the same problem once per recorded day.
+      const latestInv = latestByKey(inventory || [], "product_id", "date");
+      const dormantStock = latestInv.filter((i) => i.stock_status === "dormant").length;
+      const ruptureStock = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
       const avgMargin = (products || []).length > 0
         ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
         : 0;
@@ -213,7 +240,7 @@ export default function Kpis() {
       const totalCustomers = customers.length;
       const churnedCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu").length;
       const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
-      const custMonthly = monthlyAgg(customers, "acquisition_date", "customer_id", "count");
+      const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
       const newCustomers = lastVal(custMonthly);
       const prevNewCustomers = prevVal(custMonthly);
       const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
@@ -221,12 +248,12 @@ export default function Kpis() {
 
       result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
       result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
-      result.push({ name: "Nouveaux clients (dernier mois)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
+      result.push({ name: "Nouveaux clients (dernier mois complet)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
       result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "$" });
     }
 
     return result;
-  }, [transactions, orders, customers, campaigns, products, inventory, cashflow]);
+  }, [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow]);
 
   // Merge: computed KPIs first, then LLM-generated ones that aren't duplicated
   const allKpis = useMemo(() => {
@@ -245,15 +272,16 @@ export default function Kpis() {
   }, [allKpis]);
 
   const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, products, inventory, cashflow,
-  }), [transactions, orders, customers, campaigns, products, inventory, cashflow]);
+    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow,
+  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow]);
 
-  // Trend chart data: revenue, AOV, margin % by month
+  // Trend chart data: revenue, AOV, margin % by month.
+  // The in-progress month is excluded — a partial month renders as a false cliff.
   const trendData = useMemo(() => {
-    const revMonthly = monthlyAgg((transactions || []).filter((t) => t.type === "income"), "date", "amount");
-    const expMonthly = monthlyAgg((transactions || []).filter((t) => t.type === "expense"), "date", "amount");
-    const orderRevMonthly = monthlyAgg(orders || [], "date", "total");
-    const orderCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
+    const revMonthly = monthlyAggComplete((transactions || []).filter((t) => t.type === "income"), "date", "amount");
+    const expMonthly = monthlyAggComplete((transactions || []).filter((t) => t.type === "expense"), "date", "amount");
+    const orderRevMonthly = monthlyAggComplete(orders || [], "date", "total");
+    const orderCntMonthly = monthlyAggComplete(orders || [], "date", "total", "count");
 
     const months = new Set([
       ...revMonthly.map((m) => m.month),
@@ -324,7 +352,16 @@ export default function Kpis() {
             const statusLabel = s.score >= 75 ? "Bon" : s.score >= 55 ? "Stable" : s.score >= 35 ? "Attention" : "Critique";
             const statusColor = s.score >= 75 ? "text-emerald-600" : s.score >= 55 ? "text-blue-600" : s.score >= 35 ? "text-orange-600" : "text-red-600";
             const TIcon = s.trend === "up" ? "▲" : s.trend === "down" ? "▼" : "—";
-            const trendColor = s.trend === "up" ? "text-emerald-600" : s.trend === "down" ? "text-red-600" : "text-muted-foreground";
+            // A downward trend on a healthy domain is a warning, not an emergency:
+            // amber avoids a green "Bon" sitting next to an alarming red arrow.
+            const trendColor =
+              s.trend === "up"
+                ? "text-emerald-600"
+                : s.trend === "down"
+                  ? s.score >= 55
+                    ? "text-amber-600"
+                    : "text-red-600"
+                  : "text-muted-foreground";
             return (
               <div key={key} className="animate-slide-up rounded-xl border border-border bg-card p-4">
                 <p className="text-xs font-medium text-muted-foreground">{label}</p>
