@@ -107,8 +107,8 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
   const normNoAccents = stripAccents(normalized);
   if (enumOptions.includes(raw)) return raw;
   if (enumOptions.includes(normalized)) return normalized;
-  // Try English→French translation
-  const translations = ENUM_TRANSLATIONS[raw] || ENUM_TRANSLATIONS[normalized];
+  // Try English→French translation (also check accent-stripped keys)
+  const translations = ENUM_TRANSLATIONS[raw] || ENUM_TRANSLATIONS[normalized] || ENUM_TRANSLATIONS[rawNoAccents] || ENUM_TRANSLATIONS[normNoAccents];
   if (translations) {
     const match = translations.find((t) => enumOptions.includes(t));
     if (match) return match;
