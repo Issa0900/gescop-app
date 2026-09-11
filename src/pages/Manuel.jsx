@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Book, ChevronDown, ChevronRight, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket } from "lucide-react";
+import { Book, ChevronDown, ChevronRight, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -31,6 +31,7 @@ const sections = [
       { h: "Formats supportés", p: "GESCOP accepte les fichiers CSV, Excel (.xlsx, .xls), TSV et PDF. Pour les fichiers CSV et Excel, chaque ligne doit représenter une transaction avec au minimum : date, montant, et type (income/expense)." },
       { h: "Colonnes reconnues", p: "Le système reconnaît automatiquement : date, description, amount (montant), type (income/expense), category (catégorie), client, et product. Les en-têtes en français ou en anglais sont acceptés." },
       { h: "Qualité des données", p: "Après l'import, un score de qualité est calculé. Les lignes problématiques sont mises en quarantaine plutôt que rejetées — vous pouvez les corriger ou les ignorer. L'historique des imports reste consultable avec le nombre de lignes traitées et le score." },
+      { h: "Bilan guidé", p: "Après l'import, un bilan s'affiche : nombre de lignes reçues, transactions importées, score de qualité, et lignes en quarantaine. Un bouton vous mène directement à l'analyse IA pour exploiter vos données." },
       { h: "Astuce", p: "Pour de meilleurs résultats d'analyse, importez au minimum 3 mois de données. L'IA a besoin d'un historique suffisant pour détecter des tendances et des anomalies fiables." },
     ],
   },
@@ -85,12 +86,63 @@ const sections = [
     ],
   },
   {
+    id: "insights",
+    title: "Insights",
+    icon: Brain,
+    content: [
+      { h: "Insights structurés", p: "La page Insights présente tous les signaux détectés par l'IA dans un format structuré et uniforme : Quoi (le fait), Pourquoi (l'explication), Impact (estimation financière), et Action (ce qu'il faut faire). Chaque insight inclut un niveau de confiance et un impact financier estimé." },
+      { h: "Filtrage", p: "Filtrez les insights par type (anomalie, risque, opportunité, recommandation) et par priorité. Triez par impact financier ou par confiance pour identifier rapidement les actions les plus importantes." },
+      { h: "Actionnabilité", p: "Chaque insight est conçu pour être directement actionnable : l'action recommandée est spécifique et immédiate, pas théorique. L'impact financier estimé vous aide à prioriser." },
+    ],
+  },
+  {
+    id: "previsions",
+    title: "Prévisions",
+    icon: TrendingUp,
+    content: [
+      { h: "Trois axes de prévision", p: "GESCOP projette trois indicateurs clés sur 30, 60 et 90 jours : le chiffre d'affaires, la marge, et la trésorerie. Les prévisions sont basées sur les tendances de vos transactions historiques." },
+      { h: "Visualisation", p: "Chaque prévision est accompagnée d'un graphique montrant la trajectoire projetée. Les intervalles de confiance vous indiquent la marge d'incertitude autour de chaque projection." },
+      { h: "Anticipation", p: "Utilisez les prévisions pour anticiper les besoins de trésorerie, identifier les mois à risque, et planifier les investissements au bon moment." },
+    ],
+  },
+  {
+    id: "simulateur",
+    title: "Simulateur de décisions",
+    icon: Calculator,
+    content: [
+      { h: "Simulation « Et si ? »", p: "Le simulateur vous permet de tester l'impact financier d'une décision avant de la prendre. Ajustez les curseurs (prix, volume, coûts, délais) et voyez instantanément l'effet sur le chiffre d'affaires, la marge et la trésorerie." },
+      { h: "Scénarios", p: "Testez plusieurs scénarios : augmentation de prix, réduction de coûts, investissement marketing, embauche. Comparez les résultats pour choisir la meilleure option." },
+      { h: "Conversion en décision", p: "Une fois satisfait d'un scénario, convertissez-le en décision suivie dans la page Décisions pour comparer la prévision au résultat réel." },
+    ],
+  },
+  {
+    id: "historique",
+    title: "Historique des analyses",
+    icon: History,
+    content: [
+      { h: "Mémoire d'analyse", p: "Chaque analyse IA est enregistrée avec son score de santé, ses scores par dimension, et ses compteurs (anomalies, risques, opportunités, recommandations). Cette mémoire vous permet de suivre l'évolution de votre entreprise dans le temps." },
+      { h: "Évolution du score", p: "Un graphique montre l'évolution de votre score de santé global sur toutes les analyses passées. Identifiez les tendances : amélioration continue, stagnation, ou dégradation." },
+      { h: "Comparaison temporelle", p: "La section « Qu'est-ce qui a changé ? » compare automatiquement les deux dernières analyses et liste les améliorations et dégradations par dimension. Vous savez exactement ce qui a progressé et ce qui nécessite attention." },
+    ],
+  },
+  {
+    id: "decisions",
+    title: "Décisions & apprentissage",
+    icon: Target,
+    content: [
+      { h: "Mémoire décisionnelle", p: "La page Décisions suit le cycle complet de vos décisions : À décider → Décisions prises → Résultats. Chaque décision enregistre son impact prévu, puis son impact réel." },
+      { h: "Comparaison prévision/réalité", p: "Lorsque vous ajoutez les résultats réels d'une décision, GESCOP calcule automatiquement la performance (pourcentage de l'impact prévu réellement atteint). Vous voyez d'un coup d'œil si vos décisions ont eu l'effet espéré." },
+      { h: "Apprentissage", p: "Les statistiques de précision (précision moyenne, nombre de décisions suivies, prévisions trop optimistes) vous aident à calibrer vos futures prévisions. GESCOP apprend de vos écarts pour améliorer la qualité de ses recommandations." },
+    ],
+  },
+  {
     id: "radar",
     title: "Radar externe",
     icon: RadarIcon,
     content: [
       { h: "Signaux externes", p: "Le radar surveille l'environnement externe de votre entreprise : signaux gouvernementaux, économiques, de marché, de concurrence, fournisseurs, consommateurs et actualités. Chaque signal est évalué pour sa pertinence et son impact (positif, neutre, négatif)." },
-      { h: "Familles de signaux", p: "Les signaux sont organisés par famille pour faciliter la lecture. Vous pouvez consulter la source et l'URL de chaque signal pour approfondir." },
+      { h: "Pourquoi cela vous concerne", p: "Les 3 signaux les plus pertinents sont mis en avant avec une explication personnalisée : pourquoi ce signal concerne spécifiquement votre entreprise (lien avec votre secteur, vos produits, votre clientèle), et une action concrète recommandée pour y répondre." },
+      { h: "Familles de signaux", p: "Les signaux restants sont organisés par famille pour faciliter la lecture. Vous pouvez consulter la source et l'URL de chaque signal pour approfondir." },
       { h: "Gestion", p: "Marquez les signaux comme « vus » ou « archivés » selon leur pertinence pour votre activité." },
     ],
   },
@@ -131,6 +183,7 @@ const sections = [
     content: [
       { h: "Conversation naturelle", p: "L'Assistant IA répond à vos questions sur votre entreprise en langage naturel. Posez des questions comme « Quelle est ma situation financière ? », « Quels sont mes principaux risques ? » ou « Que dois-je faire en priorité ? »." },
       { h: "Contexte intégré", p: "L'assistant a accès à l'ensemble de vos données : profil d'entreprise, transactions, KPI, anomalies, risques, opportunités et recommandations. Ses réponses sont donc personnalisées à votre situation." },
+      { h: "Citations des sources", p: "Chaque réponse de l'assistant indique les sources utilisées (données financières, anomalies détectées, KPI, etc.) avec la période et le volume de données. Vous savez toujours sur quelle base l'IA a répondu, ce qui renforce la confiance dans les recommandations." },
       { h: "Conseils d'utilisation", p: "Pour des réponses précises, posez des questions spécifiques. L'assistant peut vous aider à interpréter les données, suggérer des actions, ou expliquer une anomalie détectée." },
     ],
   },
