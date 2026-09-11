@@ -39,7 +39,32 @@ function normalizeKeys(row) {
   return out;
 }
 
-function normalizeRow(entityName, row, importId) {
+// Coerce a value to match an enum (case-insensitive, handles spaces/hyphens)
+function coerceEnum(value, enumOptions) {
+  if (!value || !enumOptions) return value;
+  const raw = String(value).toLowerCase().trim();
+  const normalized = raw.replace(/[\s-]/g, "_");
+  // Exact match
+  if (enumOptions.includes(raw)) return raw;
+  if (enumOptions.includes(normalized)) return normalized;
+  // Case-insensitive match
+  const match = enumOptions.find((e) => e.toLowerCase() === raw || e.toLowerCase() === normalized);
+  return match || value;
+}
+
+// Normalize enum fields based on the entity schema properties
+function normalizeEnums(row, properties) {
+  if (!properties) return row;
+  const out = { ...row };
+  for (const [field, prop] of Object.entries(properties)) {
+    if (prop.enum && out[field] != null) {
+      out[field] = coerceEnum(out[field], prop.enum);
+    }
+  }
+  return out;
+}
+
+function normalizeRow(entityName, row, importId, properties) {
   const r = normalizeKeys(row);
   if (entityName === "Transaction") {
     const amount = Number(r.amount) || 0;
@@ -61,7 +86,15 @@ function normalizeRow(entityName, row, importId) {
       import_id: importId,
     };
   }
-  return r;
+  // For other entities: normalize enums and strip empty/null values to avoid schema rejection
+  const withEnums = normalizeEnums(r, properties);
+  const cleaned = {};
+  for (const [k, v] of Object.entries(withEnums)) {
+    if (v !== null && v !== undefined && v !== "") {
+      cleaned[k] = v;
+    }
+  }
+  return cleaned;
 }
 
 export default async function(req) {
@@ -100,9 +133,23 @@ export default async function(req) {
           rows_quarantined: 0,
         });
 
-        const extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-          file_url,
-          json_schema: {
+        // Get the entity's own schema so extraction targets the right fields
+        let entityProperties = null;
+        let extractionSchema;
+        try {
+          const entitySchema = await base44.entities[entityName].schema();
+          entityProperties = entitySchema.properties || {};
+          extractionSchema = {
+            type: "array",
+            items: {
+              type: "object",
+              properties: entityProperties,
+              additionalProperties: true,
+            },
+          };
+        } catch {
+          // Fallback: generic schema
+          extractionSchema = {
             type: "array",
             items: {
               type: "object",
@@ -112,38 +159,15 @@ export default async function(req) {
                 amount: { type: "number" },
                 type: { type: "string" },
                 category: { type: "string" },
-                customer_id: { type: "string" },
-                product_id: { type: "string" },
-                order_id: { type: "string" },
-                supplier_id: { type: "string" },
-                campaign_id: { type: "string" },
-                employee_id: { type: "string" },
-                quantity: { type: "number" },
-                revenue: { type: "number" },
-                cost: { type: "number" },
-                spend: { type: "number" },
-                total: { type: "number" },
-                total_cost: { type: "number" },
-                unit_cost: { type: "number" },
-                unit_price: { type: "number" },
-                gross_margin: { type: "number" },
-                impressions: { type: "number" },
-                clicks: { type: "number" },
-                conversions: { type: "number" },
-                budget: { type: "number" },
-                roas: { type: "number" },
-                cac: { type: "number" },
-                closing_cash: { type: "number" },
-                net_cash_flow: { type: "number" },
-                satisfaction_score: { type: "number" },
-                sentiment: { type: "string" },
-                status: { type: "string" },
-                channel: { type: "string" },
-                segment: { type: "string" },
               },
               additionalProperties: true,
             },
-          },
+          };
+        }
+
+        const extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
+          file_url,
+          json_schema: extractionSchema,
         });
 
         let rows = [];
@@ -157,7 +181,7 @@ export default async function(req) {
         let quarantined = 0;
         rows.forEach((row) => {
           if (!row || typeof row !== "object") { quarantined++; return; }
-          const normalized = normalizeRow(entityName, row, importRec.id);
+          const normalized = normalizeRow(entityName, row, importRec.id, entityProperties);
           toCreate.push(normalized);
         });
 
