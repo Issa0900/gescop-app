@@ -72,6 +72,9 @@ export default function Clients() {
     _aov: (ordersByCustomer[c.customer_id] || 0) > 0
       ? (revByCustomer[c.customer_id] || 0) / ordersByCustomer[c.customer_id]
       : 0,
+    // churn_risk is imported as a 0–1 ratio; displaying it raw showed "1%" for
+    // a client with a 70% departure risk.
+    _churnPct: Math.round((Number(c.churn_risk) || 0) <= 1 ? (Number(c.churn_risk) || 0) * 100 : Number(c.churn_risk)),
   }));
 
   const total = enriched.length;
@@ -151,8 +154,7 @@ export default function Clients() {
               <th className="px-4 py-3 font-medium">Commandes</th>
               <th className="px-4 py-3 font-medium">CA total</th>
               <th className="px-4 py-3 font-medium">Panier moyen</th>
-              <th className="px-4 py-3 font-medium">LTV</th>
-              <th className="px-4 py-3 font-medium">Churn risk</th>
+              <th className="px-4 py-3 font-medium">Risque de départ</th>
               <th className="px-4 py-3 font-medium">Statut</th>
             </tr>
           </thead>
@@ -169,15 +171,10 @@ export default function Clients() {
                 <td className="px-4 py-3">{c._total_orders}</td>
                 <td className="px-4 py-3 font-medium">{Math.round(c._total_revenue || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">{Math.round(c._aov || 0).toLocaleString()} $</td>
-                <td className="px-4 py-3">{Math.round(c._total_revenue || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">
-                  {(c.churn_risk || 0) > 60 ? (
-                    <span className="text-red-600 font-medium">{Math.round(c.churn_risk)}%</span>
-                  ) : (c.churn_risk || 0) > 30 ? (
-                    <span className="text-amber-600">{Math.round(c.churn_risk)}%</span>
-                  ) : (
-                    <span className="text-muted-foreground">{Math.round(c.churn_risk || 0)}%</span>
-                  )}
+                  <span className={c._churnPct > 60 ? "text-red-600 font-medium" : c._churnPct > 30 ? "text-amber-600" : "text-muted-foreground"}>
+                    {c._churnPct}%
+                  </span>
                 </td>
                 <td className="px-4 py-3">
                   <span className={c.status === "actif" ? "text-emerald-600" : c.status === "inactif" ? "text-red-600" : "text-amber-600"}>

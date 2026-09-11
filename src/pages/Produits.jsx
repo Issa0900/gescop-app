@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
+import { latestByKey } from "@/lib/periods";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -66,8 +67,19 @@ export default function Produits() {
 
   const total = products.length;
   const lowMargin = products.filter((p) => (p.gross_margin || 0) < 15);
-  const dormantCount = inventory.filter((i) => i.stock_status === "dormant").length;
-  const nearRupture = products.filter((p) => p.reorder_point > 0 && (p.inventory_level || 0) <= (p.reorder_point || 0));
+
+  // Inventory arrives as one row per product per date. Counting every historical
+  // row multiplies each situation by its number of recorded days, so all stock
+  // figures use the most recent snapshot per product.
+  const latestInv = latestByKey(inventory || [], "product_id", "date");
+  const invByProduct = {};
+  latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
+  const stockOf = (p) => {
+    const snap = invByProduct[p.product_id];
+    return snap && snap.closing_stock != null ? Number(snap.closing_stock) : Number(p.inventory_level) || 0;
+  };
+  const dormantCount = latestInv.filter((i) => i.stock_status === "dormant").length;
+  const nearRupture = products.filter((p) => p.reorder_point > 0 && stockOf(p) <= (p.reorder_point || 0));
 
   // Compute actual sales per product from orders (most recent month)
   const orderMonths = (orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean).sort();
@@ -100,7 +112,7 @@ export default function Produits() {
   }));
 
   const stockDist = {};
-  inventory.forEach((i) => {
+  latestInv.forEach((i) => {
     const s = i.stock_status || "non_precise";
     stockDist[s] = (stockDist[s] || 0) + 1;
   });
@@ -109,7 +121,7 @@ export default function Produits() {
     value: v,
     key: s,
   }));
-  const inventoryValue = inventory.reduce((s, i) => s + (i.inventory_value || 0), 0);
+  const inventoryValue = latestInv.reduce((s, i) => s + (Number(i.inventory_value) || 0), 0);
 
   return (
     <div className="space-y-8">
@@ -179,7 +191,7 @@ export default function Produits() {
             {nearRupture.slice(0, 12).map((p) => (
               <div key={p.id} className="rounded-lg bg-white px-3 py-2 text-sm">
                 <p className="font-medium truncate">{p.product_name || p.product_id}</p>
-                <p className="text-xs text-muted-foreground">Stock: {p.inventory_level} · Seuil: {p.reorder_point}</p>
+                <p className="text-xs text-muted-foreground">Stock: {stockOf(p)} · Seuil: {p.reorder_point}</p>
               </div>
             ))}
           </div>
@@ -215,11 +227,21 @@ export default function Produits() {
                   <span className={(p.gross_margin || 0) < 15 ? "text-red-600 font-medium" : ""}>{Math.round(p.gross_margin || 0)}%</span>
                 </td>
                 <td className="px-4 py-3">{p._totalSales}</td>
-                <td className="px-4 py-3">{p.inventory_level || 0}</td>
+                <td className="px-4 py-3">{stockOf(p)}</td>
                 <td className="px-4 py-3">
-                  <span className={p.status === "rupture" ? "text-red-600" : p.status === "actif" ? "text-emerald-600" : "text-muted-foreground"}>
-                    {p.status || "—"}
-                  </span>
+                  {/* Real stock state from the latest inventory snapshot, falling
+                      back to the imported product status when none exists. */}
+                  {(() => {
+                    const st = invByProduct[p.product_id]?.stock_status || p.status;
+                    const cls = ["rupture", "proche_rupture"].includes(st)
+                      ? "text-red-600"
+                      : ["faible", "surstock", "dormant"].includes(st)
+                        ? "text-amber-600"
+                        : st === "optimal" || st === "actif"
+                          ? "text-emerald-600"
+                          : "text-muted-foreground";
+                    return <span className={cls}>{stockLabels[st] || st || "—"}</span>;
+                  })()}
                 </td>
               </tr>
             ))}

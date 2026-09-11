@@ -7,6 +7,7 @@ import { TrendingUp, AlertTriangle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
+import { currentMonthKey } from "@/lib/periods";
 
 function fit(xs, ys) {
   const n = xs.length;
@@ -46,7 +47,10 @@ export default function Previsions() {
       if (t.type === "income") byMonth[m].income += t.amount || 0;
       else byMonth[m].expense += t.amount || 0;
     });
-    const months = Object.keys(byMonth).sort();
+    // The in-progress month holds only a few days of data: leaving it in drags
+    // the regression down and invents a downward trend.
+    const cm = currentMonthKey();
+    const months = Object.keys(byMonth).filter((m) => m !== cm).sort();
     if (months.length < 3) return null;
     const monthly = months.map((m, i) => ({
       month: m, income: byMonth[m].income, expense: byMonth[m].expense,

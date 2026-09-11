@@ -16,7 +16,7 @@ export default function Marketing() {
   });
   const { data: daily, isLoading: ld } = useQuery({
     queryKey: ["campaign-daily-summary"],
-    queryFn: async () => (await base44.entities.CampaignDaily.list("-date", 200)) || [],
+    queryFn: async () => (await base44.entities.CampaignDaily.list("-date", 500)) || [],
   });
 
   if (lc || ld) return <p className="text-sm text-muted-foreground">Chargement…</p>;

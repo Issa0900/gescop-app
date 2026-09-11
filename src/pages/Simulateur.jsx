@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import { Calculator, Upload, TrendingUp, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { currentMonthKey } from "@/lib/periods";
 
 export default function Simulateur() {
   const [priceChange, setPriceChange] = useState(0);
@@ -27,12 +28,16 @@ export default function Simulateur() {
       if (t.type === "income") { byMonth[m].income += t.amount || 0; byMonth[m].count += 1; }
       else byMonth[m].expense += t.amount || 0;
     });
-    const months = Object.keys(byMonth).sort();
+    // Baseline = last COMPLETE month. The running month holds only a few days,
+    // which would understate the starting point of every simulation.
+    const cm = currentMonthKey();
+    const months = Object.keys(byMonth).filter((m) => m !== cm).sort();
     if (months.length === 0) return null;
-    const last = byMonth[months[months.length - 1]];
+    const baseMonth = months[months.length - 1];
+    const last = byMonth[baseMonth];
     const income = last.income, expense = last.expense, margin = income - expense;
     const volume = last.count || 1, avgPrice = income / volume;
-    return { income, expense, margin, volume, avgPrice };
+    return { income, expense, margin, volume, avgPrice, baseMonth };
   }, [transactions]);
 
   const sim = useMemo(() => {
@@ -71,7 +76,9 @@ export default function Simulateur() {
           <Calculator className="h-5 w-5 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">Simulateur « Et si ? »</h1>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">Testez l'impact de vos décisions avant de les prendre. Ajustez les paramètres et observez le résultat projeté.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Testez l'impact de vos décisions avant de les prendre. Base de calcul : {current.baseMonth} (dernier mois complet).
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 rounded-2xl border border-border bg-card p-6 md:grid-cols-3">
