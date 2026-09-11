@@ -33,10 +33,10 @@ ${context}
 
 INSTRUCTIONS
 1. Calcule un score de santé global sur 100 et un score pour chacune des 9 dimensions: finance, ventes, tresorerie, clients, operations, marketing, productivite, risques, croissance. Chaque score entre 0 et 100. Pour chaque dimension donne aussi une tendance (up/down/stable) et une explication courte.
-2. Détecte les anomalies: écarts par rapport à la normale (dépenses inhabituelles, baisses de ventes, montants aberrants). Pour chaque anomalie: title, description, dimension, severity (critique/important/modere/faible), deviation_pct, explanation.
-3. Identifie les risques: title, description, category, probability (0-100), impact (faible/moyen/eleve), urgency (faible/moyenne/elevee), confidence (faible/moyenne/elevee), horizon, score (0-100). Calcule le score = combinaison de probabilité, impact, urgence et confiance.
-4. Identifie les opportunités: title, description, category, potential (faible/moyen/eleve), probability (0-100), horizon, confidence (faible/moyenne/elevee), score (0-100).
-5. Pour chaque risque et opportunité majeur, produis une recommandation structurée: title, situation (que se passe-t-il), analysis (pourquoi), impact (quel effet possible), action (que faire), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly).
+2. Détecte les anomalies: écarts par rapport à la normale (dépenses inhabituelles, baisses de ventes, montants aberrants). Pour chaque anomalie: title, description, dimension, severity (critique/important/modere/faible), deviation_pct, explanation, financial_impact (impact financier mensuel estimé en dollars CAD, négatif pour une perte, positif pour un gain, 0 si non applicable), confidence_pct (niveau de confiance 0-100 basé sur la quantité et qualité des données disponibles).
+3. Identifie les risques: title, description, category, probability (0-100), impact (faible/moyen/eleve), urgency (faible/moyenne/elevee), confidence (faible/moyenne/elevee), horizon, score (0-100), financial_impact (impact financier potentiel estimé en dollars CAD, toujours négatif ou 0), confidence_pct (0-100). Calcule le score = combinaison de probabilité, impact, urgence et confiance.
+4. Identifie les opportunités: title, description, category, potential (faible/moyen/eleve), probability (0-100), horizon, confidence (faible/moyenne/elevee), score (0-100), financial_impact (impact financier potentiel estimé en dollars CAD, toujours positif ou 0), confidence_pct (0-100).
+5. Pour chaque risque et opportunité majeur, produis une recommandation structurée: title, situation (que se passe-t-il), analysis (pourquoi), impact (quel effet possible), action (que faire), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly), financial_impact (impact financier estimé de l'action recommandée en dollars CAD, peut être positif pour une économie ou un gain, négatif pour un coût), confidence_pct (0-100).
 6. Sélectionne les KPI pertinents pour ce secteur, organisés en 4 domaines (finance, ventes, operations, marketing). Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
 7. Détecte des signaux externes pertinents pour cette entreprise (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon. Base-toi sur le secteur et la localisation de l'entreprise.
 
@@ -71,6 +71,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 severity: { type: "string" },
                 deviation_pct: { type: "number" },
                 explanation: { type: "string" },
+                financial_impact: { type: "number" },
+                confidence_pct: { type: "number" },
               },
             },
           },
@@ -88,6 +90,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 confidence: { type: "string" },
                 horizon: { type: "string" },
                 score: { type: "number" },
+                financial_impact: { type: "number" },
+                confidence_pct: { type: "number" },
               },
             },
           },
@@ -104,6 +108,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 horizon: { type: "string" },
                 confidence: { type: "string" },
                 score: { type: "number" },
+                financial_impact: { type: "number" },
+                confidence_pct: { type: "number" },
               },
             },
           },
@@ -119,6 +125,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 action: { type: "string" },
                 priority: { type: "string" },
                 source_type: { type: "string" },
+                financial_impact: { type: "number" },
+                confidence_pct: { type: "number" },
               },
             },
           },
@@ -179,6 +187,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           severity: a.severity || "modere",
           deviation_pct: a.deviation_pct || 0,
           explanation: a.explanation || "",
+          financial_impact: a.financial_impact || 0,
+          confidence_pct: a.confidence_pct || 0,
           status: "nouveau",
           detected_date: new Date().toISOString().slice(0, 10),
         }));
@@ -199,6 +209,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           confidence: r.confidence || "moyenne",
           horizon: r.horizon || "",
           score: r.score || 50,
+          financial_impact: r.financial_impact || 0,
+          confidence_pct: r.confidence_pct || 0,
           status: "actif",
         }));
         await base44.entities.Risk.bulkCreate(batch);
@@ -217,6 +229,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           horizon: o.horizon || "",
           confidence: o.confidence || "moyenne",
           score: o.score || 50,
+          financial_impact: o.financial_impact || 0,
+          confidence_pct: o.confidence_pct || 0,
           status: "nouvelle",
         }));
         await base44.entities.Opportunity.bulkCreate(batch);
@@ -234,6 +248,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           action: r.action || "",
           priority: r.priority || "moyenne",
           source_type: r.source_type || "risk",
+          financial_impact: r.financial_impact || 0,
+          confidence_pct: r.confidence_pct || 0,
           status: "nouvelle",
         }));
         await base44.entities.Recommendation.bulkCreate(batch);

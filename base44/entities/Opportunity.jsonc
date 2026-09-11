@@ -36,6 +36,12 @@
     "score": {
       "type": "number"
     },
+    "financial_impact": {
+      "type": "number"
+    },
+    "confidence_pct": {
+      "type": "number"
+    },
     "status": {
       "type": "string",
       "enum": [

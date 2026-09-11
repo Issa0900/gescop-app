@@ -26,6 +26,12 @@
     "explanation": {
       "type": "string"
     },
+    "financial_impact": {
+      "type": "number"
+    },
+    "confidence_pct": {
+      "type": "number"
+    },
     "status": {
       "type": "string",
       "enum": [
