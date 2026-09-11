@@ -7,6 +7,20 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
+import Layout from '@/components/Layout';
+import Onboarding from '@/pages/Onboarding';
+import Dashboard from '@/pages/Dashboard';
+import ImportPage from '@/pages/Import';
+import Kpis from '@/pages/Kpis';
+import Anomalies from '@/pages/Anomalies';
+import Risques from '@/pages/Risques';
+import Recommandations from '@/pages/Recommandations';
+import Radar from '@/pages/Radar';
+import Taches from '@/pages/Taches';
+import Alertes from '@/pages/Alertes';
+import Rapports from '@/pages/Rapports';
+import Assistant from '@/pages/Assistant';
+import Parametres from '@/pages/Parametres';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -35,6 +49,21 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/importer" element={<ImportPage />} />
+        <Route path="/kpis" element={<Kpis />} />
+        <Route path="/anomalies" element={<Anomalies />} />
+        <Route path="/risques" element={<Risques />} />
+        <Route path="/recommandations" element={<Recommandations />} />
+        <Route path="/radar" element={<Radar />} />
+        <Route path="/taches" element={<Taches />} />
+        <Route path="/alertes" element={<Alertes />} />
+        <Route path="/rapports" element={<Rapports />} />
+        <Route path="/assistant" element={<Assistant />} />
+        <Route path="/parametres" element={<Parametres />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

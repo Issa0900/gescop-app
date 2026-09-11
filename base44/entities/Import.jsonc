@@ -1,0 +1,56 @@
+{
+  "name": "Import",
+  "type": "object",
+  "properties": {
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "csv",
+        "xlsx",
+        "xls",
+        "tsv",
+        "pdf"
+      ]
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "en_cours",
+        "complete",
+        "quarantaine",
+        "echoue"
+      ],
+      "default": "en_cours"
+    },
+    "quality_score": {
+      "type": "number"
+    },
+    "rows_processed": {
+      "type": "number"
+    },
+    "rows_quarantined": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "file_name",
+    "source_type"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
