@@ -21,6 +21,7 @@ import ForecastCard from "@/components/dashboard/ForecastCard";
 import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
+import TimeFilter from "@/components/dashboard/TimeFilter";
 
 const analysisSteps = [
   "Vérification des données", "Calcul des tendances", "Détection des anomalies",
@@ -116,6 +117,16 @@ export default function Dashboard() {
     queryFn: async () => { const l = await base44.entities.Task.list("-created_date", 50); return l || []; },
   });
   const [showDetails, setShowDetails] = useState(false);
+  const [period, setPeriod] = useState("month");
+
+  const periodDays = { month: 30, quarter: 90, year: 365 };
+  const cutoffDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - periodDays[period]);
+    return d.toISOString().slice(0, 10);
+  }, [period]);
+
+  const inPeriod = (dateStr) => !dateStr || dateStr >= cutoffDate;
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -141,19 +152,25 @@ export default function Dashboard() {
 
   // === COMPUTATIONS ===
   const computed = useMemo(() => {
-    const incomes = (transactions || []).filter((t) => t.type === "income");
-    const txnExpenses = (transactions || []).filter((t) => t.type === "expense");
+    const fTxn = (transactions || []).filter((t) => inPeriod(t.date));
+    const fOrders = (orders || []).filter((o) => inPeriod(o.date));
+    const fCashflow = (cashflow || []).filter((c) => inPeriod(c.date));
+    const fExpenses = (expenseRecords || []).filter((e) => inPeriod(e.date));
+    const fCustomers = (customers || []).filter((c) => inPeriod(c.acquisition_date));
+
+    const incomes = fTxn.filter((t) => t.type === "income");
+    const txnExpenses = fTxn.filter((t) => t.type === "expense");
     const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
     const totalExpensesTxn = txnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
     const margin = totalIncome - totalExpensesTxn;
     const marginPct = totalIncome > 0 ? (margin / totalIncome) * 100 : 0;
 
-    const orderRevenue = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
-    const orderCount = (orders || []).length;
+    const orderRevenue = fOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const orderCount = fOrders.length;
     const aov = orderCount > 0 ? orderRevenue / orderCount : 0;
     const activeCustomers = (customers || []).filter((c) => c.status === "actif").length;
     const latestCash = (cashflow || [])[0]?.closing_cash || 0;
-    const totalExpenseAmount = (expenseRecords || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const totalExpenseAmount = fExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
     const revenueMonthly = monthlyAgg(incomes, "date", "amount");
     const expenseMonthly = monthlyAgg(txnExpenses, "date", "amount");
@@ -163,11 +180,12 @@ export default function Dashboard() {
       const expVal = exp ? exp.val : 0;
       return { month: m.month, val: inc > 0 ? ((inc - expVal) / inc) * 100 : 0 };
     });
-    const cashMonthly = monthlyAgg(cashflow, "date", "closing_cash", "last");
-    const costsMonthly = monthlyAgg(expenseRecords, "date", "amount");
-    const clientsMonthly = monthlyAgg(customers, "acquisition_date", "customer_id", "count");
+    const cashMonthly = monthlyAgg(fCashflow, "date", "closing_cash", "last");
+    const costsMonthly = monthlyAgg(fExpenses, "date", "amount");
+    const clientsMonthly = monthlyAgg(fCustomers, "acquisition_date", "customer_id", "count");
 
-    const spark = (arr) => arr.slice(-6).map((d) => d.val);
+    const sparkCount = { month: 3, quarter: 6, year: 12 }[period];
+    const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
     const lastVal = (arr) => (arr.length > 0 ? arr[arr.length - 1].val : 0);
     const prevVal = (arr) => (arr.length > 1 ? arr[arr.length - 2].val : 0);
     const trendPct = (curr, prev) => (prev > 0 ? ((curr - prev) / prev) * 100 : 0);
@@ -175,8 +193,8 @@ export default function Dashboard() {
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
     const marginTrend = trendPct(lastVal(marginMonthly), prevVal(marginMonthly));
     const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
-    const aovRevMonthly = monthlyAgg(orders || [], "date", "total");
-    const aovCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
+    const aovRevMonthly = monthlyAgg(fOrders, "date", "total");
+    const aovCntMonthly = monthlyAgg(fOrders, "date", "total", "count");
     const aovMonthly = aovRevMonthly.map((m) => {
       const cnt = aovCntMonthly.find((c) => c.month === m.month);
       return { month: m.month, val: cnt && cnt.val > 0 ? m.val / cnt.val : 0 };
@@ -209,7 +227,7 @@ export default function Dashboard() {
       revTrend, marginTrend, cashTrend, aovTrend, clientTrend, costTrend,
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
     };
-  }, [transactions, orders, customers, cashflow, expenseRecords]);
+  }, [transactions, orders, customers, cashflow, expenseRecords, period, cutoffDate]);
 
   // === INSIGHTS ===
   const insights = useMemo(() => {
@@ -308,6 +326,15 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <DashboardHeader greeting={greeting} date={today} lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} analyzing={analyzing} hasData={hasData} />
+
+      {hasData && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Période analysée : <span className="font-medium text-foreground">{period === "month" ? "30 derniers jours" : period === "quarter" ? "90 derniers jours" : "12 derniers mois"}</span>
+          </p>
+          <TimeFilter period={period} onChange={setPeriod} />
+        </div>
+      )}
 
       {analyzing && (
         <div className="animate-fade-in rounded-2xl border border-border bg-card p-6">
