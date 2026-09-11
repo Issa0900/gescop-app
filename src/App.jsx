@@ -37,6 +37,7 @@ import Clients from '@/pages/Clients';
 import Produits from '@/pages/Produits';
 import Marketing from '@/pages/Marketing';
 import Tresorerie from '@/pages/Tresorerie';
+import Audit from '@/pages/Audit';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -78,6 +79,7 @@ const AuthenticatedApp = () => {
           <Route path="/decisions" element={<Decisions />} />
           <Route path="/historique" element={<Historique />} />
           <Route path="/importer" element={<ImportPage />} />
+          <Route path="/audit" element={<Audit />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/produits" element={<Produits />} />
           <Route path="/marketing" element={<Marketing />} />
