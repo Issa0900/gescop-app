@@ -37,8 +37,15 @@ export default function Clients() {
       return list || [];
     },
   });
+  const { data: orders, isLoading: lo } = useQuery({
+    queryKey: ["orders-clients"],
+    queryFn: async () => {
+      const list = await base44.entities.Order.list("-date", 500);
+      return list || [];
+    },
+  });
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (isLoading || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
   if (!customers || customers.length === 0) {
     return (
       <EmptyState
@@ -49,17 +56,35 @@ export default function Clients() {
     );
   }
 
-  const total = customers.length;
-  const inactive = customers.filter((c) => c.status === "inactif" || c.status === "perdu" || c.segment === "inactif" || c.segment === "a_risque");
+  // Compute real revenue and order counts from orders
+  const revByCustomer = {};
+  const ordersByCustomer = {};
+  (orders || []).forEach((o) => {
+    const cid = o.customer_id;
+    if (!cid) return;
+    revByCustomer[cid] = (revByCustomer[cid] || 0) + (Number(o.total) || 0);
+    ordersByCustomer[cid] = (ordersByCustomer[cid] || 0) + 1;
+  });
+  const enriched = customers.map((c) => ({
+    ...c,
+    _total_revenue: revByCustomer[c.customer_id] || 0,
+    _total_orders: ordersByCustomer[c.customer_id] || 0,
+    _aov: (ordersByCustomer[c.customer_id] || 0) > 0
+      ? (revByCustomer[c.customer_id] || 0) / ordersByCustomer[c.customer_id]
+      : 0,
+  }));
+
+  const total = enriched.length;
+  const inactive = enriched.filter((c) => c.status === "inactif" || c.status === "perdu" || c.segment === "inactif" || c.segment === "a_risque");
   const churnRate = Math.round((inactive.length / total) * 100);
-  const totalRevenue = customers.reduce((s, c) => s + (c.total_revenue || 0), 0);
-  const sorted = [...customers].sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
-  const top5Revenue = sorted.slice(0, 5).reduce((s, c) => s + (c.total_revenue || 0), 0);
+  const totalRevenue = enriched.reduce((s, c) => s + (c._total_revenue || 0), 0);
+  const sorted = [...enriched].sort((a, b) => (b._total_revenue || 0) - (a._total_revenue || 0));
+  const top5Revenue = sorted.slice(0, 5).reduce((s, c) => s + (c._total_revenue || 0), 0);
   const concentration = totalRevenue > 0 ? Math.round((top5Revenue / totalRevenue) * 100) : 0;
   const avgLTV = total > 0 ? Math.round(totalRevenue / total) : 0;
 
   const bySegment = {};
-  customers.forEach((c) => {
+  enriched.forEach((c) => {
     const s = c.segment || "non_precise";
     bySegment[s] = (bySegment[s] || 0) + 1;
   });
@@ -71,7 +96,7 @@ export default function Clients() {
 
   const topBarData = sorted.slice(0, 10).map((c) => ({
     name: `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.customer_id,
-    revenue: Math.round(c.total_revenue || 0),
+    revenue: Math.round(c._total_revenue || 0),
   }));
 
   return (
@@ -141,10 +166,10 @@ export default function Clients() {
                     {segmentLabels[c.segment] || c.segment || "—"}
                   </span>
                 </td>
-                <td className="px-4 py-3">{c.total_orders || 0}</td>
-                <td className="px-4 py-3 font-medium">{Math.round(c.total_revenue || 0).toLocaleString()} $</td>
-                <td className="px-4 py-3">{Math.round(c.average_order_value || 0).toLocaleString()} $</td>
-                <td className="px-4 py-3">{Math.round(c.lifetime_value || 0).toLocaleString()} $</td>
+                <td className="px-4 py-3">{c._total_orders}</td>
+                <td className="px-4 py-3 font-medium">{Math.round(c._total_revenue || 0).toLocaleString()} $</td>
+                <td className="px-4 py-3">{Math.round(c._aov || 0).toLocaleString()} $</td>
+                <td className="px-4 py-3">{Math.round(c._total_revenue || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">
                   {(c.churn_risk || 0) > 60 ? (
                     <span className="text-red-600 font-medium">{Math.round(c.churn_risk)}%</span>

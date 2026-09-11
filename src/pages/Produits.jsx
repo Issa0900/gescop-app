@@ -73,12 +73,18 @@ export default function Produits() {
   const orderMonths = (orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean).sort();
   const latestMonth = orderMonths.length > 0 ? orderMonths[orderMonths.length - 1] : null;
   const salesByProduct = {};
+  const totalSalesByProduct = {};
+  const totalRevByProduct = {};
   (orders || []).forEach((o) => {
     const m = (o.date || "").slice(0, 7);
-    if (latestMonth && m !== latestMonth) return;
     const pid = o.product_id;
     if (!pid) return;
-    salesByProduct[pid] = (salesByProduct[pid] || 0) + (Number(o.quantity) || 0);
+    const qty = Number(o.quantity) || 0;
+    const rev = Number(o.total) || 0;
+    totalSalesByProduct[pid] = (totalSalesByProduct[pid] || 0) + qty;
+    totalRevByProduct[pid] = (totalRevByProduct[pid] || 0) + rev;
+    if (latestMonth && m !== latestMonth) return;
+    salesByProduct[pid] = (salesByProduct[pid] || 0) + qty;
   });
   const topBySales = [...products]
     .map((p) => ({
@@ -189,13 +195,17 @@ export default function Produits() {
               <th className="px-4 py-3 font-medium">Coût</th>
               <th className="px-4 py-3 font-medium">Prix vente</th>
               <th className="px-4 py-3 font-medium">Marge</th>
-              <th className="px-4 py-3 font-medium">Ventes/mois</th>
+              <th className="px-4 py-3 font-medium">Unités vendues</th>
               <th className="px-4 py-3 font-medium">Stock</th>
               <th className="px-4 py-3 font-medium">Statut</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {[...products].sort((a, b) => (b.monthly_sales || 0) - (a.monthly_sales || 0)).slice(0, 30).map((p) => (
+            {[...products].map((p) => ({
+              ...p,
+              _totalSales: totalSalesByProduct[p.product_id] || 0,
+              _totalRev: totalRevByProduct[p.product_id] || 0,
+            })).sort((a, b) => (b._totalSales || 0) - (a._totalSales || 0)).slice(0, 30).map((p) => (
               <tr key={p.id} className="hover:bg-muted/30">
                 <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={p.product_name}>{p.product_name || p.product_id}</td>
                 <td className="px-4 py-3 text-muted-foreground">{p.category || "—"}</td>
@@ -204,7 +214,7 @@ export default function Produits() {
                 <td className="px-4 py-3">
                   <span className={(p.gross_margin || 0) < 15 ? "text-red-600 font-medium" : ""}>{Math.round(p.gross_margin || 0)}%</span>
                 </td>
-                <td className="px-4 py-3">{p.monthly_sales || 0}</td>
+                <td className="px-4 py-3">{p._totalSales}</td>
                 <td className="px-4 py-3">{p.inventory_level || 0}</td>
                 <td className="px-4 py-3">
                   <span className={p.status === "rupture" ? "text-red-600" : p.status === "actif" ? "text-emerald-600" : "text-muted-foreground"}>
