@@ -39,16 +39,27 @@ function normalizeKeys(row) {
   return out;
 }
 
-// Coerce a value to match an enum (case-insensitive, handles spaces/hyphens)
+// Strip accents/diacritics for comparison (é→e, à→a, etc.)
+function stripAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens)
 function coerceEnum(value, enumOptions) {
   if (!value || !enumOptions) return value;
   const raw = String(value).toLowerCase().trim();
   const normalized = raw.replace(/[\s-]/g, "_");
+  const rawNoAccents = stripAccents(raw);
+  const normNoAccents = stripAccents(normalized);
   // Exact match
   if (enumOptions.includes(raw)) return raw;
   if (enumOptions.includes(normalized)) return normalized;
-  // Case-insensitive match
-  const match = enumOptions.find((e) => e.toLowerCase() === raw || e.toLowerCase() === normalized);
+  // Case-insensitive + accent-insensitive match
+  const match = enumOptions.find((e) => {
+    const eLow = e.toLowerCase();
+    const eNoAcc = stripAccents(eLow);
+    return eLow === raw || eLow === normalized || eNoAcc === rawNoAccents || eNoAcc === normNoAccents;
+  });
   return match || value;
 }
 
