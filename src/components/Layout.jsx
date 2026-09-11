@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "@/components/Sidebar";
+import { cn } from "@/lib/utils";
 
 export default function Layout() {
   const location = useLocation();
+  const [compact, setCompact] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
-      <main className="md:pl-64">
+      <Sidebar compact={compact} onToggleCompact={() => setCompact((c) => !c)} />
+      <main className={cn("transition-all duration-300", compact ? "md:pl-16" : "md:pl-64")}>
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
           <AnimatePresence mode="wait">
             <motion.div
