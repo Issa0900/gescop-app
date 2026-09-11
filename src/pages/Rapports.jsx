@@ -4,10 +4,11 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { FileText, Trash2, Download, Clock } from "lucide-react";
+import { FileText, Trash2, Download, Clock, GitCompareArrows } from "lucide-react";
 import { downloadCSV } from "@/lib/exportUtils";
 import ReportTypeCard from "@/components/reports/ReportTypeCard";
 import ReportViewer from "@/components/reports/ReportViewer";
+import { cn } from "@/lib/utils";
 
 const reportTypes = ["quotidien", "hebdomadaire", "mensuel"];
 
@@ -23,6 +24,7 @@ export default function Rapports() {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [withComparison, setWithComparison] = useState(true);
 
   const { data: reports, isLoading } = useQuery({
     queryKey: ["reports"],
@@ -35,7 +37,7 @@ export default function Rapports() {
   const generate = async (type) => {
     setGenerating(type);
     try {
-      const res = await base44.functions.invoke("generateReport", { type });
+      const res = await base44.functions.invoke("generateReport", { type, comparison: withComparison });
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
@@ -96,6 +98,36 @@ export default function Rapports() {
         <Button variant="outline" size="sm" onClick={exportReportsList} disabled={!reports || reports.length === 0}>
           <Download className="mr-1.5 h-4 w-4" /> Exporter tout (CSV)
         </Button>
+      </div>
+
+      {/* Comparison toggle */}
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <GitCompareArrows className="h-4.5 w-4.5 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Comparaison période contre période</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Affiche les indicateurs clés de la période actuelle face à la période précédente, avec l'évolution de chaque KPI.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setWithComparison(!withComparison)}
+          className={cn(
+            "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+            withComparison ? "bg-primary" : "bg-muted-foreground/30"
+          )}
+        >
+          <span
+            className={cn(
+              "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+              withComparison ? "translate-x-5" : "translate-x-0.5"
+            )}
+          />
+        </button>
       </div>
 
       {/* Generate buttons */}

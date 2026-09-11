@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Download, X, FileText, Calendar, Clock, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import ReportComparison from "@/components/reports/ReportComparison";
 
 const typeConfig = {
   quotidien: { label: "Quotidien", color: "text-blue-600", bg: "bg-blue-50", ring: "ring-blue-100" },
@@ -65,6 +66,9 @@ export default function ReportViewer({ report, onClose, onExport }) {
             </div>
           </div>
         )}
+
+        {/* Period comparison */}
+        {report.comparison && <ReportComparison comparison={report.comparison} />}
 
         {/* Content */}
         <div className="report-content">
