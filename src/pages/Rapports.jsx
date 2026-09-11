@@ -4,15 +4,19 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { FileText, Loader2, Calendar, Trash2, Download } from "lucide-react";
+import { FileText, Trash2, Download, Clock } from "lucide-react";
 import { downloadCSV } from "@/lib/exportUtils";
-import ReactMarkdown from "react-markdown";
+import ReportTypeCard from "@/components/reports/ReportTypeCard";
+import ReportViewer from "@/components/reports/ReportViewer";
 
-const reportTypes = [
-  { key: "quotidien", label: "Rapport quotidien", desc: "État général, performance, risques, actions prioritaires" },
-  { key: "hebdomadaire", label: "Rapport hebdomadaire", desc: "Comparaison semaine vs précédente, KPI, tendances" },
-  { key: "mensuel", label: "Rapport mensuel", desc: "Analyse approfondie, résumé exécutif automatique" },
-];
+const reportTypes = ["quotidien", "hebdomadaire", "mensuel"];
+
+const typeBadge = {
+  quotidien: "bg-blue-50 text-blue-600",
+  hebdomadaire: "bg-violet-50 text-violet-600",
+  mensuel: "bg-emerald-50 text-emerald-600",
+};
+const typeLabel = { quotidien: "Quotidien", hebdomadaire: "Hebdomadaire", mensuel: "Mensuel" };
 
 export default function Rapports() {
   const qc = useQueryClient();
@@ -97,53 +101,13 @@ export default function Rapports() {
       {/* Generate buttons */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {reportTypes.map((rt) => (
-          <div key={rt.key} className="rounded-xl border border-border bg-card p-5">
-            <FileText className="mb-3 h-6 w-6 text-primary" />
-            <h3 className="font-semibold">{rt.label}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">{rt.desc}</p>
-            <Button
-              size="sm"
-              className="mt-4 w-full"
-              onClick={() => generate(rt.key)}
-              disabled={generating === rt.key}
-            >
-              {generating === rt.key ? (
-                <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Génération…</>
-              ) : (
-                <><Calendar className="mr-1.5 h-3.5 w-3.5" /> Générer</>
-              )}
-            </Button>
-          </div>
+          <ReportTypeCard key={rt} typeKey={rt} onGenerate={generate} isGenerating={generating === rt} />
         ))}
       </div>
 
       {/* Selected report */}
       {selected && (
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">{selected.period}</h2>
-              <p className="text-sm text-muted-foreground">Rapport {selected.type}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportReport(selected)}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Exporter CSV
-              </Button>
-              <button onClick={() => setSelected(null)} className="text-sm text-muted-foreground hover:text-foreground">
-                Fermer
-              </button>
-            </div>
-          </div>
-          {selected.summary && (
-            <div className="mb-4 rounded-lg bg-primary/5 p-4">
-              <p className="text-xs font-medium text-muted-foreground">Résumé exécutif</p>
-              <p className="mt-1 text-sm">{selected.summary}</p>
-            </div>
-          )}
-          <div className="prose prose-sm max-w-none text-sm leading-relaxed">
-            <ReactMarkdown>{selected.content || ""}</ReactMarkdown>
-          </div>
-        </div>
+        <ReportViewer report={selected} onClose={() => setSelected(null)} onExport={() => exportReport(selected)} />
       )}
 
       {/* History */}
@@ -156,20 +120,30 @@ export default function Rapports() {
         ) : (
           <div className="space-y-2">
             {reports.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Rapport {r.type}</p>
-                    <p className="text-xs text-muted-foreground">{r.period} · {new Date(r.created_date).toLocaleDateString("fr-CA")}</p>
+              <div key={r.id} className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-accent/30">
+                <button onClick={() => setSelected(r)} className="flex flex-1 items-center gap-3 text-left">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+                    <FileText className="h-4.5 w-4.5 text-muted-foreground" />
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeBadge[r.type] || typeBadge.quotidien}`}>
+                        {typeLabel[r.type] || r.type}
+                      </span>
+                      <span className="text-sm font-medium">{r.period}</span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {r.created_date ? new Date(r.created_date).toLocaleString("fr-CA", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                    </div>
+                  </div>
+                </button>
+                <div className="flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
                   <Button size="sm" variant="ghost" onClick={() => setSelected(r)}>Consulter</Button>
-                  <Button size="sm" variant="ghost" onClick={() => exportReport(r)}>
+                  <button onClick={() => exportReport(r)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" title="Exporter CSV">
                     <Download className="h-4 w-4" />
-                  </Button>
-                  <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-red-600">
+                  </button>
+                  <button onClick={() => remove(r.id)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600" title="Supprimer">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
