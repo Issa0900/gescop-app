@@ -4,10 +4,11 @@ import {
   LayoutDashboard, Brain, Upload, BarChart3, AlertTriangle, ShieldAlert, Lightbulb,
   TrendingUp, Calculator, CheckSquare, Bell, Target, FileText, MessageSquare,
   Radar as RadarIcon, History, Book, Settings, Menu, X, Sparkles, ChevronDown,
-  Users, Package, Megaphone, Wallet, PanelLeftClose, PanelLeftOpen,
+  Users, Package, Megaphone, Wallet, PanelLeftClose, PanelLeftOpen, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
+import { useAuth } from "@/lib/AuthContext";
 
 const navGroups = [
   {
@@ -66,6 +67,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState({ Accueil: true, Pilotage: true, Intelligence: true, Données: true, Outils: true });
   const { company } = useCompany();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -189,6 +191,30 @@ export default function Sidebar({ compact, onToggleCompact }) {
           <div className="space-y-0.5">
             {bottomItems.map((item) => renderNavItem(item))}
           </div>
+          {!compact && user && (
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium text-sidebar-accent-foreground">{user.full_name || user.email}</p>
+                <p className="truncate text-[10px] text-sidebar-foreground/50">{user.email}</p>
+              </div>
+              <button
+                onClick={() => logout()}
+                title="Se déconnecter"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {compact && user && (
+            <button
+              onClick={() => logout()}
+              title="Se déconnecter"
+              className="mt-1 flex w-full justify-center rounded-lg px-0 py-2 text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Compact toggle + footer */}
