@@ -75,14 +75,15 @@ export default function Sidebar({ compact, onToggleCompact }) {
   const location = useLocation();
 
   const activeGroup = navGroups.find((g) => g.items.some((i) => i.to === location.pathname))?.label || "Accueil";
-  const [expanded, setExpanded] = useState({ [activeGroup]: true });
+  const [expanded, setExpanded] = useState(
+    Object.fromEntries(navGroups.map((g) => [g.label, true]))
+  );
 
   useEffect(() => {
-    setExpanded({ [activeGroup]: true });
+    setExpanded((e) => ({ ...e, [activeGroup]: true }));
   }, [activeGroup]);
 
-  const toggle = (label) =>
-    setExpanded((e) => (e[label] ? { [label]: false } : { [label]: true }));
+  const toggle = (label) => setExpanded((e) => ({ ...e, [label]: !e[label] }));
 
   const renderNavItem = (item) => (
     <NavLink
