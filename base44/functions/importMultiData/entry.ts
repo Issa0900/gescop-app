@@ -3,7 +3,7 @@ import { normalizeRow } from "../../shared/importUtils.ts";
 
 // Map file name patterns to entity names (order matters: more specific first)
 const FILE_ENTITY_MAP = [
-  { pattern: /marketing.*daily/i, entity: "CampaignDaily" },
+  { pattern: /campaign.*daily|marketing.*daily|daily.*campaign/i, entity: "CampaignDaily" },
   { pattern: /interaction/i, entity: "Interaction" },
   { pattern: /transaction/i, entity: "Transaction" },
   { pattern: /inventaire|inventory/i, entity: "Inventory" },
@@ -63,6 +63,7 @@ export default async function(req) {
           source_type: sourceType,
           file_name,
           file_url,
+          entity_type: entityName,
           status: "en_cours",
           rows_processed: 0,
           rows_quarantined: 0,
@@ -127,7 +128,15 @@ export default async function(req) {
             await base44.entities[entityName].bulkCreate(batch);
             created += batch.length;
           } catch {
-            quarantined += batch.length;
+            // Batch failed — retry row by row to salvage valid records
+            for (const row of batch) {
+              try {
+                await base44.entities[entityName].create(row);
+                created++;
+              } catch {
+                quarantined++;
+              }
+            }
           }
         }
 

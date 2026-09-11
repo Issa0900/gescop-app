@@ -70,6 +70,44 @@ export function normalizeEnums(row: Record<string, any>, properties: Record<stri
 
 const BUILTIN_FIELDS = ["id", "created_date", "updated_date", "created_by_id"];
 
+// Coerce a value to the schema property type (date, number, boolean)
+export function coerceType(value: any, prop: any): any {
+  if (value === null || value === undefined || value === "") return value;
+  if (!prop || !prop.type) return value;
+  switch (prop.type) {
+    case "string":
+      if (prop.format === "date" && typeof value === "string") {
+        // Handle ISO datetime, DD/MM/YYYY, DD-MM-YYYY → YYYY-MM-DD
+        let s = value.trim();
+        if (s.includes("T")) s = s.slice(0, 10);
+        // DD/MM/YYYY or DD-MM-YYYY
+        const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+        // YYYY/MM/DD or YYYY-MM-DD already
+        if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s)) {
+          const parts = s.split(/[\/\-]/);
+          return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+        }
+        return s.slice(0, 10);
+      }
+      return String(value);
+    case "number": {
+      if (typeof value === "number") return value;
+      const n = Number(String(value).replace(/[,$\s]/g, ""));
+      return isNaN(n) ? value : n;
+    }
+    case "boolean": {
+      if (typeof value === "boolean") return value;
+      const s = String(value).toLowerCase().trim();
+      if (["true", "oui", "1", "yes", "vrai", "y"].includes(s)) return true;
+      if (["false", "non", "0", "no", "faux", "n"].includes(s)) return false;
+      return value;
+    }
+    default:
+      return value;
+  }
+}
+
 // Normalize a single row for a given entity
 export function normalizeRow(
   entityName: string,
@@ -101,14 +139,14 @@ export function normalizeRow(
     };
   }
 
-  // For other entities: normalize enums, keep only schema fields, strip empty values
+  // For other entities: normalize enums, coerce types, keep only schema fields, strip empty values
   const withEnums = normalizeEnums(r, properties || {});
   const cleaned: Record<string, any> = {};
   for (const [k, v] of Object.entries(withEnums)) {
     if (!properties || !properties[k]) continue;
     if (BUILTIN_FIELDS.includes(k)) continue;
     if (v === null || v === undefined || v === "") continue;
-    cleaned[k] = v;
+    cleaned[k] = coerceType(v, properties[k]);
   }
   return cleaned;
 }

@@ -18,6 +18,9 @@
     "file_url": {
       "type": "string"
     },
+    "entity_type": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [

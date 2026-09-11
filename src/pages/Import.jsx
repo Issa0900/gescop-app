@@ -74,13 +74,16 @@ export default function ImportPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Supprimer cet import effacera aussi toutes les transactions associées. Continuer ?")) return;
+  const handleDelete = async (imp) => {
+    const entityName = imp.entity_type || "Transaction";
+    if (!window.confirm(`Supprimer cet import effacera aussi tous les enregistrements ${entityName} associés. Continuer ?`)) return;
     try {
-      await base44.entities.Transaction.deleteMany({ import_id: id });
-      await base44.entities.Import.delete(id);
+      if (base44.entities[entityName]) {
+        await base44.entities[entityName].deleteMany({ import_id: imp.id });
+      }
+      await base44.entities.Import.delete(imp.id);
       qc.invalidateQueries();
-      toast({ title: "Import et transactions supprimés" });
+      toast({ title: `Import et ${entityName} supprimés` });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     }
@@ -258,6 +261,7 @@ export default function ImportPage() {
               <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Fichier</th>
+                  <th className="px-4 py-3 font-medium">Entité</th>
                   <th className="px-4 py-3 font-medium">Type</th>
                   <th className="px-4 py-3 font-medium">Lignes</th>
                   <th className="px-4 py-3 font-medium">Qualité</th>
@@ -270,6 +274,7 @@ export default function ImportPage() {
                 {imports.map((imp) => (
                   <tr key={imp.id} className="hover:bg-muted/30">
                     <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={imp.file_name}>{imp.file_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{imp.entity_type || "Transaction"}</td>
                     <td className="px-4 py-3 uppercase text-muted-foreground">{imp.source_type}</td>
                     <td className="px-4 py-3">{imp.rows_processed || 0}</td>
                     <td className="px-4 py-3">
@@ -288,7 +293,7 @@ export default function ImportPage() {
                       {new Date(imp.created_date).toLocaleDateString("fr-CA")}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <button onClick={() => handleDelete(imp.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600">
+                      <button onClick={() => handleDelete(imp)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>

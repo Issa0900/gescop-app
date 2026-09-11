@@ -18,6 +18,7 @@ export default async function(req) {
       source_type,
       file_name: file_name || "import",
       file_url,
+      entity_type: "Transaction",
       status: "en_cours",
       rows_processed: 0,
       rows_quarantined: 0,
