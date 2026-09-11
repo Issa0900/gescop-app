@@ -5,6 +5,9 @@
     "name": {
       "type": "string"
     },
+    "website": {
+      "type": "string"
+    },
     "sector": {
       "type": "string"
     },

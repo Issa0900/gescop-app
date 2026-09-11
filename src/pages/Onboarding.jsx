@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, ArrowRight, Check } from "lucide-react";
+import { Sparkles, ArrowRight, Check, Loader2, Globe, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -39,8 +39,10 @@ export default function Onboarding() {
   const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [form, setForm] = useState({
     name: "",
+    website: "",
     sector: "",
     location: "Québec, Canada",
     employee_count: 1,
@@ -52,6 +54,43 @@ export default function Onboarding() {
     tools: "",
     objectives: [],
   });
+
+  const handleEnrich = async () => {
+    if (!form.website) {
+      toast({ title: "Entrez d'abord l'URL de votre site web", variant: "destructive" });
+      return;
+    }
+    setEnriching(true);
+    try {
+      let url = form.website.trim();
+      if (!/^https?:\/\//.test(url)) url = "https://" + url;
+      const res = await base44.functions.invoke("enrichFromWebsite", {
+        website_url: url,
+        company_name: form.name,
+      });
+      const data = res.data || res;
+      if (data.error) {
+        toast({ title: data.error, variant: "destructive" });
+      } else {
+        const info = data.company_info || {};
+        setForm((f) => ({
+          ...f,
+          name: f.name || info.name || "",
+          sector: f.sector || info.sector || "",
+          location: f.location !== "Québec, Canada" ? f.location : (info.location || f.location),
+          business_model: f.business_model || info.business_model || "",
+          products: f.products || info.products || "",
+          services: f.services || info.services || "",
+          clientele: f.clientele || info.clientele || "",
+        }));
+        toast({ title: "Informations récupérées depuis votre site web" });
+      }
+    } catch (e) {
+      toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   const toggleObjective = (obj) => {
     setForm((f) => ({
@@ -124,6 +163,35 @@ export default function Onboarding() {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Ex. Boulangerie du Quartier"
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Site web de l'entreprise</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        className="pl-9"
+                        value={form.website}
+                        onChange={(e) => setForm({ ...form, website: e.target.value })}
+                        placeholder="Ex. www.monsite.ca"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleEnrich}
+                      disabled={enriching}
+                    >
+                      {enriching ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Recherche…</>
+                      ) : (
+                        <><Wand2 className="mr-2 h-4 w-4" /> Auto-remplir</>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Entrez l'URL de votre site et cliquez pour remplir automatiquement les champs ci-dessous.
+                  </p>
                 </div>
                 <div>
                   <Label>Secteur</Label>
