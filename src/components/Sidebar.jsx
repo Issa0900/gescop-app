@@ -12,6 +12,7 @@ import {
   Bell,
   FileText,
   MessageSquare,
+  Book,
   Settings,
   Menu,
   X,
@@ -32,6 +33,7 @@ const navItems = [
   { to: "/alertes", label: "Alertes", icon: Bell },
   { to: "/rapports", label: "Rapports", icon: FileText },
   { to: "/assistant", label: "Assistant IA", icon: MessageSquare },
+  { to: "/manuel", label: "Manuel", icon: Book },
   { to: "/parametres", label: "Paramètres", icon: Settings },
 ];
 

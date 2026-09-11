@@ -21,6 +21,7 @@ import Alertes from '@/pages/Alertes';
 import Rapports from '@/pages/Rapports';
 import Assistant from '@/pages/Assistant';
 import Parametres from '@/pages/Parametres';
+import Manuel from '@/pages/Manuel';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -63,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="/rapports" element={<Rapports />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/parametres" element={<Parametres />} />
+        <Route path="/manuel" element={<Manuel />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
