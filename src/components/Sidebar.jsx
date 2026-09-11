@@ -99,7 +99,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
         <>
           {isActive && <span className={cn("absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary", compact ? "left-0" : "left-0")} />}
           <item.icon
-            className={cn("shrink-0 transition-colors duration-200", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground")}
+            className={cn("shrink-0 transition-colors duration-200", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-foreground")}
             style={{ width: 17, height: 17 }}
           />
           {!compact && <span className="truncate">{item.label}</span>}
@@ -139,7 +139,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             )}
           </div>
           {!compact && (
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden">
+            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden">
               <X className="h-5 w-5" />
             </button>
           )}
@@ -151,9 +151,9 @@ export default function Sidebar({ compact, onToggleCompact }) {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{company.name}</p>
-                <p className="truncate text-xs text-sidebar-foreground/50">{company.sector || "—"}</p>
+                <p className="truncate text-xs text-sidebar-foreground/70">{company.sector || "—"}</p>
               </div>
-              <ChevronDown className="h-4 w-4 shrink-0 text-sidebar-foreground/40" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-sidebar-foreground/60" />
             </div>
           </div>
         )}
@@ -167,7 +167,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
                 {!compact && (
                   <button
                     onClick={() => toggle(group.label)}
-                    className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 transition-colors hover:text-sidebar-foreground/70"
+                    className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground/90"
                   >
                     <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", !isExpanded && "-rotate-90")} />
                     {group.label}
@@ -196,14 +196,14 @@ export default function Sidebar({ compact, onToggleCompact }) {
           <button
             onClick={onToggleCompact}
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               compact && "justify-center px-0"
             )}
           >
             {compact ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             {!compact && "Réduire la sidebar"}
           </button>
-          {!compact && <p className="mt-2 px-3 text-[10px] text-sidebar-foreground/30">Données hébergées au Canada · Loi 25</p>}
+          {!compact && <p className="mt-2 px-3 text-[10px] text-sidebar-foreground/50">Données hébergées au Canada · Loi 25</p>}
         </div>
       </aside>
     </>
