@@ -10,6 +10,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Layout from '@/components/Layout';
 import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
+import Insights from '@/pages/Insights';
 import ImportPage from '@/pages/Import';
 import Kpis from '@/pages/Kpis';
 import Anomalies from '@/pages/Anomalies';
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="/importer" element={<ImportPage />} />
         <Route path="/kpis" element={<Kpis />} />
         <Route path="/anomalies" element={<Anomalies />} />

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
+  Brain,
   Upload,
   BarChart3,
   AlertTriangle,
@@ -23,6 +24,7 @@ import { useCompany } from "@/hooks/useCompany";
 
 const navItems = [
   { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
+  { to: "/insights", label: "Insights", icon: Brain },
   { to: "/importer", label: "Importer", icon: Upload },
   { to: "/kpis", label: "KPI", icon: BarChart3 },
   { to: "/anomalies", label: "Anomalies", icon: AlertTriangle },
