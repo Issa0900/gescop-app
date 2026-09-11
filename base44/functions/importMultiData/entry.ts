@@ -5,11 +5,11 @@ const FILE_ENTITY_MAP = [
   { pattern: /marketing.*daily/i, entity: "CampaignDaily" },
   { pattern: /interaction/i, entity: "Interaction" },
   { pattern: /transaction/i, entity: "Transaction" },
+  { pattern: /inventaire|inventory/i, entity: "Inventory" },
   { pattern: /order|commande/i, entity: "Order" },
   { pattern: /sale/i, entity: "Order" },
   { pattern: /customer|client/i, entity: "Customer" },
   { pattern: /product|produit/i, entity: "Product" },
-  { pattern: /inventaire|inventory/i, entity: "Inventory" },
   { pattern: /supplier|fournisseur/i, entity: "Supplier" },
   { pattern: /purchase|achat/i, entity: "Purchase" },
   { pattern: /campaign/i, entity: "Campaign" },
@@ -31,10 +31,33 @@ function detectEntity(fileName) {
   return null;
 }
 
+// Map common French column names to schema field names
+const FIELD_ALIASES = {
+  "categorie": "category", "catégorie": "category",
+  "nom": "name", "nom du produit": "product_name", "nom_produit": "product_name",
+  "prix": "price", "prix_vente": "selling_price", "prix de vente": "selling_price",
+  "cout": "cost", "cout_achat": "purchase_cost", "coût": "cost", "coût_achat": "purchase_cost",
+  "marge": "gross_margin",
+  "quantite": "quantity", "quantité": "quantity",
+  "date_achat": "date", "date_vente": "date", "date_commande": "date",
+  "client_id": "customer_id", "produit_id": "product_id",
+  "fournisseur_id": "supplier_id", "fournisseur_nom": "supplier_name",
+  "employe_id": "employee_id", "employé_id": "employee_id",
+  "montant": "amount", "total": "total", "sous_total": "subtotal",
+  "statut": "status", "canal": "channel", "segment": "segment",
+  "ventes_mensuelles": "monthly_sales", "ventes mensuelles": "monthly_sales",
+  "niveau_stock": "inventory_level", "seuil_reappro": "reorder_point",
+  "date_lancement": "launch_date", "date_embauche": "hire_date",
+  "type_emploi": "employment_type", "taux_horaire": "hourly_rate",
+  "heures_semaine": "weekly_hours", "departement": "department",
+};
+
 function normalizeKeys(row) {
   const out = {};
   for (const [k, v] of Object.entries(row || {})) {
-    out[k.toLowerCase().trim()] = v;
+    const lower = k.toLowerCase().trim();
+    const alias = FIELD_ALIASES[lower] || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")] || lower;
+    out[alias] = v;
   }
   return out;
 }
@@ -97,13 +120,17 @@ function normalizeRow(entityName, row, importId, properties) {
       import_id: importId,
     };
   }
-  // For other entities: normalize enums and strip empty/null values to avoid schema rejection
+  // For other entities: normalize enums, keep only schema fields, strip empty values
   const withEnums = normalizeEnums(r, properties);
   const cleaned = {};
   for (const [k, v] of Object.entries(withEnums)) {
-    if (v !== null && v !== undefined && v !== "") {
-      cleaned[k] = v;
-    }
+    // Skip fields not in the schema (prevents bulkCreate rejection)
+    if (!properties || !properties[k]) continue;
+    // Skip built-in fields that can't be set
+    if (["id", "created_date", "updated_date", "created_by_id"].includes(k)) continue;
+    // Skip empty values
+    if (v === null || v === undefined || v === "") continue;
+    cleaned[k] = v;
   }
   return cleaned;
 }
