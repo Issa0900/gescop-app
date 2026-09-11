@@ -23,6 +23,7 @@ import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
 import TimeFilter from "@/components/dashboard/TimeFilter";
 import { computeDomainScores } from "@/lib/domainScores";
+import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
 
 const analysisSteps = [
   "Vérification des données", "Calcul des tendances", "Détection des anomalies",
@@ -51,19 +52,6 @@ const formatRelativeTime = (date) => {
   if (hours < 24) return `il y a ${hours} h`;
   return `il y a ${Math.floor(hours / 24)} j`;
 };
-
-function monthlyAgg(items, dateField, valueField, agg = "sum") {
-  const byMonth = {};
-  (items || []).forEach((item) => {
-    const m = (item[dateField] || "").slice(0, 7);
-    if (!m) return;
-    const v = Number(item[valueField]) || 0;
-    if (agg === "sum") byMonth[m] = (byMonth[m] || 0) + v;
-    else if (agg === "count") byMonth[m] = (byMonth[m] || 0) + 1;
-    else if (agg === "last") byMonth[m] = v;
-  });
-  return Object.entries(byMonth).sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([month, val]) => ({ month, val }));
-}
 
 export default function Dashboard() {
   const { company, isLoading: loadingCompany } = useCompany();
@@ -129,6 +117,10 @@ export default function Dashboard() {
     queryKey: ["campaigns-dashboard"],
     queryFn: async () => { const l = await base44.entities.Campaign.list(); return l || []; },
   });
+  const { data: campaignDaily } = useQuery({
+    queryKey: ["campaign-daily-dashboard"],
+    queryFn: async () => { const l = await base44.entities.CampaignDaily.list("-date", 500); return l || []; },
+  });
   const [showDetails, setShowDetails] = useState(false);
   const [period, setPeriod] = useState("month");
 
@@ -190,29 +182,29 @@ export default function Dashboard() {
     const allTxnExpenses = (transactions || []).filter((t) => t.type === "expense");
     const allExpenses = expenseRecords || [];
 
-    const revenueMonthly = monthlyAgg(allIncomes, "date", "amount");
-    const expenseMonthly = monthlyAgg(allTxnExpenses, "date", "amount");
+    // Flow metrics (sums/counts) use COMPLETE months only: the in-progress month
+    // holds a few days of data and would read as a collapse.
+    const revenueMonthly = monthlyAggComplete(allIncomes, "date", "amount");
+    const expenseMonthly = monthlyAggComplete(allTxnExpenses, "date", "amount");
     const marginMonthly = revenueMonthly.map((m) => {
       const exp = expenseMonthly.find((e) => e.month === m.month);
       const inc = m.val;
       const expVal = exp ? exp.val : 0;
       return { month: m.month, val: inc > 0 ? ((inc - expVal) / inc) * 100 : 0 };
     });
+    // Cash is a balance, not a flow: the running month's closing balance is valid.
     const cashMonthly = monthlyAgg(cashflow || [], "date", "closing_cash", "last");
-    const costsMonthly = monthlyAgg(allExpenses, "date", "amount");
-    const clientsMonthly = monthlyAgg(customers || [], "acquisition_date", "customer_id", "count");
+    const costsMonthly = monthlyAggComplete(allExpenses, "date", "amount");
+    const clientsMonthly = monthlyAggComplete(customers || [], "acquisition_date", "customer_id", "count");
 
     const sparkCount = { month: 3, quarter: 6, year: 12 }[period];
     const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
-    const lastVal = (arr) => (arr.length > 0 ? arr[arr.length - 1].val : 0);
-    const prevVal = (arr) => (arr.length > 1 ? arr[arr.length - 2].val : 0);
-    const trendPct = (curr, prev) => (prev > 0 ? ((curr - prev) / prev) * 100 : 0);
 
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
     const marginTrend = trendPct(lastVal(marginMonthly), prevVal(marginMonthly));
     const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
-    const aovRevMonthly = monthlyAgg(orders || [], "date", "total");
-    const aovCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
+    const aovRevMonthly = monthlyAggComplete(orders || [], "date", "total");
+    const aovCntMonthly = monthlyAggComplete(orders || [], "date", "total", "count");
     const aovMonthly = aovRevMonthly.map((m) => {
       const cnt = aovCntMonthly.find((c) => c.month === m.month);
       return { month: m.month, val: cnt && cnt.val > 0 ? m.val / cnt.val : 0 };
@@ -295,8 +287,8 @@ export default function Dashboard() {
 
   // === DIMENSIONS ===
   const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, products, inventory, cashflow, expenses: expenseRecords,
-  }), [transactions, orders, customers, campaigns, products, inventory, cashflow, expenseRecords]);
+    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses: expenseRecords,
+  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenseRecords]);
 
   const dimTrendDeltas = useMemo(() => {
     if (!analysisRuns || analysisRuns.length === 0) return {};

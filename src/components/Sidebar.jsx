@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/lib/AuthContext";
+import LiveAlertBadge from "@/components/sidebar/LiveAlertBadge";
 
 const navGroups = [
   {
@@ -101,6 +102,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             style={{ width: 17, height: 17 }}
           />
           {!compact && <span className="truncate">{item.label}</span>}
+          {item.to === "/alertes" && <LiveAlertBadge compact={compact} />}
         </>
       )}
     </NavLink>
