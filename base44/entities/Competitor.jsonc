@@ -42,6 +42,9 @@
     },
     "estimated_revenue": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

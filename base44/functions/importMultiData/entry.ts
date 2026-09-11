@@ -117,7 +117,7 @@ export default async function(req) {
         let quarantined = 0;
         rows.forEach((row) => {
           if (!row || typeof row !== "object") { quarantined++; return; }
-          const normalized = normalizeRow(entityName, row, importRec.id, entityProperties);
+          const normalized = normalizeRow(entityName, row, importRec.id, entityProperties, sourceType);
           toCreate.push(normalized);
         });
 

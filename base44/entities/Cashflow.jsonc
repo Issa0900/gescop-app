@@ -26,6 +26,9 @@
     },
     "net_cash_flow": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

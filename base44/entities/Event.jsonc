@@ -30,6 +30,9 @@
     },
     "impact_area": {
       "type": "string"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

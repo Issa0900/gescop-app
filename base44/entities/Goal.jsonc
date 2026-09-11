@@ -45,6 +45,9 @@
         "depasse",
         "non_atteint"
       ]
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

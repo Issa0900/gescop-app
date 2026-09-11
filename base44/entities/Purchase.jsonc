@@ -43,6 +43,9 @@
         "retard",
         "annule"
       ]
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

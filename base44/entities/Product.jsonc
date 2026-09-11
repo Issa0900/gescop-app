@@ -58,6 +58,9 @@
     },
     "reorder_point": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

@@ -29,6 +29,9 @@
     },
     "payment_method": {
       "type": "string"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

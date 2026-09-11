@@ -113,7 +113,8 @@ export function normalizeRow(
   entityName: string,
   row: Record<string, any>,
   importId: string,
-  properties: Record<string, any> | null
+  properties: Record<string, any> | null,
+  sourceType?: string
 ): Record<string, any> {
   const r = normalizeKeys(row);
 
@@ -124,14 +125,14 @@ export function normalizeRow(
     const typeNorm = stripAccents(type);
     if (["revenu", "revenue", "credit", "entree", "income"].includes(typeNorm)) type = "income";
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
-    if (["remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "refund";
+    if (["remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "expense";
     return {
       date: (r.date || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
       description: r.description || "",
       amount: Math.abs(amount),
       type,
       category: r.category || "",
-      source: "csv",
+      source: sourceType || "csv",
       currency: "CAD",
       client: r.client || r.customer_id || "",
       product: r.product || r.product_id || "",
@@ -148,5 +149,6 @@ export function normalizeRow(
     if (v === null || v === undefined || v === "") continue;
     cleaned[k] = coerceType(v, properties[k]);
   }
+  if (importId) cleaned["import_id"] = importId;
   return cleaned;
 }

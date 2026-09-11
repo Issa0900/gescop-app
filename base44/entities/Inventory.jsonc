@@ -46,6 +46,9 @@
         "faible",
         "proche_rupture"
       ]
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

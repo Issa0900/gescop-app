@@ -84,6 +84,9 @@
     },
     "status": {
       "type": "string"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

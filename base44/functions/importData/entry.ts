@@ -60,7 +60,7 @@ export default async function(req) {
     const toCreate = [];
     let quarantined = 0;
     rows.forEach((r) => {
-      const normalized = normalizeRow("Transaction", r, importRec.id, null);
+      const normalized = normalizeRow("Transaction", r, importRec.id, null, source_type);
       if (!normalized.date || isNaN(normalized.amount)) {
         quarantined++;
         return;

@@ -46,6 +46,9 @@
         "conge",
         "essai"
       ]
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

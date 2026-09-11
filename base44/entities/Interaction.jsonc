@@ -54,6 +54,9 @@
     },
     "satisfaction_score": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [

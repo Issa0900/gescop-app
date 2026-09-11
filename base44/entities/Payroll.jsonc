@@ -28,6 +28,9 @@
     },
     "total_cost": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string"
     }
   },
   "required": [
