@@ -25,15 +25,56 @@ export const FIELD_ALIASES: Record<string, string> = {
   "type_emploi": "employment_type", "taux_horaire": "hourly_rate",
   "heures_semaine": "weekly_hours", "departement": "department",
   "nom_famille": "last_name", "prenom": "first_name",
+  "first name": "first_name", "last name": "last_name",
   "courriel": "email", "ville": "city", "region": "region",
   "pays": "country", "telephone": "phone",
+  "total_commandes": "total_orders", "nombre_commandes": "total_orders",
+  "ca_total": "total_revenue", "chiffre_affaires": "total_revenue", "ca total": "total_revenue",
+  "panier_moyen": "average_order_value", "valeur_panier": "average_order_value",
+  "valeur_vie": "lifetime_value", "ltv": "lifetime_value", "valeur vie client": "lifetime_value",
+  "risque_churn": "churn_risk", "risque de churn": "churn_risk",
+  "type_client": "customer_type", "type de client": "customer_type",
+  "premiere_commande": "first_purchase_date", "premiere achat": "first_purchase_date",
+  "derniere_commande": "last_purchase_date", "dernier achat": "last_purchase_date",
+  "date_acquisition": "acquisition_date", "date d acquisition": "acquisition_date",
+  "id_client": "customer_id", "id produit": "product_id",
+  "id_fournisseur": "supplier_id", "id_employe": "employee_id",
+  "id_campagne": "campaign_id", "nom_campagne": "campaign_name",
+  "id_concurrent": "competitor_id",
+  "cout_unitaire": "unit_cost", "cout_total": "total_cost",
+  "prix_unitaire": "unit_price", "quantite_vendue": "quantity",
+  "marge_brute": "gross_margin", "taux_clic": "ctr",
+  "taux_conversion": "conversion_rate", "cout_par_clic": "cpc",
+  "nombre_impressions": "impressions", "nombre_clics": "clicks",
+  "nombre_conversions": "conversions", "portee": "reach",
+  "stock_ouverture": "opening_stock", "stock_cloture": "closing_stock",
+  "stock_final": "closing_stock", "stock_initial": "opening_stock",
+  "valeur_stock": "inventory_value", "jours_inventaire": "days_in_inventory",
+  "etat_stock": "stock_status", "statut_stock": "stock_status",
+  "delai_livraison": "average_delivery_days", "delai_moyen": "average_delivery_days",
+  "qualite_score": "quality_score", "fiabilite_score": "reliability_score",
+  "variation_prix": "price_change_last_12_months",
+  "volume_achat": "purchase_volume", "volume_ventes": "monthly_sales",
+  "position_prix": "price_position", "position_marche": "market_position",
+  "chiffre_affaire_estime": "estimated_revenue", "nombre_employes": "employee_count",
+  "note_moyenne": "average_rating",
 };
 
-export function normalizeKeys(row: Record<string, any>): Record<string, any> {
+export function normalizeKeys(row: Record<string, any>, properties?: Record<string, any> | null): Record<string, any> {
   const out: Record<string, any> = {};
+  const schemaFields = properties ? Object.keys(properties) : [];
   for (const [k, v] of Object.entries(row || {})) {
     const lower = k.toLowerCase().trim();
     const alias = FIELD_ALIASES[lower] || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")] || lower;
+    // If alias is not a schema field, try fuzzy match against schema field names
+    if (schemaFields.length > 0 && !schemaFields.includes(alias)) {
+      const noAccents = stripAccents(lower).replace(/[\s-]/g, "_");
+      const fuzzyMatch = schemaFields.find((f) => stripAccents(f.toLowerCase()) === noAccents);
+      if (fuzzyMatch) {
+        out[fuzzyMatch] = v;
+        continue;
+      }
+    }
     out[alias] = v;
   }
   return out;
@@ -116,7 +157,7 @@ export function normalizeRow(
   properties: Record<string, any> | null,
   sourceType?: string
 ): Record<string, any> {
-  const r = normalizeKeys(row);
+  const r = normalizeKeys(row, properties);
 
   if (entityName === "Transaction") {
     const amount = Number(r.amount) || 0;
