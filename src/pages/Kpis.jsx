@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import KpiCard from "@/components/kpis/KpiCard";
 import KpiTrendChart from "@/components/kpis/KpiTrendChart";
+import DomainScoreList from "@/components/kpis/DomainScoreList";
 import { BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
@@ -353,37 +354,19 @@ export default function Kpis() {
       {trendData.length > 0 && <KpiTrendChart data={trendData} />}
 
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Vue d'ensemble des domaines</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {Object.entries(domainLabels).map(([key, label]) => {
-            const s = rtScores[key];
-            if (!s) return null;
-            const statusLabel = s.score >= 75 ? "Bon" : s.score >= 55 ? "Stable" : s.score >= 35 ? "Attention" : "Critique";
-            const statusColor = s.score >= 75 ? "text-emerald-600" : s.score >= 55 ? "text-blue-600" : s.score >= 35 ? "text-orange-600" : "text-red-600";
-            const TIcon = s.trend === "up" ? "▲" : s.trend === "down" ? "▼" : "—";
-            // A downward trend on a healthy domain is a warning, not an emergency:
-            // amber avoids a green "Bon" sitting next to an alarming red arrow.
-            const trendColor =
-              s.trend === "up"
-                ? "text-emerald-600"
-                : s.trend === "down"
-                  ? s.score >= 55
-                    ? "text-amber-600"
-                    : "text-red-600"
-                  : "text-muted-foreground";
-            return (
-              <div key={key} className="animate-slide-up rounded-xl border border-border bg-card p-4">
-                <p className="text-xs font-medium text-muted-foreground">{label}</p>
-                <p className="mt-1 text-2xl font-bold">{s.score}</p>
-                <div className="mt-1 flex items-center gap-1">
-                  <span className={`text-xs ${trendColor}`}>{TIcon}</span>
-                  <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
-                </div>
-                {s.explanation && <p className="mt-1 text-xs text-muted-foreground">{s.explanation}</p>}
-              </div>
-            );
-          })}
-        </div>
+        <h2 className="mb-1 text-lg font-semibold">Vue d'ensemble des domaines</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Du plus faible au plus fort · score sur 100</p>
+        <DomainScoreList
+          domains={Object.entries(domainLabels)
+            .filter(([key]) => rtScores[key])
+            .map(([key, label]) => ({
+              key,
+              label,
+              score: rtScores[key].score,
+              trend: rtScores[key].trend,
+              explanation: rtScores[key].explanation,
+            }))}
+        />
       </div>
 
       {Object.entries(domainLabels).map(([domain, label]) => {
