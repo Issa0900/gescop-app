@@ -16,6 +16,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCompany } from "@/hooks/useCompany";
+import { AlertTriangle } from "lucide-react";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -26,6 +28,8 @@ export default function ImportPage() {
   const [processing, setProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [purging, setPurging] = useState(false);
+  const { company } = useCompany();
 
   const { data: imports, isLoading } = useQuery({
     queryKey: ["imports"],
@@ -80,6 +84,28 @@ export default function ImportPage() {
       toast({ title: "Import et transactions supprimés" });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
+    }
+  };
+
+  const handlePurgeAll = async () => {
+    if (!window.confirm("Cela supprimera DÉFINITIVEMENT toutes vos transactions, KPI, anomalies, risques, opportunités et recommandations. Continuer ?")) return;
+    try {
+      setPurging(true);
+      await base44.entities.Transaction.deleteMany({});
+      await base44.entities.Kpi.deleteMany({});
+      await base44.entities.Anomaly.deleteMany({});
+      await base44.entities.Risk.deleteMany({});
+      await base44.entities.Opportunity.deleteMany({});
+      await base44.entities.Recommendation.deleteMany({});
+      if (company) {
+        await base44.entities.Company.update(company.id, { health_score: 0, dimension_scores: {}, last_analysis_date: null });
+      }
+      qc.invalidateQueries();
+      toast({ title: "Toutes les données ont été purgées" });
+    } catch (e) {
+      toast({ title: "Erreur: " + e.message, variant: "destructive" });
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -230,6 +256,22 @@ export default function ImportPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="rounded-xl border border-red-200 bg-red-50/30 p-5">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-900">Purger toutes les données</p>
+            <p className="mt-1 text-sm text-red-700">
+              Supprime définitivement toutes les transactions, KPI, anomalies, risques, opportunités et recommandations. Utile si des données orphelines subsistent après la suppression des imports.
+            </p>
+          </div>
+          <Button variant="destructive" onClick={handlePurgeAll} disabled={purging}>
+            {purging ? "Purge en cours…" : "Tout supprimer"}
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">
