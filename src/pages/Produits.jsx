@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
+import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -27,6 +28,17 @@ const stockLabels = {
   proche_rupture: "Proche rupture",
 };
 
+const monthLabels = {
+  "01": "jan", "02": "fév", "03": "mar", "04": "avr",
+  "05": "mai", "06": "jun", "07": "jul", "08": "aoû",
+  "09": "sep", "10": "oct", "11": "nov", "12": "déc",
+};
+
+function formatMonthLabel(m) {
+  const [, mm] = (m || "").split("-");
+  return monthLabels[mm] || m;
+}
+
 export default function Produits() {
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
@@ -36,8 +48,12 @@ export default function Produits() {
     queryKey: ["inventory-summary"],
     queryFn: async () => (await base44.entities.Inventory.list("-date", 500)) || [],
   });
+  const { data: orders, isLoading: lo } = useQuery({
+    queryKey: ["orders-produits"],
+    queryFn: async () => (await base44.entities.Order.list("-date", 500)) || [],
+  });
 
-  if (lp || li) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (lp || li || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
   if (!products || products.length === 0) {
     return (
       <EmptyState
@@ -53,10 +69,27 @@ export default function Produits() {
   const dormantCount = inventory.filter((i) => i.stock_status === "dormant").length;
   const nearRupture = products.filter((p) => p.reorder_point > 0 && (p.inventory_level || 0) <= (p.reorder_point || 0));
 
-  const topBySales = [...products].sort((a, b) => (b.monthly_sales || 0) - (a.monthly_sales || 0)).slice(0, 10);
+  // Compute actual sales per product from orders (most recent month)
+  const orderMonths = (orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean).sort();
+  const latestMonth = orderMonths.length > 0 ? orderMonths[orderMonths.length - 1] : null;
+  const salesByProduct = {};
+  (orders || []).forEach((o) => {
+    const m = (o.date || "").slice(0, 7);
+    if (latestMonth && m !== latestMonth) return;
+    const pid = o.product_id;
+    if (!pid) return;
+    salesByProduct[pid] = (salesByProduct[pid] || 0) + (Number(o.quantity) || 0);
+  });
+  const topBySales = [...products]
+    .map((p) => ({
+      ...p,
+      _recentSales: salesByProduct[p.product_id] || (latestMonth ? 0 : (p.monthly_sales || 0)),
+    }))
+    .sort((a, b) => (b._recentSales || 0) - (a._recentSales || 0))
+    .slice(0, 10);
   const topBarData = topBySales.map((p) => ({
     name: (p.product_name || p.product_id || "").slice(0, 20),
-    ventes: p.monthly_sales || 0,
+    ventes: p._recentSales || 0,
     marge: Math.round(p.gross_margin || 0),
   }));
 
@@ -86,9 +119,17 @@ export default function Produits() {
         <StatCard label="Proches rupture" value={nearRupture.length} icon={AlertTriangle} accent={nearRupture.length > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
       </div>
 
+      <div className="rounded-xl border border-border bg-card p-6">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution des ventes par mois</h2>
+        <p className="mb-4 text-xs text-muted-foreground">Quantité vendue (axe gauche) — revenu $ (axe droit) · 12 derniers mois</p>
+        <ProductSalesTrend orders={orders} />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Top 10 produits (ventes/mois)</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Top 10 produits {latestMonth ? `(${formatMonthLabel(latestMonth)})` : "(ventes/mois)"}
+          </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topBarData} margin={{ left: 10, right: 10, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
