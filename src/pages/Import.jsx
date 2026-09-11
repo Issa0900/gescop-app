@@ -71,10 +71,13 @@ export default function ImportPage() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Supprimer cet import effacera aussi toutes les transactions associées. Continuer ?")) return;
     try {
+      await base44.entities.Transaction.deleteMany({ import_id: id });
       await base44.entities.Import.delete(id);
       qc.invalidateQueries(["imports"]);
-      toast({ title: "Import supprimé" });
+      qc.invalidateQueries(["transactions-summary"]);
+      toast({ title: "Import et transactions supprimés" });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     }
