@@ -33,6 +33,27 @@ const sectors = [
   "Autre",
 ];
 
+const toolOptions = [
+  "Excel",
+  "QuickBooks",
+  "Sage",
+  "Wave",
+  "FreshBooks",
+  "Shopify",
+  "WooCommerce",
+  "Stripe",
+  "Google Workspace",
+  "Microsoft 365",
+  "Salesforce",
+  "HubSpot",
+  "Mailchimp",
+  "Slack",
+  "Trello",
+  "Asana",
+  "Notion",
+  "Zoho",
+];
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const { refetch } = useCompany();
@@ -51,7 +72,7 @@ export default function Onboarding() {
     services: "",
     clientele: "",
     revenue: "",
-    tools: "",
+    tools: [],
     objectives: [],
   });
 
@@ -92,6 +113,15 @@ export default function Onboarding() {
     }
   };
 
+  const toggleTool = (tool) => {
+    setForm((f) => ({
+      ...f,
+      tools: f.tools.includes(tool)
+        ? f.tools.filter((t) => t !== tool)
+        : [...f.tools, tool],
+    }));
+  };
+
   const toggleObjective = (obj) => {
     setForm((f) => ({
       ...f,
@@ -110,6 +140,7 @@ export default function Onboarding() {
     try {
       await base44.entities.Company.create({
         ...form,
+        tools: Array.isArray(form.tools) ? form.tools.join(", ") : form.tools,
         revenue: form.revenue ? Number(form.revenue) : 0,
         employee_count: Number(form.employee_count) || 1,
         onboarded: true,
@@ -280,11 +311,33 @@ export default function Onboarding() {
               </div>
               <div>
                 <Label>Outils déjà utilisés</Label>
-                <Input
-                  value={form.tools}
-                  onChange={(e) => setForm({ ...form, tools: e.target.value })}
-                  placeholder="Ex. Excel, QuickBooks, Shopify…"
-                />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {toolOptions.map((tool) => (
+                    <button
+                      key={tool}
+                      type="button"
+                      onClick={() => toggleTool(tool)}
+                      className={cn(
+                        "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-all",
+                        form.tools.includes(tool)
+                          ? "border-primary bg-primary/5 text-foreground"
+                          : "border-border text-muted-foreground hover:border-primary/40"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                          form.tools.includes(tool)
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-muted-foreground/30"
+                        )}
+                      >
+                        {form.tools.includes(tool) && <Check className="h-2.5 w-2.5" />}
+                      </div>
+                      {tool}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="ghost" onClick={() => setStep(0)}>Retour</Button>
