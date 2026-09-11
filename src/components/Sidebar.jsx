@@ -12,60 +12,51 @@ import { useAuth } from "@/lib/AuthContext";
 
 const navGroups = [
   {
-    label: "Accueil",
+    label: "Pilotage",
     icon: LayoutDashboard,
     items: [
       { to: "/", label: "Vue d'ensemble", icon: LayoutDashboard, end: true },
-      { to: "/insights", label: "Insights IA", icon: Brain },
+      { to: "/kpis", label: "KPI", icon: BarChart3 },
+      { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
+      { to: "/previsions", label: "Prévisions", icon: TrendingUp },
+      { to: "/simulateur", label: "Simulateur", icon: Calculator },
     ],
   },
   {
-    label: "Pilotage",
-    icon: BarChart3,
+    label: "Opérations",
+    icon: Users,
     items: [
-      { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
       { to: "/clients", label: "Clients", icon: Users },
       { to: "/produits", label: "Produits", icon: Package },
       { to: "/marketing", label: "Marketing", icon: Megaphone },
-      { to: "/kpis", label: "KPI", icon: BarChart3 },
+      { to: "/taches", label: "Tâches", icon: CheckSquare },
+      { to: "/decisions", label: "Décisions", icon: Target },
     ],
   },
   {
-    label: "Alertes & Risques",
-    icon: ShieldAlert,
+    label: "Analyse",
+    icon: Brain,
     items: [
+      { to: "/insights", label: "Insights IA", icon: Brain },
       { to: "/alertes", label: "Alertes", icon: Bell },
       { to: "/risques", label: "Risques & opportunités", icon: ShieldAlert },
       { to: "/anomalies", label: "Anomalies", icon: AlertTriangle },
       { to: "/recommandations", label: "Recommandations", icon: Lightbulb },
-    ],
-  },
-  {
-    label: "Anticipation",
-    icon: TrendingUp,
-    items: [
-      { to: "/previsions", label: "Prévisions", icon: TrendingUp },
-      { to: "/simulateur", label: "Simulateur", icon: Calculator },
       { to: "/historique", label: "Historique", icon: History },
+      { to: "/radar", label: "Radar externe", icon: RadarIcon },
     ],
   },
   {
-    label: "Données & Outils",
+    label: "Outils",
     icon: FileText,
     items: [
       { to: "/importer", label: "Sources", icon: Upload },
-      { to: "/radar", label: "Radar externe", icon: RadarIcon },
       { to: "/rapports", label: "Rapports", icon: FileText },
       { to: "/assistant", label: "Assistant IA", icon: MessageSquare },
+      { to: "/manuel", label: "Manuel", icon: Book },
+      { to: "/parametres", label: "Paramètres", icon: Settings },
     ],
   },
-];
-
-const bottomItems = [
-  { to: "/taches", label: "Tâches", icon: CheckSquare },
-  { to: "/decisions", label: "Décisions", icon: Target },
-  { to: "/manuel", label: "Manuel", icon: Book },
-  { to: "/parametres", label: "Paramètres", icon: Settings },
 ];
 
 export default function Sidebar({ compact, onToggleCompact }) {
@@ -205,13 +196,10 @@ export default function Sidebar({ compact, onToggleCompact }) {
           })}
         </nav>
 
-        {/* Bottom */}
+        {/* User */}
         <div className="border-t border-sidebar-border px-3 py-2">
-          <div className="space-y-0.5">
-            {bottomItems.map((item) => renderNavItem(item))}
-          </div>
           {!compact && user && (
-            <div className="mt-2 flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2">
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-sidebar-accent-foreground">{user.full_name || user.email}</p>
                 <p className="truncate text-[10px] text-sidebar-foreground/50">{user.email}</p>
@@ -229,7 +217,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             <button
               onClick={() => logout()}
               title="Se déconnecter"
-              className="mt-1 flex w-full justify-center rounded-lg px-0 py-2 text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
+              className="flex w-full justify-center rounded-lg px-0 py-2 text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
             >
               <LogOut className="h-4 w-4" />
             </button>
