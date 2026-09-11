@@ -244,18 +244,31 @@ export default function ImportPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead className="bg-emerald-100/50 text-left text-xs uppercase text-emerald-900">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Fichier</th>
+                  <th className="px-4 py-2 font-medium">Fichier / feuille</th>
                   <th className="px-4 py-2 font-medium">Entité</th>
-                  <th className="px-4 py-2 font-medium">Lignes</th>
+                  <th className="px-4 py-2 font-medium">Lues</th>
+                  <th className="px-4 py-2 font-medium">Importées</th>
                   <th className="px-4 py-2 font-medium">Statut</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-emerald-100">
                 {(importResult.results || []).map((r, i) => (
                   <tr key={i}>
-                    <td className="max-w-[200px] truncate px-4 py-2 font-medium" title={r.file_name}>{r.file_name}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{r.entity || "—"}</td>
-                    <td className="px-4 py-2">{r.rows || 0}</td>
+                    <td className="max-w-[200px] px-4 py-2 font-medium">
+                      <span className="block truncate" title={r.file_name}>{r.file_name}</span>
+                      {(r.message || r.error) && (
+                        <span className="mt-0.5 block text-xs font-normal text-amber-700">{r.message || r.error}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {r.entity || "—"}
+                      {r.detected_via && <span className="ml-1 text-xs">({r.detected_via})</span>}
+                    </td>
+                    <td className="px-4 py-2">{r.rows_read ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      {r.rows || 0}
+                      {r.quarantined > 0 && <span className="ml-1 text-xs text-amber-700">+{r.quarantined} rejetées</span>}
+                    </td>
                     <td className="px-4 py-2">
                       <span className={r.status === "complete" ? "text-emerald-600" : r.status === "ignore" ? "text-muted-foreground" : "text-red-600"}>
                         {r.status}

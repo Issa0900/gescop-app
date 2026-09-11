@@ -1,38 +1,8 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
-import * as XLSX from "npm:xlsx@0.18.5";
+import { detectEntityByName, detectEntityByHeaders, sheetRows } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
-
-// Map sheet names / file names to entity names (order matters: more specific first)
-const NAME_ENTITY_MAP = [
-  { pattern: /campaign.*daily|marketing.*daily|daily.*campaign/i, entity: "CampaignDaily" },
-  { pattern: /interaction/i, entity: "Interaction" },
-  { pattern: /transaction/i, entity: "Transaction" },
-  { pattern: /inventaire|inventory/i, entity: "Inventory" },
-  { pattern: /order|commande/i, entity: "Order" },
-  { pattern: /sale/i, entity: "Order" },
-  { pattern: /customer|client/i, entity: "Customer" },
-  { pattern: /product|produit/i, entity: "Product" },
-  { pattern: /supplier|fournisseur/i, entity: "Supplier" },
-  { pattern: /purchase|achat/i, entity: "Purchase" },
-  { pattern: /campaign|campagne/i, entity: "Campaign" },
-  { pattern: /employee|employe/i, entity: "Employee" },
-  { pattern: /payroll|paie/i, entity: "Payroll" },
-  { pattern: /expense|depense/i, entity: "Expense" },
-  { pattern: /cashflow|tresorerie/i, entity: "Cashflow" },
-  { pattern: /competitor|concurrent/i, entity: "Competitor" },
-  { pattern: /signal|radar/i, entity: "ExternalSignal" },
-  { pattern: /goal|objectif/i, entity: "Goal" },
-  { pattern: /event|evenement/i, entity: "Event" },
-];
-
-function detectEntity(name: string): string | null {
-  const lower = (name || "").toLowerCase();
-  for (const m of NAME_ENTITY_MAP) {
-    if (m.pattern.test(lower)) return m.entity;
-  }
-  return null;
-}
+import * as XLSX from "npm:xlsx@0.18.5";
 
 const schemaCache: Record<string, any> = {};
 
@@ -47,12 +17,22 @@ async function getEntityProperties(base44: any, entityName: string) {
   return schemaCache[entityName];
 }
 
+/** Detect an entity from the sheet/file name first, then from the column headers. */
+function detect(label: string, headers: string[], override?: string | null) {
+  const byName = detectEntityByName(label);
+  if (byName) return { entity: byName, via: "nom" };
+  const byHeaders = detectEntityByHeaders(headers);
+  if (byHeaders) return { entity: byHeaders, via: "colonnes" };
+  if (override) return { entity: override, via: "manuel" };
+  return { entity: null, via: null };
+}
+
 async function importRows(
   base44: any,
   entityName: string,
   rows: Record<string, any>[],
   sourceType: string,
-  fileLabel: string
+  fileLabel: string,
 ) {
   const properties = await getEntityProperties(base44, entityName);
 
@@ -71,6 +51,7 @@ async function importRows(
   rows.forEach((row) => {
     if (!row || typeof row !== "object") { quarantined++; return; }
     const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType);
+    if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) { quarantined++; return; }
     toCreate.push(normalized);
   });
 
@@ -100,7 +81,13 @@ async function importRows(
     rows_quarantined: quarantined,
   });
 
-  return { entity: entityName, status: created > 0 ? "complete" : "echoue", rows: created, quarantined };
+  return {
+    entity: entityName,
+    status: created > 0 ? "complete" : "echoue",
+    rows_read: rows.length,
+    rows: created,
+    quarantined,
+  };
 }
 
 export default async function (req: Request) {
@@ -122,97 +109,82 @@ export default async function (req: Request) {
       const ext = (file_name || "").split(".").pop().toLowerCase();
       const sourceType = ["csv", "xlsx", "xls", "tsv", "pdf"].includes(ext) ? ext : "csv";
 
-      // === Excel files: parse sheet-by-sheet for multi-sheet support ===
+      // === Excel: every sheet is processed on its own ===
       if (["xlsx", "xls"].includes(ext)) {
         try {
           const resp = await fetch(file_url);
           const ab = await resp.arrayBuffer();
           const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
-          const sheetNames = wb.SheetNames;
-          const hasMultipleSheets = sheetNames.length > 1;
 
-          if (hasMultipleSheets && !entity_override) {
-            // Multi-sheet workbook: detect entity per sheet name
-            for (const sheetName of sheetNames) {
-              const entityName = detectEntity(sheetName);
-              if (!entityName) {
-                results.push({
-                  file_name: `${file_name} [${sheetName}]`,
-                  entity: null,
-                  status: "ignore",
-                  rows: 0,
-                  message: `Feuille "${sheetName}" non reconnue`,
-                });
-                continue;
-              }
-              const sheet = wb.Sheets[sheetName];
-              const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-              const res = await importRows(base44, entityName, rows, sourceType, `${file_name} [${sheetName}]`);
-              results.push({ file_name: `${file_name} [${sheetName}]`, ...res });
+          for (const sheetName of wb.SheetNames) {
+            const label = `${file_name} [${sheetName}]`;
+            const { rows, headers } = sheetRows(wb.Sheets[sheetName]);
+            if (rows.length === 0) {
+              results.push({ file_name: label, entity: null, status: "ignore", rows_read: 0, rows: 0, message: "Feuille vide" });
+              continue;
             }
-          } else {
-            // Single sheet or manual override: process as one entity
-            const entityName = entity_override || detectEntity(file_name) || detectEntity(sheetNames[0]);
-            if (!entityName) {
+            // A sheet named "Feuil1"/"Sheet1" carries no information: its columns decide.
+            const generic = /^(feuil|sheet|tab|page)\s*\d*$/i.test(sheetName.trim());
+            const { entity, via } = detect(generic ? "" : sheetName, headers, entity_override || detectEntityByName(file_name));
+            if (!entity) {
               results.push({
-                file_name,
+                file_name: label,
                 entity: null,
                 status: "ignore",
+                rows_read: rows.length,
                 rows: 0,
-                message: "Type non reconnu — choisissez le type manuellement",
+                message: `Type non reconnu — colonnes lues : ${headers.slice(0, 6).join(", ")}`,
               });
               continue;
             }
-            // Collect rows from all sheets (in case data spans multiple sheets of same type)
-            const allRows: Record<string, any>[] = [];
-            for (const sheetName of sheetNames) {
-              const sheet = wb.Sheets[sheetName];
-              allRows.push(...XLSX.utils.sheet_to_json(sheet, { defval: "" }));
-            }
-            const res = await importRows(base44, entityName, allRows, sourceType, file_name);
-            results.push({ file_name, ...res });
+            const res = await importRows(base44, entity, rows, sourceType, label);
+            results.push({ file_name: label, detected_via: via, ...res });
           }
         } catch (e: any) {
-          results.push({ file_name, entity: null, status: "echoue", rows: 0, error: e.message });
+          results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
         }
         continue;
       }
 
-      // === CSV, TSV, PDF (single entity per file) ===
-      const entityName = entity_override || detectEntity(file_name);
+      // === CSV / TSV: parsed literally, nothing truncated ===
+      if (["csv", "tsv"].includes(ext)) {
+        try {
+          const rows = await fetchDelimitedRows(file_url);
+          const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+          const { entity, via } = detect(file_name, headers, entity_override);
+          if (!entity) {
+            results.push({
+              file_name,
+              entity: null,
+              status: "ignore",
+              rows_read: rows.length,
+              rows: 0,
+              message: `Type non reconnu — colonnes lues : ${headers.slice(0, 6).join(", ")}`,
+            });
+            continue;
+          }
+          const res = await importRows(base44, entity, rows, sourceType, file_name);
+          results.push({ file_name, detected_via: via, ...res });
+        } catch (e: any) {
+          results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
+        }
+        continue;
+      }
+
+      // === PDF: AI extraction (no deterministic structure available) ===
+      const entityName = entity_override || detectEntityByName(file_name);
       if (!entityName) {
-        results.push({
-          file_name,
-          entity: null,
-          status: "ignore",
-          rows: 0,
-          message: "Type non reconnu — choisissez le type manuellement",
-        });
+        results.push({ file_name, entity: null, status: "ignore", rows_read: 0, rows: 0, message: "Type non reconnu — choisissez le type manuellement" });
         continue;
       }
 
       try {
-        // CSV/TSV are fully structured: parse every row literally so nothing is
-        // truncated. Only PDF still needs AI extraction.
-        if (["csv", "tsv"].includes(ext)) {
-          const rows = await fetchDelimitedRows(file_url);
-          const res = await importRows(base44, entityName, rows, sourceType, file_name);
-          results.push({ file_name, ...res });
-          continue;
-        }
-
-        let entityProperties = null;
-        let extractionSchema;
+        let extractionSchema: any;
         try {
           const entitySchema = await base44.entities[entityName].schema();
-          entityProperties = entitySchema.properties || {};
           extractionSchema = {
             type: "array",
-            items: {
-              type: "object",
-              properties: entityProperties,
-              additionalProperties: true,
-            },
+            items: { type: "object", properties: entitySchema.properties || {}, additionalProperties: true },
           };
         } catch {
           extractionSchema = {
@@ -244,9 +216,9 @@ export default async function (req: Request) {
         }
 
         const res = await importRows(base44, entityName, rows, sourceType, file_name);
-        results.push({ file_name, ...res });
+        results.push({ file_name, detected_via: entity_override ? "manuel" : "nom", ...res });
       } catch (e: any) {
-        results.push({ file_name, entity: entityName, status: "echoue", rows: 0, error: e.message });
+        results.push({ file_name, entity: entityName, status: "echoue", rows_read: 0, rows: 0, error: e.message });
       }
     }
 
