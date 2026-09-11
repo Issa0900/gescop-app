@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Brain, Upload, BarChart3, AlertTriangle, ShieldAlert, Lightbulb,
   TrendingUp, Calculator, CheckSquare, Bell, Target, FileText, MessageSquare,
-  Radar as RadarIcon, Book, Settings, Menu, X, Sparkles, ChevronDown, ChevronRight,
+  Radar as RadarIcon, History, Book, Settings, Menu, X, Sparkles, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
@@ -31,6 +31,7 @@ const navGroups = [
       { to: "/recommandations", label: "Recommandations", icon: Lightbulb },
       { to: "/previsions", label: "Prévisions", icon: TrendingUp },
       { to: "/simulateur", label: "Simulateur", icon: Calculator },
+      { to: "/historique", label: "Historique", icon: History },
     ],
   },
   {

@@ -13,6 +13,7 @@ import {
   Loader2,
   Trash2,
   Download,
+  ArrowRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -24,6 +25,7 @@ export default function ImportPage() {
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const { data: imports, isLoading } = useQuery({
     queryKey: ["imports"],
@@ -52,6 +54,7 @@ export default function ImportPage() {
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
       } else {
+        setImportResult(data);
         toast({
           title: "Import terminé",
           description: `${data.rows_imported} transactions importées (qualité ${data.quality_score}%)`,
@@ -132,6 +135,25 @@ export default function ImportPage() {
           </div>
         )}
       </div>
+
+      {importResult && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <h2 className="font-semibold text-emerald-900">Analyse du fichier terminée</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div><p className="text-xs text-muted-foreground">Lignes reçues</p><p className="mt-1 text-xl font-bold">{importResult.rows_received || 0}</p></div>
+            <div><p className="text-xs text-muted-foreground">Transactions importées</p><p className="mt-1 text-xl font-bold text-emerald-600">{importResult.rows_imported || 0}</p></div>
+            <div><p className="text-xs text-muted-foreground">Qualité</p><p className="mt-1 text-xl font-bold">{importResult.quality_score || 0}%</p></div>
+            <div><p className="text-xs text-muted-foreground">En quarantaine</p><p className="mt-1 text-xl font-bold text-orange-600">{importResult.rows_quarantined || 0}</p></div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button asChild><Link to="/">Commencer l'analyse IA <ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
+            <Button variant="outline" onClick={() => setImportResult(null)}>Fermer</Button>
+          </div>
+        </div>
+      )}
 
       {/* Tips */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

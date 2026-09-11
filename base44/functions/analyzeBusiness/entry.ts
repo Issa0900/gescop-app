@@ -311,6 +311,20 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       }
     }
 
+    await base44.entities.AnalysisRun.create({
+      health_score: data.health_score,
+      dimension_scores: dimScores,
+      counts: {
+        anomalies: (data.anomalies || []).length,
+        risks: (data.risks || []).length,
+        opportunities: (data.opportunities || []).length,
+        recommendations: (data.recommendations || []).length,
+        kpis: (data.kpis || []).length,
+        signals: (data.external_signals || []).length,
+      },
+      run_date: new Date().toISOString(),
+    });
+
     return Response.json({
       health_score: data.health_score,
       dimensions: data.dimensions || [],

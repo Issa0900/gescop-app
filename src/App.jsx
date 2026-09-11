@@ -14,6 +14,7 @@ import Insights from '@/pages/Insights';
 import Previsions from '@/pages/Previsions';
 import Simulateur from '@/pages/Simulateur';
 import Decisions from '@/pages/Decisions';
+import Historique from '@/pages/Historique';
 import ImportPage from '@/pages/Import';
 import Kpis from '@/pages/Kpis';
 import Anomalies from '@/pages/Anomalies';
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/previsions" element={<Previsions />} />
         <Route path="/simulateur" element={<Simulateur />} />
         <Route path="/decisions" element={<Decisions />} />
+        <Route path="/historique" element={<Historique />} />
         <Route path="/importer" element={<ImportPage />} />
         <Route path="/kpis" element={<Kpis />} />
         <Route path="/anomalies" element={<Anomalies />} />

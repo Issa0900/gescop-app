@@ -54,6 +54,10 @@ export default function Decisions() {
 
   if (isLoading) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
 
+  const completed = (decisions || []).filter((d) => d.status === "resultats" && d.actual_impact != null && d.predicted_impact);
+  const avgPerf = completed.length > 0 ? Math.round(completed.reduce((s, d) => s + (d.actual_impact / d.predicted_impact) * 100, 0) / completed.length) : null;
+  const tooOptimistic = completed.filter((d) => d.actual_impact < d.predicted_impact).length;
+
   const pending = (decisions || []).filter((d) => d.status === "a_decider");
   const decided = (decisions || []).filter((d) => d.status === "decidee");
   const results = (decisions || []).filter((d) => d.status === "resultats");
@@ -85,6 +89,23 @@ export default function Decisions() {
 
       {decisions && decisions.length === 0 && !showForm && (
         <EmptyState icon={Target} title="Aucune décision suivie" description="Créez une décision pour suivre son impact prévu et comparer avec les résultats réels." action={<Button onClick={() => setShowForm(true)}><Plus className="mr-1 h-4 w-4" />Nouvelle décision</Button>} />
+      )}
+
+      {completed.length > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Précision moyenne des prévisions</p>
+            <p className="mt-1 text-2xl font-bold">{avgPerf}%</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Décisions avec résultats</p>
+            <p className="mt-1 text-2xl font-bold">{completed.length}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Prévisions trop optimistes</p>
+            <p className="mt-1 text-2xl font-bold text-orange-600">{tooOptimistic}</p>
+          </div>
+        </div>
       )}
 
       {pending.length > 0 && <Section title="À décider" items={pending} onDecide={handleDecide} />}
