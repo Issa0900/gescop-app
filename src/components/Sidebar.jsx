@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Brain, Upload, BarChart3, AlertTriangle, ShieldAlert, Lightbulb,
   TrendingUp, Calculator, CheckSquare, Bell, Target, FileText, MessageSquare,
   Radar as RadarIcon, History, Book, Settings, Menu, X, Sparkles, ChevronDown, ChevronRight,
+  Users, Package, Megaphone, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
@@ -21,6 +22,15 @@ const navGroups = [
     items: [
       { to: "/kpis", label: "KPI", icon: BarChart3 },
       { to: "/importer", label: "Importer", icon: Upload },
+    ],
+  },
+  {
+    label: "Données",
+    items: [
+      { to: "/clients", label: "Clients", icon: Users },
+      { to: "/produits", label: "Produits", icon: Package },
+      { to: "/marketing", label: "Marketing", icon: Megaphone },
+      { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
     ],
   },
   {
@@ -63,7 +73,7 @@ const bottomItems = [
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState({ "Vue d'ensemble": true, Intelligence: true, Actions: true });
+  const [expanded, setExpanded] = useState({ "Vue d'ensemble": true, "Données": true, Intelligence: true, Actions: true });
   const { company } = useCompany();
   const location = useLocation();
 

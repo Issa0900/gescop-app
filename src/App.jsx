@@ -27,6 +27,10 @@ import Rapports from '@/pages/Rapports';
 import Assistant from '@/pages/Assistant';
 import Parametres from '@/pages/Parametres';
 import Manuel from '@/pages/Manuel';
+import Clients from '@/pages/Clients';
+import Produits from '@/pages/Produits';
+import Marketing from '@/pages/Marketing';
+import Tresorerie from '@/pages/Tresorerie';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,6 +68,10 @@ const AuthenticatedApp = () => {
         <Route path="/decisions" element={<Decisions />} />
         <Route path="/historique" element={<Historique />} />
         <Route path="/importer" element={<ImportPage />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/produits" element={<Produits />} />
+        <Route path="/marketing" element={<Marketing />} />
+        <Route path="/tresorerie" element={<Tresorerie />} />
         <Route path="/kpis" element={<Kpis />} />
         <Route path="/anomalies" element={<Anomalies />} />
         <Route path="/risques" element={<Risques />} />
