@@ -14,6 +14,7 @@ import InsightCard from "@/components/dashboard/InsightCard";
 import KpiCard from "@/components/dashboard/KpiCard";
 import DomainScoreCard from "@/components/dashboard/DomainScoreCard";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
+import KpiOverview from "@/components/dashboard/KpiOverview";
 import OpportunityCard from "@/components/dashboard/OpportunityCard";
 import ForecastCard from "@/components/dashboard/ForecastCard";
 import ActionCard from "@/components/dashboard/ActionCard";
@@ -372,6 +373,9 @@ export default function Dashboard() {
                 sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
             </div>
           </div>
+
+          {/* 3.5. GRAPHIQUES KPI ANIMÉS */}
+          <KpiOverview monthlyData={computed.monthlyData} dimensions={dimensions} />
 
           {/* 4. RADAR DES DOMAINES */}
           <div>
