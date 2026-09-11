@@ -181,7 +181,6 @@ const sections = [
 export default function PolitiqueConfidentialite() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      {/* Header */}
       <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-transparent p-6 sm:p-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
@@ -199,7 +198,6 @@ export default function PolitiqueConfidentialite() {
         <p className="mt-3 text-xs text-muted-foreground">Dernière mise à jour : 11 septembre 2026</p>
       </div>
 
-      {/* Quick nav */}
       <div className="rounded-2xl border border-border bg-card p-5">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Table des matières</p>
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
@@ -216,7 +214,6 @@ export default function PolitiqueConfidentialite() {
         </div>
       </div>
 
-      {/* Sections */}
       {sections.map((s) => (
         <section key={s.id} id={s.id} className="scroll-mt-6 rounded-2xl border border-border bg-card p-6 sm:p-8">
           <div className="mb-4 flex items-center gap-3">
@@ -233,15 +230,11 @@ export default function PolitiqueConfidentialite() {
         </section>
       ))}
 
-      {/* Footer */}
       <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6 text-center">
         <p className="text-sm text-muted-foreground">
           Pour toute question concernant cette politique, contactez le responsable de la protection des renseignements personnels.
         </p>
-        <Link
-          to="/parametres"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
+        <Link to="/parametres" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
           Retour aux paramètres <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>

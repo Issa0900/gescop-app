@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, Shield, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
@@ -19,10 +20,15 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [consent, setConsent] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!consent) {
+      setError("Vous devez accepter la politique de confidentialité pour créer un compte.");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -216,7 +222,35 @@ export default function Register() {
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+
+        {/* Consent checkbox - Loi 25 */}
+        <div className="rounded-lg border border-border bg-muted/20 p-3">
+          <label className="flex cursor-pointer items-start gap-3">
+            <button
+              type="button"
+              onClick={() => setConsent(!consent)}
+              className={cn(
+                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
+                consent ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40 hover:border-primary/50"
+              )}
+            >
+              {consent && <Check className="h-3.5 w-3.5" />}
+            </button>
+            <span className="text-xs leading-relaxed text-muted-foreground">
+              J'ai lu et j'accepte la{" "}
+              <Link
+                to="/politique-confidentialite"
+                target="_blank"
+                className="font-medium text-primary hover:underline"
+              >
+                politique de confidentialité
+              </Link>
+              {" "}de GESCOP. Je consens à la collecte, l'utilisation et la communication de mes renseignements personnels aux finalités décrites, conformément à la Loi 25 (Québec).
+            </span>
+          </label>
+        </div>
+
+        <Button type="submit" className="w-full h-12 font-medium" disabled={loading || !consent}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
