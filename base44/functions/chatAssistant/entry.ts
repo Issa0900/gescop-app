@@ -22,7 +22,8 @@ RÈGLES
 - Sois direct et actionnable. Le propriétaire veut savoir quoi faire.
 - Quand tu fais une interprétation, précise qu'il s'agit d'une analyse, pas d'un fait établi.
 - Pour les questions sur les risques, opportunités, priorités, appuie-toi sur les éléments détectés.
-- Sois bref sauf si on te demande du détail.`;
+- Sois bref sauf si on te demande du détail.
+- Réponds dans le champ "response" et liste les sources utilisées dans le champ "sources" (ex: "Données financières — 2481 transactions, sept. 2026", "Anomalies — 3 critiques", "KPI ventes — tendance baissière").`;
 
     const messages = [{ role: "system", content: systemPrompt }];
     if (history && Array.isArray(history)) {
@@ -34,10 +35,17 @@ RÈGLES
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n"),
+      response_json_schema: {
+        type: "object",
+        properties: {
+          response: { type: "string" },
+          sources: { type: "array", items: { type: "string" } },
+        },
+      },
     });
 
-    const response = typeof result === "string" ? result : JSON.stringify(result);
-    return Response.json({ response });
+    const data = typeof result === "string" ? JSON.parse(result) : result;
+    return Response.json({ response: data.response || "", sources: data.sources || [] });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

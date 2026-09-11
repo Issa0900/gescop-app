@@ -41,6 +41,12 @@
       "type": "string",
       "format": "date"
     },
+    "relevance_reason": {
+      "type": "string"
+    },
+    "recommended_action": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [

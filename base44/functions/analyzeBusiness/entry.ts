@@ -38,7 +38,7 @@ INSTRUCTIONS
 4. Identifie les opportunités: title, description, category, potential (faible/moyen/eleve), probability (0-100), horizon, confidence (faible/moyenne/elevee), score (0-100), financial_impact (impact financier potentiel estimé en dollars CAD, toujours positif ou 0), confidence_pct (0-100).
 5. Pour chaque risque et opportunité majeur, produis une recommandation structurée: title, situation (que se passe-t-il), analysis (pourquoi), impact (quel effet possible), action (que faire), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly), financial_impact (impact financier estimé de l'action recommandée en dollars CAD, peut être positif pour une économie ou un gain, négatif pour un coût), confidence_pct (0-100).
 6. Sélectionne les KPI pertinents pour ce secteur, organisés en 4 domaines (finance, ventes, operations, marketing). Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
-7. Détecte des signaux externes pertinents pour cette entreprise (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon. Base-toi sur le secteur et la localisation de l'entreprise.
+7. Détecte des signaux externes pertinents pour cette entreprise (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon, relevance_reason (pourquoi ce signal concerne spécifiquement cette entreprise — fais le lien avec son secteur, ses produits, sa clientèle ou sa localisation), recommended_action (une action concrète que le dirigeant devrait entreprendre). Base-toi sur le secteur et la localisation de l'entreprise.
 
 Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors JSON.`;
 
@@ -157,6 +157,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 impact: { type: "string" },
                 source: { type: "string" },
                 horizon: { type: "string" },
+                relevance_reason: { type: "string" },
+                recommended_action: { type: "string" },
               },
             },
           },
@@ -283,6 +285,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           relevance_score: s.relevance_score || 50,
           impact: s.impact || "neutre",
           source: s.source || "",
+          relevance_reason: s.relevance_reason || "",
+          recommended_action: s.recommended_action || "",
           date: new Date().toISOString().slice(0, 10),
           status: "nouveau",
         }));
