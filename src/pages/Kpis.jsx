@@ -1,38 +1,51 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
-import { BarChart3, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  LineChart,
-  Line,
-} from "recharts";
+import KpiCard from "@/components/kpis/KpiCard";
+import KpiTrendChart from "@/components/kpis/KpiTrendChart";
+import { BarChart3 } from "lucide-react";
 
 const domainLabels = {
   finance: "Finance",
   ventes: "Ventes",
-  operations: "Opérations",
   marketing: "Marketing",
+  operations: "Opérations",
+  clients: "Clients",
 };
 
 const domainColors = {
   finance: "#2563eb",
   ventes: "#16a34a",
-  operations: "#9333ea",
   marketing: "#ea580c",
+  operations: "#9333ea",
+  clients: "#0891b2",
 };
 
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+function monthlyAgg(items, dateField, valueField, mode = "sum") {
+  const map = {};
+  items.forEach((it) => {
+    const m = (it[dateField] || "").slice(0, 7);
+    if (!m) return;
+    if (!map[m]) map[m] = 0;
+    const v = Number(it[valueField]) || 0;
+    if (mode === "sum") map[m] += v;
+    else if (mode === "count") map[m] += 1;
+    else if (mode === "last") map[m] = v;
+  });
+  return Object.entries(map)
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([month, val]) => ({ month, val }));
+}
+
+function trendDir(curr, prev) {
+  if (curr > prev) return "up";
+  if (curr < prev) return "down";
+  return "stable";
+}
 
 export default function Kpis() {
-  const { data: kpis, isLoading } = useQuery({
+  const { data: kpisLLM, isLoading } = useQuery({
     queryKey: ["kpis"],
     queryFn: async () => {
       const list = await base44.entities.Kpi.list();
@@ -41,37 +54,192 @@ export default function Kpis() {
   });
 
   const { data: transactions } = useQuery({
-    queryKey: ["transactions-chart"],
+    queryKey: ["transactions-kpi"],
     queryFn: async () => {
       const list = await base44.entities.Transaction.list("-date", 500);
       return list || [];
     },
   });
+  const { data: orders } = useQuery({
+    queryKey: ["orders-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Order.list("-date", 500);
+      return list || [];
+    },
+  });
+  const { data: customers } = useQuery({
+    queryKey: ["customers-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Customer.list();
+      return list || [];
+    },
+  });
+  const { data: campaigns } = useQuery({
+    queryKey: ["campaigns-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Campaign.list();
+      return list || [];
+    },
+  });
+  const { data: products } = useQuery({
+    queryKey: ["products-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Product.list();
+      return list || [];
+    },
+  });
+  const { data: inventory } = useQuery({
+    queryKey: ["inventory-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Inventory.list("-date", 200);
+      return list || [];
+    },
+  });
+  const { data: cashflow } = useQuery({
+    queryKey: ["cashflow-kpi"],
+    queryFn: async () => {
+      const list = await base44.entities.Cashflow.list("-date", 100);
+      return list || [];
+    },
+  });
+
+  const computedKpis = useMemo(() => {
+    const result = [];
+    const now = new Date();
+    const currMonth = now.toISOString().slice(0, 7);
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = prevDate.toISOString().slice(0, 7);
+
+    // === FINANCE ===
+    const incomes = (transactions || []).filter((t) => t.type === "income");
+    const expenses = (transactions || []).filter((t) => t.type === "expense");
+    const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
+    const totalExpenses = expenses.reduce((s, t) => s + (t.amount || 0), 0);
+    const marginPct = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+
+    const revMonthly = monthlyAgg(incomes, "date", "amount");
+    const expMonthly = monthlyAgg(expenses, "date", "amount");
+    const currRev = revMonthly.find((m) => m.month === currMonth)?.val || 0;
+    const prevRev = revMonthly.find((m) => m.month === prevMonth)?.val || 0;
+    const currExp = expMonthly.find((m) => m.month === currMonth)?.val || 0;
+    const prevExp = expMonthly.find((m) => m.month === prevMonth)?.val || 0;
+    const latestCash = (cashflow || [])[0]?.closing_cash || 0;
+
+    result.push({ name: "Revenus mensuels", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
+    result.push({ name: "Dépenses mensuelles", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
+    result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: null, trend: marginPct >= 30 ? "up" : marginPct < 10 ? "down" : "stable", unit: "%" });
+    result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: null, trend: latestCash > 0 ? "up" : "down", unit: "$" });
+
+    // === VENTES ===
+    const orderRevMonthly = monthlyAgg(orders || [], "date", "total");
+    const orderCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
+    const currOrders = orderCntMonthly.find((m) => m.month === currMonth)?.val || 0;
+    const prevOrders = orderCntMonthly.find((m) => m.month === prevMonth)?.val || 0;
+    const currOrderRev = orderRevMonthly.find((m) => m.month === currMonth)?.val || 0;
+    const prevOrderRev = orderRevMonthly.find((m) => m.month === prevMonth)?.val || 0;
+    const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
+    const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
+    const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const totalOrders = (orders || []).length;
+    const returns = (orders || []).filter((o) => o.return_status && o.return_status !== "aucun");
+    const returnRate = totalOrders > 0 ? (returns.length / totalOrders) * 100 : 0;
+
+    result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
+    result.push({ name: "Commandes (mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
+    result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: returnRate > 10 ? "down" : "up", unit: "%" });
+    result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
+
+    // === MARKETING ===
+    const totalSpend = (campaigns || []).reduce((s, c) => s + (Number(c.spend) || 0), 0);
+    const totalConv = (campaigns || []).reduce((s, c) => s + (Number(c.conversions) || 0), 0);
+    const totalCampRev = (campaigns || []).reduce((s, c) => s + (Number(c.revenue) || 0), 0);
+    const totalClicks = (campaigns || []).reduce((s, c) => s + (Number(c.clicks) || 0), 0);
+    const totalImpressions = (campaigns || []).reduce((s, c) => s + (Number(c.impressions) || 0), 0);
+    const roas = totalSpend > 0 ? totalCampRev / totalSpend : 0;
+    const cac = totalConv > 0 ? totalSpend / totalConv : 0;
+    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+    const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
+
+    result.push({ name: "ROAS moyen", domain: "marketing", value: Math.round(roas * 10) / 10, previous: null, trend: roas >= 3 ? "up" : roas < 1 ? "down" : "stable", unit: "x" });
+    result.push({ name: "CAC moyen", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
+    result.push({ name: "Taux de clic (CTR)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
+    result.push({ name: "Taux de conversion", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+
+    // === OPÉRATIONS ===
+    const dormantStock = (inventory || []).filter((i) => i.stock_status === "dormant").length;
+    const ruptureStock = (inventory || []).filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
+    const avgMargin = (products || []).length > 0
+      ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
+      : 0;
+    const lowStockProducts = (products || []).filter((p) => p.reorder_point && (p.inventory_level || 0) < p.reorder_point).length;
+
+    result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
+    result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: dormantStock > 0 ? "down" : "up", unit: "" });
+    result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: ruptureStock > 0 ? "down" : "up", unit: "" });
+    result.push({ name: "Produits à réapprovisionner", domain: "operations", value: lowStockProducts, previous: null, trend: "stable", unit: "" });
+
+    // === CLIENTS ===
+    const activeCustomers = (customers || []).filter((c) => c.status === "actif").length;
+    const totalCustomers = (customers || []).length;
+    const churnedCustomers = (customers || []).filter((c) => c.status === "inactif" || c.status === "churn").length;
+    const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
+    const newCustomers = (customers || []).filter((c) => (c.acquisition_date || "").slice(0, 7) === currMonth).length;
+    const ltv = activeCustomers > 0 ? totalOrderRev / activeCustomers : 0;
+
+    result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: "stable", unit: "" });
+    result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
+    result.push({ name: "Nouveaux clients (mois)", domain: "clients", value: newCustomers, previous: null, trend: newCustomers > 0 ? "up" : "stable", unit: "" });
+    result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: "stable", unit: "$" });
+
+    return result;
+  }, [transactions, orders, customers, campaigns, products, inventory, cashflow]);
+
+  // Merge: computed KPIs first, then LLM-generated ones that aren't duplicated
+  const allKpis = useMemo(() => {
+    const computedNames = new Set(computedKpis.map((k) => k.name.toLowerCase()));
+    const llmExtras = (kpisLLM || []).filter((k) => !computedNames.has((k.name || "").toLowerCase()));
+    return [...computedKpis, ...llmExtras];
+  }, [computedKpis, kpisLLM]);
+
+  const byDomain = useMemo(() => {
+    const groups = {};
+    allKpis.forEach((k) => {
+      if (!groups[k.domain]) groups[k.domain] = [];
+      groups[k.domain].push(k);
+    });
+    return groups;
+  }, [allKpis]);
+
+  // Trend chart data: revenue, AOV, margin % by month
+  const trendData = useMemo(() => {
+    const revMonthly = monthlyAgg((transactions || []).filter((t) => t.type === "income"), "date", "amount");
+    const expMonthly = monthlyAgg((transactions || []).filter((t) => t.type === "expense"), "date", "amount");
+    const orderRevMonthly = monthlyAgg(orders || [], "date", "total");
+    const orderCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
+
+    const months = new Set([
+      ...revMonthly.map((m) => m.month),
+      ...orderRevMonthly.map((m) => m.month),
+    ]);
+    return Array.from(months).sort().slice(-8).map((month) => {
+      const rev = revMonthly.find((m) => m.month === month)?.val || 0;
+      const exp = expMonthly.find((m) => m.month === month)?.val || 0;
+      const oRev = orderRevMonthly.find((m) => m.month === month)?.val || 0;
+      const oCnt = orderCntMonthly.find((m) => m.month === month)?.val || 0;
+      const aov = oCnt > 0 ? oRev / oCnt : 0;
+      const margin = rev > 0 ? ((rev - exp) / rev) * 100 : 0;
+      return { month, revenue: Math.round(rev), aov: Math.round(aov), margin: Math.round(margin) };
+    });
+  }, [transactions, orders]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
 
-  const byDomain = { finance: [], ventes: [], operations: [], marketing: [] };
-  (kpis || []).forEach((k) => {
-    if (byDomain[k.domain]) byDomain[k.domain].push(k);
-  });
-
-  // Monthly chart data
-  const byMonth = {};
-  (transactions || []).forEach((t) => {
-    const m = (t.date || "").slice(0, 7);
-    if (!m) return;
-    if (!byMonth[m]) byMonth[m] = { mois: m, revenus: 0, depenses: 0 };
-    if (t.type === "income") byMonth[m].revenus += t.amount || 0;
-    else byMonth[m].depenses += t.amount || 0;
-  });
-  const chartData = Object.values(byMonth).sort((a, b) => (a.mois < b.mois ? -1 : 1)).slice(-8);
-
-  if ((!kpis || kpis.length === 0) && chartData.length === 0) {
+  if (allKpis.length === 0) {
     return (
       <EmptyState
         icon={BarChart3}
-        title="Aucun KPI calculé"
-        description="Importez vos données puis lancez l'analyse IA depuis le tableau de bord pour générer vos indicateurs clés."
+        title="Aucun KPI disponible"
+        description="Importez vos données pour voir vos indicateurs clés calculés automatiquement."
       />
     );
   }
@@ -80,77 +248,25 @@ export default function Kpis() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Indicateurs clés (KPI)</h1>
-        <p className="mt-1 text-muted-foreground">Performance par domaine, sélectionnée selon votre secteur.</p>
+        <p className="mt-1 text-muted-foreground">Indicateurs calculés en temps réel à partir de vos données, par domaine.</p>
       </div>
 
-      {/* Revenue vs expenses chart */}
-      {chartData.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="mb-4 font-semibold">Revenus vs Dépenses</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip
-                contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                formatter={(v) => `${Math.round(v).toLocaleString("fr-CA")} $`}
-              />
-              <Bar dataKey="revenus" fill="#16a34a" radius={[4, 4, 0, 0]} name="Revenus" />
-              <Bar dataKey="depenses" fill="#ea580c" radius={[4, 4, 0, 0]} name="Dépenses" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {trendData.length > 0 && <KpiTrendChart data={trendData} />}
 
-      {/* KPI by domain */}
-      {Object.entries(byDomain).map(([domain, items]) => {
-        if (items.length === 0) return null;
+      {Object.entries(domainLabels).map(([domain, label]) => {
+        const items = byDomain[domain];
+        if (!items || items.length === 0) return null;
         return (
           <div key={domain}>
-            <h2 className="mb-4 text-lg font-semibold">{domainLabels[domain]}</h2>
+            <h2 className="mb-4 text-lg font-semibold">{label}</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {items.map((k) => {
-                const TIcon = trendIcon[k.trend] || Minus;
-                const trendColor = k.trend === "up" ? "text-emerald-600" : k.trend === "down" ? "text-red-600" : "text-muted-foreground";
-                const pct = k.target > 0 ? Math.round((k.value / k.target) * 100) : null;
-                return (
-                  <div key={k.id} className="rounded-xl border border-border bg-card p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-muted-foreground">{k.name}</p>
-                      <TIcon className={`h-4 w-4 ${trendColor}`} />
-                    </div>
-                    <p className="mt-2 text-2xl font-bold">
-                      {k.value != null ? k.value.toLocaleString("fr-CA") : "—"}
-                      <span className="ml-1 text-sm font-normal text-muted-foreground">{k.unit || ""}</span>
-                    </p>
-                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Cible: {k.target || "—"}</span>
-                      {pct != null && <span>{pct}% de l'objectif</span>}
-                    </div>
-                    {pct != null && (
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${Math.min(100, pct)}%`, backgroundColor: domainColors[domain] }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {items.map((k, idx) => (
+                <KpiCard key={`${k.name}-${idx}`} kpi={k} domainColor={domainColors[domain]} />
+              ))}
             </div>
           </div>
         );
       })}
-
-      {kpis && kpis.length === 0 && (
-        <EmptyState
-          icon={BarChart3}
-          title="KPI non encore calculés"
-          description="Lancez l'analyse IA depuis le tableau de bord pour générer vos KPI."
-        />
-      )}
     </div>
   );
 }
