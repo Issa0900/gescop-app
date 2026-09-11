@@ -26,22 +26,17 @@ export default async function(req) {
     const extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
-        type: "object",
-        properties: {
-          transactions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                date: { type: "string" },
-                description: { type: "string" },
-                amount: { type: "number" },
-                type: { type: "string" },
-                category: { type: "string" },
-                client: { type: "string" },
-                product: { type: "string" },
-              },
-            },
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            date: { type: "string" },
+            description: { type: "string" },
+            amount: { type: "number" },
+            type: { type: "string" },
+            category: { type: "string" },
+            client: { type: "string" },
+            product: { type: "string" },
           },
         },
       },
