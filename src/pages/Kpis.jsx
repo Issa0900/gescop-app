@@ -173,6 +173,7 @@ export default function Kpis() {
     if ((campaigns || []).length > 0) {
       const totalSpend = campaigns.reduce((s, c) => s + (Number(c.spend) || 0), 0);
       const totalNewCust = campaigns.reduce((s, c) => s + (Number(c.new_customers) || 0), 0);
+      const totalConv = campaigns.reduce((s, c) => s + (Number(c.conversions) || 0), 0);
       const totalCampRev = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
       const totalClicks = campaigns.reduce((s, c) => s + (Number(c.clicks) || 0), 0);
       const totalImpressions = campaigns.reduce((s, c) => s + (Number(c.impressions) || 0), 0);
