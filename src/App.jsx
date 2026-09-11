@@ -11,6 +11,8 @@ import Layout from '@/components/Layout';
 import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
 import Insights from '@/pages/Insights';
+import Previsions from '@/pages/Previsions';
+import Simulateur from '@/pages/Simulateur';
 import ImportPage from '@/pages/Import';
 import Kpis from '@/pages/Kpis';
 import Anomalies from '@/pages/Anomalies';
@@ -55,6 +57,8 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/insights" element={<Insights />} />
+        <Route path="/previsions" element={<Previsions />} />
+        <Route path="/simulateur" element={<Simulateur />} />
         <Route path="/importer" element={<ImportPage />} />
         <Route path="/kpis" element={<Kpis />} />
         <Route path="/anomalies" element={<Anomalies />} />
