@@ -238,12 +238,19 @@ export default function Dashboard() {
       { month: "Prév.", val: projectedCash, upper: Math.round(projectedCash * 1.15), lower: Math.round(projectedCash * 0.85) },
     ];
 
+    const avgMonthlyCost = costsMonthly.length > 0
+      ? costsMonthly.slice(-3).reduce((s, m) => s + m.val, 0) / Math.min(3, costsMonthly.length)
+      : 0;
+    const revProbability = revenueMonthly.length < 2 ? 40 : revenueMonthly.length < 5 ? 62 : 78;
+    const cashRisk = projectedCash < 0 ? "élevé" : avgMonthlyCost > 0 && projectedCash < avgMonthlyCost * 2 ? "modéré" : "faible";
+
     return {
       totalIncome, totalExpensesTxn, margin, marginPct, orderRevenue, orderCount, aov,
       activeCustomers, latestCash, totalExpenseAmount,
       monthlyData, spark, aovMonthly,
       revTrend, marginTrend, cashTrend, aovTrend, clientTrend, costTrend,
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
+      revProbability, cashRisk,
     };
   }, [transactions, orders, customers, cashflow, expenseRecords, period, cutoffDate]);
 
@@ -294,26 +301,32 @@ export default function Dashboard() {
     }));
   }, [rtScores]);
 
+  const rtHealthScore = useMemo(() => {
+    const keys = ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"];
+    const scores = keys.map((k) => rtScores[k]?.score || 0).filter((s) => s > 0);
+    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  }, [rtScores]);
+
   // === SUMMARY ===
   const summary = useMemo(() => {
-    const score = company?.health_score || 0;
+    const score = rtHealthScore;
     const scored = dimensions.filter((d) => (d.score || 0) > 0).sort((a, b) => (a.score || 0) - (b.score || 0));
     const lowest = scored.slice(0, 2).map((d) => d.label.toLowerCase());
     if (score >= 75) return "Votre entreprise est en bonne santé. Continuez à surveiller les indicateurs clés.";
     if (score >= 50) return `Votre entreprise progresse, mais ${lowest.join(" et ")} nécessitent une attention particulière.`;
     return `Votre entreprise rencontre des difficultés. Une intervention est recommandée sur ${lowest.join(" et ")}.`;
-  }, [company, dimensions]);
+  }, [rtHealthScore, dimensions]);
 
   // === TREND ===
   const healthTrend = useMemo(() => {
-    const current = company?.health_score || 0;
-    const prev = analysisRuns && analysisRuns.length > 1 ? analysisRuns[1].health_score : null;
+    const current = rtHealthScore;
+    const prev = analysisRuns && analysisRuns.length > 0 ? analysisRuns[0].health_score : null;
     if (prev == null) return null;
     const delta = Math.round(current - prev);
-    if (delta > 0) return { direction: "up", text: `+${delta} pts depuis le mois dernier` };
-    if (delta < 0) return { direction: "down", text: `${delta} pts depuis le mois dernier` };
-    return { direction: "stable", text: "Stable depuis le mois dernier" };
-  }, [company, analysisRuns]);
+    if (delta > 0) return { direction: "up", text: `+${delta} pts depuis la dernière analyse` };
+    if (delta < 0) return { direction: "down", text: `${delta} pts depuis la dernière analyse` };
+    return { direction: "stable", text: "Stable depuis la dernière analyse" };
+  }, [rtHealthScore, analysisRuns]);
 
   // === ACTIONS ===
   const actions = useMemo(() => {
@@ -394,7 +407,7 @@ export default function Dashboard() {
           <TodayPriorities recommendations={recommendations} anomalies={anomalies} risks={risks} tasks={tasks} />
 
           {/* 2. ÉTAT GLOBAL */}
-          <HealthHero score={company.health_score || 0} dimensions={dimensions} summary={summary} trend={healthTrend} onDomainClick={() => navigate("/kpis")} />
+          <HealthHero score={rtHealthScore} dimensions={dimensions} summary={summary} trend={healthTrend} onDomainClick={() => navigate("/kpis")} />
 
           {/* 3. KPI ESSENTIELS (top 3) */}
           <div>
@@ -504,8 +517,8 @@ export default function Dashboard() {
                 <div>
                   <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui pourrait arriver</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <ForecastCard metric="Chiffre d'affaires prévu (30j)" value={`${computed.projectedRevenue.toLocaleString("fr-CA")} $`} probability={82} chartData={computed.forecastRevData} />
-                    <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.projectedCash < 50000 ? "modéré" : "faible"} chartData={computed.forecastCashData} />
+                    <ForecastCard metric="Chiffre d'affaires prévu (30j)" value={`${computed.projectedRevenue.toLocaleString("fr-CA")} $`} probability={computed.revProbability} chartData={computed.forecastRevData} />
+                    <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.cashRisk} chartData={computed.forecastCashData} />
                   </div>
                 </div>
 
