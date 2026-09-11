@@ -11,17 +11,10 @@ import { useCompany } from "@/hooks/useCompany";
 
 const navGroups = [
   {
-    label: "Vue d'ensemble",
+    label: "Pilotage",
     items: [
       { to: "/", label: "Tableau de bord", icon: LayoutDashboard, end: true },
       { to: "/insights", label: "Insights", icon: Brain },
-    ],
-  },
-  {
-    label: "Performance",
-    items: [
-      { to: "/kpis", label: "KPI", icon: BarChart3 },
-      { to: "/importer", label: "Importer", icon: Upload },
     ],
   },
   {
@@ -31,6 +24,8 @@ const navGroups = [
       { to: "/produits", label: "Produits", icon: Package },
       { to: "/marketing", label: "Marketing", icon: Megaphone },
       { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
+      { to: "/kpis", label: "KPI", icon: BarChart3 },
+      { to: "/importer", label: "Importer", icon: Upload },
     ],
   },
   {
@@ -53,16 +48,12 @@ const navGroups = [
     ],
   },
   {
-    label: "Radar",
-    items: [{ to: "/radar", label: "Radar externe", icon: RadarIcon }],
-  },
-  {
-    label: "Rapports",
-    items: [{ to: "/rapports", label: "Rapports", icon: FileText }],
-  },
-  {
-    label: "Assistant",
-    items: [{ to: "/assistant", label: "Assistant IA", icon: MessageSquare }],
+    label: "Outils",
+    items: [
+      { to: "/radar", label: "Radar externe", icon: RadarIcon },
+      { to: "/rapports", label: "Rapports", icon: FileText },
+      { to: "/assistant", label: "Assistant IA", icon: MessageSquare },
+    ],
   },
 ];
 
@@ -73,7 +64,7 @@ const bottomItems = [
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState({ "Vue d'ensemble": true, "Données": true, Intelligence: true, Actions: true });
+  const [expanded, setExpanded] = useState({ Pilotage: true, Données: true, Intelligence: true, Actions: true });
   const { company } = useCompany();
   const location = useLocation();
 
@@ -87,65 +78,135 @@ export default function Sidebar() {
 
   const toggle = (label) => setExpanded((e) => ({ ...e, [label]: !e[label] }));
 
+  const renderNavItem = (item) => (
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.end}
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        cn(
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-sidebar-primary/15 text-sidebar-primary"
+            : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:translate-x-0.5"
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
+          )}
+          <item.icon
+            className={cn(
+              "shrink-0 transition-colors duration-200",
+              isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+            )}
+            style={{ width: 17, height: 17 }}
+          />
+          <span className="transition-colors duration-200">{item.label}</span>
+        </>
+      )}
+    </NavLink>
+  );
+
   return (
     <>
-      <button onClick={() => setOpen(true)} className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card shadow-sm md:hidden">
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/80 shadow-md backdrop-blur transition-transform hover:scale-105 md:hidden"
+      >
         <Menu className="h-5 w-5" />
       </button>
-      {open && <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setOpen(false)} />}
-      <aside className={cn("fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-sidebar transition-transform md:translate-x-0", open ? "translate-x-0" : "-translate-x-full")}>
-        <div className="flex items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary"><Sparkles className="h-5 w-5 text-primary-foreground" /></div>
+      {open && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar-background transition-transform duration-300 ease-out md:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-blue-500 shadow-lg shadow-sidebar-primary/20">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
             <div>
-              <p className="text-base font-bold tracking-tight">GESCOP</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pilotage PME</p>
+              <p className="text-base font-bold tracking-tight text-sidebar-accent-foreground">GESCOP</p>
+              <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">Pilotage PME</p>
             </div>
           </div>
-          <button onClick={() => setOpen(false)} className="md:hidden"><X className="h-5 w-5" /></button>
+          <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden">
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
+        {/* Company badge */}
         {company && (
-          <div className="mx-4 mb-2 rounded-lg bg-muted/50 px-3 py-2">
-            <p className="truncate text-sm font-medium">{company.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{company.sector || "—"}</p>
+          <div className="mx-3 mb-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2">
+            <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{company.name}</p>
+            <p className="truncate text-xs text-sidebar-foreground/50">{company.sector || "—"}</p>
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
+        {/* Nav */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
           {navGroups.map((group) => {
             const isExpanded = expanded[group.label];
             const isActive = group.items.some((i) => i.to === location.pathname);
             return (
-              <div key={group.label} className="mb-1">
-                <button onClick={() => toggle(group.label)} className={cn("flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors", isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
-                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              <div key={group.label} className="mb-0.5">
+                <button
+                  onClick={() => toggle(group.label)}
+                  className={cn(
+                    "flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                    isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70"
+                  )}
+                >
+                  <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", !isExpanded && "-rotate-90")} />
                   {group.label}
                 </button>
-                {isExpanded && (
-                  <div className="ml-2 mt-0.5 space-y-0.5 border-l border-border pl-2">
-                    {group.items.map((item) => (
-                      <NavLink key={item.to} to={item.to} end={item.end} onClick={() => setOpen(false)} className={({ isActive }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60")}>
-                        <item.icon className="shrink-0" style={{ width: 16, height: 16 }} />
-                        {item.label}
-                      </NavLink>
-                    ))}
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-300 ease-out",
+                    isExpanded ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0"
+                  )}
+                >
+                  <div className="ml-2.5 space-y-0.5 border-l border-sidebar-border/60 pl-2.5">
+                    {group.items.map(renderNavItem)}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
         </nav>
 
-        <div className="border-t border-border px-3 py-2">
+        {/* Bottom */}
+        <div className="border-t border-sidebar-border px-3 py-2">
           {bottomItems.map((item) => (
-            <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)} className={({ isActive }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/60")}>
-              <item.icon className="shrink-0" style={{ width: 16, height: 16 }} />
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-sidebar-primary/15 text-sidebar-primary"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:translate-x-0.5"
+                )
+              }
+            >
+              <item.icon className="shrink-0 text-sidebar-foreground/60 group-hover:text-sidebar-foreground" style={{ width: 17, height: 17 }} />
               {item.label}
             </NavLink>
           ))}
         </div>
-        <div className="border-t border-border px-6 py-3"><p className="text-[11px] text-muted-foreground">Données hébergées au Canada · Loi 25</p></div>
+        <div className="border-t border-sidebar-border px-5 py-3">
+          <p className="text-[10px] text-sidebar-foreground/30">Données hébergées au Canada · Loi 25</p>
+        </div>
       </aside>
     </>
   );

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export default function StatCard({ label, value, sublabel, icon: Icon, trend, accent }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-sm">
+    <div className="animate-slide-up rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
