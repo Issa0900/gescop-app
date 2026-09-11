@@ -23,8 +23,14 @@ export default function Tresorerie() {
     queryFn: async () => (await base44.entities.Payroll.list("-period", 1000)) || [],
   });
 
+  // These query keys are shared with the Dashboard, so this page can render
+  // before every list has resolved: default each one to an empty array.
+  const cashflowRows = cashflow || [];
+  const expenseRows = expenses || [];
+  const payrollRows = payroll || [];
+
   if (lcf || lex || lp) return <p className="text-sm text-muted-foreground">Chargement…</p>;
-  if (!cashflow || cashflow.length === 0) {
+  if (cashflowRows.length === 0) {
     return (
       <EmptyState
         icon={Wallet}
@@ -34,8 +40,8 @@ export default function Tresorerie() {
     );
   }
 
-  const currentCash = cashflow[0]?.closing_cash || 0;
-  const sorted = [...cashflow].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const currentCash = cashflowRows[0]?.closing_cash || 0;
+  const sorted = [...cashflowRows].sort((a, b) => (a.date < b.date ? -1 : 1));
   // Cashflow is imported one row per day. Showing the last 12 rows meant showing
   // 12 days labelled as an evolution, so flows are aggregated by month:
   // in/out are summed, the balance is the month's closing value.
@@ -66,11 +72,11 @@ export default function Tresorerie() {
 
   // Payroll and recurring expenses span many months in the import: a raw sum
   // presented as a monthly figure inflates it by the number of months covered.
-  const payrollPeriods = new Set(payroll.map((p) => p.period || (p.payroll_id || "").slice(0, 7)).filter(Boolean));
-  const totalPayroll = payroll.reduce((s, p) => s + (p.total_cost || 0), 0);
+  const payrollPeriods = new Set(payrollRows.map((p) => p.period || (p.payroll_id || "").slice(0, 7)).filter(Boolean));
+  const totalPayroll = payrollRows.reduce((s, p) => s + (p.total_cost || 0), 0);
   const avgMonthlyPayroll = payrollPeriods.size > 0 ? totalPayroll / payrollPeriods.size : 0;
   const payrollByPeriod = {};
-  payroll.forEach((p) => {
+  payrollRows.forEach((p) => {
     const per = p.period || (p.payroll_id || "").slice(0, 7);
     payrollByPeriod[per] = (payrollByPeriod[per] || 0) + (p.total_cost || 0);
   });
@@ -79,7 +85,7 @@ export default function Tresorerie() {
     paie: Math.round(v),
   }));
 
-  const recurring = expenses.filter((e) => e.recurring);
+  const recurring = expenseRows.filter((e) => e.recurring);
   const recurringByCat = {};
   recurring.forEach((e) => {
     const c = e.category || e.description || "Autre";
@@ -101,7 +107,7 @@ export default function Tresorerie() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} sublabel={`au ${cashflow[0]?.date || "—"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} sublabel={`au ${cashflowRows[0]?.date || "—"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Flux net moyen / mois" value={`${avgNet.toLocaleString()} $`} sublabel={`${last3.length} derniers mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Coût paie / mois" value={`${Math.round(avgMonthlyPayroll).toLocaleString()} $`} sublabel={`moyenne sur ${payrollPeriods.size} périodes`} icon={RefreshCw} />
         <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
