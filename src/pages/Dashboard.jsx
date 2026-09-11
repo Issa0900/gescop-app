@@ -152,16 +152,16 @@ export default function Dashboard() {
 
   // === COMPUTATIONS ===
   const computed = useMemo(() => {
+    // Period-filtered totals (for KPI cards)
     const fTxn = (transactions || []).filter((t) => inPeriod(t.date));
     const fOrders = (orders || []).filter((o) => inPeriod(o.date));
-    const fCashflow = (cashflow || []).filter((c) => inPeriod(c.date));
     const fExpenses = (expenseRecords || []).filter((e) => inPeriod(e.date));
     const fCustomers = (customers || []).filter((c) => inPeriod(c.acquisition_date));
 
-    const incomes = fTxn.filter((t) => t.type === "income");
-    const txnExpenses = fTxn.filter((t) => t.type === "expense");
-    const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
-    const totalExpensesTxn = txnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
+    const fIncomes = fTxn.filter((t) => t.type === "income");
+    const fTxnExpenses = fTxn.filter((t) => t.type === "expense");
+    const totalIncome = fIncomes.reduce((s, t) => s + (t.amount || 0), 0);
+    const totalExpensesTxn = fTxnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
     const margin = totalIncome - totalExpensesTxn;
     const marginPct = totalIncome > 0 ? (margin / totalIncome) * 100 : 0;
 
@@ -172,17 +172,22 @@ export default function Dashboard() {
     const latestCash = (cashflow || [])[0]?.closing_cash || 0;
     const totalExpenseAmount = fExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
-    const revenueMonthly = monthlyAgg(incomes, "date", "amount");
-    const expenseMonthly = monthlyAgg(txnExpenses, "date", "amount");
+    // Full monthly data (ALL records, not period-filtered) for charts and trends
+    const allIncomes = (transactions || []).filter((t) => t.type === "income");
+    const allTxnExpenses = (transactions || []).filter((t) => t.type === "expense");
+    const allExpenses = expenseRecords || [];
+
+    const revenueMonthly = monthlyAgg(allIncomes, "date", "amount");
+    const expenseMonthly = monthlyAgg(allTxnExpenses, "date", "amount");
     const marginMonthly = revenueMonthly.map((m) => {
       const exp = expenseMonthly.find((e) => e.month === m.month);
       const inc = m.val;
       const expVal = exp ? exp.val : 0;
       return { month: m.month, val: inc > 0 ? ((inc - expVal) / inc) * 100 : 0 };
     });
-    const cashMonthly = monthlyAgg(fCashflow, "date", "closing_cash", "last");
-    const costsMonthly = monthlyAgg(fExpenses, "date", "amount");
-    const clientsMonthly = monthlyAgg(fCustomers, "acquisition_date", "customer_id", "count");
+    const cashMonthly = monthlyAgg(cashflow || [], "date", "closing_cash", "last");
+    const costsMonthly = monthlyAgg(allExpenses, "date", "amount");
+    const clientsMonthly = monthlyAgg(customers || [], "acquisition_date", "customer_id", "count");
 
     const sparkCount = { month: 3, quarter: 6, year: 12 }[period];
     const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
@@ -193,8 +198,8 @@ export default function Dashboard() {
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
     const marginTrend = trendPct(lastVal(marginMonthly), prevVal(marginMonthly));
     const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
-    const aovRevMonthly = monthlyAgg(fOrders, "date", "total");
-    const aovCntMonthly = monthlyAgg(fOrders, "date", "total", "count");
+    const aovRevMonthly = monthlyAgg(orders || [], "date", "total");
+    const aovCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
     const aovMonthly = aovRevMonthly.map((m) => {
       const cnt = aovCntMonthly.find((c) => c.month === m.month);
       return { month: m.month, val: cnt && cnt.val > 0 ? m.val / cnt.val : 0 };

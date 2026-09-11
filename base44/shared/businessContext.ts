@@ -128,7 +128,10 @@ export async function buildBusinessContext(base44) {
   // === FOURNISSEURS ===
   const totalSuppliers = suppliers.length;
   const problematicSuppliers = suppliers.filter((s) => s.status === "problematique" || (s.average_delivery_days || 0) > 21 || (s.quality_score || 100) < 70);
-  const supplierStr = suppliers.slice(0, 10).map((s) => `${s.supplier_name}: délai ${s.average_delivery_days || "?"}j, qualité ${s.quality_score || "?"}/100, prix ${(s.price_change_last_12_months || 0 > 0 ? "+" : "")}${round(s.price_change_last_12_months || 0)}%, ${s.status}`).join("\n");
+  const supplierStr = suppliers.slice(0, 10).map((s) => {
+    const pct = s.price_change_last_12_months || 0;
+    return `${s.supplier_name}: délai ${s.average_delivery_days || "?"}j, qualité ${s.quality_score || "?"}/100, prix ${pct > 0 ? "+" : ""}${round(pct)}%, ${s.status}`;
+  }).join("\n");
 
   // === ACHATS ===
   const totalPurchaseCost = purchases.reduce((s, p) => s + (Number(p.total_cost) || 0), 0);

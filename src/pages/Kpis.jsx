@@ -172,12 +172,12 @@ export default function Kpis() {
     // === MARKETING === (only if campaigns exist)
     if ((campaigns || []).length > 0) {
       const totalSpend = campaigns.reduce((s, c) => s + (Number(c.spend) || 0), 0);
-      const totalConv = campaigns.reduce((s, c) => s + (Number(c.conversions) || 0), 0);
+      const totalNewCust = campaigns.reduce((s, c) => s + (Number(c.new_customers) || 0), 0);
       const totalCampRev = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
       const totalClicks = campaigns.reduce((s, c) => s + (Number(c.clicks) || 0), 0);
       const totalImpressions = campaigns.reduce((s, c) => s + (Number(c.impressions) || 0), 0);
       const roas = totalSpend > 0 ? totalCampRev / totalSpend : 0;
-      const cac = totalConv > 0 ? totalSpend / totalConv : 0;
+      const cac = totalNewCust > 0 ? totalSpend / totalNewCust : 0;
       const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
       const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
 
