@@ -10,24 +10,7 @@
       "format": "date"
     },
     "event_type": {
-      "type": "string",
-      "enum": [
-        "lancement_produit",
-        "promotion",
-        "changement_prix",
-        "nouveau_fournisseur",
-        "depart_employe",
-        "campagne_marketing",
-        "probleme_logistique",
-        "changement_reglementaire",
-        "embauche",
-        "fermeture",
-        "expansion",
-        "finance",
-        "operations",
-        "rh",
-        "marketing"
-      ]
+      "type": "string"
     },
     "description": {
       "type": "string"
