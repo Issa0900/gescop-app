@@ -144,10 +144,23 @@ export function normalizeRow(
   const withEnums = normalizeEnums(r, properties || {});
   const cleaned: Record<string, any> = {};
   for (const [k, v] of Object.entries(withEnums)) {
-    if (!properties || !properties[k]) continue;
     if (BUILTIN_FIELDS.includes(k)) continue;
     if (v === null || v === undefined || v === "") continue;
-    cleaned[k] = coerceType(v, properties[k]);
+    const prop = properties?.[k];
+    if (prop) {
+      // Field is in schema: validate enum, coerce type
+      if (prop.enum) {
+        const coerced = coerceEnum(v, prop.enum);
+        if (!prop.enum.includes(coerced)) continue; // skip invalid enum value instead of failing
+        cleaned[k] = coerceType(coerced, prop);
+      } else {
+        cleaned[k] = coerceType(v, prop);
+      }
+    } else if (!properties) {
+      // No schema available: keep value as-is
+      cleaned[k] = v;
+    }
+    // else: field not in schema, skip
   }
   if (importId) cleaned["import_id"] = importId;
   return cleaned;
