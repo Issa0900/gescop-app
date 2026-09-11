@@ -223,25 +223,43 @@ export default function Dashboard() {
 
     const monthlyData = { revenue: revenueMonthly, margin: marginMonthly, cash: cashMonthly, clients: clientsMonthly, costs: costsMonthly };
 
-    // Forecasts
+    // Forecasts — bounds based on historical variance, not hardcoded %
     const revGrowth = revenueMonthly.length >= 2 ? (lastVal(revenueMonthly) - prevVal(revenueMonthly)) / Math.max(1, prevVal(revenueMonthly)) : 0;
     const projectedRevenue = Math.round(lastVal(revenueMonthly) * (1 + revGrowth));
     const cashGrowth = cashMonthly.length >= 2 ? (lastVal(cashMonthly) - prevVal(cashMonthly)) / Math.max(1, Math.abs(prevVal(cashMonthly))) : 0;
     const projectedCash = Math.round(latestCash * (1 + cashGrowth));
 
+    // Compute standard deviation of recent revenue for data-driven confidence bounds
+    const revRecent = revenueMonthly.slice(-6).map((d) => d.val);
+    const revMean = revRecent.length > 0 ? revRecent.reduce((a, b) => a + b, 0) / revRecent.length : 0;
+    const revStd = revRecent.length > 1 ? Math.sqrt(revRecent.reduce((s, v) => s + (v - revMean) ** 2, 0) / (revRecent.length - 1)) : Math.max(1, Math.abs(revMean) * 0.1);
+    const revBand = Math.max(revStd, Math.abs(revMean) * 0.05);
+
+    const cashRecent = cashMonthly.slice(-6).map((d) => d.val);
+    const cashMean = cashRecent.length > 0 ? cashRecent.reduce((a, b) => a + b, 0) / cashRecent.length : 0;
+    const cashStd = cashRecent.length > 1 ? Math.sqrt(cashRecent.reduce((s, v) => s + (v - cashMean) ** 2, 0) / (cashRecent.length - 1)) : Math.max(1, Math.abs(cashMean) * 0.15);
+    const cashBand = Math.max(cashStd, Math.abs(cashMean) * 0.05);
+
     const forecastRevData = [
       ...revenueMonthly.slice(-3).map((d) => ({ month: d.month, val: d.val, upper: d.val, lower: d.val })),
-      { month: "Prév.", val: projectedRevenue, upper: Math.round(projectedRevenue * 1.1), lower: Math.round(projectedRevenue * 0.9) },
+      { month: "Prév.", val: projectedRevenue, upper: Math.round(projectedRevenue + revBand), lower: Math.round(projectedRevenue - revBand) },
     ];
     const forecastCashData = [
       ...cashMonthly.slice(-3).map((d) => ({ month: d.month, val: d.val, upper: d.val, lower: d.val })),
-      { month: "Prév.", val: projectedCash, upper: Math.round(projectedCash * 1.15), lower: Math.round(projectedCash * 0.85) },
+      { month: "Prév.", val: projectedCash, upper: Math.round(projectedCash + cashBand), lower: Math.round(projectedCash - cashBand) },
     ];
 
     const avgMonthlyCost = costsMonthly.length > 0
       ? costsMonthly.slice(-3).reduce((s, m) => s + m.val, 0) / Math.min(3, costsMonthly.length)
       : 0;
-    const revProbability = revenueMonthly.length < 2 ? 40 : revenueMonthly.length < 5 ? 62 : 78;
+    // Probability based on coefficient of variation (lower variance = higher confidence)
+    const revCV = revMean > 0 ? revStd / revMean : 1;
+    const revProbability = revenueMonthly.length < 2 ? 30
+      : revCV < 0.1 ? 85
+      : revCV < 0.2 ? 75
+      : revCV < 0.35 ? 62
+      : revCV < 0.5 ? 50
+      : 38;
     const cashRisk = projectedCash < 0 ? "élevé" : avgMonthlyCost > 0 && projectedCash < avgMonthlyCost * 2 ? "modéré" : "faible";
 
     return {

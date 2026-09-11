@@ -81,7 +81,7 @@ export default function Tresorerie() {
         <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Flux net moyen (3 mois)" value={`${avgNet.toLocaleString()} $`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Coût paie total" value={`${Math.round(totalPayroll).toLocaleString()} $`} icon={RefreshCw} />
-        <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} icon={RefreshCw} accent="bg-amber-50 text-amber-600" />
+        <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
