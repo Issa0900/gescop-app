@@ -61,7 +61,7 @@ export default function Simulateur() {
   const fmtPct = (v) => `${v.toFixed(1)}%`;
   const rows = [
     { label: "Prix moyen", actual: fmt(current.avgPrice), sim: fmt(sim.newPrice) },
-    { label: "Volume (ventes)", actual: Math.round(current.volume).toLocaleString("fr-CA"), sim: Math.round(sim.newVolume).toLocaleString("fr-CA") },
+    { label: "Volume (nb de transactions de vente)", actual: Math.round(current.volume).toLocaleString("fr-CA"), sim: Math.round(sim.newVolume).toLocaleString("fr-CA") },
     { label: "Chiffre d'affaires", actual: fmt(current.income), sim: fmt(sim.newIncome) },
     { label: "Dépenses", actual: fmt(current.expense), sim: fmt(sim.newExpense) },
     { label: "Marge brute", actual: fmt(current.margin), sim: fmt(sim.newMargin) },

@@ -113,7 +113,7 @@ export default function Clients() {
         <StatCard label="Total clients" value={total.toLocaleString()} icon={Users} />
         <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${inactive.length} inactifs`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Concentration top 5" value={`${concentration}%`} sublabel="du CA total" icon={Crown} accent={concentration > 40 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Valeur vie moyenne" value={`${avgLTV.toLocaleString()} $`} icon={DollarSign} />
+        <StatCard label="Valeur vie moyenne" value={`${avgLTV.toLocaleString()} $`} sublabel={`CA réel de ${(orders || []).length} commandes`} icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

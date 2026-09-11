@@ -96,7 +96,7 @@ export default function Kpis() {
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Cashflow.list("-date", 100);
+      const list = await base44.entities.Cashflow.list("-date", 1000);
       return list || [];
     },
     staleTime: 0,

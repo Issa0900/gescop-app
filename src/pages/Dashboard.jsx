@@ -75,11 +75,13 @@ export default function Dashboard() {
   });
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-summary"],
-    queryFn: async () => { const l = await base44.entities.Cashflow.list("-date", 100); return l || []; },
+    // Same limit as the Trésorerie page: both share this query key, and a
+    // shorter window here truncated the monthly cash history to ~3 months.
+    queryFn: async () => { const l = await base44.entities.Cashflow.list("-date", 1000); return l || []; },
   });
   const { data: expenseRecords } = useQuery({
     queryKey: ["expenses-summary"],
-    queryFn: async () => { const l = await base44.entities.Expense.list("-date", 200); return l || []; },
+    queryFn: async () => { const l = await base44.entities.Expense.list("-date", 1000); return l || []; },
   });
   const { data: anomalies } = useQuery({
     queryKey: ["anomalies"],

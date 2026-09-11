@@ -36,6 +36,12 @@ export default function Previsions() {
     queryKey: ["transactions-forecast"],
     queryFn: async () => { const l = await base44.entities.Transaction.list("-date", 500); return l || []; },
   });
+  // Real imported cash position — the projection must start from the actual
+  // balance, not from an accumulation of transaction margins.
+  const { data: cashflow } = useQuery({
+    queryKey: ["cashflow-forecast"],
+    queryFn: async () => { const l = await base44.entities.Cashflow.list("-date", 1000); return l || []; },
+  });
 
   const result = useMemo(() => {
     if (!transactions || transactions.length === 0) return null;
@@ -63,22 +69,41 @@ export default function Previsions() {
     const fcst = (f, x) => { const v = f.slope * x + f.intercept; return { value: v, lower: v - f.stderr, upper: v + f.stderr }; };
     const incomeF = [1, 2, 3].map((i) => fcst(incomeFit, lastX + i));
     const marginF = [1, 2, 3].map((i) => fcst(marginFit, lastX + i));
-    const cumulativeNow = monthly.reduce((s, d) => s + d.margin, 0);
+    const cfSorted = (cashflow || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const hasCash = cfSorted.length > 0;
+    const cumulativeNow = hasCash
+      ? Number(cfSorted[0].closing_cash) || 0
+      : monthly.reduce((s, d) => s + d.margin, 0);
+    const cashDate = hasCash ? cfSorted[0].date : null;
+    // Monthly closing balances give the treasury chart its real history.
+    const cashHistory = [];
+    if (hasCash) {
+      const byM = {};
+      cfSorted.slice().reverse().forEach((c) => {
+        const m = (c.date || "").slice(0, 7);
+        if (m) byM[m] = Number(c.closing_cash) || 0;
+      });
+      Object.keys(byM).sort().forEach((m) => cashHistory.push({ month: m, value: byM[m] }));
+    }
     const cash30 = cumulativeNow + marginF[0].value;
     const cash90 = cumulativeNow + marginF[0].value + marginF[1].value + marginF[2].value;
     const currentIncome = monthly[monthly.length - 1].income;
     const currentMargin = monthly[monthly.length - 1].margin;
     const projected90Margin = marginF.reduce((s, f) => s + f.value, 0);
     const shortfall = currentMargin * 3 - projected90Margin;
-    return { monthly, incomeF, marginF, cash30, cash90, currentIncome, currentMargin, cumulativeNow, shortfall, incomeFit, marginFit };
-  }, [transactions]);
+    return { monthly, incomeF, marginF, cash30, cash90, currentIncome, currentMargin, cumulativeNow, cashDate, cashHistory, shortfall, incomeFit, marginFit };
+  }, [transactions, cashflow]);
 
   const chartData = useMemo(() => {
     if (!result) return [];
-    const { monthly, incomeF, marginF, cumulativeNow, marginFit } = result;
+    const { monthly, incomeF, marginF, cumulativeNow, cashHistory, marginFit } = result;
     if (metric === "tresorerie") {
       let cum = 0;
-      const hist = monthly.map((d) => { cum += d.margin; return { month: d.month.slice(5), value: Math.round(cum), forecast: null, range: null }; });
+      // Real monthly closing balances when treasury data was imported;
+      // otherwise fall back to the cumulative margin.
+      const hist = (cashHistory && cashHistory.length > 0)
+        ? cashHistory.slice(-monthly.length).map((c) => { cum = c.value; return { month: c.month.slice(5), value: Math.round(c.value), forecast: null, range: null }; })
+        : monthly.map((d) => { cum += d.margin; return { month: d.month.slice(5), value: Math.round(cum), forecast: null, range: null }; });
       hist[hist.length - 1].forecast = hist[hist.length - 1].value;
       hist[hist.length - 1].range = [hist[hist.length - 1].value, hist[hist.length - 1].value];
       let runCum = cum;
@@ -116,7 +141,7 @@ export default function Previsions() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ForecastCard label="Chiffre d'affaires" current={fmt(result.currentIncome)} f30={fmt(result.incomeF[0].value)} f90={fmt(result.incomeF[2].value)} />
         <ForecastCard label="Marge brute" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
-        <ForecastCard label="Trésorerie projetée" current={fmt(result.cumulativeNow)} f30={fmt(result.cash30)} f90={fmt(result.cash90)} />
+        <ForecastCard label={result.cashDate ? `Trésorerie (solde au ${result.cashDate})` : "Trésorerie projetée"} current={fmt(result.cumulativeNow)} f30={fmt(result.cash30)} f90={fmt(result.cash90)} />
       </div>
 
       {result.shortfall > 0 && (

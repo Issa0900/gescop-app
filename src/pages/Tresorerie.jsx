@@ -12,15 +12,15 @@ import {
 export default function Tresorerie() {
   const { data: cashflow, isLoading: lcf } = useQuery({
     queryKey: ["cashflow-summary"],
-    queryFn: async () => (await base44.entities.Cashflow.list("-date", 100)) || [],
+    queryFn: async () => (await base44.entities.Cashflow.list("-date", 1000)) || [],
   });
   const { data: expenses, isLoading: lex } = useQuery({
     queryKey: ["expenses-summary"],
-    queryFn: async () => (await base44.entities.Expense.list("-date", 200)) || [],
+    queryFn: async () => (await base44.entities.Expense.list("-date", 1000)) || [],
   });
   const { data: payroll, isLoading: lp } = useQuery({
     queryKey: ["payroll-summary"],
-    queryFn: async () => (await base44.entities.Payroll.list("-period", 100)) || [],
+    queryFn: async () => (await base44.entities.Payroll.list("-period", 1000)) || [],
   });
 
   if (lcf || lex || lp) return <p className="text-sm text-muted-foreground">Chargement…</p>;
@@ -36,18 +36,39 @@ export default function Tresorerie() {
 
   const currentCash = cashflow[0]?.closing_cash || 0;
   const sorted = [...cashflow].sort((a, b) => (a.date < b.date ? -1 : 1));
-  const chartData = sorted.slice(-12).map((c) => ({
-    date: c.date,
-    entrées: Math.round(c.cash_in || 0),
-    sorties: Math.round(c.cash_out || 0),
-    flux_net: Math.round(c.net_cash_flow || 0),
-    solde: Math.round(c.closing_cash || 0),
+  // Cashflow is imported one row per day. Showing the last 12 rows meant showing
+  // 12 days labelled as an evolution, so flows are aggregated by month:
+  // in/out are summed, the balance is the month's closing value.
+  const byMonthCash = {};
+  sorted.forEach((c) => {
+    const m = (c.date || "").slice(0, 7);
+    if (!m) return;
+    if (!byMonthCash[m]) byMonthCash[m] = { in: 0, out: 0, net: 0, solde: 0 };
+    byMonthCash[m].in += Number(c.cash_in) || 0;
+    byMonthCash[m].out += Number(c.cash_out) || 0;
+    byMonthCash[m].net += Number(c.net_cash_flow) || 0;
+    byMonthCash[m].solde = Number(c.closing_cash) || 0;
+  });
+  const monthsCash = Object.keys(byMonthCash).sort();
+  const chartData = monthsCash.slice(-12).map((m) => ({
+    date: m,
+    entrées: Math.round(byMonthCash[m].in),
+    sorties: Math.round(byMonthCash[m].out),
+    flux_net: Math.round(byMonthCash[m].net),
+    solde: Math.round(byMonthCash[m].solde),
   }));
 
-  const last3 = sorted.slice(-3);
-  const avgNet = last3.length > 0 ? Math.round(last3.reduce((s, c) => s + (c.net_cash_flow || 0), 0) / last3.length) : 0;
+  // Net flow averaged over the last 3 complete months, not the last 3 days.
+  const cm = new Date().toISOString().slice(0, 7);
+  const completeMonths = monthsCash.filter((m) => m !== cm);
+  const last3 = completeMonths.slice(-3);
+  const avgNet = last3.length > 0 ? Math.round(last3.reduce((s, m) => s + byMonthCash[m].net, 0) / last3.length) : 0;
 
+  // Payroll and recurring expenses span many months in the import: a raw sum
+  // presented as a monthly figure inflates it by the number of months covered.
+  const payrollPeriods = new Set(payroll.map((p) => p.period || (p.payroll_id || "").slice(0, 7)).filter(Boolean));
   const totalPayroll = payroll.reduce((s, p) => s + (p.total_cost || 0), 0);
+  const avgMonthlyPayroll = payrollPeriods.size > 0 ? totalPayroll / payrollPeriods.size : 0;
   const payrollByPeriod = {};
   payroll.forEach((p) => {
     const per = p.period || (p.payroll_id || "").slice(0, 7);
@@ -64,10 +85,12 @@ export default function Tresorerie() {
     const c = e.category || e.description || "Autre";
     recurringByCat[c] = (recurringByCat[c] || 0) + (e.amount || 0);
   });
-  const recurringTotal = Object.values(recurringByCat).reduce((s, v) => s + v, 0);
+  const recurringMonths = new Set(recurring.map((e) => (e.date || "").slice(0, 7)).filter(Boolean));
+  const recDiv = Math.max(1, recurringMonths.size);
+  const recurringTotal = Object.values(recurringByCat).reduce((s, v) => s + v, 0) / recDiv;
   const recurringChart = Object.entries(recurringByCat).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c, v]) => ({
     catégorie: c,
-    montant: Math.round(v),
+    montant: Math.round(v / recDiv),
   }));
 
   return (
@@ -78,14 +101,15 @@ export default function Tresorerie() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Flux net moyen (3 mois)" value={`${avgNet.toLocaleString()} $`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Coût paie total" value={`${Math.round(totalPayroll).toLocaleString()} $`} icon={RefreshCw} />
-        <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} sublabel={`au ${cashflow[0]?.date || "—"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Flux net moyen / mois" value={`${avgNet.toLocaleString()} $`} sublabel={`${last3.length} derniers mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Coût paie / mois" value={`${Math.round(avgMonthlyPayroll).toLocaleString()} $`} sublabel={`moyenne sur ${payrollPeriods.size} périodes`} icon={RefreshCw} />
+        <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution de la trésorerie</h2>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution de la trésorerie</h2>
+        <p className="mb-4 text-xs text-muted-foreground">Solde de fin de mois · {chartData.length} derniers mois</p>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={chartData} margin={{ left: 10, right: 10 }}>
             <defs>
@@ -105,7 +129,7 @@ export default function Tresorerie() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Entrées vs sorties</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Entrées vs sorties (par mois)</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={chartData.slice(-8)} margin={{ left: 10, right: 10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -139,7 +163,8 @@ export default function Tresorerie() {
 
       {recurringChart.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Abonnements récurrents</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Abonnements récurrents</h2>
+          <p className="mb-4 text-xs text-muted-foreground">Coût mensuel moyen par catégorie, calculé sur {recDiv} mois de dépenses récurrentes importées</p>
           <div className="space-y-2">
             {recurringChart.map((r) => (
               <div key={r.catégorie} className="flex items-center justify-between rounded-lg bg-muted/30 px-4 py-2.5">
