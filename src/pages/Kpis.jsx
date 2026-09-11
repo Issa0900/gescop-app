@@ -99,7 +99,7 @@ export default function Kpis() {
   const { data: inventory } = useQuery({
     queryKey: ["inventory-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Inventory.list("-date", 200);
+      const list = await base44.entities.Inventory.list("-date", 500);
       return list || [];
     },
     staleTime: 0,
@@ -207,7 +207,7 @@ export default function Kpis() {
     if ((customers || []).length > 0) {
       const activeCustomers = customers.filter((c) => c.status === "actif").length;
       const totalCustomers = customers.length;
-      const churnedCustomers = customers.filter((c) => c.status === "inactif" || c.status === "churn").length;
+      const churnedCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu").length;
       const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
       const custMonthly = monthlyAgg(customers, "acquisition_date", "customer_id", "count");
       const newCustomers = lastVal(custMonthly);

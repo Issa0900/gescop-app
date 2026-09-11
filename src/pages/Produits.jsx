@@ -34,7 +34,7 @@ export default function Produits() {
   });
   const { data: inventory, isLoading: li } = useQuery({
     queryKey: ["inventory-summary"],
-    queryFn: async () => (await base44.entities.Inventory.list("-date", 200)) || [],
+    queryFn: async () => (await base44.entities.Inventory.list("-date", 500)) || [],
   });
 
   if (lp || li) return <p className="text-sm text-muted-foreground">Chargement…</p>;

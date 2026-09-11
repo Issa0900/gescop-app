@@ -32,7 +32,7 @@ export async function buildBusinessContext(base44) {
   const orders = await safeList(base44.entities.Order, "-date", 500);
   const customers = await safeList(base44.entities.Customer);
   const products = await safeList(base44.entities.Product);
-  const inventory = await safeList(base44.entities.Inventory, "-date", 200);
+  const inventory = await safeList(base44.entities.Inventory, "-date", 500);
   const suppliers = await safeList(base44.entities.Supplier);
   const purchases = await safeList(base44.entities.Purchase, "-date", 200);
   const campaigns = await safeList(base44.entities.Campaign);
