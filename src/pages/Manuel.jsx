@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Book, ChevronDown, ChevronRight, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History } from "lucide-react";
+import { Book, ChevronDown, ChevronRight, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, Users, Package, Megaphone, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -29,6 +29,7 @@ const sections = [
     icon: Upload,
     content: [
       { h: "Formats supportés", p: "GESCOP accepte les fichiers CSV, Excel (.xlsx, .xls), TSV et PDF. Pour les fichiers CSV et Excel, chaque ligne doit représenter une transaction avec au minimum : date, montant, et type (income/expense)." },
+      { h: "Import multi-fichiers", p: "Vous pouvez importer simultanément plusieurs fichiers pour alimenter les différentes tables de l'app : transactions, clients, produits, commandes, stocks, campagnes, employés, paie, flux de trésorerie, dépenses, fournisseurs et concurrents. Le système reconnaît chaque type de fichier et relie les données entre elles automatiquement." },
       { h: "Colonnes reconnues", p: "Le système reconnaît automatiquement : date, description, amount (montant), type (income/expense), category (catégorie), client, et product. Les en-têtes en français ou en anglais sont acceptés." },
       { h: "Qualité des données", p: "Après l'import, un score de qualité est calculé. Les lignes problématiques sont mises en quarantaine plutôt que rejetées — vous pouvez les corriger ou les ignorer. L'historique des imports reste consultable avec le nombre de lignes traitées et le score." },
       { h: "Bilan guidé", p: "Après l'import, un bilan s'affiche : nombre de lignes reçues, transactions importées, score de qualité, et lignes en quarantaine. Un bouton vous mène directement à l'analyse IA pour exploiter vos données." },
@@ -53,6 +54,46 @@ const sections = [
       { h: "KPI par domaine", p: "Les indicateurs sont organisés en quatre domaines : finance, ventes, opérations et marketing. Chaque KPI affiche sa valeur actuelle, sa cible, sa valeur précédente et sa tendance (↑ ↓ →)." },
       { h: "Évolution mensuelle", p: "Un graphique montre l'évolution mensuelle des revenus et des dépenses, permettant de visualiser les tendances saisonnières et la trajectoire financière." },
       { h: "Barres de progression", p: "Chaque KPI est accompagné d'une barre de progression qui compare la valeur actuelle à la cible définie, vous indiquant d'un coup d'œil si vous êtes sur la bonne voie." },
+    ],
+  },
+  {
+    id: "tresorerie",
+    title: "Trésorerie",
+    icon: Wallet,
+    content: [
+      { h: "Flux de trésorerie", p: "La page Trésorerie suit vos flux de trésorerie jour par jour : encaissements, décaissements et solde net. Visualisez l'évolution de votre liquidité sur la période sélectionnée pour anticiper les tensions de trésorerie." },
+      { h: "Créances et dettes", p: "Le module affiche vos comptes clients (créances) et comptes fournisseurs (dettes) en temps réel. Suivez les paiements en attente et les échéances à venir pour planifier vos décaissements." },
+      { h: "Alertes de seuil", p: "Le système signale automatiquement les jours où le solde de trésorerie passe sous un seuil critique, vous permettant de prendre des mesures préventives (escompte client, négociation fournisseur, découvert)." },
+    ],
+  },
+  {
+    id: "clients",
+    title: "Clients",
+    icon: Users,
+    content: [
+      { h: "Portefeuille client", p: "La page Clients présente l'ensemble de votre portefeuille : nombre de clients actifs, inactifs et perdus. Chaque client affiche son chiffre d'affaires cumulé, sa valeur vie (LTV), son panier moyen et sa date de dernière commande." },
+      { h: "Segmentation automatique", p: "GESCOP segmente automatiquement vos clients : nouveau, régulier, VIP, B2B, haute valeur, à risque. Cette segmentation vous aide à adapter vos actions commerciales et de fidélisation." },
+      { h: "Risque de churn", p: "Un score de risque de churn est calculé pour chaque client, identifiant ceux qui risquent de ne plus commander. Concentrez vos efforts de rétention sur les clients à haut risque avant qu'il ne soit trop tard." },
+    ],
+  },
+  {
+    id: "produits",
+    title: "Produits",
+    icon: Package,
+    content: [
+      { h: "Catalogue de produits", p: "La page Produits affiche votre catalogue avec les marges unitaires, les ventes mensuelles et le statut de chaque produit (actif, discontinué, rupture, nouveau). Identifiez vos produits stars et ceux qui sous-performent." },
+      { h: "Gestion des stocks", p: "Suivez les niveaux de stock, les points de commande et les ruptures. Les produits proches de leur point de commande sont mis en évidence pour vous permettre de réapprovisionner à temps." },
+      { h: "Marge et rentabilité", p: "Comparez le coût d'achat et le prix de vente de chaque produit pour identifier les marges faibles. Les produits à marge négative ou insuffisante sont signalés pour révision tarifaire ou renégociation fournisseur." },
+    ],
+  },
+  {
+    id: "marketing",
+    title: "Marketing",
+    icon: Megaphone,
+    content: [
+      { h: "Performance des campagnes", p: "La page Marketing synthétise la performance de vos campagnes publicitaires (Google Ads, Meta Ads, Instagram, email, TikTok) : budget, dépenses, impressions, clics, conversions, chiffre d'affaires généré et ROAS." },
+      { h: "Coût d'acquisition (CAC)", p: "Le coût d'acquisition client est calculé par campagne et par canal. Comparez le CAC entre canaux pour optimiser votre budget marketing et investir dans les canaux les plus rentables." },
+      { h: "ROAS et rentabilité", p: "Le ROAS (Return on Ad Spend) indique combien chaque dollar investi rapporte. Les campagnes sous le seuil de rentabilité sont signalées pour ajustement ou suspension." },
     ],
   },
   {
@@ -192,9 +233,10 @@ const sections = [
     title: "Paramètres",
     icon: Settings,
     content: [
-      { h: "Profil de l'entreprise", p: "Modifiez à tout moment les informations de votre entreprise : nom, secteur, localisation, modèle d'affaires, produits, services, clientèle et outils. Ces informations influencent l'analyse." },
+      { h: "Profil de l'entreprise", p: "Modifiez à tout moment les informations de votre entreprise : nom, site web, secteur, localisation, modèle d'affaires, produits, services, clientèle, fournisseurs et outils. Ces informations influencent l'analyse." },
       { h: "Objectifs", p: "Ajustez vos objectifs stratégiques quand votre situation évolue. Les nouveaux objectifs seront pris en compte lors de la prochaine analyse IA." },
-      { h: "Sécurité & conformité", p: "Vos données sont hébergées au Canada, conformes à la Loi 25 (protection des renseignements personnels, Québec), chiffrées au repos et en transit, et isolées par organisation — elles ne sont jamais partagées." },
+      { h: "Suivi des concurrents", p: "Répertoriez vos principaux concurrents avec leur positionnement (leader, challenger, suiveur, niche), leur positionnement prix, leur chiffre d'affaires estimé, leur nombre d'employés et leur note moyenne. Ces données enrichissent le radar externe et l'analyse concurrentielle." },
+      { h: "Compte & sécurité", p: "Gérez votre compte utilisateur et déconnectez-vous depuis cette page. Vos données sont hébergées au Canada, conformes à la Loi 25 (protection des renseignements personnels, Québec), chiffrées au repos et en transit, et isolées par organisation — elles ne sont jamais partagées." },
     ],
   },
 ];
