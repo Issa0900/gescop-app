@@ -166,28 +166,28 @@ export default function Sidebar({ compact, onToggleCompact }) {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-1">
           {navGroups.map((group) => {
             const isExpanded = expanded[group.label] || compact;
             const isActiveGroup = activeGroup === group.label;
             return (
-              <div key={group.label} className="mb-1">
+              <div key={group.label}>
                 {!compact ? (
                   <button
                     onClick={() => toggle(group.label)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200",
+                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200",
                       isActiveGroup
                         ? "text-sidebar-primary"
                         : "text-sidebar-foreground/55 hover:text-sidebar-foreground/90 hover:bg-sidebar-accent/40"
                     )}
                   >
-                    <group.icon className="h-3.5 w-3.5 shrink-0" style={{ width: 14, height: 14 }} />
+                    <group.icon className="shrink-0" style={{ width: 13, height: 13 }} />
                     <span className="flex-1 text-left">{group.label}</span>
-                    <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", !isExpanded && "-rotate-90")} />
+                    <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform duration-200", !isExpanded && "-rotate-90")} />
                   </button>
                 ) : (
-                  <div className="flex justify-center py-1.5">
+                  <div className="flex justify-center py-1">
                     <group.icon
                       className={cn("transition-colors", isActiveGroup ? "text-sidebar-primary" : "text-sidebar-foreground/55")}
                       style={{ width: 16, height: 16 }}
