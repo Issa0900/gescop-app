@@ -1,112 +1,374 @@
 // Shared business context builder — used by analyzeBusiness, chatAssistant, generateReport
-// Extracts the company + data and produces a compact context string for the LLM.
+// Extracts the company + all data sources and produces a compact context string for the LLM.
+
+async function safeList(entity, ...args) {
+  try {
+    return await entity.list(...args);
+  } catch {
+    return [];
+  }
+}
+
+function round(n) {
+  return Math.round(n || 0);
+}
+
+function monthlySum(items, dateField, valueField) {
+  const byMonth = {};
+  items.forEach((item) => {
+    const m = (item[dateField] || "").slice(0, 7);
+    if (!m) return;
+    byMonth[m] = (byMonth[m] || 0) + (Number(item[valueField]) || 0);
+  });
+  return Object.entries(byMonth).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+}
 
 export async function buildBusinessContext(base44) {
   const companies = await base44.entities.Company.list();
   const company = companies && companies[0] ? companies[0] : null;
 
-  const transactions = await base44.entities.Transaction.list("-date", 500);
-  const kpis = await base44.entities.Kpi.list();
-  const anomalies = await base44.entities.Anomaly.list("-created_date", 20);
-  const risks = await base44.entities.Risk.filter({ status: "actif" });
-  const opportunities = await base44.entities.Opportunity.filter({ status: "nouvelle" });
-  const recommendations = await base44.entities.Recommendation.list("-created_date", 20);
-  const tasks = await base44.entities.Task.list("-created_date", 30);
+  // Fetch all data sources
+  const transactions = await safeList(base44.entities.Transaction, "-date", 500);
+  const orders = await safeList(base44.entities.Order, "-date", 500);
+  const customers = await safeList(base44.entities.Customer);
+  const products = await safeList(base44.entities.Product);
+  const inventory = await safeList(base44.entities.Inventory, "-date", 200);
+  const suppliers = await safeList(base44.entities.Supplier);
+  const purchases = await safeList(base44.entities.Purchase, "-date", 200);
+  const campaigns = await safeList(base44.entities.Campaign);
+  const campaignDaily = await safeList(base44.entities.CampaignDaily, "-date", 200);
+  const employees = await safeList(base44.entities.Employee);
+  const payroll = await safeList(base44.entities.Payroll, "-period", 100);
+  const expenses = await safeList(base44.entities.Expense, "-date", 200);
+  const cashflow = await safeList(base44.entities.Cashflow, "-date", 100);
+  const interactions = await safeList(base44.entities.Interaction, "-date", 200);
+  const competitors = await safeList(base44.entities.Competitor);
+  const goals = await safeList(base44.entities.Goal);
+  const events = await safeList(base44.entities.Event, "-date", 50);
+  const kpis = await safeList(base44.entities.Kpi);
+  const anomalies = await safeList(base44.entities.Anomaly, "-created_date", 20);
+  const risks = await safeList(base44.entities.Risk);
+  const opportunities = await safeList(base44.entities.Opportunity);
+  const recommendations = await safeList(base44.entities.Recommendation, "-created_date", 20);
+  const tasks = await safeList(base44.entities.Task, "-created_date", 30);
 
-  // Financial summary computed from transactions
+  // === FINANCE (transactions) ===
   const incomes = transactions.filter((t) => t.type === "income");
-  const expenses = transactions.filter((t) => t.type === "expense");
+  const txnExpenses = transactions.filter((t) => t.type === "expense");
   const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
-  const totalExpenses = expenses.reduce((s, t) => s + (t.amount || 0), 0);
+  const totalExpenses = txnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
   const grossMargin = totalIncome - totalExpenses;
   const marginPct = totalIncome > 0 ? Math.round((grossMargin / totalIncome) * 100) : 0;
 
-  // Monthly breakdown
-  const byMonth = {};
-  transactions.forEach((t) => {
-    const m = (t.date || "").slice(0, 7);
-    if (!m) return;
-    if (!byMonth[m]) byMonth[m] = { income: 0, expense: 0 };
-    if (t.type === "income") byMonth[m].income += t.amount || 0;
-    else byMonth[m].expense += t.amount || 0;
-  });
-  const monthly = Object.entries(byMonth)
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .slice(0, 6)
-    .map(([m, v]) => `${m}: revenus ${Math.round(v.income)} $, dépenses ${Math.round(v.expense)} $`)
-    .join("\n");
+  const txnMonthly = monthlySum(transactions, "date", "amount");
+  const txnMonthlyStr = txnMonthly.slice(0, 12).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
 
-  // Category breakdown for expenses
   const expByCat = {};
-  expenses.forEach((t) => {
+  txnExpenses.forEach((t) => {
     const c = t.category || "Autre";
     expByCat[c] = (expByCat[c] || 0) + (t.amount || 0);
   });
-  const topCategories = Object.entries(expByCat)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([c, v]) => `${c}: ${Math.round(v)} $`)
-    .join("\n");
+  const topExpCats = Object.entries(expByCat).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c, v]) => `${c}: ${round(v)} $`).join("\n");
 
+  // === VENTES (orders) ===
+  const orderRevenue = orders.reduce((s, o) => s + (Number(o.total) || Number(o.revenue) || 0), 0);
+  const orderCount = orders.length;
+  const aov = orderCount > 0 ? Math.round(orderRevenue / orderCount) : 0;
+  const returns = orders.filter((o) => o.return_status && o.return_status !== "aucun");
+  const returnRate = orderCount > 0 ? Math.round((returns.length / orderCount) * 100) : 0;
+
+  const orderMonthly = monthlySum(orders, "date", "total");
+  const orderMonthlyStr = orderMonthly.slice(0, 12).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
+
+  const byChannel = {};
+  orders.forEach((o) => {
+    const c = o.channel || "Autre";
+    byChannel[c] = (byChannel[c] || 0) + (Number(o.total) || Number(o.revenue) || 0);
+  });
+  const channelStr = Object.entries(byChannel).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c}: ${round(v)} $`).join("\n");
+
+  // === CLIENTS ===
+  const totalCustomers = customers.length;
+  const bySegment = {};
+  customers.forEach((c) => {
+    const s = c.segment || "non_precise";
+    bySegment[s] = (bySegment[s] || 0) + 1;
+  });
+  const segmentStr = Object.entries(bySegment).map(([s, v]) => `${s}: ${v}`).join(", ");
+
+  const inactiveCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu" || c.segment === "inactif" || c.segment === "a_risque");
+  const churnRate = totalCustomers > 0 ? Math.round((inactiveCustomers.length / totalCustomers) * 100) : 0;
+
+  const sortedByRevenue = [...customers].sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
+  const top5Revenue = sortedByRevenue.slice(0, 5).reduce((s, c) => s + (c.total_revenue || 0), 0);
+  const allCustomerRevenue = customers.reduce((s, c) => s + (c.total_revenue || 0), 0);
+  const concentration = allCustomerRevenue > 0 ? Math.round((top5Revenue / allCustomerRevenue) * 100) : 0;
+  const topCustomersStr = sortedByRevenue.slice(0, 5).map((c) => `${c.customer_id || c.first_name || "?"}: ${round(c.total_revenue || 0)} $ (${c.segment || "?"})`).join("\n");
+
+  // === PRODUITS ===
+  const totalProducts = products.length;
+  const lowMarginProducts = products.filter((p) => (p.gross_margin || 0) < 15);
+  const topProducts = [...products].sort((a, b) => (b.monthly_sales || 0) - (a.monthly_sales || 0)).slice(0, 5);
+  const dormantProducts = products.filter((p) => (p.inventory_level || 0) > 20 && (p.monthly_sales || 0) < 5);
+  const nearRupture = products.filter((p) => (p.inventory_level || 0) <= (p.reorder_point || 0) && p.reorder_point > 0);
+
+  const topProductsStr = topProducts.map((p) => `${p.product_name || p.product_id}: ${p.monthly_sales || 0} ventes/mois, marge ${round(p.gross_margin || 0)}%, stock ${p.inventory_level || 0}`).join("\n");
+  const dormantStr = dormantProducts.slice(0, 5).map((p) => `${p.product_name || p.product_id}: stock ${p.inventory_level}, ventes ${p.monthly_sales}/mois`).join("\n");
+  const ruptureStr = nearRupture.slice(0, 5).map((p) => `${p.product_name || p.product_id}: stock ${p.inventory_level}, seuil ${p.reorder_point}`).join("\n");
+
+  // === INVENTAIRE ===
+  const stockStatusDist = {};
+  inventory.forEach((i) => {
+    const s = i.stock_status || "non_precise";
+    stockStatusDist[s] = (stockStatusDist[s] || 0) + 1;
+  });
+  const stockDistStr = Object.entries(stockStatusDist).map(([s, v]) => `${s}: ${v}`).join(", ");
+  const inventoryValue = inventory.reduce((s, i) => s + (Number(i.inventory_value) || 0), 0);
+
+  // === FOURNISSEURS ===
+  const totalSuppliers = suppliers.length;
+  const problematicSuppliers = suppliers.filter((s) => s.status === "problematique" || (s.average_delivery_days || 0) > 21 || (s.quality_score || 100) < 70);
+  const supplierStr = suppliers.slice(0, 10).map((s) => `${s.supplier_name}: délai ${s.average_delivery_days || "?"}j, qualité ${s.quality_score || "?"}/100, prix ${(s.price_change_last_12_months || 0 > 0 ? "+" : "")}${round(s.price_change_last_12_months || 0)}%, ${s.status}`).join("\n");
+
+  // === ACHATS ===
+  const totalPurchaseCost = purchases.reduce((s, p) => s + (Number(p.total_cost) || 0), 0);
+  const avgDelay = purchases.length > 0 ? Math.round(purchases.reduce((s, p) => s + (p.delay_days || 0), 0) / purchases.length) : 0;
+  const delayedPurchases = purchases.filter((p) => (p.delay_days || 0) > 5);
+  const purchaseMonthly = monthlySum(purchases, "date", "total_cost");
+  const purchaseMonthlyStr = purchaseMonthly.slice(0, 8).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
+
+  // === MARKETING (campagnes) ===
+  const totalSpend = campaigns.reduce((s, c) => s + (Number(c.spend) || 0), 0);
+  const totalCampaignRevenue = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
+  const totalNewCustomers = campaigns.reduce((s, c) => s + (Number(c.new_customers) || 0), 0);
+  const overallRoas = totalSpend > 0 ? Math.round((totalCampaignRevenue / totalSpend) * 100) / 100 : 0;
+  const overallCac = totalNewCustomers > 0 ? Math.round(totalSpend / totalNewCustomers) : 0;
+
+  const campaignByChannel = {};
+  campaigns.forEach((c) => {
+    const ch = c.channel || "Autre";
+    if (!campaignByChannel[ch]) campaignByChannel[ch] = { spend: 0, revenue: 0, conversions: 0, new_customers: 0 };
+    campaignByChannel[ch].spend += Number(c.spend) || 0;
+    campaignByChannel[ch].revenue += Number(c.revenue) || 0;
+    campaignByChannel[ch].conversions += Number(c.conversions) || 0;
+    campaignByChannel[ch].new_customers += Number(c.new_customers) || 0;
+  });
+  const channelMarketingStr = Object.entries(campaignByChannel).map(([ch, v]) => {
+    const roas = v.spend > 0 ? (v.revenue / v.spend).toFixed(1) : "—";
+    const cac = v.new_customers > 0 ? Math.round(v.spend / v.new_customers) : "—";
+    return `${ch}: dépenses ${round(v.spend)} $, revenus ${round(v.revenue)} $, ROAS ${roas}, CAC ${cac} $`;
+  }).join("\n");
+
+  const worstCampaigns = [...campaigns].filter((c) => c.spend > 0).sort((a, b) => {
+    const ra = (b.revenue || 0) / (b.spend || 1);
+    const rb = (a.revenue || 0) / (a.spend || 1);
+    return ra - rb;
+  }).slice(0, 3);
+  const worstCampaignsStr = worstCampaigns.map((c) => `${c.campaign_name}: dépenses ${round(c.spend)} $, revenus ${round(c.revenue || 0)} $, ROAS ${c.spend > 0 ? ((c.revenue || 0) / c.spend).toFixed(1) : "—"}`).join("\n");
+
+  // Marketing daily trend
+  const dailyMonthly = monthlySum(campaignDaily, "date", "spend");
+  const dailyMonthlyRev = monthlySum(campaignDaily, "date", "revenue");
+  const spendTrendStr = dailyMonthly.slice(0, 8).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
+
+  // === PAIE ===
+  const totalPayrollCost = payroll.reduce((s, p) => s + (Number(p.total_cost) || 0), 0);
+  const payrollByPeriod = {};
+  payroll.forEach((p) => {
+    const per = p.period || (p.payroll_id || "").slice(0, 7);
+    payrollByPeriod[per] = (payrollByPeriod[per] || 0) + (Number(p.total_cost) || 0);
+  });
+  const payrollTrendStr = Object.entries(payrollByPeriod).sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 8).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
+
+  // === DÉPENSES ===
+  const totalExpensesAmount = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const recurringExpenses = expenses.filter((e) => e.recurring);
+  const recurringByCat = {};
+  recurringExpenses.forEach((e) => {
+    const c = e.category || e.description || "Autre";
+    recurringByCat[c] = (recurringByCat[c] || 0) + (Number(e.amount) || 0);
+  });
+  const recurringStr = Object.entries(recurringByCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c}: ${round(v)} $/mois`).join("\n");
+
+  // === TRÉSORERIE ===
+  const latestCashflow = cashflow[0];
+  const currentCash = latestCashflow ? latestCashflow.closing_cash : 0;
+  const cashflowMonthly = monthlySum(cashflow, "date", "net_cash_flow");
+  const cashflowTrendStr = cashflowMonthly.slice(0, 8).map(([m, v]) => `${m}: ${round(v)} $`).join("\n");
+
+  // === INTERACTIONS CLIENTS ===
+  const totalInteractions = interactions.length;
+  const complaints = interactions.filter((i) => i.type === "plainte" || i.type === "retour" || i.sentiment === "negatif" || i.sentiment === "tres_negatif");
+  const complaintRate = totalInteractions > 0 ? Math.round((complaints.length / totalInteractions) * 100) : 0;
+  const avgSatisfaction = totalInteractions > 0 ? Math.round(interactions.reduce((s, i) => s + (Number(i.satisfaction_score) || 0), 0) / totalInteractions) : 0;
+  const complaintMonthly = monthlySum(interactions.filter((i) => i.type === "plainte"), "date", "satisfaction_score");
+
+  // === CONCURRENTS ===
+  const competitorStr = competitors.slice(0, 8).map((c) => `${c.name}: ${c.market_position || "?"}, ${c.price_position || "?"}, rating ${c.average_rating || "?"}, CA estimé ${round(c.estimated_revenue || 0)} $`).join("\n");
+
+  // === OBJECTIFS ===
+  const goalStr = goals.map((g) => `${g.domain}/${g.metric}: cible ${g.target} ${g.period || ""}, priorité ${g.priority || "?"}`).join("\n");
+
+  // === ÉVÉNEMENTS ===
+  const eventStr = events.slice(0, 15).map((e) => `${e.date}: ${e.event_type} — ${e.description || ""} (impact: ${e.impact_area || "?"})`).join("\n");
+
+  // === EMPLOYÉS ===
+  const activeEmployees = employees.filter((e) => e.status === "actif");
+
+  // === Build context string ===
   const companyProfile = company
     ? `Entreprise: ${company.name}
 Secteur: ${company.sector || "non précisé"}
 Localisation: ${company.location || "non précisée"}
-Employés: ${company.employee_count || "non précisé"}
-Modèle d'affaires: ${company.business_model || "non précisé"}
+Employés: ${company.employee_count || activeEmployees.length || "non précisé"}
+Modèle: ${company.business_model || "non précisé"}
 Produits/services: ${(company.products || "")} ${(company.services || "")}
 Clientèle: ${company.clientele || "non précisée"}
 Objectifs: ${(company.objectives || []).join(", ") || "non précisés"}`
     : "Aucune entreprise configurée.";
 
-  const dataSummary = `Total transactions: ${transactions.length}
-Revenus totaux: ${Math.round(totalIncome)} $
-Dépenses totales: ${Math.round(totalExpenses)} $
-Marge brute: ${Math.round(grossMargin)} $ (${marginPct}%)
-
-Évolution mensuelle (6 derniers mois):
-${monthly || "données insuffisantes"}
-
+  const financeSection = `Total transactions: ${transactions.length}
+Revenus totaux: ${round(totalIncome)} $
+Dépenses totales: ${round(totalExpenses)} $
+Marge brute: ${round(grossMargin)} $ (${marginPct}%)
+Évolution mensuelle (12 derniers mois):
+${txnMonthlyStr || "insuffisant"}
 Top catégories de dépenses:
-${topCategories || "données insuffisantes"}`;
+${topExpCats || "insuffisant"}`;
 
-  const kpiSummary = kpis
-    .map((k) => `${k.name} (${k.domain}): ${k.value} ${k.unit || ""} — tendance ${k.trend || "stable"}`)
-    .join("\n");
+  const salesSection = `Commandes: ${orderCount}
+Revenu commandes: ${round(orderRevenue)} $
+Panier moyen: ${aov} $
+Taux de retour: ${returnRate}%
+Évolution mensuelle:
+${orderMonthlyStr || "insuffisant"}
+Par canal:
+${channelStr || "insuffisant"}`;
 
-  const anomalySummary = anomalies
-    .map((a) => `- [${a.severity}] ${a.title}: ${a.description || ""}`)
-    .join("\n");
+  const customerSection = `Total clients: ${totalCustomers}
+Segments: ${segmentStr || "insuffisant"}
+Taux de churn: ${churnRate}%
+Concentration top 5: ${concentration}% du CA
+Top clients:
+${topCustomersStr || "insuffisant"}`;
 
-  const riskSummary = risks
-    .map((r) => `- [score ${r.score}/100] ${r.title}: ${r.description || ""}`)
-    .join("\n");
+  const productSection = `Total produits: ${totalProducts}
+Produits faible marge (<15%): ${lowMarginProducts.length}
+Top produits:
+${topProductsStr || "insuffisant"}
+Produits dormant (stock élevé, ventes faibles):
+${dormantStr || "aucun"}
+Produits proches rupture:
+${ruptureStr || "aucun"}`;
 
-  const oppSummary = opportunities
-    .map((o) => `- [score ${o.score}/100] ${o.title}: ${o.description || ""}`)
-    .join("\n");
+  const inventorySection = `Valeur inventaire: ${round(inventoryValue)} $
+Distribution statut stock: ${stockDistStr || "insuffisant"}`;
+
+  const supplierSection = `Total fournisseurs: ${totalSuppliers}
+Fournisseurs problématiques: ${problematicSuppliers.length}
+${supplierStr || "insuffisant"}`;
+
+  const purchaseSection = `Coût total achats: ${round(totalPurchaseCost)} $
+Délai moyen: ${avgDelay} jours
+Achats en retard (>5j): ${delayedPurchases.length}
+Évolution mensuelle:
+${purchaseMonthlyStr || "insuffisant"}`;
+
+  const marketingSection = `Dépenses totales: ${round(totalSpend)} $
+Revenus attribués: ${round(totalCampaignRevenue)} $
+ROAS global: ${overallRoas}
+CAC global: ${overallCac} $
+Nouveaux clients: ${totalNewCustomers}
+Par canal:
+${channelMarketingStr || "insuffisant"}
+Pires campagnes (ROAS bas):
+${worstCampaignsStr || "insuffisant"}
+Tendance dépenses marketing:
+${spendTrendStr || "insuffisant"}`;
+
+  const payrollSection = `Coût total paie: ${round(totalPayrollCost)} $
+Employés actifs: ${activeEmployees.length}
+Tendance:
+${payrollTrendStr || "insuffisant"}`;
+
+  const expenseSection = `Total dépenses: ${round(totalExpensesAmount)} $
+Abonnements récurrents:
+${recurringStr || "aucun"}`;
+
+  const cashflowSection = `Trésorerie actuelle: ${round(currentCash)} $
+Tendance flux net:
+${cashflowTrendStr || "insuffisant"}`;
+
+  const interactionSection = `Total interactions: ${totalInteractions}
+Taux de plaintes: ${complaintRate}%
+Satisfaction moyenne: ${avgSatisfaction}/5
+Plaintes par mois:
+${complaintMonthly.map(([m, v]) => `${m}: ${v}`).join("\n") || "insuffisant"}`;
+
+  const competitorSection = competitorStr || "aucun concurrent renseigné";
+  const goalSection = goalStr || "aucun objectif renseigné";
+  const eventSection = eventStr || "aucun événement renseigné";
 
   const context = `CONTEXTE DE L'ENTREPRISE
 ${companyProfile}
 
-DONNÉES FINANCIÈRES
-${dataSummary}
+=== FINANCE ===
+${financeSection}
 
-KPI ACTUELS
-${kpiSummary || "aucun KPI calculé"}
+=== VENTES ===
+${salesSection}
 
-ANOMALIES DÉTECTÉES
-${anomalySummary || "aucune anomalie"}
+=== CLIENTS ===
+${customerSection}
 
-RISQUES ACTIFS
-${riskSummary || "aucun risque"}
+=== PRODUITS ===
+${productSection}
 
-OPPORTUNITÉS
-${oppSummary || "aucune opportunité"}`;
+=== INVENTAIRE ===
+${inventorySection}
+
+=== FOURNISSEURS ===
+${supplierSection}
+
+=== ACHATS ===
+${purchaseSection}
+
+=== MARKETING ===
+${marketingSection}
+
+=== PAIE ===
+${payrollSection}
+
+=== DÉPENSES ===
+${expenseSection}
+
+=== TRÉSORERIE ===
+${cashflowSection}
+
+=== INTERACTIONS CLIENTS ===
+${interactionSection}
+
+=== CONCURRENTS ===
+${competitorSection}
+
+=== OBJECTIFS ===
+${goalSection}
+
+=== ÉVÉNEMENTS D'ENTREPRISE ===
+${eventSection}`;
 
   return {
     company,
     transactions,
+    orders,
+    customers,
+    products,
+    inventory,
+    suppliers,
+    purchases,
+    campaigns,
+    cashflow,
+    interactions,
     kpis,
     anomalies,
     risks,
@@ -114,6 +376,22 @@ ${oppSummary || "aucune opportunité"}`;
     recommendations,
     tasks,
     context,
-    totals: { totalIncome, totalExpenses, grossMargin, marginPct, count: transactions.length },
+    totals: {
+      totalIncome,
+      totalExpenses,
+      grossMargin,
+      marginPct,
+      count: transactions.length,
+      orderRevenue,
+      orderCount,
+      aov,
+      returnRate,
+      totalSpend,
+      overallRoas,
+      overallCac,
+      churnRate,
+      concentration,
+      currentCash,
+    },
   };
 }

@@ -27,18 +27,50 @@ export default async function(req) {
     await base44.entities.Kpi.deleteMany({});
     await base44.entities.ExternalSignal.deleteMany({});
 
-    const prompt = `Tu es GESCOP, un système intelligent de pilotage pour PME. Analyse les données de cette entreprise et produis un diagnostic complet.
+    const prompt = `Tu es GESCOP, un système intelligent de pilotage pour PME. Analyse les données multi-sources de cette entreprise et produis un diagnostic complet en croisant toutes les sources disponibles.
 
 ${context}
 
 INSTRUCTIONS
-1. Calcule un score de santé global sur 100 et un score pour chacune des 9 dimensions: finance, ventes, tresorerie, clients, operations, marketing, productivite, risques, croissance. Chaque score entre 0 et 100. Pour chaque dimension donne aussi une tendance (up/down/stable) et une explication courte.
-2. Détecte les anomalies: écarts par rapport à la normale (dépenses inhabituelles, baisses de ventes, montants aberrants). Pour chaque anomalie: title, description, dimension, severity (critique/important/modere/faible), deviation_pct, explanation, financial_impact (impact financier mensuel estimé en dollars CAD, négatif pour une perte, positif pour un gain, 0 si non applicable), confidence_pct (niveau de confiance 0-100 basé sur la quantité et qualité des données disponibles).
-3. Identifie les risques: title, description, category, probability (0-100), impact (faible/moyen/eleve), urgency (faible/moyenne/elevee), confidence (faible/moyenne/elevee), horizon, score (0-100), financial_impact (impact financier potentiel estimé en dollars CAD, toujours négatif ou 0), confidence_pct (0-100). Calcule le score = combinaison de probabilité, impact, urgence et confiance.
-4. Identifie les opportunités: title, description, category, potential (faible/moyen/eleve), probability (0-100), horizon, confidence (faible/moyenne/elevee), score (0-100), financial_impact (impact financier potentiel estimé en dollars CAD, toujours positif ou 0), confidence_pct (0-100).
-5. Pour chaque risque et opportunité majeur, produis une recommandation structurée: title, situation (que se passe-t-il), analysis (pourquoi), impact (quel effet possible), action (que faire), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly), financial_impact (impact financier estimé de l'action recommandée en dollars CAD, peut être positif pour une économie ou un gain, négatif pour un coût), confidence_pct (0-100).
-6. Sélectionne les KPI pertinents pour ce secteur, organisés en 4 domaines (finance, ventes, operations, marketing). Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
-7. Détecte des signaux externes pertinents pour cette entreprise (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon, relevance_reason (pourquoi ce signal concerne spécifiquement cette entreprise — fais le lien avec son secteur, ses produits, sa clientèle ou sa localisation), recommended_action (une action concrète que le dirigeant devrait entreprendre). Base-toi sur le secteur et la localisation de l'entreprise.
+Tu as accès aux données de: finance (transactions), ventes (commandes), clients, produits, inventaire, fournisseurs, achats, marketing (campagnes + quotidien), paie, dépenses, trésorerie, interactions clients, concurrents, objectifs et événements. Croise ces sources pour détecter des patterns que une seule source ne révélerait pas.
+
+1. Calcule un score de santé global sur 100 et un score pour chacune des 9 dimensions: finance, ventes, tresorerie, clients, operations, marketing, productivite, risques, croissance. Chaque score entre 0 et 100. Pour chaque dimension donne aussi une tendance (up/down/stable) et une explication courte. Base les scores sur les données réelles, pas sur des suppositions.
+
+2. Détecte les anomalies en croisant les sources. Cherche notamment:
+   - Dépenses inhabituelles ou montants aberrants (transactions)
+   - Baisse soudaine des ventes sur une période (commandes mensuelles)
+   - Hausse anormale des remboursements (commandes return_status)
+   - Hausse des plaintes clients (interactions type=plainte)
+   - Dépenses marketing en hausse plus rapide que les ventes (campagnes vs commandes)
+   - Coûts fournisseurs en hausse (achats mensuels)
+   - Abonnements récurrents potentiellement inutilisés (dépenses recurring=true)
+   - Doublons ou valeurs incohérentes
+   Pour chaque anomalie: title, description, dimension, severity (critique/important/modere/faible), deviation_pct, explanation, financial_impact (impact financier mensuel estimé en dollars CAD, négatif pour une perte, positif pour un gain, 0 si non applicable), confidence_pct (0-100).
+
+3. Identifie les risques en croisant les sources. Cherche notamment:
+   - Tension de trésorerie future (cashflow trend + accounts_payable)
+   - Concentration excessive de la clientèle (top 5 clients % du CA)
+   - Hausse du CAC et dégradation du ROAS (marketing)
+   - Fournisseurs avec délais croissants ou qualité en baisse
+   - Hausse des coûts salariaux (paie)
+   - Stock dormant immobilisant de la trésorerie (produits + inventaire)
+   - Produits proches de la rupture (inventaire)
+   - Clients auparavant actifs devenant inactifs (churn)
+   Pour chaque risque: title, description, category, probability (0-100), impact (faible/moyen/eleve), urgency (faible/moyenne/elevee), confidence (faible/moyenne/elevee), horizon, score (0-100), financial_impact (toujours négatif ou 0), confidence_pct (0-100).
+
+4. Identifie les opportunités en croisant les sources. Cherche notamment:
+   - Produits très rentables mais sous-commercialisés (marge élevée + ventes faibles)
+   - Segments clients à fort potentiel non exploités
+   - Campagnes très rentables à scale (ROAS élevé)
+   - Réallocation budgétaire marketing vers les canaux performants
+   - Produits à fort volume mais marge optimisable
+   Pour chaque opportunité: title, description, category, potential (faible/moyen/eleve), probability (0-100), horizon, confidence (faible/moyenne/elevee), score (0-100), financial_impact (toujours positif ou 0), confidence_pct (0-100).
+
+5. Pour chaque risque et opportunité majeur, produis une recommandation structurée et actionnable: title, situation (que se passe-t-il), analysis (pourquoi, avec référence aux données), impact (quel effet possible), action (que faire concrètement), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly), financial_impact (impact financier estimé de l'action en dollars CAD), confidence_pct (0-100).
+
+6. Sélectionne les KPI pertinents, organisés en 4 domaines (finance, ventes, operations, marketing). Inclus des KPI calculés à partir des données: CA total, marge brute %, panier moyen, taux de retour, ROAS, CAC, taux de churn, concentration client, valeur inventaire, taux de plaintes, coût paie mensuel. Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
+
+7. Détecte des signaux externes pertinents (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon, relevance_reason, recommended_action. Base-toi sur le secteur, la localisation et les concurrents.
 
 Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors JSON.`;
 
