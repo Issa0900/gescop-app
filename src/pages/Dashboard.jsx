@@ -5,7 +5,7 @@ import { useCompany } from "@/hooks/useCompany";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/ui/use-toast";
-import { Sparkles, RefreshCw, ArrowRight, Check, Loader2 } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, Check, Loader2, ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -20,6 +20,7 @@ import RiskCard from "@/components/dashboard/RiskCard";
 import ForecastCard from "@/components/dashboard/ForecastCard";
 import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
+import TodayPriorities from "@/components/dashboard/TodayPriorities";
 
 const analysisSteps = [
   "Vérification des données", "Calcul des tendances", "Détection des anomalies",
@@ -110,6 +111,11 @@ export default function Dashboard() {
     queryKey: ["analysis-runs"],
     queryFn: async () => { const l = await base44.entities.AnalysisRun.list("-created_date", 5); return l || []; },
   });
+  const { data: tasks } = useQuery({
+    queryKey: ["tasks-dashboard"],
+    queryFn: async () => { const l = await base44.entities.Task.list("-created_date", 50); return l || []; },
+  });
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -335,25 +341,16 @@ export default function Dashboard() {
 
       {hasData && hasAnalysis && (
         <div className="space-y-6">
-          {/* 1. ÉTAT GLOBAL */}
+          {/* 1. PRIORITÉS CRITIQUES DU JOUR */}
+          <TodayPriorities recommendations={recommendations} anomalies={anomalies} risks={risks} tasks={tasks} />
+
+          {/* 2. ÉTAT GLOBAL */}
           <HealthHero score={company.health_score || 0} dimensions={dimensions} summary={summary} trend={healthTrend} onDomainClick={() => navigate("/kpis")} />
 
-          {/* 2. CE QUI MÉRITE VOTRE ATTENTION */}
-          {insights.length > 0 && (
-            <div>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui mérite votre attention</h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {insights.map((ins, i) => (
-                  <InsightCard key={i} {...ins} onDismiss={() => qc.invalidateQueries()} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 3. KPI PRINCIPAUX */}
+          {/* 3. KPI ESSENTIELS (top 3) */}
           <div>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Performance de l'entreprise</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicateurs clés</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <KpiCard label="Trésorerie" value={`${Math.round(computed.latestCash).toLocaleString("fr-CA")} $`}
                 change={`${Math.abs(computed.cashTrend).toFixed(1)}%`} changeDir={computed.cashTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.cash)} status={computed.latestCash > 0 ? "good" : "critical"} statusLabel={computed.latestCash > 0 ? "Bon" : "Critique"} onClick={() => navigate("/tresorerie")} />
@@ -363,93 +360,124 @@ export default function Dashboard() {
               <KpiCard label="Marge brute" value={`${computed.marginPct.toFixed(1)}%`}
                 change={`${Math.abs(computed.marginTrend).toFixed(1)}%`} changeDir={computed.marginTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.margin)} status={computed.marginPct >= 30 ? "good" : "warning"} statusLabel={computed.marginPct >= 30 ? "Bon" : "Attention"} onClick={() => navigate("/kpis")} />
-              <KpiCard label="Coûts opérationnels" value={`${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $`}
-                change={`${Math.abs(computed.costTrend).toFixed(1)}%`} changeDir={computed.costTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
-              <KpiCard label="Clients actifs" value={computed.activeCustomers.toLocaleString("fr-CA")}
-                change={`${Math.abs(computed.clientTrend).toFixed(1)}%`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.clients)} status="good" statusLabel="Bon" onClick={() => navigate("/clients")} />
-              <KpiCard label="Panier moyen" value={`${computed.aov.toFixed(2)} $`}
-                change={`${Math.abs(computed.aovTrend).toFixed(1)}%`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.aovMonthly)} status="neutral" statusLabel="Stable" onClick={() => navigate("/clients")} />
             </div>
           </div>
 
-          {/* 3.5. GRAPHIQUES KPI ANIMÉS */}
-          <KpiOverview monthlyData={computed.monthlyData} dimensions={dimensions} />
+          {/* 4. SECTION DÉTAILS (repliable) */}
+          <div className="rounded-2xl border border-border bg-card">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="flex w-full items-center justify-between p-4"
+            >
+              <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Plus de détails — domaines, tendances, risques, opportunités et prévisions
+              </span>
+              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${showDetails ? "rotate-180" : ""}`} />
+            </button>
 
-          {/* 4. RADAR DES DOMAINES */}
-          <div>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Vue d'ensemble</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {dimensions.filter((d) => ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"].includes(d.key)).map((d) => (
-                <DomainScoreCard key={d.key} domainKey={d.key} score={d.score} trend={d.trend} trendDelta={dimTrendDeltas[d.key] || 0} problem={d.explanation} onAnalyze={() => navigate("/kpis")} />
-              ))}
-            </div>
+            {showDetails && (
+              <div className="space-y-6 border-t border-border p-4">
+                {/* KPI secondaires */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <KpiCard label="Coûts opérationnels" value={`${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $`}
+                    change={`${Math.abs(computed.costTrend).toFixed(1)}%`} changeDir={computed.costTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
+                  <KpiCard label="Clients actifs" value={computed.activeCustomers.toLocaleString("fr-CA")}
+                    change={`${Math.abs(computed.clientTrend).toFixed(1)}%`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.monthlyData.clients)} status="good" statusLabel="Bon" onClick={() => navigate("/clients")} />
+                  <KpiCard label="Panier moyen" value={`${computed.aov.toFixed(2)} $`}
+                    change={`${Math.abs(computed.aovTrend).toFixed(1)}%`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.aovMonthly)} status="neutral" statusLabel="Stable" onClick={() => navigate("/clients")} />
+                </div>
+
+                {/* Insights */}
+                {insights.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui mérite votre attention</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {insights.map((ins, i) => (
+                        <InsightCard key={i} {...ins} onDismiss={() => qc.invalidateQueries()} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <KpiOverview monthlyData={computed.monthlyData} dimensions={dimensions} />
+
+                {/* Domain scores */}
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Vue d'ensemble des domaines</h3>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                    {dimensions.filter((d) => ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"].includes(d.key)).map((d) => (
+                      <DomainScoreCard key={d.key} domainKey={d.key} score={d.score} trend={d.trend} trendDelta={dimTrendDeltas[d.key] || 0} problem={d.explanation} onAnalyze={() => navigate("/kpis")} />
+                    ))}
+                  </div>
+                </div>
+
+                <PerformanceChart monthlyData={computed.monthlyData} />
+
+                {/* Risques */}
+                {(risks || []).length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Risques actifs</h3>
+                      <Button variant="ghost" size="sm" asChild><Link to="/risques">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {[...(risks || [])].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3).map((r) => (
+                        <RiskCard key={r.id} title={r.title} description={r.description}
+                          impact={r.financial_impact ? formatImpact(r.financial_impact) : null}
+                          category={r.category} urgency={r.urgency} score={r.score}
+                          link="/risques" onCreateAction={() => navigate("/taches")} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Opportunités */}
+                {(opportunities || []).length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Opportunités détectées</h3>
+                      <Button variant="ghost" size="sm" asChild><Link to="/risques">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      {(opportunities || []).slice(0, 3).map((o) => (
+                        <OpportunityCard key={o.id} title={o.title} description={o.description}
+                          impact={o.financial_impact ? formatImpact(o.financial_impact) : null}
+                          category={o.category} link="/risques" onCreateAction={() => navigate("/taches")} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Prévisions */}
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui pourrait arriver</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <ForecastCard metric="Chiffre d'affaires prévu (30j)" value={`${computed.projectedRevenue.toLocaleString("fr-CA")} $`} probability={82} chartData={computed.forecastRevData} />
+                    <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.projectedCash < 50000 ? "modéré" : "faible"} chartData={computed.forecastCashData} />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {actions.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Actions recommandées</h3>
+                      <Button variant="ghost" size="sm" asChild><Link to="/recommandations">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      {actions.map((a) => (
+                        <ActionCard key={a.id} title={a.title} impact={a.impact} priority={a.priority}
+                          onExamine={() => navigate("/recommandations")} onApprove={() => navigate("/recommandations")} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* 5. ÉVOLUTION */}
-          <PerformanceChart monthlyData={computed.monthlyData} />
-
-          {/* 6. RISQUES ACTIFS */}
-          {(risks || []).length > 0 && (
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Risques actifs</h2>
-                <Button variant="ghost" size="sm" asChild><Link to="/risques">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {[...(risks || [])].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3).map((r) => (
-                  <RiskCard key={r.id} title={r.title} description={r.description}
-                    impact={r.financial_impact ? formatImpact(r.financial_impact) : null}
-                    category={r.category} urgency={r.urgency} score={r.score}
-                    link="/risques" onCreateAction={() => navigate("/taches")} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 6.5. OPPORTUNITÉS */}
-          {(opportunities || []).length > 0 && (
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Opportunités détectées</h2>
-                <Button variant="ghost" size="sm" asChild><Link to="/risques">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {(opportunities || []).slice(0, 3).map((o) => (
-                  <OpportunityCard key={o.id} title={o.title} description={o.description}
-                    impact={o.financial_impact ? formatImpact(o.financial_impact) : null}
-                    category={o.category} link="/risques" onCreateAction={() => navigate("/taches")} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 7. PRÉVISIONS */}
-          <div>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui pourrait arriver</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <ForecastCard metric="Chiffre d'affaires prévu (30j)" value={`${computed.projectedRevenue.toLocaleString("fr-CA")} $`} probability={82} chartData={computed.forecastRevData} />
-              <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.projectedCash < 50000 ? "modéré" : "faible"} chartData={computed.forecastCashData} />
-            </div>
-          </div>
-
-          {/* 8. ACTIONS RECOMMANDÉES */}
-          {actions.length > 0 && (
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Actions recommandées</h2>
-                <Button variant="ghost" size="sm" asChild><Link to="/recommandations">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {actions.map((a) => (
-                  <ActionCard key={a.id} title={a.title} impact={a.impact} priority={a.priority}
-                    onExamine={() => navigate("/recommandations")} onApprove={() => navigate("/recommandations")} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
