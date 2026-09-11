@@ -39,29 +39,30 @@ export default function ImportPage() {
     },
   });
 
-  const handleFile = async (file) => {
-    if (!file) return;
-    const ext = file.name.split(".").pop().toLowerCase();
-    const sourceType = ["csv", "xlsx", "xls", "tsv", "pdf"].includes(ext) ? ext : "csv";
+  const handleFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const uploadedFiles = [];
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+        uploadedFiles.push({ file_url, file_name: file.name });
+      }
       setUploading(false);
       setProcessing(true);
-      const res = await base44.functions.invoke("importData", {
-        file_url,
-        source_type: sourceType,
-        file_name: file.name,
-      });
+      const res = await base44.functions.invoke("importMultiData", { files: uploadedFiles });
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
       } else {
         setImportResult(data);
+        const totalRows = (data.results || []).reduce((s, r) => s + (r.rows || 0), 0);
+        const okCount = (data.results || []).filter((r) => r.status === "complete").length;
         toast({
           title: "Import terminé",
-          description: `${data.rows_imported} transactions importées (qualité ${data.quality_score}%)`,
+          description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`,
         });
         qc.invalidateQueries(["imports"]);
         qc.invalidateQueries(["transactions-summary"]);
@@ -92,6 +93,22 @@ export default function ImportPage() {
     try {
       setPurging(true);
       await base44.entities.Transaction.deleteMany({});
+      await base44.entities.Order.deleteMany({});
+      await base44.entities.Customer.deleteMany({});
+      await base44.entities.Product.deleteMany({});
+      await base44.entities.Inventory.deleteMany({});
+      await base44.entities.Supplier.deleteMany({});
+      await base44.entities.Purchase.deleteMany({});
+      await base44.entities.Campaign.deleteMany({});
+      await base44.entities.CampaignDaily.deleteMany({});
+      await base44.entities.Employee.deleteMany({});
+      await base44.entities.Payroll.deleteMany({});
+      await base44.entities.Expense.deleteMany({});
+      await base44.entities.Cashflow.deleteMany({});
+      await base44.entities.Interaction.deleteMany({});
+      await base44.entities.Competitor.deleteMany({});
+      await base44.entities.Goal.deleteMany({});
+      await base44.entities.Event.deleteMany({});
       await base44.entities.Kpi.deleteMany({});
       await base44.entities.Anomaly.deleteMany({});
       await base44.entities.Risk.deleteMany({});
@@ -119,8 +136,7 @@ export default function ImportPage() {
   const onDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
   };
 
   return (
@@ -145,7 +161,7 @@ export default function ImportPage() {
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {uploading ? "Téléversement du fichier…" : "Extraction et normalisation des données…"}
+              {uploading ? "Téléversement des fichiers…" : "Extraction et normalisation des données…"}
             </p>
           </div>
         ) : (
@@ -154,15 +170,16 @@ export default function ImportPage() {
               <Upload className="h-7 w-7 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium">Glissez votre fichier ici ou cliquez pour parcourir</p>
-              <p className="mt-1 text-sm text-muted-foreground">Formats supportés: CSV, XLSX, XLS, TSV, PDF texte</p>
+              <p className="font-medium">Glissez vos fichiers ici ou cliquez pour parcourir</p>
+              <p className="mt-1 text-sm text-muted-foreground">Multi-fichiers supporté: CSV, XLSX, XLS, TSV, PDF texte</p>
             </div>
             <label>
               <input
                 type="file"
                 accept={acceptedTypes}
+                multiple
                 className="hidden"
-                onChange={(e) => handleFile(e.target.files[0])}
+                onChange={(e) => handleFiles(e.target.files)}
               />
               <span className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
                 Choisir un fichier
@@ -176,13 +193,33 @@ export default function ImportPage() {
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-6">
           <div className="mb-4 flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-            <h2 className="font-semibold text-emerald-900">Analyse du fichier terminée</h2>
+            <h2 className="font-semibold text-emerald-900">Import multi-fichiers terminé</h2>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div><p className="text-xs text-muted-foreground">Lignes reçues</p><p className="mt-1 text-xl font-bold">{importResult.rows_received || 0}</p></div>
-            <div><p className="text-xs text-muted-foreground">Transactions importées</p><p className="mt-1 text-xl font-bold text-emerald-600">{importResult.rows_imported || 0}</p></div>
-            <div><p className="text-xs text-muted-foreground">Qualité</p><p className="mt-1 text-xl font-bold">{importResult.quality_score || 0}%</p></div>
-            <div><p className="text-xs text-muted-foreground">En quarantaine</p><p className="mt-1 text-xl font-bold text-orange-600">{importResult.rows_quarantined || 0}</p></div>
+          <div className="overflow-x-auto rounded-lg border border-emerald-200">
+            <table className="w-full min-w-[500px] text-sm">
+              <thead className="bg-emerald-100/50 text-left text-xs uppercase text-emerald-900">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Fichier</th>
+                  <th className="px-4 py-2 font-medium">Entité</th>
+                  <th className="px-4 py-2 font-medium">Lignes</th>
+                  <th className="px-4 py-2 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-emerald-100">
+                {(importResult.results || []).map((r, i) => (
+                  <tr key={i}>
+                    <td className="max-w-[200px] truncate px-4 py-2 font-medium" title={r.file_name}>{r.file_name}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{r.entity || "—"}</td>
+                    <td className="px-4 py-2">{r.rows || 0}</td>
+                    <td className="px-4 py-2">
+                      <span className={r.status === "complete" ? "text-emerald-600" : r.status === "ignore" ? "text-muted-foreground" : "text-red-600"}>
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <Button asChild><Link to="/">Commencer l'analyse IA <ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
