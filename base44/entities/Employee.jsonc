@@ -13,7 +13,8 @@
         "marketing",
         "logistique",
         "administration",
-        "service_client"
+        "service_client",
+        "atelier"
       ]
     },
     "role": {

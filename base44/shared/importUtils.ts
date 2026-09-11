@@ -82,13 +82,20 @@ export function normalizeKeys(row: Record<string, any>, properties?: Record<stri
 
 // English → French enum translations (context-aware: checked against target enum)
 const ENUM_TRANSLATIONS: Record<string, string[]> = {
-  "paid": ["paye"], "pending": ["en_attente"], "failed": ["echoue"], "refunded": ["rembourse"],
+  "paid": ["paye"], "pending": ["en_attente", "en_cours"], "failed": ["echoue"], "refunded": ["rembourse"],
   "shipped": ["expedie"], "processing": ["en_preparation"], "completed": ["livre", "terminee"], "cancelled": ["annule"], "returned": ["retourne"],
   "none": ["aucun"], "requested": ["demande"], "approved": ["approuve"], "rejected": ["refuse"],
   "web": ["shopify"],
   "google ads": ["google_ads"], "meta ads": ["meta_ads"],
   "paused": ["pause"], "planned": ["planifiee"], "active": ["active"],
   "dormant": ["dormant"],
+  // French capitalized/common variants → canonical enum values
+  "alerte": ["proche_rupture", "faible"], "normal": ["optimal"],
+  "bas": ["inferieur"], "moyen": ["egal"], "eleve": ["superieur"],
+  "haute": ["elevee", "urgente"], "critique": ["urgente"], "basse": ["faible"],
+  "en retard": ["non_atteint"], "en attente": ["en_attente", "en_cours"],
+  "avis": ["question"], "rh": ["administration", "service_client"],
+  "recu": ["recu"], "en cours": ["en_cours"],
 };
 
 // Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens, English→French)

@@ -22,7 +22,11 @@
         "changement_reglementaire",
         "embauche",
         "fermeture",
-        "expansion"
+        "expansion",
+        "finance",
+        "operations",
+        "rh",
+        "marketing"
       ]
     },
     "description": {
