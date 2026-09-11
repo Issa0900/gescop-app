@@ -136,12 +136,15 @@ export default function Kpis() {
       const currExp = lastVal(expMonthly);
       const prevExp = prevVal(expMonthly);
       const latestCash = (cashflow || [])[0]?.closing_cash || 0;
+      const prevCash = (cashflow || [])[1]?.closing_cash || 0;
+      const currMarginPct = currRev > 0 ? ((currRev - currExp) / currRev) * 100 : 0;
+      const prevMarginPct = prevRev > 0 ? ((prevRev - prevExp) / prevRev) * 100 : 0;
 
       result.push({ name: "Revenus (dernier mois)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
       result.push({ name: "Dépenses (dernier mois)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
-      result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: null, trend: marginPct >= 30 ? "up" : marginPct < 10 ? "down" : "stable", unit: "%" });
+      result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
       if (latestCash > 0 || (cashflow || []).length > 0) {
-        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: null, trend: latestCash > 0 ? "up" : "down", unit: "$" });
+        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: prevCash > 0 ? Math.round(prevCash) : null, trend: trendDir(latestCash, prevCash), unit: "$" });
       }
     }
 
@@ -215,10 +218,10 @@ export default function Kpis() {
       const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
       const ltv = activeCustomers > 0 ? totalOrderRev / activeCustomers : 0;
 
-      result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
       result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
       result.push({ name: "Nouveaux clients (dernier mois)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
-      result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: "stable", unit: "$" });
+      result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "$" });
     }
 
     return result;
