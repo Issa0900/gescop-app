@@ -226,7 +226,16 @@ export default function Kpis() {
       const avgMargin = (products || []).length > 0
         ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
         : 0;
-      const lowStockProducts = (products || []).filter((p) => p.reorder_point && (p.inventory_level || 0) < p.reorder_point).length;
+      // Reorder check against the recorded closing stock, not the imported
+      // inventory_level field, so it matches the Produits page.
+      const invByProduct = {};
+      latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
+      const lowStockProducts = (products || []).filter((p) => {
+        if (!p.reorder_point) return false;
+        const snap = invByProduct[p.product_id];
+        const stock = snap && snap.closing_stock != null ? Number(snap.closing_stock) : Number(p.inventory_level) || 0;
+        return stock <= p.reorder_point;
+      }).length;
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
       result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: dormantStock > 0 ? "down" : "up", unit: "" });

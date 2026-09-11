@@ -69,6 +69,9 @@ export default function Produits() {
 
   const total = products.length;
   const lowMargin = products.filter((p) => (p.gross_margin || 0) < 15);
+  const avgMargin = total > 0
+    ? products.reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / total
+    : 0;
 
   // Inventory arrives as one row per product per date. Counting every historical
   // row multiplies each situation by its number of recorded days, so all stock
@@ -81,7 +84,14 @@ export default function Produits() {
     return snap && snap.closing_stock != null ? Number(snap.closing_stock) : Number(p.inventory_level) || 0;
   };
   const dormantCount = latestInv.filter((i) => i.stock_status === "dormant").length;
-  const nearRupture = products.filter((p) => p.reorder_point > 0 && stockOf(p) <= (p.reorder_point || 0));
+  // Same definition as the KPI page: the recorded stock state is authoritative,
+  // with the reorder threshold as a second signal for products it doesn't flag.
+  const ruptureCount = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
+  const nearRupture = products.filter((p) => {
+    const st = invByProduct[p.product_id]?.stock_status;
+    if (["rupture", "proche_rupture"].includes(st)) return true;
+    return p.reorder_point > 0 && stockOf(p) <= p.reorder_point;
+  });
 
   // Compute actual sales per product from orders (most recent month)
   const orderMonths = (orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean).sort();
@@ -155,9 +165,9 @@ export default function Produits() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
-        <StatCard label="Faible marge (<15%)" value={lowMargin.length} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Stock dormant" value={dormantCount} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Proches rupture" value={nearRupture.length} icon={AlertTriangle} accent={nearRupture.length > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${avgMargin.toFixed(1)}%`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Stock dormant" value={dormantCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Rupture / proche rupture" value={ruptureCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={AlertTriangle} accent={ruptureCount > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
