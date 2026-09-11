@@ -391,7 +391,7 @@ export default function Dashboard() {
                 sparkline={computed.spark(computed.monthlyData.revenue)} status={computed.revTrend >= 0 ? "good" : "warning"} statusLabel={computed.revTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/kpis")} />
               <KpiCard label="Marge brute" value={`${computed.marginPct.toFixed(1)}%`}
                 change={`${Math.abs(computed.marginTrend).toFixed(1)}%`} changeDir={computed.marginTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.margin)} status={computed.marginPct >= 30 ? "good" : "warning"} statusLabel={computed.marginPct >= 30 ? "Bon" : "Attention"} onClick={() => navigate("/kpis")} />
+                sparkline={computed.spark(computed.monthlyData.margin)} status={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning"} statusLabel={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention"} onClick={() => navigate("/kpis")} />
             </div>
           </div>
 
