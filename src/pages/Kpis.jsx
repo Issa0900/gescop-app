@@ -5,6 +5,7 @@ import EmptyState from "@/components/EmptyState";
 import KpiCard from "@/components/kpis/KpiCard";
 import KpiTrendChart from "@/components/kpis/KpiTrendChart";
 import DomainScoreList from "@/components/kpis/DomainScoreList";
+import DomainScoreLegend from "@/components/kpis/DomainScoreLegend";
 import { BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
@@ -22,6 +23,7 @@ import {
 
 const domainLabels = {
   finance: "Finance",
+  tresorerie: "Trésorerie",
   ventes: "Ventes",
   marketing: "Marketing",
   operations: "Opérations",
@@ -30,6 +32,7 @@ const domainLabels = {
 
 const domainColors = {
   finance: "#2563eb",
+  tresorerie: "#0ea5e9",
   ventes: "#16a34a",
   marketing: "#ea580c",
   operations: "#9333ea",
@@ -367,6 +370,7 @@ export default function Kpis() {
               explanation: rtScores[key].explanation,
             }))}
         />
+        <DomainScoreLegend />
       </div>
 
       {Object.entries(domainLabels).map(([domain, label]) => {
