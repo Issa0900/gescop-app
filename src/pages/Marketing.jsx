@@ -35,6 +35,9 @@ export default function Marketing() {
   const totalNew = campaigns.reduce((s, c) => s + (c.new_customers || 0), 0);
   const overallRoas = totalSpend > 0 ? (totalRevenue / totalSpend).toFixed(2) : "—";
   const overallCac = totalNew > 0 ? Math.round(totalSpend / totalNew) : 0;
+  // Coverage of the daily records, which drive the monthly trend: campaigns
+  // carry no dates in the import, so only dated daily rows can be trended.
+  const dailyCampaigns = new Set((daily || []).map((d) => d.campaign_id).filter(Boolean)).size;
 
   const byChannel = {};
   campaigns.forEach((c) => {
@@ -80,10 +83,10 @@ export default function Marketing() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Dépenses totales" value={`${Math.round(totalSpend).toLocaleString()} $`} icon={DollarSign} />
+        <StatCard label="Dépenses totales" value={`${Math.round(totalSpend).toLocaleString()} $`} sublabel={`${campaigns.length} campagnes importées`} icon={DollarSign} />
         <StatCard label="ROAS global" value={overallRoas} sublabel={`${Math.round(totalRevenue).toLocaleString()} $ revenus`} icon={TrendingUp} accent={totalSpend === 0 ? "bg-muted text-muted-foreground" : Number(overallRoas) >= 2 ? "bg-emerald-50 text-emerald-600" : Number(overallRoas) < 1 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"} />
         <StatCard label="CAC global" value={`${overallCac} $`} icon={UserPlus} />
-        <StatCard label="Nouveaux clients" value={totalNew.toLocaleString()} icon={UserPlus} />
+        <StatCard label="Nouveaux clients" value={totalNew.toLocaleString()} sublabel="attribués aux campagnes" icon={UserPlus} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
@@ -102,7 +105,10 @@ export default function Marketing() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tendance ROAS (8 derniers mois)</h2>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tendance ROAS (8 derniers mois)</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Calculé sur les relevés quotidiens ({daily.length} lignes, {dailyCampaigns} campagnes sur {campaigns.length}) — les campagnes sans date ne peuvent pas être réparties par mois.
+        </p>
         {trendData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={trendData} margin={{ left: 10, right: 10 }}>
