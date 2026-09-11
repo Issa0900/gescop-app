@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/AuthContext";
 const navGroups = [
   {
     label: "Accueil",
+    icon: LayoutDashboard,
     items: [
       { to: "/", label: "Vue d'ensemble", icon: LayoutDashboard, end: true },
       { to: "/insights", label: "Insights IA", icon: Brain },
@@ -20,6 +21,7 @@ const navGroups = [
   },
   {
     label: "Pilotage",
+    icon: BarChart3,
     items: [
       { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
       { to: "/clients", label: "Clients", icon: Users },
@@ -29,27 +31,30 @@ const navGroups = [
     ],
   },
   {
-    label: "Intelligence",
+    label: "Alertes & Risques",
+    icon: ShieldAlert,
     items: [
       { to: "/alertes", label: "Alertes", icon: Bell },
       { to: "/risques", label: "Risques & opportunités", icon: ShieldAlert },
-      { to: "/recommandations", label: "Recommandations", icon: Lightbulb },
       { to: "/anomalies", label: "Anomalies", icon: AlertTriangle },
+      { to: "/recommandations", label: "Recommandations", icon: Lightbulb },
+    ],
+  },
+  {
+    label: "Anticipation",
+    icon: TrendingUp,
+    items: [
       { to: "/previsions", label: "Prévisions", icon: TrendingUp },
       { to: "/simulateur", label: "Simulateur", icon: Calculator },
       { to: "/historique", label: "Historique", icon: History },
     ],
   },
   {
-    label: "Données",
+    label: "Données & Outils",
+    icon: FileText,
     items: [
       { to: "/importer", label: "Sources", icon: Upload },
       { to: "/radar", label: "Radar externe", icon: RadarIcon },
-    ],
-  },
-  {
-    label: "Outils",
-    items: [
       { to: "/rapports", label: "Rapports", icon: FileText },
       { to: "/assistant", label: "Assistant IA", icon: MessageSquare },
     ],
@@ -65,20 +70,19 @@ const bottomItems = [
 
 export default function Sidebar({ compact, onToggleCompact }) {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState({ Accueil: true, Pilotage: true, Intelligence: true, Données: true, Outils: true });
   const { company } = useCompany();
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    navGroups.forEach((g) => {
-      if (g.items.some((i) => i.to === location.pathname)) {
-        setExpanded((e) => ({ ...e, [g.label]: true }));
-      }
-    });
-  }, [location.pathname]);
+  const activeGroup = navGroups.find((g) => g.items.some((i) => i.to === location.pathname))?.label || "Accueil";
+  const [expanded, setExpanded] = useState({ [activeGroup]: true });
 
-  const toggle = (label) => setExpanded((e) => ({ ...e, [label]: !e[label] }));
+  useEffect(() => {
+    setExpanded({ [activeGroup]: true });
+  }, [activeGroup]);
+
+  const toggle = (label) =>
+    setExpanded((e) => (e[label] ? { [label]: false } : { [label]: true }));
 
   const renderNavItem = (item) => (
     <NavLink
@@ -161,21 +165,35 @@ export default function Sidebar({ compact, onToggleCompact }) {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
           {navGroups.map((group) => {
             const isExpanded = expanded[group.label] || compact;
+            const isActiveGroup = activeGroup === group.label;
             return (
-              <div key={group.label} className="mb-0.5">
-                {!compact && (
+              <div key={group.label} className="mb-1">
+                {!compact ? (
                   <button
                     onClick={() => toggle(group.label)}
-                    className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground/90"
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200",
+                      isActiveGroup
+                        ? "text-sidebar-primary"
+                        : "text-sidebar-foreground/55 hover:text-sidebar-foreground/90 hover:bg-sidebar-accent/40"
+                    )}
                   >
-                    <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", !isExpanded && "-rotate-90")} />
-                    {group.label}
+                    <group.icon className="h-3.5 w-3.5 shrink-0" style={{ width: 14, height: 14 }} />
+                    <span className="flex-1 text-left">{group.label}</span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", !isExpanded && "-rotate-90")} />
                   </button>
+                ) : (
+                  <div className="flex justify-center py-1.5">
+                    <group.icon
+                      className={cn("transition-colors", isActiveGroup ? "text-sidebar-primary" : "text-sidebar-foreground/55")}
+                      style={{ width: 16, height: 16 }}
+                    />
+                  </div>
                 )}
-                {compact && <div className="mx-3 my-2 border-t border-sidebar-border/40" />}
+                {compact && <div className="mx-3 my-1 border-t border-sidebar-border/40" />}
                 <div className={cn("overflow-hidden transition-all duration-300 ease-out", isExpanded ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
                   <div className={cn("space-y-0.5", !compact && "ml-2.5 border-l border-sidebar-border/60 pl-2.5")}>
                     {group.items.map(renderNavItem)}
