@@ -120,7 +120,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-background transition-all duration-300 ease-out md:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar transition-all duration-300 ease-out md:translate-x-0",
           compact ? "w-16" : "w-64",
           open ? "translate-x-0" : "-translate-x-full"
         )}
