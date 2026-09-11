@@ -80,7 +80,18 @@ export function normalizeKeys(row: Record<string, any>, properties?: Record<stri
   return out;
 }
 
-// Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens)
+// English → French enum translations (context-aware: checked against target enum)
+const ENUM_TRANSLATIONS: Record<string, string[]> = {
+  "paid": ["paye"], "pending": ["en_attente"], "failed": ["echoue"], "refunded": ["rembourse"],
+  "shipped": ["expedie"], "processing": ["en_preparation"], "completed": ["livre", "terminee"], "cancelled": ["annule"], "returned": ["retourne"],
+  "none": ["aucun"], "requested": ["demande"], "approved": ["approuve"], "rejected": ["refuse"],
+  "web": ["shopify"],
+  "google ads": ["google_ads"], "meta ads": ["meta_ads"],
+  "paused": ["pause"], "planned": ["planifiee"], "active": ["active"],
+  "dormant": ["dormant"],
+};
+
+// Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens, English→French)
 export function coerceEnum(value: any, enumOptions: string[]): any {
   if (!value || !enumOptions) return value;
   const raw = String(value).toLowerCase().trim();
@@ -89,6 +100,12 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
   const normNoAccents = stripAccents(normalized);
   if (enumOptions.includes(raw)) return raw;
   if (enumOptions.includes(normalized)) return normalized;
+  // Try English→French translation
+  const translations = ENUM_TRANSLATIONS[raw] || ENUM_TRANSLATIONS[normalized];
+  if (translations) {
+    const match = translations.find((t) => enumOptions.includes(t));
+    if (match) return match;
+  }
   const match = enumOptions.find((e) => {
     const eLow = e.toLowerCase();
     const eNoAcc = stripAccents(eLow);

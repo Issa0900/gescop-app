@@ -156,7 +156,11 @@ export default function Kpis() {
       const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
       const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
       const totalOrderRev = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
-      const returns = orders.filter((o) => o.return_status && o.return_status !== "aucun");
+      const returns = orders.filter((o) =>
+        (o.return_status && o.return_status !== "aucun") ||
+        o.payment_status === "rembourse" ||
+        o.fulfillment_status === "retourne"
+      );
       const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
       result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
