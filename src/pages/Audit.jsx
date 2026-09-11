@@ -6,21 +6,23 @@ import CheckRow from "@/components/audit/CheckRow";
 import QualityCard from "@/components/audit/QualityCard";
 import MetricTrace from "@/components/audit/MetricTrace";
 import { runCoherenceChecks, runQualityChecks, buildMetricTraces } from "@/lib/dataAudit";
+import { fetchAll } from "@/lib/fetchAll";
 import { ShieldCheck } from "lucide-react";
 
-const L = 2000;
+// Every source is read with pagination: a single call caps at 500 records and
+// a truncated source produces false incoherences.
 const sources = {
-  transactions: () => base44.entities.Transaction.list("-date", L),
-  orders: () => base44.entities.Order.list("-date", L),
-  customers: () => base44.entities.Customer.list("-created_date", L),
-  products: () => base44.entities.Product.list("-created_date", L),
-  inventory: () => base44.entities.Inventory.list("-date", L),
-  cashflow: () => base44.entities.Cashflow.list("-date", L),
-  expenses: () => base44.entities.Expense.list("-date", L),
-  payroll: () => base44.entities.Payroll.list("-period", L),
-  employees: () => base44.entities.Employee.list("-created_date", L),
-  campaigns: () => base44.entities.Campaign.list("-created_date", L),
-  campaignDaily: () => base44.entities.CampaignDaily.list("-date", L),
+  transactions: () => fetchAll(base44.entities.Transaction, "-date"),
+  orders: () => fetchAll(base44.entities.Order, "-date"),
+  customers: () => fetchAll(base44.entities.Customer),
+  products: () => fetchAll(base44.entities.Product),
+  inventory: () => fetchAll(base44.entities.Inventory, "-date"),
+  cashflow: () => fetchAll(base44.entities.Cashflow, "-date"),
+  expenses: () => fetchAll(base44.entities.Expense, "-date"),
+  payroll: () => fetchAll(base44.entities.Payroll, "-period"),
+  employees: () => fetchAll(base44.entities.Employee),
+  campaigns: () => fetchAll(base44.entities.Campaign),
+  campaignDaily: () => fetchAll(base44.entities.CampaignDaily, "-date"),
 };
 
 export default function Audit() {

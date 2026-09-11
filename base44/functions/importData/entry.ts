@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
+import { fetchDelimitedRows } from "../../shared/csvParse.ts";
 
 export default async function(req) {
   try {
@@ -24,8 +25,14 @@ export default async function(req) {
       rows_quarantined: 0,
     });
 
-    // Extract structured data from the uploaded file
-    const extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
+    // CSV/TSV: parse literally — AI extraction truncates long files.
+    let rows = [];
+    if (["csv", "tsv"].includes((source_type || "").toLowerCase())) {
+      rows = await fetchDelimitedRows(file_url);
+    }
+
+    // Other formats: AI extraction
+    const extraction = rows.length > 0 ? null : await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "array",
@@ -44,7 +51,6 @@ export default async function(req) {
       },
     });
 
-    let rows = [];
     if (extraction && extraction.status === "success" && extraction.output) {
       const out = extraction.output;
       if (Array.isArray(out)) {

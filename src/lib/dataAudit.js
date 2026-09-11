@@ -235,6 +235,10 @@ export function runQualityChecks(d) {
     }
     if (gaps > 0) issues.push(`${gaps} mois manquants dans la série`);
 
+    // A count landing exactly on a multiple of 500 is the signature of a
+    // truncated import — the metrics would then porter sur des données partielles.
+    if (rows.length % 500 === 0) issues.push(`${rows.length} lignes exactement : import probablement tronqué, réimportez le fichier complet`);
+
     const status = issues.some((i) => i.includes("doublons") || i.includes("sans date")) ? "error" : issues.length > 0 ? "warn" : "ok";
     return {
       name: s.name,

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { fetchDelimitedRows } from "../../shared/csvParse.ts";
 
 // Map sheet names / file names to entity names (order matters: more specific first)
 const NAME_ENTITY_MAP = [
@@ -177,7 +178,7 @@ export default async function (req: Request) {
         continue;
       }
 
-      // === CSV, TSV, PDF: use AI extraction (single entity per file) ===
+      // === CSV, TSV, PDF (single entity per file) ===
       const entityName = entity_override || detectEntity(file_name);
       if (!entityName) {
         results.push({
@@ -191,6 +192,15 @@ export default async function (req: Request) {
       }
 
       try {
+        // CSV/TSV are fully structured: parse every row literally so nothing is
+        // truncated. Only PDF still needs AI extraction.
+        if (["csv", "tsv"].includes(ext)) {
+          const rows = await fetchDelimitedRows(file_url);
+          const res = await importRows(base44, entityName, rows, sourceType, file_name);
+          results.push({ file_name, ...res });
+          continue;
+        }
+
         let entityProperties = null;
         let extractionSchema;
         try {
