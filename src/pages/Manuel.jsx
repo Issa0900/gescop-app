@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Book, ChevronDown, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, Users, Package, Megaphone, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ManualTableOfContents from "@/components/ManualTableOfContents";
 
 const groups = [
   {
@@ -340,13 +341,9 @@ const groups = [
 const allSections = groups.flatMap((g) => g.sections);
 
 export default function Manuel() {
-  const [activeSection, setActiveSection] = useState("demarrage");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  useEffect(() => {
-    const el = document.getElementById(`section-${activeSection}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [activeSection]);
+  const firstSectionId = groups[0]?.sections[0]?.id || "demarrage";
+  const [activeSection, setActiveSection] = useState(firstSectionId);
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
@@ -364,33 +361,9 @@ export default function Manuel() {
             {allSections.find((s) => s.id === activeSection)?.title}
             <ChevronDown className={cn("h-4 w-4 transition-transform", mobileNavOpen && "rotate-180")} />
           </button>
-          <nav className={cn("space-y-3", mobileNavOpen ? "block" : "hidden lg:block")}>
-            {groups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{group.label}</p>
-                <div className="space-y-0.5">
-                  {group.sections.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => {
-                        setActiveSection(s.id);
-                        setMobileNavOpen(false);
-                      }}
-                      className={cn(
-                        "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors",
-                        activeSection === s.id
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <s.icon className="h-4 w-4 shrink-0" />
-                      {s.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
+          <div className={cn(mobileNavOpen ? "block" : "hidden lg:block")}>
+            <ManualTableOfContents groups={groups} onActiveSectionChange={setActiveSection} />
+          </div>
         </div>
       </aside>
 
@@ -413,7 +386,7 @@ export default function Manuel() {
             </div>
             <div className="space-y-5">
               {s.content.map((block, i) => (
-                <div key={i}>
+                <div key={i} id={`heading-${s.id}-${i}`} className="scroll-mt-20">
                   <h3 className="mb-1.5 text-sm font-semibold text-foreground">{block.h}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{block.p}</p>
                 </div>
