@@ -22,6 +22,7 @@ import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
 import TimeFilter from "@/components/dashboard/TimeFilter";
+import { computeDomainScores } from "@/lib/domainScores";
 
 const analysisSteps = [
   "Vérification des données", "Calcul des tendances", "Détection des anomalies",
@@ -115,6 +116,18 @@ export default function Dashboard() {
   const { data: tasks } = useQuery({
     queryKey: ["tasks-dashboard"],
     queryFn: async () => { const l = await base44.entities.Task.list("-created_date", 50); return l || []; },
+  });
+  const { data: products } = useQuery({
+    queryKey: ["products-dashboard"],
+    queryFn: async () => { const l = await base44.entities.Product.list(); return l || []; },
+  });
+  const { data: inventory } = useQuery({
+    queryKey: ["inventory-dashboard"],
+    queryFn: async () => { const l = await base44.entities.Inventory.list("-date", 500); return l || []; },
+  });
+  const { data: campaigns } = useQuery({
+    queryKey: ["campaigns-dashboard"],
+    queryFn: async () => { const l = await base44.entities.Campaign.list(); return l || []; },
   });
   const [showDetails, setShowDetails] = useState(false);
   const [period, setPeriod] = useState("month");
@@ -256,26 +269,30 @@ export default function Dashboard() {
   }, [recommendations, anomalies]);
 
   // === DIMENSIONS ===
+  const rtScores = useMemo(() => computeDomainScores({
+    transactions, orders, customers, campaigns, products, inventory, cashflow, expenses: expenseRecords,
+  }), [transactions, orders, customers, campaigns, products, inventory, cashflow, expenseRecords]);
+
   const dimTrendDeltas = useMemo(() => {
-    if (!analysisRuns || analysisRuns.length < 2) return {};
-    const current = analysisRuns[0].dimension_scores || {};
-    const prev = analysisRuns[1].dimension_scores || {};
+    if (!analysisRuns || analysisRuns.length === 0) return {};
+    const lastAnalysisScores = analysisRuns[0].dimension_scores || {};
     const deltas = {};
-    Object.keys(current).forEach((key) => {
-      const currScore = current[key]?.score || 0;
-      const prevScore = prev[key]?.score || 0;
+    Object.keys(rtScores).forEach((key) => {
+      const currScore = rtScores[key]?.score || 0;
+      const prevScore = lastAnalysisScores[key]?.score || 0;
       if (prevScore > 0) deltas[key] = Math.round(currScore - prevScore);
     });
     return deltas;
-  }, [analysisRuns]);
+  }, [rtScores, analysisRuns]);
 
   const dimensions = useMemo(() => {
-    const dimScores = company?.dimension_scores || {};
     return Object.keys(dimLabels).map((key) => ({
       key, label: dimLabels[key],
-      ...(dimScores[key] || { score: 0, trend: "stable", explanation: "" }),
+      score: rtScores[key]?.score || 0,
+      trend: rtScores[key]?.trend || "stable",
+      explanation: rtScores[key]?.explanation || "",
     }));
-  }, [company]);
+  }, [rtScores]);
 
   // === SUMMARY ===
   const summary = useMemo(() => {

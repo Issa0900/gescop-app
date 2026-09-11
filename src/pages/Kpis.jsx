@@ -7,6 +7,7 @@ import KpiTrendChart from "@/components/kpis/KpiTrendChart";
 import { BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
+import { computeDomainScores } from "@/lib/domainScores";
 
 const domainLabels = {
   finance: "Finance",
@@ -243,6 +244,10 @@ export default function Kpis() {
     return groups;
   }, [allKpis]);
 
+  const rtScores = useMemo(() => computeDomainScores({
+    transactions, orders, customers, campaigns, products, inventory, cashflow,
+  }), [transactions, orders, customers, campaigns, products, inventory, cashflow]);
+
   // Trend chart data: revenue, AOV, margin % by month
   const trendData = useMemo(() => {
     const revMonthly = monthlyAgg((transactions || []).filter((t) => t.type === "income"), "date", "amount");
@@ -309,6 +314,31 @@ export default function Kpis() {
       </div>
 
       {trendData.length > 0 && <KpiTrendChart data={trendData} />}
+
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">Vue d'ensemble des domaines</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {Object.entries(domainLabels).map(([key, label]) => {
+            const s = rtScores[key];
+            if (!s) return null;
+            const statusLabel = s.score >= 75 ? "Bon" : s.score >= 55 ? "Stable" : s.score >= 35 ? "Attention" : "Critique";
+            const statusColor = s.score >= 75 ? "text-emerald-600" : s.score >= 55 ? "text-blue-600" : s.score >= 35 ? "text-orange-600" : "text-red-600";
+            const TIcon = s.trend === "up" ? "▲" : s.trend === "down" ? "▼" : "—";
+            const trendColor = s.trend === "up" ? "text-emerald-600" : s.trend === "down" ? "text-red-600" : "text-muted-foreground";
+            return (
+              <div key={key} className="animate-slide-up rounded-xl border border-border bg-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                <p className="mt-1 text-2xl font-bold">{s.score}</p>
+                <div className="mt-1 flex items-center gap-1">
+                  <span className={`text-xs ${trendColor}`}>{TIcon}</span>
+                  <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
+                </div>
+                {s.explanation && <p className="mt-1 text-xs text-muted-foreground">{s.explanation}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {Object.entries(domainLabels).map(([domain, label]) => {
         const items = byDomain[domain];
