@@ -51,6 +51,7 @@ export default function Kpis() {
       const list = await base44.entities.Kpi.list();
       return list || [];
     },
+    staleTime: 0,
   });
 
   const { data: transactions } = useQuery({
@@ -59,6 +60,7 @@ export default function Kpis() {
       const list = await base44.entities.Transaction.list("-date", 500);
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: orders } = useQuery({
     queryKey: ["orders-kpi"],
@@ -66,6 +68,7 @@ export default function Kpis() {
       const list = await base44.entities.Order.list("-date", 500);
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: customers } = useQuery({
     queryKey: ["customers-kpi"],
@@ -73,6 +76,7 @@ export default function Kpis() {
       const list = await base44.entities.Customer.list();
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: campaigns } = useQuery({
     queryKey: ["campaigns-kpi"],
@@ -80,6 +84,7 @@ export default function Kpis() {
       const list = await base44.entities.Campaign.list();
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: products } = useQuery({
     queryKey: ["products-kpi"],
@@ -87,6 +92,7 @@ export default function Kpis() {
       const list = await base44.entities.Product.list();
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: inventory } = useQuery({
     queryKey: ["inventory-kpi"],
@@ -94,6 +100,7 @@ export default function Kpis() {
       const list = await base44.entities.Inventory.list("-date", 200);
       return list || [];
     },
+    staleTime: 0,
   });
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-kpi"],
@@ -101,6 +108,7 @@ export default function Kpis() {
       const list = await base44.entities.Cashflow.list("-date", 100);
       return list || [];
     },
+    staleTime: 0,
   });
 
   const computedKpis = useMemo(() => {
