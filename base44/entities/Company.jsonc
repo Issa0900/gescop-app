@@ -57,6 +57,14 @@
     "onboarded": {
       "type": "boolean",
       "default": false
+    },
+    "stock_alert_threshold": {
+      "type": "number",
+      "default": 10
+    },
+    "stock_alert_use_reorder_point": {
+      "type": "boolean",
+      "default": true
     }
   },
   "required": [

@@ -5,6 +5,9 @@ import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
 import ProductFilters from "@/components/produits/ProductFilters";
+import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
+import { useCompany } from "@/hooks/useCompany";
+import { getStockAlertSettings, isStockAlert } from "@/lib/stockAlerts";
 import { latestByKey } from "@/lib/periods";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
@@ -43,6 +46,8 @@ function formatMonthLabel(m) {
 
 export default function Produits() {
   const [filters, setFilters] = useState({ search: "", category: "all", status: "all" });
+  const { company, refetch: refetchCompany } = useCompany();
+  const alertSettings = getStockAlertSettings(company);
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
     queryFn: async () => (await base44.entities.Product.list()) || [],
@@ -90,7 +95,7 @@ export default function Produits() {
   const nearRupture = products.filter((p) => {
     const st = invByProduct[p.product_id]?.stock_status;
     if (["rupture", "proche_rupture"].includes(st)) return true;
-    return p.reorder_point > 0 && stockOf(p) <= p.reorder_point;
+    return isStockAlert(stockOf(p), p.reorder_point, alertSettings);
   });
 
   // Compute actual sales per product from orders (most recent month)
@@ -151,7 +156,7 @@ export default function Produits() {
     if (q && !`${p.product_name || ""} ${p.product_id || ""} ${p.sku || ""}`.toLowerCase().includes(q)) return false;
     if (filters.category !== "all" && p.category !== filters.category) return false;
     if (filters.status === "reorder") {
-      if (!(p.reorder_point > 0 && stockOf(p) <= p.reorder_point)) return false;
+      if (!isStockAlert(stockOf(p), p.reorder_point, alertSettings)) return false;
     } else if (filters.status !== "all" && statusOf(p) !== filters.status) return false;
     return true;
   });
@@ -169,6 +174,13 @@ export default function Produits() {
         <StatCard label="Stock dormant" value={dormantCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Rupture / proche rupture" value={ruptureCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={AlertTriangle} accent={ruptureCount > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
       </div>
+
+      <StockThresholdSettings
+        company={company}
+        settings={alertSettings}
+        alertCount={nearRupture.length}
+        onSaved={refetchCompany}
+      />
 
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution des ventes par mois</h2>
@@ -224,7 +236,9 @@ export default function Produits() {
             {nearRupture.slice(0, 12).map((p) => (
               <div key={p.id} className="rounded-lg bg-white px-3 py-2 text-sm">
                 <p className="font-medium truncate">{p.product_name || p.product_id}</p>
-                <p className="text-xs text-muted-foreground">Stock: {stockOf(p)} · Seuil: {p.reorder_point}</p>
+                <p className="text-xs text-muted-foreground">
+                  Stock: {stockOf(p)} · Seuil: {alertSettings.useReorderPoint && p.reorder_point > 0 ? Math.max(alertSettings.threshold, p.reorder_point) : alertSettings.threshold}
+                </p>
               </div>
             ))}
           </div>
