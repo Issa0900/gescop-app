@@ -16,6 +16,7 @@ import DomainScoreCard from "@/components/dashboard/DomainScoreCard";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
 import KpiOverview from "@/components/dashboard/KpiOverview";
 import OpportunityCard from "@/components/dashboard/OpportunityCard";
+import RiskCard from "@/components/dashboard/RiskCard";
 import ForecastCard from "@/components/dashboard/ForecastCard";
 import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
@@ -290,7 +291,7 @@ export default function Dashboard() {
     );
   }
 
-  const hasData = transactions && transactions.length > 0;
+  const hasData = (transactions?.length || 0) + (orders?.length || 0) + (cashflow?.length || 0) + (customers?.length || 0) > 0;
   const hasAnalysis = (anomalies?.length || 0) + (risks?.length || 0) + (opportunities?.length || 0) + (recommendations?.length || 0) > 0;
 
   const hour = new Date().getHours();
@@ -390,7 +391,25 @@ export default function Dashboard() {
           {/* 5. ÉVOLUTION */}
           <PerformanceChart monthlyData={computed.monthlyData} />
 
-          {/* 6. OPPORTUNITÉS */}
+          {/* 6. RISQUES ACTIFS */}
+          {(risks || []).length > 0 && (
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Risques actifs</h2>
+                <Button variant="ghost" size="sm" asChild><Link to="/risques">Voir tout <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[...(risks || [])].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3).map((r) => (
+                  <RiskCard key={r.id} title={r.title} description={r.description}
+                    impact={r.financial_impact ? formatImpact(r.financial_impact) : null}
+                    category={r.category} urgency={r.urgency} score={r.score}
+                    link="/risques" onCreateAction={() => navigate("/taches")} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 6.5. OPPORTUNITÉS */}
           {(opportunities || []).length > 0 && (
             <div>
               <div className="mb-4 flex items-center justify-between">
