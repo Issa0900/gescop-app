@@ -105,91 +105,106 @@ export default function Kpis() {
 
   const computedKpis = useMemo(() => {
     const result = [];
-    const now = new Date();
-    const currMonth = now.toISOString().slice(0, 7);
-    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonth = prevDate.toISOString().slice(0, 7);
 
-    // === FINANCE ===
-    const incomes = (transactions || []).filter((t) => t.type === "income");
-    const expenses = (transactions || []).filter((t) => t.type === "expense");
-    const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
-    const totalExpenses = expenses.reduce((s, t) => s + (t.amount || 0), 0);
-    const marginPct = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+    // Helper: get last N months that have data from a monthly aggregation array
+    const lastMonths = (monthly, n) => monthly.slice(-n);
+    const lastVal = (monthly) => (monthly.length > 0 ? monthly[monthly.length - 1].val : 0);
+    const prevVal = (monthly) => (monthly.length > 1 ? monthly[monthly.length - 2].val : 0);
 
-    const revMonthly = monthlyAgg(incomes, "date", "amount");
-    const expMonthly = monthlyAgg(expenses, "date", "amount");
-    const currRev = revMonthly.find((m) => m.month === currMonth)?.val || 0;
-    const prevRev = revMonthly.find((m) => m.month === prevMonth)?.val || 0;
-    const currExp = expMonthly.find((m) => m.month === currMonth)?.val || 0;
-    const prevExp = expMonthly.find((m) => m.month === prevMonth)?.val || 0;
-    const latestCash = (cashflow || [])[0]?.closing_cash || 0;
+    // === FINANCE === (only if transactions exist)
+    if ((transactions || []).length > 0) {
+      const incomes = transactions.filter((t) => t.type === "income");
+      const expenses = transactions.filter((t) => t.type === "expense");
+      const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
+      const totalExpenses = expenses.reduce((s, t) => s + (t.amount || 0), 0);
+      const marginPct = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
 
-    result.push({ name: "Revenus mensuels", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
-    result.push({ name: "Dépenses mensuelles", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
-    result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: null, trend: marginPct >= 30 ? "up" : marginPct < 10 ? "down" : "stable", unit: "%" });
-    result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: null, trend: latestCash > 0 ? "up" : "down", unit: "$" });
+      const revMonthly = monthlyAgg(incomes, "date", "amount");
+      const expMonthly = monthlyAgg(expenses, "date", "amount");
+      const currRev = lastVal(revMonthly);
+      const prevRev = prevVal(revMonthly);
+      const currExp = lastVal(expMonthly);
+      const prevExp = prevVal(expMonthly);
+      const latestCash = (cashflow || [])[0]?.closing_cash || 0;
 
-    // === VENTES ===
-    const orderRevMonthly = monthlyAgg(orders || [], "date", "total");
-    const orderCntMonthly = monthlyAgg(orders || [], "date", "total", "count");
-    const currOrders = orderCntMonthly.find((m) => m.month === currMonth)?.val || 0;
-    const prevOrders = orderCntMonthly.find((m) => m.month === prevMonth)?.val || 0;
-    const currOrderRev = orderRevMonthly.find((m) => m.month === currMonth)?.val || 0;
-    const prevOrderRev = orderRevMonthly.find((m) => m.month === prevMonth)?.val || 0;
-    const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
-    const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
-    const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
-    const totalOrders = (orders || []).length;
-    const returns = (orders || []).filter((o) => o.return_status && o.return_status !== "aucun");
-    const returnRate = totalOrders > 0 ? (returns.length / totalOrders) * 100 : 0;
+      result.push({ name: "Revenus (dernier mois)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
+      result.push({ name: "Dépenses (dernier mois)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
+      result.push({ name: "Marge brute", domain: "finance", value: Math.round(marginPct), previous: null, trend: marginPct >= 30 ? "up" : marginPct < 10 ? "down" : "stable", unit: "%" });
+      if (latestCash > 0 || (cashflow || []).length > 0) {
+        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: null, trend: latestCash > 0 ? "up" : "down", unit: "$" });
+      }
+    }
 
-    result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
-    result.push({ name: "Commandes (mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
-    result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: returnRate > 10 ? "down" : "up", unit: "%" });
-    result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
+    // === VENTES === (only if orders exist)
+    if ((orders || []).length > 0) {
+      const orderRevMonthly = monthlyAgg(orders, "date", "total");
+      const orderCntMonthly = monthlyAgg(orders, "date", "total", "count");
+      const currOrders = lastVal(orderCntMonthly);
+      const prevOrders = prevVal(orderCntMonthly);
+      const currOrderRev = lastVal(orderRevMonthly);
+      const prevOrderRev = prevVal(orderRevMonthly);
+      const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
+      const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
+      const totalOrderRev = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const returns = orders.filter((o) => o.return_status && o.return_status !== "aucun");
+      const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
-    // === MARKETING ===
-    const totalSpend = (campaigns || []).reduce((s, c) => s + (Number(c.spend) || 0), 0);
-    const totalConv = (campaigns || []).reduce((s, c) => s + (Number(c.conversions) || 0), 0);
-    const totalCampRev = (campaigns || []).reduce((s, c) => s + (Number(c.revenue) || 0), 0);
-    const totalClicks = (campaigns || []).reduce((s, c) => s + (Number(c.clicks) || 0), 0);
-    const totalImpressions = (campaigns || []).reduce((s, c) => s + (Number(c.impressions) || 0), 0);
-    const roas = totalSpend > 0 ? totalCampRev / totalSpend : 0;
-    const cac = totalConv > 0 ? totalSpend / totalConv : 0;
-    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-    const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
+      result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
+      result.push({ name: "Commandes (dernier mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
+      result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: returnRate > 10 ? "down" : "up", unit: "%" });
+      result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
+    }
 
-    result.push({ name: "ROAS moyen", domain: "marketing", value: Math.round(roas * 10) / 10, previous: null, trend: roas >= 3 ? "up" : roas < 1 ? "down" : "stable", unit: "x" });
-    result.push({ name: "CAC moyen", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
-    result.push({ name: "Taux de clic (CTR)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
-    result.push({ name: "Taux de conversion", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+    // === MARKETING === (only if campaigns exist)
+    if ((campaigns || []).length > 0) {
+      const totalSpend = campaigns.reduce((s, c) => s + (Number(c.spend) || 0), 0);
+      const totalConv = campaigns.reduce((s, c) => s + (Number(c.conversions) || 0), 0);
+      const totalCampRev = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
+      const totalClicks = campaigns.reduce((s, c) => s + (Number(c.clicks) || 0), 0);
+      const totalImpressions = campaigns.reduce((s, c) => s + (Number(c.impressions) || 0), 0);
+      const roas = totalSpend > 0 ? totalCampRev / totalSpend : 0;
+      const cac = totalConv > 0 ? totalSpend / totalConv : 0;
+      const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+      const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
 
-    // === OPÉRATIONS ===
-    const dormantStock = (inventory || []).filter((i) => i.stock_status === "dormant").length;
-    const ruptureStock = (inventory || []).filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
-    const avgMargin = (products || []).length > 0
-      ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
-      : 0;
-    const lowStockProducts = (products || []).filter((p) => p.reorder_point && (p.inventory_level || 0) < p.reorder_point).length;
+      result.push({ name: "ROAS moyen", domain: "marketing", value: Math.round(roas * 10) / 10, previous: null, trend: roas >= 3 ? "up" : roas < 1 ? "down" : "stable", unit: "x" });
+      result.push({ name: "CAC moyen", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
+      result.push({ name: "Taux de clic (CTR)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
+      result.push({ name: "Taux de conversion", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+    }
 
-    result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
-    result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: dormantStock > 0 ? "down" : "up", unit: "" });
-    result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: ruptureStock > 0 ? "down" : "up", unit: "" });
-    result.push({ name: "Produits à réapprovisionner", domain: "operations", value: lowStockProducts, previous: null, trend: "stable", unit: "" });
+    // === OPÉRATIONS === (only if products or inventory exist)
+    if ((products || []).length > 0 || (inventory || []).length > 0) {
+      const dormantStock = (inventory || []).filter((i) => i.stock_status === "dormant").length;
+      const ruptureStock = (inventory || []).filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
+      const avgMargin = (products || []).length > 0
+        ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
+        : 0;
+      const lowStockProducts = (products || []).filter((p) => p.reorder_point && (p.inventory_level || 0) < p.reorder_point).length;
 
-    // === CLIENTS ===
-    const activeCustomers = (customers || []).filter((c) => c.status === "actif").length;
-    const totalCustomers = (customers || []).length;
-    const churnedCustomers = (customers || []).filter((c) => c.status === "inactif" || c.status === "churn").length;
-    const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
-    const newCustomers = (customers || []).filter((c) => (c.acquisition_date || "").slice(0, 7) === currMonth).length;
-    const ltv = activeCustomers > 0 ? totalOrderRev / activeCustomers : 0;
+      result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: dormantStock > 0 ? "down" : "up", unit: "" });
+      result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: ruptureStock > 0 ? "down" : "up", unit: "" });
+      result.push({ name: "Produits à réapprovisionner", domain: "operations", value: lowStockProducts, previous: null, trend: "stable", unit: "" });
+    }
 
-    result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: "stable", unit: "" });
-    result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
-    result.push({ name: "Nouveaux clients (mois)", domain: "clients", value: newCustomers, previous: null, trend: newCustomers > 0 ? "up" : "stable", unit: "" });
-    result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: "stable", unit: "$" });
+    // === CLIENTS === (only if customers exist)
+    if ((customers || []).length > 0) {
+      const activeCustomers = customers.filter((c) => c.status === "actif").length;
+      const totalCustomers = customers.length;
+      const churnedCustomers = customers.filter((c) => c.status === "inactif" || c.status === "churn").length;
+      const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
+      const custMonthly = monthlyAgg(customers, "acquisition_date", "customer_id", "count");
+      const newCustomers = lastVal(custMonthly);
+      const prevNewCustomers = prevVal(custMonthly);
+      const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const ltv = activeCustomers > 0 ? totalOrderRev / activeCustomers : 0;
+
+      result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
+      result.push({ name: "Nouveaux clients (dernier mois)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
+      result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: "stable", unit: "$" });
+    }
 
     return result;
   }, [transactions, orders, customers, campaigns, products, inventory, cashflow]);
