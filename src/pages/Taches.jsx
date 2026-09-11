@@ -5,8 +5,9 @@ import EmptyState from "@/components/EmptyState";
 import PriorityBadge from "@/components/PriorityBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckSquare, Plus, Check, Trash2, X } from "lucide-react";
+import { CheckSquare, Plus, Check, Trash2, X, Calendar, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import TaskCalendar from "@/components/tasks/TaskCalendar";
 
 const categories = ["urgent", "financier", "commercial", "marketing", "operationnel", "administratif", "strategique"];
 const catLabels = {
@@ -24,6 +25,7 @@ export default function Taches() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [view, setView] = useState("list");
   const [form, setForm] = useState({ title: "", category: "strategique", priority: "moyenne", due_date: "" });
 
   const { data: tasks, isLoading } = useQuery({
@@ -71,9 +73,25 @@ export default function Taches() {
           <h1 className="text-2xl font-bold tracking-tight">Centre de tâches</h1>
           <p className="mt-1 text-muted-foreground">Toutes vos actions, priorisées automatiquement.</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="mr-1.5 h-4 w-4" /> Nouvelle tâche
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border bg-card p-1">
+            <button
+              onClick={() => setView("list")}
+              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium", view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              <List className="h-4 w-4" /> Liste
+            </button>
+            <button
+              onClick={() => setView("calendar")}
+              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium", view === "calendar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              <Calendar className="h-4 w-4" /> Calendrier
+            </button>
+          </div>
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Nouvelle tâche
+          </Button>
+        </div>
       </div>
 
       {showForm && (
@@ -130,6 +148,8 @@ export default function Taches() {
 
       {!tasks || tasks.length === 0 ? (
         <EmptyState icon={CheckSquare} title="Aucune tâche" description="Convertissez des recommandations en tâches ou créez-en manuellement." />
+      ) : view === "calendar" ? (
+        <TaskCalendar tasks={tasks} onToggle={toggleStatus} />
       ) : (
         <>
           <div className="space-y-2">
