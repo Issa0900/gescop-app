@@ -18,8 +18,31 @@ import {
 import { Link } from "react-router-dom";
 import { useCompany } from "@/hooks/useCompany";
 import { AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
+
+const ENTITY_OPTIONS = [
+  { value: "Transaction", label: "Transactions (revenus/dépenses)" },
+  { value: "Order", label: "Commandes (orders)" },
+  { value: "Customer", label: "Clients (customers)" },
+  { value: "Product", label: "Produits (products)" },
+  { value: "Inventory", label: "Stocks (inventory)" },
+  { value: "Campaign", label: "Campagnes (campaigns)" },
+  { value: "CampaignDaily", label: "Campagnes journalières" },
+  { value: "Cashflow", label: "Flux de trésorerie" },
+  { value: "Expense", label: "Dépenses (expenses)" },
+  { value: "Employee", label: "Employés" },
+  { value: "Payroll", label: "Paie (payroll)" },
+  { value: "Supplier", label: "Fournisseurs" },
+  { value: "Purchase", label: "Achats (purchases)" },
+  { value: "Interaction", label: "Interactions client" },
+  { value: "Competitor", label: "Concurrents" },
+  { value: "Goal", label: "Objectifs (goals)" },
+  { value: "Event", label: "Événements" },
+  { value: "ExternalSignal", label: "Signaux externes (radar)" },
+];
 
 export default function ImportPage() {
   const { toast } = useToast();
@@ -29,6 +52,7 @@ export default function ImportPage() {
   const [dragOver, setDragOver] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [purging, setPurging] = useState(false);
+  const [manualEntity, setManualEntity] = useState("");
   const { company } = useCompany();
 
   const { data: imports, isLoading } = useQuery({
@@ -52,7 +76,7 @@ export default function ImportPage() {
       }
       setUploading(false);
       setProcessing(true);
-      const res = await base44.functions.invoke("importMultiData", { files: uploadedFiles });
+      const res = await base44.functions.invoke("importMultiData", { files: uploadedFiles, entity_override: manualEntity || null });
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
@@ -147,6 +171,26 @@ export default function ImportPage() {
         <p className="mt-1 text-muted-foreground">
           Téléversez vos fichiers (CSV, Excel, PDF). GESCOP extrait et normalise automatiquement vos transactions.
         </p>
+      </div>
+
+      {/* Manual entity type selector */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="shrink-0">
+            <Label htmlFor="entity-select" className="text-sm font-semibold">Type de données</Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">Choisissez le type pour une détection fiable</p>
+          </div>
+          <Select value={manualEntity} onValueChange={setManualEntity}>
+            <SelectTrigger id="entity-select" className="sm:w-80">
+              <SelectValue placeholder="Détection automatique (nom du fichier)" />
+            </SelectTrigger>
+            <SelectContent>
+              {ENTITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Drop zone */}

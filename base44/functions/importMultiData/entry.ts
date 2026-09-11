@@ -39,7 +39,7 @@ export default async function(req) {
     if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await req.json();
-    const { files } = body;
+    const { files, entity_override } = body;
     if (!files || !Array.isArray(files) || files.length === 0) {
       return Response.json({ error: "files requis (tableau de {file_url, file_name})" }, { status: 400 });
     }
@@ -48,10 +48,10 @@ export default async function(req) {
 
     for (const file of files) {
       const { file_url, file_name } = file;
-      const entityName = detectEntity(file_name);
+      const entityName = entity_override || detectEntity(file_name);
 
       if (!entityName) {
-        results.push({ file_name, entity: null, status: "ignore", rows: 0, message: "Type non reconnu" });
+        results.push({ file_name, entity: null, status: "ignore", rows: 0, message: "Type non reconnu — choisissez le type manuellement" });
         continue;
       }
 
