@@ -72,6 +72,8 @@ Tu as accès aux données de: finance (transactions), ventes (commandes), client
 
 7. Détecte des signaux externes pertinents (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon, relevance_reason, recommended_action. Base-toi sur le secteur, la localisation et les concurrents.
 
+Toutes les valeurs textuelles (titres, descriptions, explications, analyses, actions, etc.) doivent être rédigées en français.
+
 Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors JSON.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({

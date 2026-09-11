@@ -225,6 +225,8 @@ ${comparisonBlock}
 
 ${ctx.context}
 
+Toutes les valeurs textuelles (résumé, contenu, sections, insights, etc.) doivent être rédigées en français.
+
 Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), content (le rapport complet en markdown bien structuré avec titres et sections), sections (un objet où chaque clé est un nom de section et la valeur est le contenu de cette section)${comparisonData ? ", evolutionSummary (un texte de 3-5 phrases qui analyse l'évolution des indicateurs clés entre la période actuelle et la période précédente), keyInsights (un tableau de 3 à 5 chaînes, chaque chaîne étant un insight sur l'évolution marquante d'un indicateur)" : ""}.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
