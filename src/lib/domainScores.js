@@ -41,18 +41,29 @@ export function computeDomainScores(data) {
   const currMargin = lastVal(revMonthly) > 0 ? ((lastVal(revMonthly) - lastVal(expMonthly)) / lastVal(revMonthly)) * 100 : 0;
   const prevMargin = prevVal(revMonthly) > 0 ? ((prevVal(revMonthly) - prevVal(expMonthly)) / prevVal(revMonthly)) * 100 : 0;
   const marginTrend = trendPct(currMargin, prevMargin);
+  // Score based on recent margin (3-month moving average) instead of cumulative margin
+  const recentMargins = [];
+  for (let i = Math.max(0, revMonthly.length - 3); i < revMonthly.length; i++) {
+    if (revMonthly[i].val > 0) {
+      const m = ((revMonthly[i].val - (expMonthly[i]?.val || 0)) / revMonthly[i].val) * 100;
+      recentMargins.push(m);
+    }
+  }
+  const recentMargin = recentMargins.length > 0
+    ? recentMargins.reduce((a, b) => a + b, 0) / recentMargins.length
+    : marginPct;
   let financeScore = 50;
-  if (marginPct >= 40) financeScore = 88;
-  else if (marginPct >= 25) financeScore = 72;
-  else if (marginPct >= 10) financeScore = 52;
-  else if (marginPct >= 0) financeScore = 32;
+  if (recentMargin >= 40) financeScore = 88;
+  else if (recentMargin >= 25) financeScore = 72;
+  else if (recentMargin >= 10) financeScore = 52;
+  else if (recentMargin >= 0) financeScore = 32;
   else financeScore = 15;
   if (marginTrend > 5) financeScore += 8;
   else if (marginTrend < -5) financeScore -= 12;
   scores.finance = {
     score: clamp(financeScore),
     trend: trendDir(currMargin, prevMargin),
-    explanation: `Marge ${marginPct.toFixed(0)}%`,
+    explanation: `Marge ${recentMargin.toFixed(0)}% (3 mois)`,
   };
 
   // === TRÉSORERIE ===
