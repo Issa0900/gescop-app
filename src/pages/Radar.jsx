@@ -47,7 +47,7 @@ export default function Radar() {
 
       {top3.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">3 signaux prioritaires</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{top3.length} signal{top3.length > 1 ? "s" : ""} prioritaire{top3.length > 1 ? "s" : ""}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {top3.map((s) => <SignalCard key={s.id} signal={s} prominent />)}
           </div>
