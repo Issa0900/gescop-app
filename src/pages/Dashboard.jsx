@@ -416,10 +416,10 @@ export default function Dashboard() {
                     sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
                   <KpiCard label="Clients actifs" value={computed.activeCustomers.toLocaleString("fr-CA")}
                     change={`${Math.abs(computed.clientTrend).toFixed(1)}%`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
-                    sparkline={computed.spark(computed.monthlyData.clients)} status="good" statusLabel="Bon" onClick={() => navigate("/clients")} />
+                    sparkline={computed.spark(computed.monthlyData.clients)} status={computed.clientTrend >= 0 ? "good" : "warning"} statusLabel={computed.clientTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/clients")} />
                   <KpiCard label="Panier moyen" value={`${computed.aov.toFixed(2)} $`}
                     change={`${Math.abs(computed.aovTrend).toFixed(1)}%`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
-                    sparkline={computed.spark(computed.aovMonthly)} status="neutral" statusLabel="Stable" onClick={() => navigate("/clients")} />
+                    sparkline={computed.spark(computed.aovMonthly)} status={computed.aovTrend >= 0 ? "neutral" : "warning"} statusLabel={computed.aovTrend >= 0 ? "Stable" : "Attention"} onClick={() => navigate("/clients")} />
                 </div>
 
                 {/* Insights */}
