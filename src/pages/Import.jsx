@@ -182,8 +182,8 @@ export default function ImportPage() {
         ) : !imports || imports.length === 0 ? (
           <EmptyState icon={Download} title="Aucun import" description="Vos imports apparaîtront ici." />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-border">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Fichier</th>
@@ -198,7 +198,7 @@ export default function ImportPage() {
               <tbody className="divide-y divide-border">
                 {imports.map((imp) => (
                   <tr key={imp.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3 font-medium">{imp.file_name}</td>
+                    <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={imp.file_name}>{imp.file_name}</td>
                     <td className="px-4 py-3 uppercase text-muted-foreground">{imp.source_type}</td>
                     <td className="px-4 py-3">{imp.rows_processed || 0}</td>
                     <td className="px-4 py-3">
@@ -216,8 +216,8 @@ export default function ImportPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {new Date(imp.created_date).toLocaleDateString("fr-CA")}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button onClick={() => handleDelete(imp.id)} className="text-muted-foreground hover:text-red-600">
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <button onClick={() => handleDelete(imp.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
