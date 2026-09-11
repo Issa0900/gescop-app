@@ -21,7 +21,9 @@
         "cadeaux",
         "lifestyle",
         "\u00e9quipement",
-        "accessoire"
+        "accessoire",
+        "piece",
+        "entretien"
       ]
     },
     "subcategory": {
