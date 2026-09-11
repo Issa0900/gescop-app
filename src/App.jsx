@@ -32,6 +32,7 @@ import Rapports from '@/pages/Rapports';
 import Assistant from '@/pages/Assistant';
 import Parametres from '@/pages/Parametres';
 import Manuel from '@/pages/Manuel';
+import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite';
 import Clients from '@/pages/Clients';
 import Produits from '@/pages/Produits';
 import Marketing from '@/pages/Marketing';
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/manuel" element={<Manuel />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

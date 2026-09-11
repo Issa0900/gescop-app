@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Save, Check, Shield, LogOut, User } from "lucide-react";
+import { Settings, Save, Check, Shield, LogOut, User, FileLock2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import CompetitorsManager from "@/components/settings/CompetitorsManager";
 
@@ -187,6 +188,13 @@ export default function Parametres() {
           <p>✓ Séparation des organisations — vos données ne sont jamais partagées</p>
           <p>✓ Journal d'audit complet des imports</p>
         </div>
+        <Link
+          to="/politique-confidentialite"
+          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-accent/30"
+        >
+          <FileLock2 className="h-4 w-4 text-primary" />
+          Consulter la politique de confidentialité
+        </Link>
       </div>
 
       {/* Competitors */}
