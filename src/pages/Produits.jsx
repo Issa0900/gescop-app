@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
+import ProductFilters from "@/components/produits/ProductFilters";
 import { latestByKey } from "@/lib/periods";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
@@ -41,6 +42,7 @@ function formatMonthLabel(m) {
 }
 
 export default function Produits() {
+  const [filters, setFilters] = useState({ search: "", category: "all", status: "all" });
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
     queryFn: async () => (await base44.entities.Product.list()) || [],
@@ -123,6 +125,27 @@ export default function Produits() {
   }));
   const inventoryValue = latestInv.reduce((s, i) => s + (Number(i.inventory_value) || 0), 0);
 
+  // Table rows + filtering (search, category, real stock status)
+  const statusOf = (p) => invByProduct[p.product_id]?.stock_status || p.status;
+  const categories = Array.from(new Set(products.map((p) => p.category).filter(Boolean))).sort();
+  const statuses = Array.from(new Set(products.map((p) => statusOf(p)).filter(Boolean))).sort();
+  const allRows = products
+    .map((p) => ({
+      ...p,
+      _totalSales: totalSalesByProduct[p.product_id] || 0,
+      _totalRev: totalRevByProduct[p.product_id] || 0,
+    }))
+    .sort((a, b) => (b._totalSales || 0) - (a._totalSales || 0));
+  const q = filters.search.trim().toLowerCase();
+  const filteredRows = allRows.filter((p) => {
+    if (q && !`${p.product_name || ""} ${p.product_id || ""} ${p.sku || ""}`.toLowerCase().includes(q)) return false;
+    if (filters.category !== "all" && p.category !== filters.category) return false;
+    if (filters.status === "reorder") {
+      if (!(p.reorder_point > 0 && stockOf(p) <= p.reorder_point)) return false;
+    } else if (filters.status !== "all" && statusOf(p) !== filters.status) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-8">
       <div>
@@ -198,7 +221,16 @@ export default function Produits() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="rounded-xl border border-border">
+        <ProductFilters
+          filters={filters}
+          onChange={setFilters}
+          categories={categories}
+          statuses={statuses}
+          statusLabels={stockLabels}
+          count={filteredRows.length}
+        />
+        <div className="overflow-x-auto">
         <table className="w-full min-w-[700px] text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
             <tr>
@@ -213,11 +245,7 @@ export default function Produits() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {[...products].map((p) => ({
-              ...p,
-              _totalSales: totalSalesByProduct[p.product_id] || 0,
-              _totalRev: totalRevByProduct[p.product_id] || 0,
-            })).sort((a, b) => (b._totalSales || 0) - (a._totalSales || 0)).slice(0, 30).map((p) => (
+            {filteredRows.slice(0, 50).map((p) => (
               <tr key={p.id} className="hover:bg-muted/30">
                 <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={p.product_name}>{p.product_name || p.product_id}</td>
                 <td className="px-4 py-3 text-muted-foreground">{p.category || "—"}</td>
@@ -245,8 +273,12 @@ export default function Produits() {
                 </td>
               </tr>
             ))}
+            {filteredRows.length === 0 && (
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">Aucun produit ne correspond aux filtres</td></tr>
+            )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
