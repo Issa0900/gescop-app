@@ -97,6 +97,13 @@ export default function ImportPage() {
       await base44.entities.Risk.deleteMany({});
       await base44.entities.Opportunity.deleteMany({});
       await base44.entities.Recommendation.deleteMany({});
+      await base44.entities.Alert.deleteMany({});
+      await base44.entities.Task.deleteMany({});
+      await base44.entities.Decision.deleteMany({});
+      await base44.entities.ExternalSignal.deleteMany({});
+      await base44.entities.Report.deleteMany({});
+      await base44.entities.AnalysisRun.deleteMany({});
+      await base44.entities.Import.deleteMany({});
       if (company) {
         await base44.entities.Company.update(company.id, { health_score: 0, dimension_scores: {}, last_analysis_date: null });
       }
