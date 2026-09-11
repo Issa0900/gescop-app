@@ -1,4 +1,5 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
+import { normalizeRow } from "../../shared/importUtils.ts";
 
 export default async function(req) {
   try {
@@ -58,35 +59,16 @@ export default async function(req) {
     const toCreate = [];
     let quarantined = 0;
     rows.forEach((r) => {
-      const amount = Number(r.amount);
-      const date = r.date || new Date().toISOString().slice(0, 10);
-      let type = (r.type || "").toLowerCase();
-      if (!type) {
-        type = amount >= 0 ? "income" : "expense";
-      }
-      if (type === "revenu" || type === "revenue" || type === "credit" || type === "entree") type = "income";
-      if (type === "depense" || type === "expense" || type === "debit" || type === "sortie") type = "expense";
-      if (!date || isNaN(amount)) {
+      const normalized = normalizeRow("Transaction", r, importRec.id, null);
+      if (!normalized.date || isNaN(normalized.amount)) {
         quarantined++;
         return;
       }
-      toCreate.push({
-        date: date.slice(0, 10),
-        description: r.description || "",
-        amount: Math.abs(amount),
-        type,
-        category: r.category || "",
-        source: source_type,
-        currency: "CAD",
-        client: r.client || "",
-        product: r.product || "",
-        import_id: importRec.id,
-      });
+      toCreate.push(normalized);
     });
 
     let created = 0;
     if (toCreate.length > 0) {
-      // Bulk create in batches of 200
       for (let i = 0; i < toCreate.length; i += 200) {
         const batch = toCreate.slice(i, i + 200);
         await base44.entities.Transaction.bulkCreate(batch);

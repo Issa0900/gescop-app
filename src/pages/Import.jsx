@@ -64,8 +64,7 @@ export default function ImportPage() {
           title: "Import terminé",
           description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`,
         });
-        qc.invalidateQueries(["imports"]);
-        qc.invalidateQueries(["transactions-summary"]);
+        qc.invalidateQueries();
       }
     } catch (e) {
       toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
@@ -80,8 +79,7 @@ export default function ImportPage() {
     try {
       await base44.entities.Transaction.deleteMany({ import_id: id });
       await base44.entities.Import.delete(id);
-      qc.invalidateQueries(["imports"]);
-      qc.invalidateQueries(["transactions-summary"]);
+      qc.invalidateQueries();
       toast({ title: "Import et transactions supprimés" });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
