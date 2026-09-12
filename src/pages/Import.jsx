@@ -443,7 +443,7 @@ export default function ImportPage() {
                 {imports.map((imp) => (
                   <tr key={imp.id} className="hover:bg-muted/30">
                     <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={imp.file_name}>{imp.file_name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{imp.entity_type || "Transaction"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{imp.entity_type || "—"}</td>
                     <td className="px-4 py-3 uppercase text-muted-foreground">{imp.source_type}</td>
                     <td className="px-4 py-3">{imp.rows_processed || 0}</td>
                     <td className="px-4 py-3">
@@ -474,6 +474,25 @@ export default function ImportPage() {
         )}
       </div>
 
+      {/* Nettoyage ciblé — à essayer avant la purge totale */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-5">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-900">Nettoyer les données orphelines</p>
+            <p className="mt-1 text-sm text-amber-800">
+              Recherche les enregistrements rattachés à un import qui n'existe plus. Ces lignes continuent
+              d'alimenter vos totaux alors qu'aucun fichier ne les revendique — c'est ce qui fait qu'on peut
+              supprimer un import et voir des données subsister. Vous verrez le décompte par type avant de
+              confirmer. Vos imports en cours ne sont pas touchés.
+            </p>
+          </div>
+          <Button variant="outline" onClick={handleCleanOrphans} disabled={purging}>
+            {purging ? "Analyse…" : "Rechercher"}
+          </Button>
+        </div>
+      </div>
+
       {/* Danger zone */}
       <div className="rounded-xl border border-red-200 bg-red-50/30 p-5">
         <div className="flex items-start gap-3">
@@ -481,7 +500,9 @@ export default function ImportPage() {
           <div className="flex-1">
             <p className="text-sm font-semibold text-red-900">Purger toutes les données</p>
             <p className="mt-1 text-sm text-red-700">
-              Supprime définitivement toutes les transactions, KPI, anomalies, risques, opportunités et recommandations. Utile si des données orphelines subsistent après la suppression des imports.
+              Supprime définitivement toutes vos données importées ainsi que les KPI, anomalies, risques,
+              opportunités et recommandations produits par l'analyse. Irréversible — essayez d'abord le
+              nettoyage des données orphelines ci-dessus.
             </p>
           </div>
           <Button variant="destructive" onClick={handlePurgeAll} disabled={purging}>
