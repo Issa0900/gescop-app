@@ -8,7 +8,7 @@ import ProductFilters from "@/components/produits/ProductFilters";
 import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert } from "@/lib/stockAlerts";
-import { latestByKey } from "@/lib/periods";
+import { latestByKey, currentMonthKey } from "@/lib/periods";
 import { fetchAll } from "@/lib/fetchAll";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
@@ -249,7 +249,12 @@ export default function Produits() {
             <p className="text-sm text-muted-foreground">Aucune donnée d'inventaire</p>
           )}
           {inventoryValue > 0 && (
-            <p className="mt-2 text-center text-sm text-muted-foreground">Valeur inventaire total: <span className="font-semibold text-foreground">{Math.round(inventoryValue).toLocaleString()} $</span></p>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              Valeur inventaire total: <span className="font-semibold text-foreground">{Math.round(inventoryValue).toLocaleString("fr-CA")} $</span>
+              {inventoryValueEstimated && (
+                <span className="block text-xs">Estimée à partir du stock et du coût d'achat : la colonne « valeur de stock » est absente de votre import.</span>
+              )}
+            </p>
           )}
         </div>
       </div>
