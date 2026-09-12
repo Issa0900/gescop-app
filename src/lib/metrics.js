@@ -103,7 +103,16 @@ export function latestCashBalance(cashflow) {
  * the rate on the Clients page and in every AI report while the KPI page showed
  * a lower one from the same rows.
  */
-export function churnStats(customers) {
+export const DEFAULT_INACTIVE_MONTHS = 6;
+
+/** "2026-09" moved back n months. */
+function shiftMonthKey(key, n) {
+  const [y, m] = key.split("-").map(Number);
+  const total = y * 12 + (m - 1) + n;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+
+export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_MONTHS) {
   const rows = customers || [];
   const total = rows.length;
   const churned = rows.filter((c) => c.status === "inactif" || c.status === "perdu").length;
@@ -114,12 +123,53 @@ export function churnStats(customers) {
     const r = Number(c.churn_risk);
     return Number.isFinite(r) && (r > 1 ? r / 100 : r) >= 0.7;
   }).length;
+  // --- Attrition mesurée sur le COMPORTEMENT d'achat ---
+  //
+  // The status-based rate above is a CUMULATIVE share: every customer ever lost,
+  // over the whole base. It only grows as the base ages, it cannot be compared
+  // month to month, and it says nothing about what is happening now. Calling it
+  // a "taux de churn" oversold it — a rate is measured over a period.
+  //
+  // This one is: among customers who have ever ordered, how many have stopped
+  // buying over the chosen window. Computable whenever order history exists,
+  // and it moves when the window moves.
+  const months = Math.max(1, Number(inactiveMonths) || DEFAULT_INACTIVE_MONTHS);
+  const ord = orders || [];
+  const hasOrders = ord.some((o) => o.customer_id && o.date);
+  let buyers = null;
+  let lapsed = null;
+  let behaviourRate = null;
+  if (hasOrders) {
+    const now = new Date().toISOString().slice(0, 7);
+    const cutoff = shiftMonthKey(now, -months);
+    const everBought = new Set();
+    const boughtRecently = new Set();
+    ord.forEach((o) => {
+      const m = (o.date || "").slice(0, 7);
+      if (!o.customer_id || !m) return;
+      everBought.add(o.customer_id);
+      // The month in progress counts as recent activity, unlike trend windows:
+      // a purchase yesterday obviously means the customer has not lapsed.
+      if (m >= cutoff) boughtRecently.add(o.customer_id);
+    });
+    buyers = everBought.size;
+    lapsed = [...everBought].filter((id) => !boughtRecently.has(id)).length;
+    behaviourRate = buyers > 0 ? (lapsed / buyers) * 100 : null;
+  }
+
   return {
     total,
     active,
     churned,
     atRisk,
+    // Cumulative share of the base marked lost — NOT a period rate.
     rate: total > 0 ? (churned / total) * 100 : null,
+    // Period attrition from real purchase behaviour. null = not computable.
+    inactiveMonths: months,
+    buyers,
+    lapsed,
+    behaviourRate,
+    measurable: hasOrders,
   };
 }
 
