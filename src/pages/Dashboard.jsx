@@ -61,27 +61,31 @@ export default function Dashboard() {
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // Every source below is read with fetchAll: a single list() call caps at 500
+  // rows, so passing 500 or 1000 silently truncated the history and left this
+  // page disagreeing with the Audit page, which already read everything.
+  // Truncation also cut the OLDEST month of each window, turning it into a
+  // partial month at the far end of every trend.
   const { data: transactions } = useQuery({
     queryKey: ["transactions-summary"],
-    queryFn: async () => { const l = await base44.entities.Transaction.list("-date", 500); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
   });
   const { data: orders } = useQuery({
     queryKey: ["orders-summary"],
-    queryFn: async () => { const l = await base44.entities.Order.list("-date", 500); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Order, "-date"),
   });
   const { data: customers } = useQuery({
     queryKey: ["customers-summary"],
-    queryFn: async () => { const l = await base44.entities.Customer.list(); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Customer),
   });
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-summary"],
-    // Same limit as the Trésorerie page: both share this query key, and a
-    // shorter window here truncated the monthly cash history to ~3 months.
-    queryFn: async () => { const l = await base44.entities.Cashflow.list("-date", 1000); return l || []; },
+    // Shared with the Trésorerie page — same key, same complete history.
+    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
   });
   const { data: expenseRecords } = useQuery({
     queryKey: ["expenses-summary"],
-    queryFn: async () => { const l = await base44.entities.Expense.list("-date", 1000); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
   });
   const { data: anomalies } = useQuery({
     queryKey: ["anomalies"],
@@ -109,19 +113,19 @@ export default function Dashboard() {
   });
   const { data: products } = useQuery({
     queryKey: ["products-dashboard"],
-    queryFn: async () => { const l = await base44.entities.Product.list(); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Product),
   });
   const { data: inventory } = useQuery({
     queryKey: ["inventory-dashboard"],
-    queryFn: async () => { const l = await base44.entities.Inventory.list("-date", 500); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
   });
   const { data: campaigns } = useQuery({
     queryKey: ["campaigns-dashboard"],
-    queryFn: async () => { const l = await base44.entities.Campaign.list(); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Campaign),
   });
   const { data: campaignDaily } = useQuery({
     queryKey: ["campaign-daily-dashboard"],
-    queryFn: async () => { const l = await base44.entities.CampaignDaily.list("-date", 500); return l || []; },
+    queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
   });
   const [showDetails, setShowDetails] = useState(false);
   const [period, setPeriod] = useState("month");
