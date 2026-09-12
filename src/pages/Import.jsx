@@ -305,8 +305,8 @@ export default function ImportPage() {
           dragOver ? "border-primary bg-primary/5" : "border-border bg-card"
         }`}
       >
-        {uploading || processing ? (
-          <ImportProgress phase={uploading ? "uploading" : "processing"} />
+        {uploading || analyzing || processing ? (
+          <ImportProgress phase={uploading ? "uploading" : analyzing ? "analyzing" : "processing"} />
         ) : (
           <div className="flex flex-col items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -331,6 +331,18 @@ export default function ImportPage() {
           </div>
         )}
       </div>
+
+      {/* Entre la lecture et l'ecriture : l'utilisateur valide ce qui a ete compris. */}
+      {analyses && !processing && (
+        <PlanConfirmation
+          analyses={analyses}
+          champsParEntite={champsParEntite}
+          entityOptions={ENTITY_OPTIONS}
+          onConfirmer={lancerImport}
+          onAnnuler={annulerAnalyse}
+          enCours={processing}
+        />
+      )}
 
       {importResult && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-6">

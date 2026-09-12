@@ -11,7 +11,7 @@ const steps = [
 ];
 
 export default function ImportProgress({ phase }) {
-  // phase: "uploading" | "processing"
+  // phase: "uploading" | "analyzing" | "processing"
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -35,7 +35,11 @@ export default function ImportProgress({ phase }) {
       </motion.div>
 
       <p className="mt-4 text-center text-sm font-semibold">
-        {phase === "uploading" ? "Téléversement en cours…" : "Extraction et normalisation des données…"}
+        {phase === "uploading"
+          ? "Téléversement en cours…"
+          : phase === "analyzing"
+            ? "Lecture du fichier : repérage des colonnes et du format…"
+            : "Extraction et normalisation des données…"}
       </p>
 
       <div className="mt-6 space-y-2.5 text-left">
