@@ -35,6 +35,21 @@ async function importRows(
   fileLabel: string,
   fileUrl = "",
 ) {
+  // Ré-importer le même fichier/feuille dupliquait chaque ligne : un fichier
+  // importé 6 fois donnait 6 copies et des chiffres contradictoires partout.
+  const already = await base44.entities.Import.filter({ file_name: fileLabel, entity_type: entityName }, null, 1);
+  if (already && already.length > 0) {
+    return {
+      entity: entityName,
+      status: "ignore",
+      rows_read: rows.length,
+      rows: 0,
+      quarantined: 0,
+      message: "Déjà importé — supprimez d'abord l'import existant pour le remplacer (évite les doublons).",
+      rateLimited: false,
+    };
+  }
+
   const schema = getSchema(entityName);
   const properties = schema ? schema.properties : null;
   const required = schema ? schema.required : [];
