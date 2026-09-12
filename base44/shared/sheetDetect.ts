@@ -159,19 +159,18 @@ function estLibelle(cellule: any): boolean {
 }
 
 /**
- * Rows of a sheet, with header-row recovery.
- * A sheet whose first line is a title produces __EMPTY_1, __EMPTY_2… headers;
- * in that case we scan the first rows for the real header line.
+ * Index de la ligne qui porte les intitules de colonnes.
+ *
+ * C'est celle qui contient le plus de LIBELLES — du texte qui n'est ni un
+ * nombre ni une date. Compter simplement les cellules de type chaine ne suffit
+ * pas : un fichier texte est lu sans conversion (voir csvParse.ts, raw: true),
+ * donc toutes les cellules sont des chaines et une ligne de donnees ayant une
+ * colonne de plus que l'en-tete l'emportait.
+ *
+ * Exporte parce que le plan de lecture de secours (importPlan.ts) en a besoin
+ * quand l'analyse par IA n'est pas disponible.
  */
-export function sheetRows(sheet: any): { rows: Record<string, any>[]; headers: string[] } {
-  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as any[][];
-  if (matrix.length === 0) return { rows: [], headers: [] };
-
-  // La ligne d'en-tetes est celle qui contient le plus de LIBELLES — du texte
-  // qui n'est ni un nombre ni une date. Compter simplement les cellules de type
-  // chaine ne suffit pas : un fichier texte est lu sans conversion (voir
-  // csvParse.ts, raw: true), donc toutes les cellules sont des chaines et une
-  // ligne de donnees ayant une colonne de plus que l'en-tete l'emportait.
+export function trouverLigneEntetes(matrix: any[][]): number {
   let headerIdx = 0;
   let bestScore = -1;
   for (let i = 0; i < Math.min(matrix.length, 10); i += 1) {
@@ -185,6 +184,19 @@ export function sheetRows(sheet: any): { rows: Record<string, any>[]; headers: s
     // plutot que la premiere ligne de donnees qui lui ressemblerait.
     if (score > bestScore) { bestScore = score; headerIdx = i; }
   }
+  return headerIdx;
+}
+
+/**
+ * Rows of a sheet, with header-row recovery.
+ * A sheet whose first line is a title produces __EMPTY_1, __EMPTY_2… headers;
+ * in that case we scan the first rows for the real header line.
+ */
+export function sheetRows(sheet: any): { rows: Record<string, any>[]; headers: string[] } {
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as any[][];
+  if (matrix.length === 0) return { rows: [], headers: [] };
+
+  const headerIdx = trouverLigneEntetes(matrix);
 
   const headers = (matrix[headerIdx] || []).map((h, i) => (String(h ?? "").trim() || `col_${i + 1}`));
   const rows: Record<string, any>[] = [];
