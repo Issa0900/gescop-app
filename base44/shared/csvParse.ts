@@ -71,6 +71,28 @@ function detecterSeparateur(texte: string): string {
   return retenu;
 }
 
+/**
+ * Le fichier texte sous forme de MATRICE, sans mise en forme.
+ *
+ * Le plan de lecture (importPlan.ts) raisonne en numeros de ligne — « les
+ * en-tetes sont a la ligne 4, la ligne 8 est un total » — donc il lui faut le
+ * fichier tel quel, avant tout choix de ligne d'en-tetes. Meme detection de
+ * separateur et meme refus de conversion que parseDelimitedText : c'est la meme
+ * lecture, arretee une etape plus tot.
+ */
+export function matriceDepuisTexte(text: string): any[][] {
+  const clean = text.replace(/^\uFEFF/, "");
+  if (clean.trim() === "") return [];
+  const wb = XLSX.read(clean, { type: "string", raw: true, FS: detecterSeparateur(clean) });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as any[][];
+}
+
+export async function fetchMatrice(fileUrl: string): Promise<any[][]> {
+  const resp = await fetch(fileUrl);
+  return matriceDepuisTexte(await resp.text());
+}
+
 export function parseDelimitedText(text: string): Record<string, any>[] {
   const clean = text.replace(/^\uFEFF/, "");
   const delimiter = detecterSeparateur(clean);
