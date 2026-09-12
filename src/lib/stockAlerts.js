@@ -64,7 +64,7 @@ const RUPTURE_STATUSES = ["rupture", "proche_rupture"];
  * the status carries what the source system concluded, the threshold carries
  * what this business considers too low.
  */
-export function computeStockAlerts(products, inventory, settings) {
+export function computeStockAlerts(products, inventory, settings, orders) {
   const latestInv = latestByKey(inventory || [], "product_id", "date");
   const invByProduct = {};
   latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
@@ -75,6 +75,16 @@ export function computeStockAlerts(products, inventory, settings) {
     ? products
     : latestInv.map((i) => ({ product_id: i.product_id }));
 
+  // Dormancy measured from ACTUAL rotation, not from the imported label.
+  // A real file had stock_status = "optimal" on all 500 rows, so the dormant
+  // count was structurally stuck at 0 while stock genuinely sat unsold. A
+  // product holding stock that recorded no sale over the chosen window is
+  // dormant, whatever the label says. Only applied when order history exists —
+  // without it every product would look dormant.
+  const months = Math.max(1, Number(settings.dormantMonths) || DEFAULT_DORMANT_MONTHS);
+  const hasOrderHistory = (orders || []).some((o) => o.product_id && o.date);
+  const recentlySold = hasOrderHistory ? soldRecently(orders, months) : null;
+
   const rows = base.map((p) => {
     const snap = invByProduct[p.product_id];
     const stock = snap && snap.closing_stock != null
@@ -83,13 +93,19 @@ export function computeStockAlerts(products, inventory, settings) {
     const status = snap?.stock_status || p.status;
     const byStatus = RUPTURE_STATUSES.includes(status);
     const byThreshold = isStockAlert(stock, p.reorder_point, settings);
+    const dormantByStatus = status === "dormant";
+    const dormantByRotation = recentlySold !== null
+      && stock > 0
+      && !recentlySold.has(p.product_id);
     return {
       product: p,
       snapshot: snap,
       stock,
       status,
-      dormant: status === "dormant",
+      dormant: dormantByStatus || dormantByRotation,
       // Kept apart so a caller can explain WHY a product is flagged.
+      dormantByStatus,
+      dormantByRotation,
       byStatus,
       byThreshold,
       inAlert: byStatus || byThreshold,
@@ -97,13 +113,18 @@ export function computeStockAlerts(products, inventory, settings) {
   });
 
   const alerts = rows.filter((r) => r.inAlert);
+  const dormants = rows.filter((r) => r.dormant);
   return {
     rows,
     byProduct: invByProduct,
     tracked: rows.length,
     alerts,
     alertCount: alerts.length,
-    dormantCount: rows.filter((r) => r.dormant).length,
+    dormants,
+    dormantCount: dormants.length,
+    dormantMonths: months,
+    // Tells the UI whether dormancy could be measured at all.
+    dormancyFromRotation: recentlySold !== null,
     // Shortage severity, for alerts that need to separate "out" from "nearly out".
     outOfStockCount: rows.filter((r) => r.status === "rupture").length,
     lowStockCount: rows.filter((r) => r.inAlert && r.status !== "rupture").length,
