@@ -113,5 +113,24 @@ const requete = (corps: any) => new Request("https://x/import", { method: "POST"
   v(data.results[0].plan?.origine === "regles", "repli sur les regles deterministes");
   v(String(data.results[0].analyse_erreur || "").includes("indisponible"), "la panne est dite, pas masquee");
 
+  console.log("\n===== 5. Plan decale d'un cran : repli annonce, pas d'echec muet =====");
+  appelsIA = []; ecritures = [];
+  const clientDecale: any = faireClient({ appelsIA, ecritures });
+  // L'IA se trompe d'une ligne : plus aucun intitule ne correspond.
+  clientDecale.asServiceRole.integrations.Core.InvokeLLM = async () => ({ ...REPONSE_IA, ligne_entetes: 3 });
+  poser(clientDecale);
+  rep = await handler(requete({ files: [{ file_url: "u", file_name: "grand-livre.csv" }], mode: "analyser" }));
+  data = await rep.json();
+  v(data.results[0].apercu?.length > 0, "l'apercu n'est pas vide : le filet a joue");
+
+  appelsIA = []; ecritures = [];
+  poser(clientDecale);
+  rep = await handler(requete({ files: [{ file_url: "u", file_name: "grand-livre.csv" }] }));
+  data = await rep.json();
+  const bulk = ecritures.find((e) => e.action === "bulkCreate");
+  v(!!bulk && bulk.nb > 0, "des lignes sont tout de meme importees");
+  v(String(data.results[0].message || "").includes("lecture automatique"),
+    "le repli est ecrit dans le resultat, pas passe sous silence");
+
   console.log("\ncas en echec :", echecs);
 })();
