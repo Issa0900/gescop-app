@@ -155,12 +155,6 @@ const MONTHS_FR: Record<string, string> = {
 };
 
 /**
- * Parse a number written in any of the formats spreadsheets produce:
- * "1 234,56" (FR), "1,234.56" (EN), "1.234,56", "12 %", "1 500,00 $", "(500)".
- * A wrong separator guess silently divides or multiplies a metric by 1000,
- * so the decimal separator is decided by the LAST separator present.
- */
-/**
  * A single separator followed by exactly three digits is a thousands group
  * ("1.234" = 1234, "45,000" = 45000) — UNLESS the integer part is "0" or is
  * longer than three digits, in which case it is a genuine decimal ("0.125" is a
@@ -179,6 +173,12 @@ function isThousandsGroup(s: string, sepIdx: number): boolean {
   return /^[1-9]\d{0,2}$/.test(intPart);
 }
 
+/**
+ * Parse a number written in any of the formats spreadsheets produce:
+ * "1 234,56" (FR), "1,234.56" (EN), "1.234,56", "12 %", "1 500,00 $", "(500)".
+ * A wrong separator guess silently divides or multiplies a metric by 1000,
+ * so the decimal separator is decided by the LAST separator present.
+ */
 export function parseNumber(value: any): number | null {
   if (typeof value === "number") return isNaN(value) ? null : value;
   if (value === null || value === undefined) return null;
