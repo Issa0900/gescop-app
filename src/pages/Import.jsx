@@ -154,8 +154,12 @@ export default function ImportPage() {
       }
 
       await base44.entities.Import.delete(imp.id);
+      // Les alertes/notifications produites par l'analyse pointaient sur ces
+      // lignes : sans ce nettoyage, la cloche continuait d'afficher des alertes
+      // pour des données qui n'existent plus.
+      await base44.entities.Alert.deleteMany({ category: { $in: ["anomalie", "risque", "opportunite"] } });
       qc.invalidateQueries();
-      toast({ title: `Import supprimé · ${deleted} enregistrement(s) ${entityName} effacé(s)` });
+      toast({ title: `Import supprimé · ${deleted} enregistrement(s) ${entityName} effacé(s) · alertes obsolètes effacées` });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     }
