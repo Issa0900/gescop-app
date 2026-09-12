@@ -114,6 +114,21 @@ export function detectEntityByFieldOverlap(headers: string[]): string | null {
   return best;
 }
 
+/**
+ * Les colonnes permettent-elles de stocker cette entite ?
+ *
+ * Le nom du fichier l'emportait sur les colonnes : un releve de transactions
+ * appele "ventes.csv" partait en Order, ou order_id est obligatoire, et chaque
+ * ligne etait mise en quarantaine. Le nom reste prioritaire, mais seulement
+ * quand le fichier peut effectivement alimenter l'entite qu'il annonce.
+ */
+export function entiteCompatible(entity: string, headers: string[]): boolean {
+  const schema = (ENTITY_SCHEMAS as Record<string, any>)[entity];
+  if (!schema) return false;
+  const set = new Set((headers || []).map(normalizeHeader).filter(Boolean));
+  return (schema.required || []).every((r: string) => set.has(r));
+}
+
 export function detectEntityByHeaders(headers: string[]): string | null {
   const set = new Set((headers || []).map(normalizeHeader));
   for (const sig of HEADER_SIGNATURES) {

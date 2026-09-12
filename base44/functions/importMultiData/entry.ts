@@ -1,6 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
-import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, sheetRows } from "../../shared/sheetDetect.ts";
+import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
 import { getSchema } from "../../shared/entitySchemas.ts";
@@ -18,9 +18,15 @@ import * as XLSX from "npm:xlsx@0.18.5";
 function detect(label: string, headers: string[], fileGuess?: string | null, manual?: string | null) {
   if (manual) return { entity: manual, via: "manuel" };
   const byName = detectEntityByName(label);
-  if (byName) return { entity: byName, via: "nom" };
   const byHeaders = detectEntityByHeaders(headers);
+  // Le nom ne l'emporte que si les colonnes peuvent reellement alimenter
+  // l'entite qu'il designe. Sinon ce sont les colonnes qui decident : elles
+  // decrivent le contenu, le nom ne fait que le suggerer.
+  if (byName && (headers.length === 0 || entiteCompatible(byName, headers))) {
+    return { entity: byName, via: "nom" };
+  }
   if (byHeaders) return { entity: byHeaders, via: "colonnes" };
+  if (byName) return { entity: byName, via: "nom (colonnes non concluantes)" };
   const byOverlap = detectEntityByFieldOverlap(headers);
   if (byOverlap) return { entity: byOverlap, via: "colonnes (approché)" };
   if (fileGuess) return { entity: fileGuess, via: "nom du fichier" };

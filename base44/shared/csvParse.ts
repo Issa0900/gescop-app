@@ -4,6 +4,7 @@
 // fully structured, so it must be parsed literally — never through the LLM.
 
 import * as XLSX from "npm:xlsx@0.18.5";
+import { sheetRows } from "./sheetDetect.ts";
 
 export function parseDelimitedText(text: string): Record<string, any>[] {
   const clean = text.replace(/^\uFEFF/, "");
@@ -17,7 +18,11 @@ export function parseDelimitedText(text: string): Record<string, any>[] {
   const delimiter = Object.keys(counts).reduce((a, b) => (counts[b] > counts[a] ? b : a), ",");
   const wb = XLSX.read(clean, { type: "string", raw: false, FS: delimiter });
   const sheet = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, any>[];
+  // Meme recuperation de la ligne d'en-tetes que pour un classeur Excel : un
+  // export comptable commence souvent par un titre ("Rapport de ventes - mars"),
+  // qui donnait des colonnes __EMPTY et mettait tout le fichier en quarantaine.
+  // Le meme fichier passait en .xlsx et echouait en .csv.
+  return sheetRows(sheet).rows;
 }
 
 export async function fetchDelimitedRows(fileUrl: string): Promise<Record<string, any>[]> {
