@@ -58,6 +58,21 @@ const cas: [string, string, string][] = [
   ["K. En-tetes dupliques", "ventes.csv",
    "Date,Montant,Type,Montant\n2026-03-01,1000,Revenu,1000\n2026-03-02,500,Dépense,500\n2026-03-03,750,Revenu,750\n"],
 
+  // Les combinaisons, pas seulement les defauts isoles : le separateur etait
+  // devine sur la premiere ligne du fichier, donc "titre + point-virgule"
+  // echouait alors que "titre + virgule" et "point-virgule seul" passaient.
+  ["M. Titre + point-virgule (Excel FR)", "ventes.csv",
+   "Rapport de ventes - mars 2026\n\nDate opération;Montant;Type\n01/03/2026;1 000,00 $;Revenu\n02/03/2026;500,00 $;Dépense\n03/03/2026;750,00 $;Revenu\n"],
+
+  ["N. Titre + tabulations", "ventes.tsv",
+   "Export comptable\n\nDate\tMontant\tType\n2026-03-01\t1000\tRevenu\n2026-03-02\t500\tDépense\n2026-03-03\t750\tRevenu\n"],
+
+  ["O. Titre contenant une virgule + point-virgule", "ventes.csv",
+   "Rapport de ventes, mars 2026\n\nDate;Montant;Type\n01/03/2026;1 000,00 $;Revenu\n02/03/2026;500,00 $;Dépense\n03/03/2026;750,00 $;Revenu\n"],
+
+  ["P. Deux lignes de titre + BOM + point-virgule", "ventes.csv",
+   "\uFEFFCafé Lumière inc.\nPériode : mars 2026\n\nDate;Montant;Type\n01/03/2026;1000;Revenu\n02/03/2026;500;Dépense\n03/03/2026;750;Revenu\n"],
+
   ["L. Tabulations", "ventes.tsv",
    "Date\tMontant\tType\n2026-03-01\t1000\tRevenu\n2026-03-02\t500\tDépense\n2026-03-03\t750\tRevenu\n"],
 ];
