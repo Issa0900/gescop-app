@@ -50,15 +50,15 @@ export default function Produits() {
   const alertSettings = getStockAlertSettings(company);
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
-    queryFn: async () => (await base44.entities.Product.list()) || [],
+    queryFn: () => fetchAll(base44.entities.Product),
   });
   const { data: inventory, isLoading: li } = useQuery({
     queryKey: ["inventory-summary"],
-    queryFn: async () => (await base44.entities.Inventory.list("-date", 500)) || [],
+    queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
   });
   const { data: orders, isLoading: lo } = useQuery({
     queryKey: ["orders-produits"],
-    queryFn: async () => (await base44.entities.Order.list("-date", 500)) || [],
+    queryFn: () => fetchAll(base44.entities.Order, "-date"),
   });
 
   if (lp || li || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
