@@ -19,8 +19,8 @@ const FICHIER_TEXTE =
 
 const REPONSE_IA = {
   entite: "Transaction",
-  ligne_entetes: 3,
-  lignes_ignorees: [6],
+  ligne_entetes: 2,
+  lignes_ignorees: [5],
   colonnes: [
     { colonne: "Date ope.", champ: "date", convention_date: "JJ/MM" },
     { colonne: "Libelle", champ: "description" },
@@ -69,7 +69,7 @@ const requete = (corps: any) => new Request("https://x/import", { method: "POST"
   v(ecritures.length === 0, "AUCUNE ecriture en base pendant l'analyse");
   v(appelsIA.length === 1, "l'IA est appelee une seule fois pour la feuille");
   v(a.status === "analyse" && a.plan?.entite === "Transaction", "un plan est rendu");
-  v(a.plan?.ligne_entetes === 3, "l'en-tete de rapport de 3 lignes est ecarte");
+  v(a.plan?.ligne_entetes === 2, "l'en-tete de rapport est ecarte (2 lignes, la ligne vide ne compte pas)");
   v(a.apercu?.length === 2, "apercu : 2 lignes (la ligne TOTAUX est ecartee)");
   v(a.apercu?.[0]?.date === "2026-03-25", "apercu : 25/03 lu le 25 mars");
   v(a.apercu?.[0]?.type === "income" && a.apercu?.[1]?.type === "expense", "apercu : codes C/D traduits");
