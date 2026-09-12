@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   LineChart, Line,
 } from "recharts";
+import { fetchAll } from "@/lib/fetchAll";
 
 export default function Marketing() {
   const { data: campaigns, isLoading: lc } = useQuery({
