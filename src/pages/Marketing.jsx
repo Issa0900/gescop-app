@@ -19,8 +19,15 @@ export default function Marketing() {
     queryKey: ["campaign-daily-summary"],
     queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
   });
+  // Ad exports rarely carry a "new customers" column, but the customer file does
+  // carry an acquisition date — so the figure is measurable even when it is not
+  // attributable to a specific campaign.
+  const { data: customers, isLoading: lcu } = useQuery({
+    queryKey: ["customers-acquisition"],
+    queryFn: () => fetchAll(base44.entities.Customer),
+  });
 
-  if (lc || ld) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (lc || ld || lcu) return <p className="text-sm text-muted-foreground">Chargement…</p>;
   if (!campaigns || campaigns.length === 0) {
     return (
       <EmptyState
@@ -47,6 +54,23 @@ export default function Marketing() {
   // Coverage of the daily records, which drive the monthly trend: campaigns
   // carry no dates in the import, so only dated daily rows can be trended.
   const dailyCampaigns = new Set((daily || []).map((d) => d.campaign_id).filter(Boolean)).size;
+
+  // Acquisitions measured on the customer file. The current month is excluded:
+  // it is partial and would read as a collapse in acquisition.
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const acquisitionMonths = {};
+  (customers || []).forEach((c) => {
+    const m = (c.acquisition_date || "").slice(0, 7);
+    if (!m || m >= currentMonth) return;
+    acquisitionMonths[m] = (acquisitionMonths[m] || 0) + 1;
+  });
+  const acquiredMonths = Object.keys(acquisitionMonths).sort();
+  const acquiredTotal = acquiredMonths.reduce((s, m) => s + acquisitionMonths[m], 0);
+  const lastMonth = acquiredMonths[acquiredMonths.length - 1];
+  const lastMonthCount = lastMonth ? acquisitionMonths[lastMonth] : 0;
+  const prevMonth = acquiredMonths[acquiredMonths.length - 2];
+  const prevMonthCount = prevMonth ? acquisitionMonths[prevMonth] : 0;
 
   const byChannel = {};
   campaigns.forEach((c) => {
@@ -111,12 +135,20 @@ export default function Marketing() {
         />
         <StatCard
           label="Nouveaux clients"
-          value={totalNew > 0 ? totalNew.toLocaleString("fr-CA") : "—"}
+          value={totalNew > 0
+            ? totalNew.toLocaleString("fr-CA")
+            : lastMonth ? lastMonthCount.toLocaleString("fr-CA") : "—"}
           sublabel={totalNew > 0
-            ? "attribués aux campagnes"
-            : "colonne absente de l'import — non nul, inconnu"}
+            ? `${totalNew.toLocaleString("fr-CA")} attribués aux campagnes`
+            : lastMonth
+              ? `en ${lastMonth} · ${acquiredTotal.toLocaleString("fr-CA")} au total${prevMonth ? ` · ${prevMonthCount} le mois précédent` : ""} — mesurés sur les dates d'acquisition, non attribués aux campagnes`
+              : "aucune date d'acquisition dans les données clients"}
           icon={UserPlus}
-          accent={totalNew > 0 ? undefined : "bg-muted text-muted-foreground"}
+          accent={totalNew > 0 || lastMonth
+            ? (lastMonth && prevMonth && !totalNew
+              ? (lastMonthCount >= prevMonthCount ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")
+              : undefined)
+            : "bg-muted text-muted-foreground"}
         />
       </div>
 
