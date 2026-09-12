@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
 import { fetchAll } from "@/lib/fetchAll";
+import { useCompany } from "@/hooks/useCompany";
+import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
 import {
   monthlyAggComplete,
   lastVal,
@@ -51,6 +53,10 @@ const domainColors = {
 };
 
 export default function Kpis() {
+  // The stock threshold is a company setting, so these KPIs follow it like the
+  // Produits page does instead of hard-coding their own shortage rule.
+  const { company } = useCompany();
+  const stockSettings = getStockAlertSettings(company);
   const { data: kpisLLM, isLoading } = useQuery({
     queryKey: ["kpis"],
     queryFn: async () => {
@@ -299,7 +305,7 @@ export default function Kpis() {
     }
 
     return result;
-  }, [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow]);
+  }, [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, stockSettings.threshold, stockSettings.useReorderPoint]);
 
   // Merge: computed KPIs first, then LLM-generated ones that aren't duplicated
   const allKpis = useMemo(() => {
@@ -318,8 +324,8 @@ export default function Kpis() {
   }, [allKpis]);
 
   const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow,
-  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow]);
+    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, company,
+  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, company]);
 
   // Trend chart data: revenue, AOV, margin % by month.
   // The in-progress month is excluded — a partial month renders as a false cliff.
