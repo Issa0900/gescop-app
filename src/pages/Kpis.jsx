@@ -12,7 +12,6 @@ import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
 import { fetchAll } from "@/lib/fetchAll";
 import {
-  monthlyAgg,
   monthlyAggComplete,
   lastVal,
   prevVal,
