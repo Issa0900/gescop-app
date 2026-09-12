@@ -78,13 +78,18 @@ export default function Clients() {
   }));
 
   const total = enriched.length;
-  const inactive = enriched.filter((c) => c.status === "inactif" || c.status === "perdu" || c.segment === "inactif" || c.segment === "a_risque");
-  const churnRate = Math.round((inactive.length / total) * 100);
+  // Same churn definition as the KPI page, the scores and the audit page.
+  // This page used to also count "segment a_risque" as churned, so it showed a
+  // higher rate than every other screen from the exact same rows.
+  const churn = churnStats(customers);
+  const churnRate = churn.rate === null ? 0 : Math.round(churn.rate);
   const totalRevenue = enriched.reduce((s, c) => s + (c._total_revenue || 0), 0);
   const sorted = [...enriched].sort((a, b) => (b._total_revenue || 0) - (a._total_revenue || 0));
   const top5Revenue = sorted.slice(0, 5).reduce((s, c) => s + (c._total_revenue || 0), 0);
   const concentration = totalRevenue > 0 ? Math.round((top5Revenue / totalRevenue) * 100) : 0;
-  const avgLTV = total > 0 ? Math.round(totalRevenue / total) : 0;
+  // Divided by the customers who actually ordered, not by the whole base.
+  const value = customerValue(orders, customers);
+  const avgRevenue = value.avgRevenue === null ? 0 : Math.round(value.avgRevenue);
 
   const bySegment = {};
   enriched.forEach((c) => {
@@ -111,9 +116,9 @@ export default function Clients() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total clients" value={total.toLocaleString()} icon={Users} />
-        <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${inactive.length} inactifs`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${churn.churned} inactifs ou perdus${churn.atRisk > 0 ? ` · ${churn.atRisk} à risque` : ""}`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Concentration top 5" value={`${concentration}%`} sublabel="du CA total" icon={Crown} accent={concentration > 40 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Valeur vie moyenne" value={`${avgLTV.toLocaleString()} $`} sublabel={`CA réel de ${(orders || []).length} commandes`} icon={DollarSign} />
+        <StatCard label="Revenu moyen par client" value={`${avgRevenue.toLocaleString("fr-CA")} $`} sublabel={`${value.buyers} clients ayant commandé`} icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
