@@ -122,7 +122,7 @@ export default function Register() {
       lastSubmittedCode.current = otpCode;
       handleVerify(otpCode);
     }
-  }, [otpCode, showOtp, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [otpCode, showOtp, loading]);
 
   const handleResend = async () => {
     setError("");
