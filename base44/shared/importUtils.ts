@@ -214,6 +214,17 @@ export function parseNumber(value: any): number | null {
   if (s === "" || s === "-" || /^(n\/?a|nd|null)$/i.test(s)) return null;
   const negative = /^\(.*\)$/.test(s) || s.startsWith("-");
   s = s.replace(/[()\-+]/g, "");
+  // Abréviations d'échelle ("1.5M", "2,5 k", "3 Md"). Elles doivent être lues
+  // AVANT le retrait des lettres : sinon "1.5M" devient 1.5, soit un montant
+  // divisé par un million. Seul un suffixe collé à un nombre est reconnu, pour
+  // qu'un code devise ("1 500 CAD") reste traité comme avant.
+  let multiplicateur = 1;
+  const mult = s.match(/^([\d\s.,\u00A0\u202F]+)(md|mrd|k|m|g|b)\s*[$€£]?$/i);
+  if (mult) {
+    const suffixe = mult[2].toLowerCase();
+    multiplicateur = suffixe === "k" ? 1e3 : (suffixe === "md" || suffixe === "mrd" || suffixe === "g" || suffixe === "b") ? 1e9 : 1e6;
+    s = mult[1];
+  }
   // Strip currency, percent signs and every kind of space (incl. non-breaking).
   s = s.replace(/[$€£%]|[a-zA-Z]|\s|\u00A0|\u202F/g, "");
   const lastComma = s.lastIndexOf(",");
@@ -230,9 +241,20 @@ export function parseNumber(value: any): number | null {
     if (!single) s = s.replace(/\./g, "");
     else if (isThousandsGroup(s, lastDot)) s = s.replace(".", "");
   }
-  const n = Number(s);
+  const n = Number(s) * multiplicateur;
   if (isNaN(n)) return null;
   return negative ? -n : n;
+}
+
+/**
+ * Une date doit exister au calendrier : "31/02/2025" se composait jusqu'ici en
+ * "2025-02-31", stocké tel quel puis comparé et trié comme une vraie date.
+ */
+function dateReelle(annee: string, mois: string, jour: string): boolean {
+  const a = Number(annee), m = Number(mois), j = Number(jour);
+  if (!a || m < 1 || m > 12 || j < 1) return false;
+  const dansLeMois = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  return j <= dansLeMois;
 }
 
 /**
@@ -254,7 +276,7 @@ export function parseDate(value: any): string | null {
   if (s.includes("T")) s = s.slice(0, 10);
   // YYYY-MM-DD / YYYY/MM/DD
   let m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
-  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  if (m) return dateReelle(m[1], m[2], m[3]) ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : null;
   // DD/MM/YYYY, DD-MM-YY
   m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/);
   if (m) {
@@ -263,13 +285,14 @@ export function parseDate(value: any): string | null {
     let month = m[2];
     // Unambiguous US order (13/12/2025 impossible as month).
     if (Number(month) > 12 && Number(day) <= 12) [day, month] = [month, day];
+    if (!dateReelle(year, month, day)) return null;
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
   // "15 janv. 2025" / "15 janvier 2025"
   m = stripAccents(s.toLowerCase()).match(/^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})$/);
   if (m) {
     const mm = MONTHS_FR[m[2].slice(0, 4)] || MONTHS_FR[m[2].slice(0, 3)];
-    if (mm) return `${m[3]}-${mm}-${m[1].padStart(2, "0")}`;
+    if (mm) return dateReelle(m[3], mm, m[1]) ? `${m[3]}-${mm}-${m[1].padStart(2, "0")}` : null;
   }
   // YYYY-MM (period) → first day of month
   m = s.match(/^(\d{4})[\/\-](\d{1,2})$/);
@@ -284,7 +307,11 @@ export function coerceType(value: any, prop: any): any {
   switch (prop.type) {
     case "string":
       if (prop.format === "date" || prop.format === "date-time") {
-        return parseDate(value) || String(value).slice(0, 10);
+        // Une valeur illisible renvoyait ses 10 premiers caracteres ("Lundi 3 ma"),
+        // stockes tels quels dans un champ date : la ligne passait la validation,
+        // entrait en base, puis faussait tout filtre ou tri par periode. Renvoyer
+        // null la fait mettre en quarantaine, ce qui est le role de ce moteur.
+        return parseDate(value);
       }
       return String(value);
     case "number": {
