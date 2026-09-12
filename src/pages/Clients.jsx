@@ -8,7 +8,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { churnStats, customerValue } from "@/lib/metrics";
+import { churnStats, customerValue, columnPresent } from "@/lib/metrics";
 import { fetchAll } from "@/lib/fetchAll";
 
 const segmentColors = {
@@ -74,7 +74,12 @@ export default function Clients() {
       : 0,
     // churn_risk is imported as a 0–1 ratio; displaying it raw showed "1%" for
     // a client with a 70% departure risk.
-    _churnPct: Math.round((Number(c.churn_risk) || 0) <= 1 ? (Number(c.churn_risk) || 0) * 100 : Number(c.churn_risk) || 0),
+    // null when the column is absent — rendered as « — ». Showing 0 % on every
+    // client would read as "nobody is at risk", which is not what an empty
+    // column says.
+    _churnPct: c.churn_risk === null || c.churn_risk === undefined || c.churn_risk === ""
+      ? null
+      : Math.round(Number(c.churn_risk) <= 1 ? Number(c.churn_risk) * 100 : Number(c.churn_risk)),
   }));
 
   const total = enriched.length;
@@ -83,6 +88,8 @@ export default function Clients() {
   // higher rate than every other screen from the exact same rows.
   const churn = churnStats(customers);
   const churnRate = churn.rate === null ? 0 : Math.round(churn.rate);
+  // "0 client à risque" is only meaningful if the risk column was imported.
+  const hasChurnRisk = columnPresent(customers, "churn_risk");
   const totalRevenue = enriched.reduce((s, c) => s + (c._total_revenue || 0), 0);
   const sorted = [...enriched].sort((a, b) => (b._total_revenue || 0) - (a._total_revenue || 0));
   const top5Revenue = sorted.slice(0, 5).reduce((s, c) => s + (c._total_revenue || 0), 0);
@@ -116,7 +123,7 @@ export default function Clients() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total clients" value={total.toLocaleString()} icon={Users} />
-        <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${churn.churned} inactifs ou perdus${churn.atRisk > 0 ? ` · ${churn.atRisk} à risque` : ""}`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${churn.churned} inactifs ou perdus${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Concentration top 5" value={`${concentration}%`} sublabel="du CA total" icon={Crown} accent={concentration > 40 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Revenu moyen par client" value={`${avgRevenue.toLocaleString("fr-CA")} $`} sublabel={`${value.buyers} clients ayant commandé`} icon={DollarSign} />
       </div>
@@ -177,9 +184,13 @@ export default function Clients() {
                 <td className="px-4 py-3 font-medium">{Math.round(c._total_revenue || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">{Math.round(c._aov || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">
-                  <span className={c._churnPct > 60 ? "text-red-600 font-medium" : c._churnPct > 30 ? "text-amber-600" : "text-muted-foreground"}>
-                    {c._churnPct}%
-                  </span>
+                  {c._churnPct === null ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <span className={c._churnPct > 60 ? "text-red-600 font-medium" : c._churnPct > 30 ? "text-amber-600" : "text-muted-foreground"}>
+                      {c._churnPct}%
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span className={c.status === "actif" ? "text-emerald-600" : c.status === "inactif" ? "text-red-600" : "text-amber-600"}>
