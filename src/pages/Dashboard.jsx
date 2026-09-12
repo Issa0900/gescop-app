@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCompany } from "@/hooks/useCompany";
@@ -22,6 +23,7 @@ import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
 import TimeFilter from "@/components/dashboard/TimeFilter";
+import AnalysisEmptyState from "@/components/dashboard/AnalysisEmptyState";
 import { computeDomainScores } from "@/lib/domainScores";
 import { fetchAll } from "@/lib/fetchAll";
 import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
@@ -131,7 +133,7 @@ export default function Dashboard() {
   const [showDetails, setShowDetails] = useState(false);
   const [period, setPeriod] = useState("month");
 
-  const periodDays = { month: 30, quarter: 90, year: 365 };
+  const periodDays = { day: 1, month: 30, quarter: 90, year: 365 };
   const cutoffDate = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - periodDays[period]);
@@ -204,7 +206,7 @@ export default function Dashboard() {
     const costsMonthly = monthlyAggComplete(allExpenses, "date", "amount");
     const clientsMonthly = monthlyAggComplete(customers || [], "acquisition_date", "customer_id", "count");
 
-    const sparkCount = { month: 3, quarter: 6, year: 12 }[period];
+    const sparkCount = { day: 3, month: 3, quarter: 6, year: 12 }[period];
     const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
 
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
@@ -380,12 +382,17 @@ export default function Dashboard() {
       <DashboardHeader greeting={greeting} date={today} lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} analyzing={analyzing} hasData={hasData} />
 
       {hasData && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Période analysée : <span className="font-medium text-foreground">{period === "month" ? "30 derniers jours" : period === "quarter" ? "90 derniers jours" : "12 derniers mois"}</span>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.08 }}
+          className="flex flex-wrap items-center justify-between gap-3"
+        >
+          <p className="text-sm font-medium text-muted-foreground">
+            Tendances des {period === "day" ? "dernières 24 heures" : period === "month" ? "30 derniers jours" : period === "quarter" ? "90 derniers jours" : "12 derniers mois"}
           </p>
           <TimeFilter period={period} onChange={setPeriod} />
-        </div>
+        </motion.div>
       )}
 
       {analyzing && (
@@ -406,15 +413,8 @@ export default function Dashboard() {
       {!hasData && <OnboardingHero />}
 
       {hasData && !hasAnalysis && !analyzing && (
-        <div className="animate-fade-in rounded-2xl border border-border bg-card p-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <Sparkles className="h-7 w-7 text-primary" />
-          </div>
-          <h2 className="text-xl font-bold">Lancez votre première analyse</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            GESCOP va examiner vos données, détecter les anomalies, évaluer les risques et produire des recommandations actionnables.
-          </p>
-          <Button onClick={handleAnalyze} className="mt-5"><Sparkles className="mr-2 h-4 w-4" /> Analyser maintenant</Button>
+        <div className="py-6">
+          <AnalysisEmptyState onStart={handleAnalyze} />
         </div>
       )}
 

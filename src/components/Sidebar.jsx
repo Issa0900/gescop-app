@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Brain, Upload, BarChart3, AlertTriangle, ShieldAlert, Lightbulb,
   TrendingUp, Calculator, CheckSquare, Bell, Target, FileText, MessageSquare,
-  Radar as RadarIcon, History, Book, Settings, Menu, X, Sparkles, ChevronDown,
+  Radar as RadarIcon, History, Book, Settings, Menu, X, ChevronDown,
   Users, Package, Megaphone, Wallet, PanelLeftClose, PanelLeftOpen, LogOut, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import BrandLogo from "@/components/BrandLogo";
 
 const navGroups = [
   {
-    label: "Pilotage",
+    label: "Pilote",
     icon: LayoutDashboard,
     items: [
       { to: "/", label: "Vue d'ensemble", icon: LayoutDashboard, end: true },
@@ -31,33 +31,38 @@ const navGroups = [
       { to: "/clients", label: "Clients", icon: Users },
       { to: "/produits", label: "Produits", icon: Package },
       { to: "/marketing", label: "Marketing", icon: Megaphone },
-      { to: "/taches", label: "Tâches", icon: CheckSquare },
-      { to: "/decisions", label: "Décisions", icon: Target },
     ],
   },
   {
-    label: "Analyse",
+    label: "Intelligence",
     icon: Brain,
     items: [
-      { to: "/insights", label: "Insights IA", icon: Brain },
-      { to: "/alertes", label: "Alertes", icon: Bell },
-      { to: "/risques", label: "Risques & opportunités", icon: ShieldAlert },
       { to: "/anomalies", label: "Anomalies", icon: AlertTriangle },
+      { to: "/risques", label: "Risques & opportunités", icon: ShieldAlert },
+      { to: "/insights", label: "Insights IA", icon: Brain },
+      { to: "/radar", label: "Radar externe", icon: RadarIcon },
+      { to: "/alertes", label: "Alertes", icon: Bell },
       { to: "/recommandations", label: "Recommandations", icon: Lightbulb },
       { to: "/historique", label: "Historique", icon: History },
-      { to: "/radar", label: "Radar externe", icon: RadarIcon },
+    ],
+  },
+  {
+    label: "Actions",
+    icon: CheckSquare,
+    items: [
+      { to: "/taches", label: "Tâches", icon: CheckSquare },
+      { to: "/decisions", label: "Décisions", icon: Target },
+      { to: "/rapports", label: "Rapports", icon: FileText },
+      { to: "/assistant", label: "Assistant", icon: MessageSquare },
     ],
   },
   {
     label: "Outils",
-    icon: FileText,
+    icon: Upload,
     items: [
       { to: "/importer", label: "Sources", icon: Upload },
       { to: "/audit", label: "Audit des calculs", icon: ShieldCheck },
-      { to: "/rapports", label: "Rapports", icon: FileText },
-      { to: "/assistant", label: "Assistant IA", icon: MessageSquare },
       { to: "/manuel", label: "Manuel", icon: Book },
-      { to: "/parametres", label: "Paramètres", icon: Settings },
     ],
   },
 ];
@@ -79,6 +84,8 @@ export default function Sidebar({ compact, onToggleCompact }) {
 
   const toggle = (label) => setExpanded((e) => ({ ...e, [label]: !e[label] }));
 
+  const initials = (user?.full_name || user?.email || "?").trim().slice(0, 2).toUpperCase();
+
   const renderNavItem = (item) => (
     <NavLink
       key={item.to}
@@ -88,19 +95,19 @@ export default function Sidebar({ compact, onToggleCompact }) {
       title={compact ? item.label : undefined}
       className={({ isActive }) =>
         cn(
-          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ease-in-out",
           compact && "justify-center px-0",
           isActive
-            ? "bg-sidebar-primary/15 text-sidebar-primary"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:translate-x-0.5"
+            ? "bg-emerald-500/15 text-white"
+            : "text-sidebar-foreground hover:bg-white/5 hover:text-white"
         )
       }
     >
       {({ isActive }) => (
         <>
-          {isActive && <span className={cn("absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary", compact ? "left-0" : "left-0")} />}
+          {isActive && <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[#10B981]" />}
           <item.icon
-            className={cn("shrink-0 transition-colors duration-200", isActive ? "text-sidebar-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-foreground")}
+            className={cn("shrink-0 transition-colors duration-150", isActive ? "text-[#10B981]" : "text-sidebar-foreground/80 group-hover:text-white")}
             style={{ width: 17, height: 17 }}
           />
           {!compact && <span className="truncate">{item.label}</span>}
@@ -114,7 +121,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/80 shadow-md backdrop-blur transition-transform hover:scale-105 md:hidden"
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/70 shadow-md backdrop-blur transition-transform hover:scale-105 md:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -133,13 +140,13 @@ export default function Sidebar({ compact, onToggleCompact }) {
             <BrandLogo className="h-9 w-9 shrink-0 p-0.5 shadow-lg shadow-black/20" />
             {!compact && (
               <div>
-                <p className="text-base font-bold tracking-tight text-sidebar-accent-foreground">GESCOP</p>
-                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">Pilotage intelligent</p>
+                <p className="text-base font-bold tracking-tight text-white">GESCOP</p>
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Pilotage intelligent</p>
               </div>
             )}
           </div>
           {!compact && (
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden">
+            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white md:hidden">
               <X className="h-5 w-5" />
             </button>
           )}
@@ -147,10 +154,10 @@ export default function Sidebar({ compact, onToggleCompact }) {
 
         {/* Company selector */}
         {!compact && company && (
-          <div className="mx-3 mb-2 rounded-xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2">
+          <div className="mx-3 mb-3 rounded-xl bg-white/[0.04] px-3 py-2 backdrop-blur transition-colors duration-150 hover:bg-white/[0.07]">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{company.name}</p>
+                <p className="truncate text-sm font-medium text-white">{company.name}</p>
                 <p className="truncate text-xs text-sidebar-foreground/70">{company.sector || "—"}</p>
               </div>
               <ChevronDown className="h-4 w-4 shrink-0 text-sidebar-foreground/60" />
@@ -159,7 +166,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
         )}
 
         {/* Nav */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
           {navGroups.map((group) => {
             const isExpanded = expanded[group.label] || compact;
             const isActiveGroup = activeGroup === group.label;
@@ -169,69 +176,74 @@ export default function Sidebar({ compact, onToggleCompact }) {
                   <button
                     onClick={() => toggle(group.label)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200",
-                      isActiveGroup
-                        ? "text-sidebar-primary"
-                        : "text-sidebar-foreground/55 hover:text-sidebar-foreground/90 hover:bg-sidebar-accent/40"
+                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150",
+                      isActiveGroup ? "text-[#10B981]" : "text-[#9CA3AF] hover:text-white"
                     )}
                   >
-                    <group.icon className="shrink-0" style={{ width: 13, height: 13 }} />
                     <span className="flex-1 text-left">{group.label}</span>
                     <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform duration-200", !isExpanded && "-rotate-90")} />
                   </button>
                 ) : (
                   <div className="flex justify-center py-1">
                     <group.icon
-                      className={cn("transition-colors", isActiveGroup ? "text-sidebar-primary" : "text-sidebar-foreground/55")}
+                      className={cn("transition-colors", isActiveGroup ? "text-[#10B981]" : "text-[#9CA3AF]")}
                       style={{ width: 16, height: 16 }}
                     />
                   </div>
                 )}
-                {compact && <div className="mx-3 my-1 border-t border-sidebar-border/40" />}
-                <div className={cn("overflow-hidden transition-all duration-300 ease-out", isExpanded ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
-                  <div className={cn("space-y-0.5", !compact && "ml-2.5 border-l border-sidebar-border/60 pl-2.5")}>
-                    {group.items.map(renderNavItem)}
-                  </div>
+                {compact && <div className="mx-3 my-1 border-t border-white/5" />}
+                <div className={cn("overflow-hidden transition-all duration-300 ease-out", isExpanded ? "max-h-[28rem] opacity-100 mt-0.5" : "max-h-0 opacity-0")}>
+                  <div className="space-y-0.5">{group.items.map(renderNavItem)}</div>
                 </div>
               </div>
             );
           })}
         </nav>
 
-        {/* User */}
-        <div className="border-t border-sidebar-border px-3 py-2">
-          {!compact && user && (
-            <div className="flex items-center justify-between rounded-lg border border-sidebar-border/60 bg-sidebar-accent/30 px-3 py-2">
-              <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-sidebar-accent-foreground">{user.full_name || user.email}</p>
-                <p className="truncate text-[10px] text-sidebar-foreground/50">{user.email}</p>
+        {/* User profile — no harsh borders */}
+        <div className="px-3 py-3">
+          {!compact && user ? (
+            <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] px-3 py-2.5 transition-colors duration-150 hover:bg-white/[0.07]">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#10B981]/20 text-[11px] font-bold text-[#10B981]">
+                {initials}
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white">{user.full_name || user.email?.split("@")[0]}</p>
+                <p className="truncate text-[10px] text-sidebar-foreground/60">{user.email}</p>
+              </div>
+              <Link
+                to="/parametres"
+                title="Paramètres"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
               <button
                 onClick={() => logout()}
                 title="Se déconnecter"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors duration-150 hover:bg-red-500/20 hover:text-red-400"
               >
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
-          )}
-          {compact && user && (
-            <button
-              onClick={() => logout()}
-              title="Se déconnecter"
-              className="flex w-full justify-center rounded-lg px-0 py-2 text-sidebar-foreground/70 transition-colors hover:bg-red-500/20 hover:text-red-400"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          )}
+          ) : compact && user ? (
+            <div className="flex flex-col items-center gap-2">
+              <Link to="/parametres" title="Paramètres" className="rounded-lg p-1.5 text-sidebar-foreground/70 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+                <Settings className="h-4 w-4" />
+              </Link>
+              <button onClick={() => logout()} title="Se déconnecter" className="rounded-lg p-1.5 text-sidebar-foreground/70 transition-colors duration-150 hover:bg-red-500/20 hover:text-red-400">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Compact toggle + footer */}
-        <div className="border-t border-sidebar-border px-3 py-2">
+        <div className="px-3 pb-3">
           <button
             onClick={onToggleCompact}
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors duration-150 hover:bg-white/5 hover:text-white",
               compact && "justify-center px-0"
             )}
           >
