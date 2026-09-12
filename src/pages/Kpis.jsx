@@ -286,14 +286,14 @@ export default function Kpis() {
       // the company threshold included. "Alertes rupture" used to read the
       // imported stock_status alone and never moved when the user changed their
       // threshold, so the two screens disagreed on the same rows.
-      const stock = computeStockAlerts(products, inventory, stockSettings);
+      const stock = computeStockAlerts(products, inventory, stockSettings, orders);
       const avgMargin = (products || []).length > 0
         ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
         : 0;
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
       // Counts, not trends: there is no previous snapshot to compare against.
-      result.push({ name: "Stock dormant", domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
+      result.push({ name: `Stock dormant (${stock.dormantMonths} mois sans vente)`, domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
       result.push({ name: "Alertes rupture", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
       result.push({ name: "Produits en rupture totale", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
     }
