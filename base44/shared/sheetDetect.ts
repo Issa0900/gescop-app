@@ -138,6 +138,27 @@ export function detectEntityByHeaders(headers: string[]): string | null {
 }
 
 /**
+ * Une cellule ressemble-t-elle a un libelle de colonne ?
+ *
+ * Un libelle est du texte qui ne se lit ni comme un nombre ("1 000,00 $",
+ * "(500)", "12 %") ni comme une date ("2026-03-01", "01/03/2026"). Le test
+ * reste volontairement grossier et local : il ne sert qu'a reperer la ligne
+ * d'en-tetes, pas a valider une valeur — c'est le role de importUtils, qui
+ * importe deja ce module et ne peut donc pas etre importe en retour.
+ */
+const RESSEMBLE_A_UN_NOMBRE = /^[(+-]?[\d\s.,'\u2019\u00a0]+[\s%$\u20ac\u00a3\u00a5)]*$/;
+const RESSEMBLE_A_UNE_DATE = /^\d{1,4}[\/\-.]\d{1,2}([\/\-.]\d{1,4})?([T\s].*)?$/;
+
+function estLibelle(cellule: any): boolean {
+  if (typeof cellule !== "string") return false;
+  const t = cellule.trim();
+  if (t === "") return false;
+  if (RESSEMBLE_A_UN_NOMBRE.test(t)) return false;
+  if (RESSEMBLE_A_UNE_DATE.test(t)) return false;
+  return true;
+}
+
+/**
  * Rows of a sheet, with header-row recovery.
  * A sheet whose first line is a title produces __EMPTY_1, __EMPTY_2… headers;
  * in that case we scan the first rows for the real header line.
@@ -146,14 +167,22 @@ export function sheetRows(sheet: any): { rows: Record<string, any>[]; headers: s
   const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as any[][];
   if (matrix.length === 0) return { rows: [], headers: [] };
 
-  // The header row is the first row where most cells are non-empty text.
+  // La ligne d'en-tetes est celle qui contient le plus de LIBELLES — du texte
+  // qui n'est ni un nombre ni une date. Compter simplement les cellules de type
+  // chaine ne suffit pas : un fichier texte est lu sans conversion (voir
+  // csvParse.ts, raw: true), donc toutes les cellules sont des chaines et une
+  // ligne de donnees ayant une colonne de plus que l'en-tete l'emportait.
   let headerIdx = 0;
   let bestScore = -1;
   for (let i = 0; i < Math.min(matrix.length, 10); i += 1) {
     const row = matrix[i] || [];
     const filled = row.filter((c) => String(c ?? "").trim() !== "").length;
-    const texty = row.filter((c) => typeof c === "string" && String(c).trim() !== "").length;
-    const score = filled >= 2 ? texty + filled : -1;
+    const libelles = row.filter((c) => estLibelle(c)).length;
+    // Les libelles pesent double : c'est le signe distinctif d'un en-tete,
+    // le remplissage ne departage que des lignes egales par ailleurs.
+    const score = filled >= 2 ? libelles * 2 + filled : -1;
+    // `>` strict : a egalite, la ligne la plus haute gagne, donc l'en-tete
+    // plutot que la premiere ligne de donnees qui lui ressemblerait.
     if (score > bestScore) { bestScore = score; headerIdx = i; }
   }
 
