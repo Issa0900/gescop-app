@@ -60,7 +60,8 @@ export default function Produits() {
   const alertSettings = draft || savedSettings;
   const isDraft = draft !== null
     && (draft.threshold !== savedSettings.threshold
-      || draft.useReorderPoint !== savedSettings.useReorderPoint);
+      || draft.useReorderPoint !== savedSettings.useReorderPoint
+      || draft.dormantMonths !== savedSettings.dormantMonths);
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
     queryFn: () => fetchAll(base44.entities.Product),
