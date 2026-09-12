@@ -368,6 +368,17 @@ export function normalizeRow(
     if (cin !== null || cout !== null) r.net_cash_flow = (cin || 0) - (cout || 0);
   }
 
+  // Les exports de campagnes contiennent la dépense, le revenu et les
+  // conversions, mais presque jamais le ROAS ni le CAC : sans dérivation, la
+  // page Marketing affichait des colonnes vides alors que tout est calculable.
+  if (entityName === "Campaign") {
+    const spend = parseNumber(r.spend);
+    const revenue = parseNumber(r.revenue);
+    const conversions = parseNumber(r.conversions);
+    if (r.roas == null && spend && revenue != null) r.roas = Math.round((revenue / spend) * 100) / 100;
+    if (r.cac == null && spend && conversions) r.cac = Math.round((spend / conversions) * 100) / 100;
+  }
+
   // For other entities: normalize enums, coerce types, keep only schema fields, strip empty values
   const withEnums = normalizeEnums(r, properties || {});
   const cleaned: Record<string, any> = {};
