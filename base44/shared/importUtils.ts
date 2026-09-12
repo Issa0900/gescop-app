@@ -249,6 +249,12 @@ export function parseNumber(value: any): number | null {
   if (value === null || value === undefined) return null;
   let s = String(value).trim();
   if (s === "" || s === "-" || /^(n\/?a|nd|null)$/i.test(s)) return null;
+  // Excel prefixe d'une apostrophe les nombres "stockes comme texte" ('1000), et
+  // le format suisse s'en sert comme separateur de milliers (1'000). Dans les
+  // deux cas ce n'est jamais un separateur decimal : on l'enleve avant tout le
+  // reste, sinon la valeur est illisible et la ligne part en quarantaine.
+  s = s.replace(/['\u2019\u02BC]/g, "").replace(/^"+|"+$/g, "").trim();
+  if (s === "") return null;
   const negative = /^\(.*\)$/.test(s) || s.startsWith("-");
   s = s.replace(/[()\-+]/g, "");
   // Abréviations d'échelle ("1.5M", "2,5 k", "3 Md"). Elles doivent être lues
@@ -396,9 +402,14 @@ export function normalizeRow(
   }
 
   if (entityName === "Transaction") {
-    const amount = parseNumber(r.amount) || 0;
+    // Meme principe que la date ci-dessous : un montant absent ou illisible ne
+    // doit pas devenir 0 en silence. Le `|| 0` faisait passer la validation a
+    // une ligne sans montant, et un fichier dont la colonne montant est mal
+    // nommee s'importait "avec succes" avec toutes ses transactions a 0 $ —
+    // comptees dans les volumes, invisibles dans les sommes.
+    const amount = parseNumber(r.amount);
     let type = (r.type || "").toLowerCase().trim();
-    if (!type) type = amount >= 0 ? "income" : "expense";
+    if (!type) type = (amount ?? 0) >= 0 ? "income" : "expense";
     const typeNorm = stripAccents(type);
     if (["revenu", "revenue", "credit", "entree", "income"].includes(typeNorm)) type = "income";
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
@@ -413,7 +424,8 @@ export function normalizeRow(
     return {
       date: parsedDate,
       description: r.description || "",
-      amount: Math.abs(amount),
+      // undefined (et non 0) : missingRequired met alors la ligne en quarantaine.
+      amount: amount === null ? undefined : Math.abs(amount),
       type,
       category: r.category || "",
       source: sourceType || "csv",
