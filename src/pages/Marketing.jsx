@@ -33,9 +33,17 @@ export default function Marketing() {
 
   const totalSpend = campaigns.reduce((s, c) => s + (c.spend || 0), 0);
   const totalRevenue = campaigns.reduce((s, c) => s + (c.revenue || 0), 0);
-  const totalNew = campaigns.reduce((s, c) => s + (c.new_customers || 0), 0);
+  const totalNew = campaigns.reduce((s, c) => s + (Number(c.new_customers) || 0), 0);
+  const totalConversions = campaigns.reduce((s, c) => s + (Number(c.conversions) || 0), 0);
   const overallRoas = totalSpend > 0 ? (totalRevenue / totalSpend).toFixed(2) : "—";
-  const overallCac = totalNew > 0 ? Math.round(totalSpend / totalNew) : 0;
+
+  // "new_customers" is often absent from ad exports. Dividing by it produced a
+  // CAC of 0 $ sitting next to 623 667 $ of spend — a figure that reads as free
+  // acquisition instead of missing data. Fall back to conversions, which is the
+  // usual proxy, and say which one is being used. Never show 0 for "unknown".
+  const cacBasis = totalNew > 0 ? "clients" : totalConversions > 0 ? "conversions" : null;
+  const cacDenominator = cacBasis === "clients" ? totalNew : totalConversions;
+  const overallCac = cacBasis ? Math.round(totalSpend / cacDenominator) : null;
   // Coverage of the daily records, which drive the monthly trend: campaigns
   // carry no dates in the import, so only dated daily rows can be trended.
   const dailyCampaigns = new Set((daily || []).map((d) => d.campaign_id).filter(Boolean)).size;
@@ -86,8 +94,26 @@ export default function Marketing() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Dépenses totales" value={`${Math.round(totalSpend).toLocaleString()} $`} sublabel={`${campaigns.length} campagnes importées`} icon={DollarSign} />
         <StatCard label="ROAS global" value={overallRoas} sublabel={`${Math.round(totalRevenue).toLocaleString()} $ revenus`} icon={TrendingUp} accent={totalSpend === 0 ? "bg-muted text-muted-foreground" : Number(overallRoas) >= 2 ? "bg-emerald-50 text-emerald-600" : Number(overallRoas) < 1 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"} />
-        <StatCard label="CAC global" value={`${overallCac} $`} icon={UserPlus} />
-        <StatCard label="Nouveaux clients" value={totalNew.toLocaleString()} sublabel="attribués aux campagnes" icon={UserPlus} />
+        <StatCard
+          label={cacBasis === "conversions" ? "Coût par conversion" : "CAC global"}
+          value={overallCac !== null ? `${overallCac.toLocaleString("fr-CA")} $` : "—"}
+          sublabel={cacBasis === "conversions"
+            ? `${totalConversions.toLocaleString("fr-CA")} conversions · colonne « nouveaux clients » absente`
+            : cacBasis === "clients"
+              ? `${totalNew.toLocaleString("fr-CA")} nouveaux clients`
+              : "ni nouveaux clients ni conversions dans l'import"}
+          icon={UserPlus}
+          accent={cacBasis ? undefined : "bg-muted text-muted-foreground"}
+        />
+        <StatCard
+          label="Nouveaux clients"
+          value={totalNew > 0 ? totalNew.toLocaleString("fr-CA") : "—"}
+          sublabel={totalNew > 0
+            ? "attribués aux campagnes"
+            : "colonne absente de l'import — non nul, inconnu"}
+          icon={UserPlus}
+          accent={totalNew > 0 ? undefined : "bg-muted text-muted-foreground"}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
