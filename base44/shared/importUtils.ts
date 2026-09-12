@@ -98,6 +98,30 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "en retard": ["non_atteint"], "en attente": ["en_attente", "en_cours"],
   "avis": ["avis", "question"], "reclamation": ["reclamation", "plainte"], "rh": ["administration", "service_client"],
   "recu": ["recu"], "en cours": ["en_cours"],
+
+  // --- Familles de veille (ExternalSignal.family) ---
+  // Les fichiers de veille décrivent la famille en langage courant (« Engouement
+  // Moto », « Réglementaire », « Local ») plutôt qu'avec les 7 identifiants du
+  // schéma. coerceEnum teste aussi mot à mot, donc un seul mot reconnu dans le
+  // libellé suffit à rattacher la ligne à la bonne famille au lieu de la rejeter.
+  "engouement": ["marche"], "tendance": ["marche"], "tendances": ["marche"],
+  "demande": ["marche"], "local": ["marche"], "sectoriel": ["marche"],
+  "secteur": ["marche"], "marché": ["marche"], "opportunite": ["marche"],
+  "reglementaire": ["gouvernement"], "reglementation": ["gouvernement"],
+  "legal": ["gouvernement"], "juridique": ["gouvernement"], "loi": ["gouvernement"],
+  "fiscal": ["gouvernement"], "fiscalite": ["gouvernement"], "politique": ["gouvernement"],
+  "subvention": ["gouvernement"], "norme": ["gouvernement"], "douane": ["gouvernement"],
+  "economique": ["economie"], "macroeconomie": ["economie"], "inflation": ["economie"],
+  "taux": ["economie"], "devise": ["economie"], "conjoncture": ["economie"],
+  "concurrent": ["concurrence"], "concurrents": ["concurrence"],
+  "competiteur": ["concurrence"], "competition": ["concurrence"],
+  "fournisseur": ["fournisseurs"], "approvisionnement": ["fournisseurs"],
+  "chaine": ["fournisseurs"], "logistique": ["fournisseurs"], "import": ["fournisseurs"],
+  "consommateur": ["consommateurs"], "client": ["consommateurs"],
+  "clientele": ["consommateurs"], "comportement": ["consommateurs"],
+  "actualite": ["actualites"], "nouvelle": ["actualites"], "nouvelles": ["actualites"],
+  "presse": ["actualites"], "media": ["actualites"], "medias": ["actualites"],
+  "technologique": ["actualites"], "technologie": ["actualites"], "innovation": ["actualites"],
 };
 
 // Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens, English→French)
