@@ -17,7 +17,9 @@ export default function Layout() {
     <div className="min-h-screen bg-background">
       <Sidebar compact={compact} onToggleCompact={() => setCompact((c) => !c)} />
       <main className={cn("transition-all duration-300", compact ? "md:pl-16" : "md:pl-64")}>
-        <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
+        {/* pt-20 sur mobile : le bouton de menu est en position fixe (Sidebar
+              left-4 top-4, 40px) et recouvrait le titre de chaque page. */}
+        <div className="mx-auto max-w-6xl px-4 pb-6 pt-20 md:px-8 md:py-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

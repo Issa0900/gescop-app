@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { formatPct } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
@@ -431,13 +432,13 @@ export default function Dashboard() {
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicateurs clés</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <KpiCard label="Trésorerie" value={`${Math.round(computed.latestCash).toLocaleString("fr-CA")} $`}
-                change={`${Math.abs(computed.cashTrend).toFixed(1)}%`} changeDir={computed.cashTrend >= 0 ? "up" : "down"}
+                change={`${formatPct(Math.abs(computed.cashTrend))}`} changeDir={computed.cashTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.cash)} status={computed.latestCash > 0 ? "good" : "critical"} statusLabel={computed.latestCash > 0 ? "Bon" : "Critique"} onClick={() => navigate("/tresorerie")} />
               <KpiCard label="Chiffre d'affaires" value={`${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $`}
-                change={`${Math.abs(computed.revTrend).toFixed(1)}%`} changeDir={computed.revTrend >= 0 ? "up" : "down"}
+                change={`${formatPct(Math.abs(computed.revTrend))}`} changeDir={computed.revTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.revenue)} status={computed.revTrend >= 0 ? "good" : "warning"} statusLabel={computed.revTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/kpis")} />
-              <KpiCard label="Marge brute" value={`${computed.marginPct.toFixed(1)}%`}
-                change={`${Math.abs(computed.marginTrend).toFixed(1)}%`} changeDir={computed.marginTrend >= 0 ? "up" : "down"}
+              <KpiCard label="Marge brute" value={`${formatPct(computed.marginPct)}`}
+                change={`${formatPct(Math.abs(computed.marginTrend))}`} changeDir={computed.marginTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.margin)} status={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning"} statusLabel={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention"} onClick={() => navigate("/kpis")} />
             </div>
           </div>
@@ -459,13 +460,13 @@ export default function Dashboard() {
                 {/* KPI secondaires */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <KpiCard label="Coûts opérationnels" value={`${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $`}
-                    change={`${Math.abs(computed.costTrend).toFixed(1)}%`} changeDir={computed.costTrend >= 0 ? "up" : "down"}
+                    change={`${formatPct(Math.abs(computed.costTrend))}`} changeDir={computed.costTrend >= 0 ? "up" : "down"}
                     sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
                   <KpiCard label="Clients actifs" value={computed.activeCustomers.toLocaleString("fr-CA")}
-                    change={`${Math.abs(computed.clientTrend).toFixed(1)}%`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
+                    change={`${formatPct(Math.abs(computed.clientTrend))}`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
                     sparkline={computed.spark(computed.monthlyData.clients)} status={computed.clientTrend >= 0 ? "good" : "warning"} statusLabel={computed.clientTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/clients")} />
                   <KpiCard label="Panier moyen" value={`${computed.aov.toFixed(2)} $`}
-                    change={`${Math.abs(computed.aovTrend).toFixed(1)}%`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
+                    change={`${formatPct(Math.abs(computed.aovTrend))}`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
                     sparkline={computed.spark(computed.aovMonthly)} status={computed.aovTrend >= 0 ? "neutral" : "warning"} statusLabel={computed.aovTrend >= 0 ? "Stable" : "Attention"} onClick={() => navigate("/clients")} />
                 </div>
 

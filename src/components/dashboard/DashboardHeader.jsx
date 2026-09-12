@@ -25,7 +25,7 @@ export default function DashboardHeader({ greeting, date, lastAnalysis, onAnalyz
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm capitalize text-muted-foreground">{date}</p>
+        <p className="mt-1 text-sm text-muted-foreground first-letter:uppercase">{date}</p>
       </div>
       <motion.button
         onClick={onAnalyze}
