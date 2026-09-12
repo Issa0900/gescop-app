@@ -74,7 +74,14 @@ function detecterSeparateur(texte: string): string {
 export function parseDelimitedText(text: string): Record<string, any>[] {
   const clean = text.replace(/^\uFEFF/, "");
   const delimiter = detecterSeparateur(clean);
-  const wb = XLSX.read(clean, { type: "string", raw: false, FS: delimiter });
+  // raw: true — xlsx ne doit RIEN convertir de lui-meme sur un fichier texte.
+  // Avec raw: false il interpretait les cellules a l'americaine avant que nos
+  // analyseurs francais ne les voient : « 01/03/2026 » devenait le 3 janvier
+  // (MM/DD) et « 800,00 $ » devenait 80 000 (virgule lue comme separateur de
+  // milliers). Les lignes etaient donc ACCEPTEES avec des valeurs fausses —
+  // pire qu'un rejet, puisque rien ne le signalait. On garde le texte d'origine
+  // et parseDate / parseNumber, qui connaissent les conventions FR, tranchent.
+  const wb = XLSX.read(clean, { type: "string", raw: true, FS: delimiter });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   // Meme recuperation de la ligne d'en-tetes que pour un classeur Excel : un
   // export comptable commence souvent par un titre ("Rapport de ventes - mars"),
