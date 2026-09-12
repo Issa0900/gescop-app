@@ -279,20 +279,29 @@ export default function Kpis() {
 
     // === CLIENTS === (only if customers exist)
     if ((customers || []).length > 0) {
-      const activeCustomers = customers.filter((c) => c.status === "actif").length;
-      const totalCustomers = customers.length;
-      const churnedCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu").length;
-      const churnRate = totalCustomers > 0 ? (churnedCustomers / totalCustomers) * 100 : 0;
+      // One shared churn definition (status only — "a_risque" is not churn).
+      const churn = churnStats(customers);
       const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
       const newCustomers = lastVal(custMonthly);
       const prevNewCustomers = prevVal(custMonthly);
-      const totalOrderRev = (orders || []).reduce((s, o) => s + (Number(o.total) || 0), 0);
-      const ltv = activeCustomers > 0 ? totalOrderRev / activeCustomers : 0;
+      // Revenue per customer: the numerator covers every buyer, so the
+      // denominator must too. Dividing all-customer revenue by ACTIVE customers
+      // only was inflating this by 1/(share of active) — 2x at 50% churn.
+      const value = customerValue(orders, customers, margin3Ref.current);
 
-      result.push({ name: "Clients actifs", domain: "clients", value: activeCustomers, previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
-      result.push({ name: "Taux de churn", domain: "clients", value: Math.round(churnRate * 10) / 10, previous: null, trend: churnRate > 10 ? "down" : "up", unit: "%" });
+      result.push({ name: "Clients actifs", domain: "clients", value: churn.active, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Taux de churn", domain: "clients", value: Math.round((churn.rate || 0) * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      if (churn.atRisk > 0) {
+        result.push({ name: "Clients actifs à risque", domain: "clients", value: churn.atRisk, previous: null, trend: "stable", unit: "" });
+      }
       result.push({ name: "Nouveaux clients (dernier mois complet)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
-      result.push({ name: "Valeur vie client (LTV)", domain: "clients", value: Math.round(ltv), previous: null, trend: trendDir(newCustomers, prevNewCustomers), unit: "$" });
+      if (value.avgRevenue !== null) {
+        result.push({ name: "Revenu moyen par client", domain: "clients", value: Math.round(value.avgRevenue), previous: null, trend: "stable", unit: "$" });
+      }
+      // A real LTV is value, not turnover — only shown when a margin is known.
+      if (value.ltv !== null) {
+        result.push({ name: "Valeur vie client (LTV, marge)", domain: "clients", value: Math.round(value.ltv), previous: null, trend: "stable", unit: "$" });
+      }
     }
 
     return result;
