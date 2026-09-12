@@ -73,8 +73,6 @@ Tu as accès aux données de: finance (transactions), ventes (commandes), client
 
 6. Sélectionne les KPI pertinents, organisés en 4 domaines (finance, ventes, operations, marketing). Inclus des KPI calculés à partir des données: CA total, marge brute %, panier moyen, taux de retour, ROAS, CAC, taux de churn, concentration client, valeur inventaire, taux de plaintes, coût paie mensuel. Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
 
-7. Détecte des signaux externes pertinents (radar externe): title, description, family (gouvernement/economie/marche/concurrence/fournisseurs/consommateurs/actualites), relevance_score (0-100), impact (positif/neutre/negatif), source, horizon, relevance_reason, recommended_action. Base-toi sur le secteur, la localisation et les concurrents.
-
 Toutes les valeurs textuelles (titres, descriptions, explications, analyses, actions, etc.) doivent être rédigées en français.
 
 Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors JSON.`;
@@ -188,23 +186,6 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
               },
             },
           },
-          external_signals: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-                family: { type: "string" },
-                relevance_score: { type: "number" },
-                impact: { type: "string" },
-                source: { type: "string" },
-                horizon: { type: "string" },
-                relevance_reason: { type: "string" },
-                recommended_action: { type: "string" },
-              },
-            },
-          },
         },
       },
     });
@@ -241,10 +222,9 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     await base44.entities.Opportunity.deleteMany({});
     await base44.entities.Recommendation.deleteMany({ source_type: { $in: ["risk", "opportunity", "anomaly"] } });
     await base44.entities.Kpi.deleteMany({});
-    // ExternalSignal is DIFFERENT: it is an importable entity. An unscoped wipe
-    // here destroyed every signal the user had imported. Only the signals this
-    // function generated — the ones with no import_id — may be cleared.
-    await base44.entities.ExternalSignal.deleteMany({ import_id: null });
+    // ExternalSignal n'est plus touché ici : le radar externe a sa propre
+    // fonction (scanExternalRadar), déclenchée à la demande avec recherche web
+    // et sources consultables. Le diagnostic ne doit plus écraser ces signaux.
 
     // Update company health
     const dimScores = {};
@@ -353,25 +333,6 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       }
     }
 
-    // Create external signals
-    if (data.external_signals && data.external_signals.length) {
-      for (let i = 0; i < data.external_signals.length; i += 100) {
-        const batch = data.external_signals.slice(i, i + 100).map((s) => ({
-          title: s.title,
-          description: s.description || "",
-          family: s.family || "marche",
-          relevance_score: s.relevance_score || 50,
-          impact: s.impact || "neutre",
-          source: s.source || "",
-          relevance_reason: s.relevance_reason || "",
-          recommended_action: s.recommended_action || "",
-          date: new Date().toISOString().slice(0, 10),
-          status: "nouveau",
-        }));
-        await base44.entities.ExternalSignal.bulkCreate(batch);
-      }
-    }
-
     // Create alerts for critical items
     const alerts = [];
     (data.anomalies || []).filter((a) => a.severity === "critique").forEach((a) =>
@@ -398,7 +359,6 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         opportunities: (data.opportunities || []).length,
         recommendations: (data.recommendations || []).length,
         kpis: (data.kpis || []).length,
-        signals: (data.external_signals || []).length,
       },
       run_date: new Date().toISOString(),
     });
@@ -412,7 +372,6 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         opportunities: (data.opportunities || []).length,
         recommendations: (data.recommendations || []).length,
         kpis: (data.kpis || []).length,
-        signals: (data.external_signals || []).length,
         alerts: alerts.length,
       },
     });
