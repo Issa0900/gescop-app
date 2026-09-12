@@ -127,6 +127,9 @@ export default function Kpis() {
 
   const computedKpis = useMemo(() => {
     const result = [];
+    // Computed in the FINANCE block below and reused by CLIENTS to turn revenue
+    // per customer into an actual LTV. Null when there is no margin to apply.
+    let margin3Overall = null;
 
     // === FINANCE === (only if transactions exist)
     // All month-over-month figures use COMPLETE months: the in-progress month
@@ -146,6 +149,7 @@ export default function Kpis() {
       // Aggregated 3-month margin — the same figure the audit page traces.
       const margin3 = aggregateMarginPct(revMonthly, expMonthly, 3);
       const marginPrev3 = previousMarginPct(revMonthly, expMonthly, 3);
+      margin3Overall = margin3;
 
       // Cash: latest balance, compared on a 7-day average to avoid daily noise.
       const cfSorted = (cashflow || []).slice().sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
@@ -287,7 +291,7 @@ export default function Kpis() {
       // Revenue per customer: the numerator covers every buyer, so the
       // denominator must too. Dividing all-customer revenue by ACTIVE customers
       // only was inflating this by 1/(share of active) — 2x at 50% churn.
-      const value = customerValue(orders, customers, margin3Ref.current);
+      const value = customerValue(orders, customers, margin3Overall);
 
       result.push({ name: "Clients actifs", domain: "clients", value: churn.active, previous: null, trend: "stable", unit: "" });
       result.push({ name: "Taux de churn", domain: "clients", value: Math.round((churn.rate || 0) * 10) / 10, previous: null, trend: "stable", unit: "%" });
