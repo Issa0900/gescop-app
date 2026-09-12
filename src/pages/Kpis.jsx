@@ -10,6 +10,7 @@ import { BarChart3, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
+import { fetchAll } from "@/lib/fetchAll";
 import {
   monthlyAgg,
   monthlyAggComplete,
@@ -63,7 +64,7 @@ export default function Kpis() {
   const { data: transactions } = useQuery({
     queryKey: ["transactions-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Transaction.list("-date", 500);
+      const list = await fetchAll(base44.entities.Transaction, "-date");
       return list || [];
     },
     staleTime: 0,
@@ -71,7 +72,7 @@ export default function Kpis() {
   const { data: orders } = useQuery({
     queryKey: ["orders-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Order.list("-date", 500);
+      const list = await fetchAll(base44.entities.Order, "-date");
       return list || [];
     },
     staleTime: 0,
@@ -79,7 +80,7 @@ export default function Kpis() {
   const { data: customers } = useQuery({
     queryKey: ["customers-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Customer.list();
+      const list = await fetchAll(base44.entities.Customer);
       return list || [];
     },
     staleTime: 0,
@@ -87,7 +88,7 @@ export default function Kpis() {
   const { data: campaigns } = useQuery({
     queryKey: ["campaigns-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Campaign.list();
+      const list = await fetchAll(base44.entities.Campaign);
       return list || [];
     },
     staleTime: 0,
@@ -95,7 +96,7 @@ export default function Kpis() {
   const { data: products } = useQuery({
     queryKey: ["products-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Product.list();
+      const list = await fetchAll(base44.entities.Product);
       return list || [];
     },
     staleTime: 0,
@@ -103,7 +104,7 @@ export default function Kpis() {
   const { data: inventory } = useQuery({
     queryKey: ["inventory-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Inventory.list("-date", 500);
+      const list = await fetchAll(base44.entities.Inventory, "-date");
       return list || [];
     },
     staleTime: 0,
@@ -111,7 +112,7 @@ export default function Kpis() {
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.Cashflow.list("-date", 1000);
+      const list = await fetchAll(base44.entities.Cashflow, "-date");
       return list || [];
     },
     staleTime: 0,
@@ -119,7 +120,7 @@ export default function Kpis() {
   const { data: campaignDaily } = useQuery({
     queryKey: ["campaign-daily-kpi"],
     queryFn: async () => {
-      const list = await base44.entities.CampaignDaily.list("-date", 500);
+      const list = await fetchAll(base44.entities.CampaignDaily, "-date");
       return list || [];
     },
     staleTime: 0,
