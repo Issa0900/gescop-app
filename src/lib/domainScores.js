@@ -124,7 +124,10 @@ export function computeDomainScores(data) {
   let ventesScore;
   if (revTrend === null) ventesScore = 50;
   else if (revTrend > 15) ventesScore = 85;
-  else if (revTrend > 0) ventesScore = 70;
+  else if (revTrend > 2) ventesScore = 70;
+  // A flat business is holding its ground, not underperforming: ±2% used to
+  // fall into the same band as a -14% decline and scored below neutral.
+  else if (revTrend >= -2) ventesScore = 60;
   else if (revTrend > -15) ventesScore = 48;
   else ventesScore = 28;
   const aovCurr = lastVal(orderCntMonthly) > 0 ? lastVal(orderRevMonthly) / lastVal(orderCntMonthly) : 0;
