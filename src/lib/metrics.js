@@ -170,4 +170,25 @@ export function previousRoasWindow(spendSeries, revSeries, n = 3) {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * True when at least one row actually carries a value for this column.
+ *
+ * Imports routinely omit columns: `new_customers`, `churn_risk`, `cost`,
+ * `inventory_value` were all empty in a real file. Every metric built on such a
+ * column collapsed to 0 and was displayed as a fact — "CAC 0 $" next to 623 667 $
+ * of spend, "0 % de risque" on every client. Zero and unknown are different
+ * answers, and only one of them is honest here.
+ */
+export function columnPresent(rows, field) {
+  return (rows || []).some((r) => {
+    const v = r?.[field];
+    return v !== null && v !== undefined && v !== "";
+  });
+}
+
+/** True when at least one of several columns carries a value. */
+export function anyColumnPresent(rows, fields) {
+  return (fields || []).some((f) => columnPresent(rows, f));
+}
+
 export { trendPct, meanOf };
