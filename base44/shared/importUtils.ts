@@ -119,7 +119,11 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "chaine": ["fournisseurs"], "logistique": ["fournisseurs"], "import": ["fournisseurs"],
   "consommateur": ["consommateurs"], "client": ["consommateurs"],
   "clientele": ["consommateurs"], "comportement": ["consommateurs"],
-  "actualite": ["actualites"], "nouvelle": ["actualites"], "nouvelles": ["actualites"],
+  // "nouvelle" / "nouveau" sont volontairement absents : ce sont des adjectifs
+  // courants (« Nouvelle loi », « Nouveau concurrent ») et le rapprochement se
+  // fait sur le PREMIER mot reconnu, donc ils captureraient des libellés qui
+  // appartiennent à une autre famille.
+  "actualite": ["actualites"], "actualites": ["actualites"],
   "presse": ["actualites"], "media": ["actualites"], "medias": ["actualites"],
   "technologique": ["actualites"], "technologie": ["actualites"], "innovation": ["actualites"],
 };
