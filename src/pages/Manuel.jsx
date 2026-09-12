@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Book, ChevronDown, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, Users, Package, Megaphone, Wallet } from "lucide-react";
+import { ChevronDown, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, Users, Package, Megaphone, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ManualTableOfContents from "@/components/ManualTableOfContents";
 import BrandLogo from "@/components/BrandLogo";

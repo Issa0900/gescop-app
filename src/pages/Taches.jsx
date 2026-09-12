@@ -5,7 +5,7 @@ import EmptyState from "@/components/EmptyState";
 import PriorityBadge from "@/components/PriorityBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckSquare, Plus, Check, Trash2, X, Calendar, List } from "lucide-react";
+import { CheckSquare, Plus, Check, Trash2, Calendar, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TaskCalendar from "@/components/tasks/TaskCalendar";
 

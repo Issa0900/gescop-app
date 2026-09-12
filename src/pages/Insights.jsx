@@ -5,7 +5,7 @@ import InsightCard from "@/components/insights/InsightCard";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Brain, Sparkles, ArrowRight } from "lucide-react";
+import { Brain, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 

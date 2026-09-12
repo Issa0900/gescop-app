@@ -5,7 +5,7 @@ import {
   CartesianGrid, AreaChart, Area, RadialBarChart, RadialBar, PolarAngleAxis,
   Legend, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Wallet, Receipt, Percent, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Receipt, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const formatK = (v) => `${(v / 1000).toFixed(0)}k`;

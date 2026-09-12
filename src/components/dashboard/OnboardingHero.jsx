@@ -1,6 +1,5 @@
 import React from "react";
 import { Upload, Link2, ShoppingBag, Database, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const sources = [

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import PriorityBadge from "@/components/PriorityBadge";
-import { ShieldAlert, Lightbulb, ArrowRight, Minus, Plus } from "lucide-react";
+import { ShieldAlert, Lightbulb, ArrowRight } from "lucide-react";
 
 export default function Risques() {
   const qc = useQueryClient();

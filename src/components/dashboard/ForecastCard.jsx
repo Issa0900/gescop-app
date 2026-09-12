@@ -1,5 +1,5 @@
 import React from "react";
-import { AreaChart, Area, XAxis, ResponsiveContainer, YAxis } from "recharts";
+import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 
 export default function ForecastCard({ metric, value, probability, risk, chartData }) {

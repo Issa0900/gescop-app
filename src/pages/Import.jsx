@@ -10,7 +10,6 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   Trash2,
   Download,
   ArrowRight,
