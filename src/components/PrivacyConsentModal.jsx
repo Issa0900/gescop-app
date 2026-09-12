@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Shield, FileLock2, Eye, Trash2, Share2, Lock, Globe, Bot, ChevronDown, Check, ExternalLink } from "lucide-react";
+import { Shield, FileLock2, Eye, Trash2, Share2, Lock, Globe, Bot, ChevronDown, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import ConsentCheckbox from "@/components/ConsentCheckbox";
 import { cn } from "@/lib/utils";
 
 const keyPoints = [
@@ -119,22 +120,12 @@ export default function PrivacyConsentModal() {
 
         {/* Footer */}
         <div className="border-t border-border bg-muted/20 px-6 py-4">
-          <label className="mb-3 flex cursor-pointer items-start gap-3">
-            <button
-              type="button"
-              onClick={() => setAccepted(!accepted)}
-              className={cn(
-                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors",
-                accepted ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40 hover:border-primary/50"
-              )}
-            >
-              {accepted && <Check className="h-3.5 w-3.5" />}
-            </button>
-            <span className="text-xs leading-relaxed text-muted-foreground">
+          <div className="mb-3">
+            <ConsentCheckbox id="consent-modal" checked={accepted} onChange={setAccepted}>
               J'ai lu et j'accepte la <Link to="/politique-confidentialite" target="_blank" className="font-medium text-primary hover:underline">politique de confidentialité</Link> de GESCOP.
               Je consens à la collecte, l'utilisation et la communication de mes renseignements personnels aux finalités décrites, conformément à la Loi 25.
-            </span>
-          </label>
+            </ConsentCheckbox>
+          </div>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={handleRefuse} disabled={saving}>
