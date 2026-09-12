@@ -68,7 +68,7 @@ export async function insertRows(
         if (errors.length < 5) {
           errors.push(
             "limite de débit atteinte après plusieurs tentatives — aucune ligne de ce fichier n'a été perdue, "
-            + "elle sont simplement non importées. Attendez une minute puis relancez l'import de ce seul fichier.",
+            + "elles sont simplement non importées. Attendez une minute puis relancez l'import de ce seul fichier.",
           );
         }
         return;
