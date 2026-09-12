@@ -113,8 +113,22 @@ async function importRows(
     rows: created,
     quarantined,
     message: messages.join(" · ") || undefined,
+    // Signals to the caller that the quota is exhausted, so the next sheet
+    // should not be fired straight into the same wall.
+    rateLimited: errors.some((e) => e.includes("limite de débit")),
   };
 }
+
+/**
+ * Cooldown between sheets once the quota has been hit.
+ *
+ * Sheets are imported one after another, so a large multi-sheet workbook
+ * exhausts a per-minute quota partway through and every remaining sheet then
+ * fails instantly with 0 rows imported. Pausing once the limit is reached lets
+ * the window refill instead of burning the rest of the workbook.
+ */
+const RATE_LIMIT_COOLDOWN_MS = 20000;
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default async function (req: Request) {
   try {
@@ -164,6 +178,7 @@ export default async function (req: Request) {
               continue;
             }
             const res = await importRows(base44, entity, rows, sourceType, label, file_url);
+            if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
             results.push({ file_name: label, detected_via: via, ...res });
           }
         } catch (e: any) {
@@ -190,6 +205,7 @@ export default async function (req: Request) {
             continue;
           }
           const res = await importRows(base44, entity, rows, sourceType, file_name, file_url);
+          if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
           results.push({ file_name, detected_via: via, ...res });
         } catch (e: any) {
           results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
@@ -242,6 +258,7 @@ export default async function (req: Request) {
         }
 
         const res = await importRows(base44, entityName, rows, sourceType, file_name, file_url);
+        if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
         results.push({ file_name, detected_via: entity_override ? "manuel" : "nom", ...res });
       } catch (e: any) {
         results.push({ file_name, entity: entityName, status: "echoue", rows_read: 0, rows: 0, error: e.message });
