@@ -189,7 +189,7 @@ export function computeDomainScores(data) {
   // including the threshold the user set on their company. This score used to
   // read the imported stock_status only, so lowering the threshold changed the
   // Produits list while this score stayed put on the same data.
-  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company));
+  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company), orders);
   const trackedCount = stock.tracked;
   const dormantCount = stock.dormantCount;
   const ruptureCount = stock.alertCount;
