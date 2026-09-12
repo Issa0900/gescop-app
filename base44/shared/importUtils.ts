@@ -276,12 +276,21 @@ export function coerceType(value: any, prop: any): any {
 }
 
 // Normalize a single row for a given entity
+/** A value that was present in the file but refused by the schema. */
+export type EnumIssue = { field: string; value: string; allowed: string[] };
+
 export function normalizeRow(
   entityName: string,
   row: Record<string, any>,
   importId: string,
   properties: Record<string, any> | null,
-  sourceType?: string
+  sourceType?: string,
+  // Optional sink for diagnostics. A rejected enum value used to be dropped in
+  // silence, and the row was then reported as "champ obligatoire manquant" —
+  // pointing at a field the user could plainly see in their file. Collecting
+  // the refused values lets the import tell the truth: the field is there, its
+  // value is not one of the accepted ones.
+  enumIssues?: EnumIssue[],
 ): Record<string, any> {
   const r = normalizeKeys(row, properties);
 
@@ -342,7 +351,12 @@ export function normalizeRow(
       // Field is in schema: validate enum, coerce type
       if (prop.enum) {
         const coerced = coerceEnum(v, prop.enum);
-        if (!prop.enum.includes(coerced)) continue; // skip invalid enum value instead of failing
+        if (!prop.enum.includes(coerced)) {
+          // Skip the invalid value rather than failing the whole row, but record
+          // it so the import can explain what was refused and why.
+          if (enumIssues) enumIssues.push({ field: k, value: String(v), allowed: prop.enum });
+          continue;
+        }
         cleaned[k] = coerceType(coerced, prop);
       } else {
         cleaned[k] = coerceType(v, prop);
