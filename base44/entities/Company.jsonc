@@ -65,6 +65,10 @@
     "stock_alert_use_reorder_point": {
       "type": "boolean",
       "default": true
+    },
+    "stock_dormant_months": {
+      "type": "number",
+      "default": 3
     }
   },
   "required": [
