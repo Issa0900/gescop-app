@@ -432,6 +432,7 @@ export default function Kpis() {
               key,
               label,
               score: rtScores[key].score,
+              measured: rtScores[key].measured !== false,
               trend: rtScores[key].trend,
               explanation: rtScores[key].explanation,
             }))}

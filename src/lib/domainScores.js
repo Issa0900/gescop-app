@@ -75,6 +75,10 @@ export function computeDomainScores(data) {
   // Threshold expressed in margin points, not in relative percent.
   financeScore = applyTrend(financeScore, marginDelta, 8, 12, 3);
   scores.finance = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: recentMargin !== null,
     score: clamp(financeScore),
     trend: marginDelta === null ? "stable" : marginDelta > 3 ? "up" : marginDelta < -3 ? "down" : "stable",
     explanation:
@@ -105,6 +109,10 @@ export function computeDomainScores(data) {
   else tresoScore = 18;
   tresoScore = applyTrend(tresoScore, trendPct(cash7, cashPrev7), 6, 10, 2);
   scores.tresorerie = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: runway !== null,
     score: clamp(tresoScore),
     trend: trendDir(cash7, cashPrev7, 1),
     explanation:
@@ -134,6 +142,10 @@ export function computeDomainScores(data) {
   const aovPrev = prevVal(orderCntMonthly) > 0 ? prevVal(orderRevMonthly) / prevVal(orderCntMonthly) : 0;
   ventesScore = applyTrend(ventesScore, trendPct(aovCurr, aovPrev), 6, 6);
   scores.ventes = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: revTrend !== null,
     score: clamp(ventesScore),
     trend: trendDir(rev3, revPrev3),
     explanation:
@@ -175,6 +187,10 @@ export function computeDomainScores(data) {
   else marketingScore = 28;
   marketingScore = applyTrend(marketingScore, trendPct(roas, roasPrev), 6, 10);
   scores.marketing = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: roas !== null,
     score: clamp(marketingScore),
     // Real trend when a comparison window exists — never inferred from the level.
     trend: trendDir(roas, roasPrev),
@@ -203,6 +219,10 @@ export function computeDomainScores(data) {
   else if (issueRatio < 0.25) opsScore = 48;
   else opsScore = 28;
   scores.operations = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: trackedCount > 0,
     score: clamp(opsScore),
     trend: "stable",
     explanation: trackedCount > 0 ? `${ruptureCount} ruptures · ${dormantCount} dormants` : "",
@@ -223,6 +243,10 @@ export function computeDomainScores(data) {
   else clientsScore = 30;
   clientsScore = applyTrend(clientsScore, trendPct(new3, newPrev3), 8, 8);
   scores.clients = {
+    // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
+    // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
+    // moyenne globale — une absence de mesure n'est pas une demi-sante.
+    measured: churn.rate !== null,
     score: clamp(clientsScore),
     trend: trendDir(new3, newPrev3),
     explanation:

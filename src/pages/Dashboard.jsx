@@ -316,6 +316,7 @@ export default function Dashboard() {
     return Object.keys(dimLabels).map((key) => ({
       key, label: dimLabels[key],
       score: rtScores[key]?.score || 0,
+      measured: rtScores[key]?.measured !== false,
       trend: rtScores[key]?.trend || "stable",
       explanation: rtScores[key]?.explanation || "",
     }));
@@ -323,14 +324,21 @@ export default function Dashboard() {
 
   const rtHealthScore = useMemo(() => {
     const keys = ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"];
-    const scores = keys.map((k) => rtScores[k]?.score || 0).filter((s) => s > 0);
+    // Un domaine sans donnee porte un score de repli de 50 : l'inclure reviendrait
+    // a moyenner une demi-sante inventee avec des mesures reelles.
+    const scores = keys
+      .filter((k) => rtScores[k]?.measured !== false)
+      .map((k) => rtScores[k]?.score || 0)
+      .filter((s) => s > 0);
     return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
   }, [rtScores]);
 
   // === SUMMARY ===
   const summary = useMemo(() => {
     const score = rtHealthScore;
-    const scored = dimensions.filter((d) => (d.score || 0) > 0).sort((a, b) => (a.score || 0) - (b.score || 0));
+    const scored = dimensions
+      .filter((d) => d.measured !== false && (d.score || 0) > 0)
+      .sort((a, b) => (a.score || 0) - (b.score || 0));
     const lowest = scored.slice(0, 2).map((d) => d.label.toLowerCase());
     if (score >= 75) return "Votre entreprise est en bonne santé. Continuez à surveiller les indicateurs clés.";
     if (score >= 50) return `Votre entreprise progresse, mais ${lowest.join(" et ")} nécessitent une attention particulière.`;
