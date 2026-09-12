@@ -7,20 +7,47 @@ import { TrendingUp, AlertTriangle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
-import { currentMonthKey } from "@/lib/periods";
+import { monthlyAggComplete } from "@/lib/periods";
+import { fetchAll } from "@/lib/fetchAll";
 
+/**
+ * Ordinary least squares plus everything needed for a HONEST forecast band.
+ *
+ * The page used to draw `value ± stderr` at all three horizons: a flat ribbon
+ * that claimed the same precision 90 days out as 30 days out, and that was
+ * narrower than a real interval at every point. A prediction interval widens
+ * with distance from the centre of the data, and that is what is returned here.
+ * r2 is exposed so the UI can refuse to dress up a trend that explains nothing.
+ */
 function fit(xs, ys) {
   const n = xs.length;
-  if (n < 2) return { slope: 0, intercept: ys[0] || 0, stderr: 0 };
+  if (n < 2) return { slope: 0, intercept: ys[0] || 0, stderr: 0, r2: 0, mx: 0, sxx: 0, n };
   const mx = xs.reduce((a, b) => a + b, 0) / n;
   const my = ys.reduce((a, b) => a + b, 0) / n;
   const num = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
-  const den = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
-  const slope = den === 0 ? 0 : num / den;
+  const sxx = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+  const slope = sxx === 0 ? 0 : num / sxx;
   const intercept = my - slope * mx;
   const residuals = xs.map((x, i) => ys[i] - (slope * x + intercept));
-  const stderr = Math.sqrt(residuals.reduce((s, r) => s + r * r, 0) / Math.max(1, n - 2));
-  return { slope, intercept, stderr };
+  const ssRes = residuals.reduce((s, r) => s + r * r, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - my) ** 2, 0);
+  const stderr = Math.sqrt(ssRes / Math.max(1, n - 2));
+  const r2 = ssTot > 0 ? Math.max(0, 1 - ssRes / ssTot) : 0;
+  return { slope, intercept, stderr, r2, mx, sxx, n };
+}
+
+/**
+ * Forecast at x with a prediction interval that grows with the horizon:
+ *   SE(x) = s * sqrt(1 + 1/n + (x - x̄)² / Sxx)
+ * The "1 +" is what makes it a PREDICTION interval (a future single month)
+ * rather than a confidence interval on the mean — the latter is far too narrow
+ * to put in front of someone making a cash decision.
+ */
+function forecastAt(f, x) {
+  const value = f.slope * x + f.intercept;
+  if (!f.n || f.n < 3 || f.sxx === 0) return { value, lower: value, upper: value, se: 0 };
+  const se = f.stderr * Math.sqrt(1 + 1 / f.n + ((x - f.mx) ** 2) / f.sxx);
+  return { value, lower: value - se, upper: value + se, se };
 }
 
 const metrics = [
