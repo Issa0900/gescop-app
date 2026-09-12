@@ -1,9 +1,13 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
-import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows } from "../../shared/sheetDetect.ts";
-import { fetchDelimitedRows } from "../../shared/csvParse.ts";
+import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes } from "../../shared/sheetDetect.ts";
+import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
+import {
+  analyserFichier, appliquerPlan, planParRegles, signatureFichier,
+  construireEchantillon, type PlanImport,
+} from "../../shared/importPlan.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
-import { getSchema } from "../../shared/entitySchemas.ts";
+import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
 /**
@@ -33,6 +37,61 @@ export function detect(label: string, headers: string[], fileGuess?: string | nu
   return { entity: null, via: null };
 }
 
+
+/**
+ * Plan de lecture d'une feuille : memoire, puis IA, puis regles.
+ *
+ * L'ordre n'est pas negociable. Un plan qu'un humain a deja valide l'emporte sur
+ * une nouvelle analyse : rappeler l'IA sur un fichier dont l'utilisateur a
+ * corrige le rattachement risquerait de lui reproposer l'erreur qu'il vient de
+ * corriger. Ailleurs l'IA est appelee a chaque fois, et les regles ne servent
+ * que de filet si elle est indisponible.
+ */
+async function planPourFeuille(
+  base44: any,
+  options: { matrix: any[][]; label: string; nomFichier: string; manual?: string | null },
+) {
+  const { matrix, label, nomFichier, manual } = options;
+  const entetes = (matrix[trouverLigneEntetes(matrix)] || []).map((h: any) => String(h ?? "").trim());
+  const signature = signatureFichier(entetes);
+
+  // 1. Deja vu et valide par un humain.
+  try {
+    const memo = await base44.entities.Import.filter(
+      { plan_signature: signature, plan_confirmed: true }, "-created_date", 1,
+    );
+    if (memo && memo.length > 0 && memo[0].read_plan && memo[0].read_plan.colonnes) {
+      const plan: PlanImport = { ...memo[0].read_plan, origine: "memoire", corrections: [] };
+      if (manual) plan.entite = manual;
+      return { plan, signature, refus: [] as string[], erreur: undefined as string | undefined };
+    }
+  } catch { /* la memoire est un confort, jamais un prerequis */ }
+
+  // 2. Analyse par l'IA, filet deterministe derriere.
+  const secours = planParRegles(matrix, nomFichier, manual || null);
+  const res = await analyserFichier(
+    (args) => base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: args.prompt,
+      response_json_schema: args.response_json_schema,
+      model: "gemini_3_8_flash",
+    }),
+    { matrix, nomFichier: label, entitesPossibles: Object.keys(ENTITY_SCHEMAS), planDeSecours: secours },
+  );
+  // Le type choisi explicitement par l'utilisateur n'est jamais discute.
+  if (manual) res.plan.entite = manual;
+  return { ...res, signature };
+}
+
+/** Les 5 premieres lignes telles qu'elles seront enregistrees, pour l'ecran de confirmation. */
+function apercu(plan: PlanImport, matrix: any[][]) {
+  try { return appliquerPlan(plan, matrix).slice(0, 5); } catch { return []; }
+}
+
+/** Matrice d'une feuille de classeur, meme forme que celle d'un fichier texte. */
+function matriceDeFeuille(sheet: any): any[][] {
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false }) as any[][];
+}
+
 async function importRows(
   base44: any,
   entityName: string,
@@ -40,6 +99,7 @@ async function importRows(
   sourceType: string,
   fileLabel: string,
   fileUrl = "",
+  memoire?: { plan: PlanImport | null; signature: string; confirme: boolean },
 ) {
   // Ré-importer le même fichier/feuille dupliquait chaque ligne : un fichier
   // importé 6 fois donnait 6 copies et des chiffres contradictoires partout.
@@ -68,6 +128,11 @@ async function importRows(
     status: "en_cours",
     rows_processed: 0,
     rows_quarantined: 0,
+    // Le plan est enregistre avec l'import : c'est lui qui rendra le prochain
+    // export du meme logiciel lisible sans rien redemander.
+    read_plan: memoire?.plan || undefined,
+    plan_signature: memoire?.signature || undefined,
+    plan_confirmed: memoire?.confirme || false,
   });
 
   const toCreate: Record<string, any>[] = [];
