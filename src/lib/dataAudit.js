@@ -27,6 +27,30 @@ function check(label, status, detail, expected, actual) {
   return { label, status, detail, expected, actual };
 }
 
+/**
+ * Sum two independent sources over the months they BOTH cover completely.
+ *
+ * Comparing lifetime totals of two sources was the main source of false errors:
+ * each file covers its own span (and its own rows inside that span), so
+ * "commandes vs transactions" flagged a 120 % gap on data that was simply not
+ * aligned. Only the shared complete months can be compared, and if there is no
+ * shared month the comparison is refused rather than invented.
+ */
+function sharedMonths(rowsA, dateA, valA, rowsB, dateB, valB) {
+  const a = monthlyAggComplete(rowsA, dateA, valA);
+  const b = monthlyAggComplete(rowsB, dateB, valB);
+  const mb = new Map(b.map((x) => [x.month, x.val]));
+  const shared = a.filter((x) => mb.has(x.month)).map((x) => x.month);
+  if (shared.length === 0) return null;
+  const ma = new Map(a.map((x) => [x.month, x.val]));
+  return {
+    months: shared.length,
+    label: `${shared[0]} → ${shared[shared.length - 1]}`,
+    a: shared.reduce((s, m) => s + ma.get(m), 0),
+    b: shared.reduce((s, m) => s + mb.get(m), 0),
+  };
+}
+
 /** Level 2 — coherence cross-checks between independent data sources. */
 export function runCoherenceChecks(d) {
   const { transactions = [], orders = [], customers = [], products = [], inventory = [], cashflow = [], campaigns = [], campaignDaily = [], expenses = [], payroll = [], employees = [] } = d;
@@ -34,35 +58,61 @@ export function runCoherenceChecks(d) {
 
   // --- Revenue: orders vs income transactions, on complete months only ---
   const ordersRev = sum(orders, (o) => o.total);
-  const txnIncome = sum(transactions.filter((t) => t.type === "income"), (t) => t.amount);
+  const revShared = sharedMonths(orders, "date", "total", transactions.filter((t) => t.type === "income"), "date", "amount");
   if (orders.length === 0 || transactions.length === 0) {
     out.push(check("CA des commandes vs revenus des transactions", "skip", "Une des deux sources est absente."));
+  } else if (!revShared) {
+    out.push(check("CA des commandes vs revenus des transactions", "skip", "Aucun mois complet couvert par les deux sources : comparaison impossible."));
   } else {
-    const gap = pctGap(ordersRev, txnIncome);
+    const gap = pctGap(revShared.a, revShared.b);
     out.push(check(
       "CA des commandes vs revenus des transactions",
       gap <= 5 ? "ok" : gap <= 20 ? "warn" : "error",
-      gap <= 5 ? "Les deux sources concordent." : `Écart de ${gap.toFixed(1)} % entre les deux sources : l'une des deux est incomplète ou couvre une autre période.`,
-      `Commandes : ${fmt$(ordersRev)}`,
-      `Transactions : ${fmt$(txnIncome)}`,
+      gap <= 5
+        ? `Les deux sources concordent sur ${revShared.months} mois communs (${revShared.label}).`
+        : `Écart de ${gap.toFixed(1)} % sur les ${revShared.months} mois communs (${revShared.label}) : une des deux sources ne contient qu'une partie des opérations de la période.`,
+      `Commandes : ${fmt$(revShared.a)}`,
+      `Transactions : ${fmt$(revShared.b)}`,
     ));
   }
 
   // --- Cashflow: sum of net flows vs closing - opening ---
+  // Le solde ne se reconstitue que sur des jours CONSÉCUTIFS. Comparer la somme
+  // de tous les flux nets au premier et au dernier solde d'une série trouée
+  // garantissait un écart énorme, signalé comme erreur alors que seule la
+  // couverture était partielle. On ne compare donc que les segments continus.
   if (cashflow.length < 2) {
     out.push(check("Flux de trésorerie vs variation du solde", "skip", "Moins de deux relevés de trésorerie."));
   } else {
-    const cfAsc = [...cashflow].sort((a, b) => (a.date < b.date ? -1 : 1));
-    const netSum = sum(cfAsc, (c) => c.net_cash_flow);
-    const delta = num(cfAsc[cfAsc.length - 1].closing_cash) - num(cfAsc[0].opening_cash);
-    const gap = pctGap(netSum, delta);
-    out.push(check(
-      "Flux de trésorerie vs variation du solde",
-      gap <= 2 ? "ok" : gap <= 10 ? "warn" : "error",
-      gap <= 2 ? "Les flux nets expliquent bien la variation du solde." : `Écart de ${gap.toFixed(1)} % : des jours manquent dans la série ou les flux nets ne sont pas cohérents avec les soldes.`,
-      `Somme des flux nets : ${fmt$(netSum)}`,
-      `Variation du solde : ${fmt$(delta)}`,
-    ));
+    const cfAsc = [...cashflow].filter((c) => c.date).sort((a, b) => (a.date < b.date ? -1 : 1));
+    const nextDay = (d) => new Date(new Date(d).getTime() + 86400000).toISOString().slice(0, 10);
+    let netSum = 0;
+    let delta = 0;
+    let pairs = 0;
+    for (let i = 1; i < cfAsc.length; i += 1) {
+      if (nextDay(cfAsc[i - 1].date) !== String(cfAsc[i].date).slice(0, 10)) continue;
+      netSum += num(cfAsc[i].net_cash_flow);
+      delta += num(cfAsc[i].closing_cash) - num(cfAsc[i - 1].closing_cash);
+      pairs += 1;
+    }
+    if (pairs === 0) {
+      out.push(check(
+        "Flux de trésorerie vs variation du solde",
+        "skip",
+        `Aucun jour consécutif dans les ${cfAsc.length} relevés : la variation du solde n'est pas reconstituable.`,
+      ));
+    } else {
+      const gap = pctGap(netSum, delta);
+      out.push(check(
+        "Flux de trésorerie vs variation du solde",
+        gap <= 2 ? "ok" : gap <= 10 ? "warn" : "error",
+        gap <= 2
+          ? `Les flux nets expliquent la variation du solde sur ${pairs} jours consécutifs vérifiés.`
+          : `Écart de ${gap.toFixed(1)} % sur ${pairs} jours consécutifs : les flux nets ne concordent pas avec les soldes déclarés.`,
+        `Somme des flux nets : ${fmt$(netSum)}`,
+        `Variation du solde : ${fmt$(delta)}`,
+      ));
+    }
   }
 
   // --- Cash in vs cash out consistency per row ---
@@ -137,28 +187,50 @@ export function runCoherenceChecks(d) {
   if (campaigns.length === 0 || campaignDaily.length === 0) {
     out.push(check("Totaux de campagnes vs données quotidiennes", "skip", "Campagnes ou données quotidiennes absentes."));
   } else {
-    const totSpend = sum(campaigns, (c) => c.spend);
-    const dailySpend = sum(campaignDaily, (c) => c.spend);
-    const gap = pctGap(totSpend, dailySpend);
-    out.push(check(
-      "Totaux de campagnes vs données quotidiennes",
-      gap <= 5 ? "ok" : gap <= 25 ? "warn" : "error",
-      gap <= 5 ? "Les deux sources concordent." : `Écart de ${gap.toFixed(1)} % : le ROAS et le CAC peuvent différer selon la source utilisée.`,
-      `Campagnes : ${fmt$(totSpend)}`,
-      `Quotidien : ${fmt$(dailySpend)}`,
-    ));
+    // Le quotidien ne contient souvent que quelques jours par campagne : son
+    // total ne peut pas égaler le total de la campagne. On ne compare donc que
+    // les campagnes présentes dans les deux sources, et on refuse la
+    // comparaison quand la couverture quotidienne est manifestement partielle.
+    const dailyIds = new Set(campaignDaily.map((c) => c.campaign_id).filter(Boolean));
+    const shared = campaigns.filter((c) => dailyIds.has(c.campaign_id));
+    const totSpend = sum(shared, (c) => c.spend);
+    const dailySpend = sum(campaignDaily.filter((c) => dailyIds.has(c.campaign_id)), (c) => c.spend);
+    const daysPerCampaign = dailyIds.size > 0 ? campaignDaily.length / dailyIds.size : 0;
+    if (shared.length === 0) {
+      out.push(check("Totaux de campagnes vs données quotidiennes", "skip", "Aucune campagne commune aux deux sources."));
+    } else if (daysPerCampaign < 15) {
+      out.push(check(
+        "Totaux de campagnes vs données quotidiennes",
+        "skip",
+        `Couverture quotidienne partielle (${daysPerCampaign.toFixed(1)} jour(s) par campagne en moyenne) : les totaux ne sont pas comparables. Le ROAS quotidien ne porte donc que sur les jours présents.`,
+        `Campagnes concernées : ${shared.length}`,
+        `Lignes quotidiennes : ${campaignDaily.length}`,
+      ));
+    } else {
+      const gap = pctGap(totSpend, dailySpend);
+      out.push(check(
+        "Totaux de campagnes vs données quotidiennes",
+        gap <= 5 ? "ok" : gap <= 25 ? "warn" : "error",
+        gap <= 5 ? `Les deux sources concordent sur ${shared.length} campagnes communes.` : `Écart de ${gap.toFixed(1)} % : le ROAS et le CAC peuvent différer selon la source utilisée.`,
+        `Campagnes : ${fmt$(totSpend)}`,
+        `Quotidien : ${fmt$(dailySpend)}`,
+      ));
+    }
   }
 
   // --- Customer aggregates vs orders ---
   if (customers.length === 0 || orders.length === 0) {
     out.push(check("Revenu client cumulé vs commandes", "skip", "Clients ou commandes absents."));
   } else {
+    // Le champ « revenu total » d'une fiche client couvre TOUTE la vie du client,
+    // alors que les commandes importées ne couvrent qu'une période : un écart est
+    // normal ici et ne doit pas être présenté comme une erreur de calcul.
     const custRev = sum(customers, (c) => c.total_revenue);
     const gap = pctGap(custRev, ordersRev);
     out.push(check(
       "Revenu client cumulé vs commandes",
-      gap <= 5 ? "ok" : gap <= 20 ? "warn" : "error",
-      gap <= 5 ? "Les totaux clients correspondent aux commandes." : `Écart de ${gap.toFixed(1)} % : le champ « revenu total » des clients n'est pas à jour, les calculs utilisent donc les commandes.`,
+      gap <= 5 ? "ok" : "warn",
+      gap <= 5 ? "Les totaux clients correspondent aux commandes." : `Écart de ${gap.toFixed(1)} % : les fiches clients cumulent tout l'historique du client alors que les commandes importées ne couvrent qu'une période. Les calculs se basent sur les commandes.`,
       `Fiches clients : ${fmt$(custRev)}`,
       `Commandes : ${fmt$(ordersRev)}`,
     ));
@@ -168,16 +240,21 @@ export function runCoherenceChecks(d) {
   if (expenses.length === 0 || cashflow.length === 0) {
     out.push(check("Dépenses vs sorties de trésorerie", "skip", "Dépenses ou trésorerie absentes."));
   } else {
-    const expTotal = sum(expenses, (e) => e.amount) + sum(payroll, (p) => p.total_cost);
-    const cashOut = sum(cashflow, (c) => c.cash_out);
-    const gap = pctGap(expTotal, cashOut);
-    out.push(check(
-      "Dépenses vs sorties de trésorerie",
-      gap <= 15 ? "ok" : gap <= 40 ? "warn" : "error",
-      gap <= 15 ? "Ordres de grandeur cohérents." : `Écart de ${gap.toFixed(1)} % : les sorties de trésorerie incluent probablement des achats non listés en dépenses (ou inversement).`,
-      `Dépenses + paie : ${fmt$(expTotal)}`,
-      `Sorties de caisse : ${fmt$(cashOut)}`,
-    ));
+    const shared = sharedMonths(expenses, "date", "amount", cashflow, "date", "cash_out");
+    if (!shared) {
+      out.push(check("Dépenses vs sorties de trésorerie", "skip", "Aucun mois complet couvert par les deux sources."));
+    } else {
+      const gap = pctGap(shared.a, shared.b);
+      out.push(check(
+        "Dépenses vs sorties de trésorerie",
+        gap <= 15 ? "ok" : gap <= 40 ? "warn" : "error",
+        gap <= 15
+          ? `Ordres de grandeur cohérents sur ${shared.months} mois communs (${shared.label}).`
+          : `Écart de ${gap.toFixed(1)} % sur les ${shared.months} mois communs (${shared.label}) : les sorties de trésorerie incluent probablement des achats non listés en dépenses (ou inversement).`,
+        `Dépenses : ${fmt$(shared.a)}`,
+        `Sorties de caisse : ${fmt$(shared.b)}`,
+      ));
+    }
   }
 
   return out;
