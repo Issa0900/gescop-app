@@ -298,6 +298,14 @@ export function normalizeRow(
     };
   }
 
+  // Cashflow files rarely carry the net flow column: derive it, otherwise every
+  // treasury check compares real balances against a column full of zeros.
+  if (entityName === "Cashflow" && r.net_cash_flow == null) {
+    const cin = parseNumber(r.cash_in);
+    const cout = parseNumber(r.cash_out);
+    if (cin !== null || cout !== null) r.net_cash_flow = (cin || 0) - (cout || 0);
+  }
+
   // For other entities: normalize enums, coerce types, keep only schema fields, strip empty values
   const withEnums = normalizeEnums(r, properties || {});
   const cleaned: Record<string, any> = {};
