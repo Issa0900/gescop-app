@@ -360,18 +360,24 @@ export function buildMetricTraces(d) {
   const oRevM = monthlyAggComplete(orders, "date", "total");
   const oCntM = monthlyAggComplete(orders, "date", "total", "count");
   const orev3 = sumLast(oRevM, 3);
-  const orevPrev3 = oRevM.slice(Math.max(0, oRevM.length - 6), Math.max(0, oRevM.length - 3)).reduce((s, x) => s + x.val, 0);
+  // Refuses to compare unless BOTH 3-month windows are fully covered: summing
+  // 3 months against the single month preceding them showed +200% growth on a
+  // perfectly flat business.
+  const orevPrev3 = sumPrev(oRevM, 3);
   traces.push({
     domain: "Ventes",
     metric: "Évolution du CA (3 mois)",
     formula: "(CA des 3 derniers mois − CA des 3 mois précédents) ÷ CA des 3 mois précédents",
     source: `Commandes — ${orders.length} lignes`,
-    period: oRevM.length ? `${oRevM.slice(-6)[0]?.month || "—"} → ${oRevM[oRevM.length - 1].month}` : "—",
+    period: oRevM.length >= 6 ? `${oRevM.slice(-6)[0].month} → ${oRevM[oRevM.length - 1].month}` : "—",
     steps: [
       ["CA 3 derniers mois", fmt$(orev3)],
       ["CA 3 mois précédents", fmt$(orevPrev3)],
-      ["Variation", orevPrev3 > 0 ? `${(((orev3 - orevPrev3) / orevPrev3) * 100).toFixed(1)} %` : "—"],
+      ["Variation", orevPrev3 !== null && orevPrev3 > 0 && orev3 !== null ? `${(((orev3 - orevPrev3) / orevPrev3) * 100).toFixed(1)} %` : "—"],
     ],
+    note: oRevM.length < 6
+      ? `Seulement ${oRevM.length} mois complets disponibles : 6 sont nécessaires pour comparer deux trimestres. Aucune variation n'est affichée plutôt qu'une variation calculée sur une fenêtre incomplète.`
+      : "Les mois sans aucune commande comptent pour 0 et ne sont pas sautés : sinon la comparaison porterait sur des mois non contigus.",
   });
 
   const lastCnt = oCntM.length ? oCntM[oCntM.length - 1] : null;
@@ -425,34 +431,38 @@ export function buildMetricTraces(d) {
     note: "Un seul instantané par produit : compter tout l'historique multiplierait le même problème.",
   });
 
-  const churned = customers.filter((c) => c.status === "inactif" || c.status === "perdu").length;
-  const active = customers.filter((c) => c.status === "actif").length;
+  const churn = churnStats(customers);
   traces.push({
     domain: "Clients",
     metric: "Taux de churn",
-    formula: "(clients inactifs + perdus) ÷ total des clients",
+    formula: "(clients au statut inactif + perdu) ÷ total des clients",
     source: `Clients — ${customers.length} fiches`,
     period: "état actuel des fiches",
     steps: [
-      ["Total clients", String(customers.length)],
-      ["Actifs", String(active)],
-      ["Inactifs / perdus", String(churned)],
-      ["Churn", customers.length ? `${((churned / customers.length) * 100).toFixed(1)} %` : "—"],
+      ["Total clients", String(churn.total)],
+      ["Actifs", String(churn.active)],
+      ["Inactifs / perdus", String(churn.churned)],
+      ["Dont actifs à risque (non comptés)", String(churn.atRisk)],
+      ["Churn", churn.rate !== null ? `${churn.rate.toFixed(1)} %` : "—"],
     ],
+    note: "Un client « à risque » achète encore : il n'entre pas dans le churn. Le compter comme perdu gonflait le taux sur la page Clients et dans les rapports IA pendant que la page KPI en affichait un autre à partir des mêmes lignes. Ce taux est cumulé sur toute la base, ce n'est pas un taux par période.",
   });
 
-  const ordersRev = sum(orders, (o) => o.total);
+  const value = customerValue(orders, customers, margin3);
   traces.push({
     domain: "Clients",
-    metric: "Valeur vie client (LTV)",
-    formula: "CA total des commandes ÷ nombre de clients actifs",
+    metric: "Revenu moyen par client",
+    formula: "CA total des commandes ÷ nombre de clients ayant réellement commandé",
     source: `Commandes (${orders.length}) et clients (${customers.length})`,
     period: "historique complet",
     steps: [
-      ["CA total", fmt$(ordersRev)],
-      ["Clients actifs", String(active)],
-      ["LTV", active > 0 ? fmt$(ordersRev / active) : "—"],
+      ["CA total", fmt$(value.totalRevenue)],
+      ["Clients ayant commandé", String(value.buyers)],
+      ["Revenu moyen / client", fmt$(value.avgRevenue)],
+      ["Marge appliquée", margin3 !== null ? `${margin3.toFixed(1)} %` : "—"],
+      ["LTV (revenu × marge)", fmt$(value.ltv)],
     ],
+    note: "Le numérateur couvre tous les acheteurs, donc le dénominateur aussi. Diviser le CA de TOUS les clients par les seuls clients ACTIFS gonflait le chiffre de 1/(part d'actifs) — le double quand la moitié de la base a churné. Une LTV est une valeur, pas un chiffre d'affaires : la marge est appliquée.",
   });
 
   traces.push({
