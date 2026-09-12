@@ -20,6 +20,7 @@ import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import ImportProgress from "@/components/import/ImportProgress";
+import PlanConfirmation from "@/components/import/PlanConfirmation";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -51,6 +52,13 @@ export default function ImportPage() {
   const [processing, setProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  // L'import se fait en deux temps : on analyse d'abord, l'utilisateur valide
+  // la lecture, et seulement ensuite on ecrit. Tant que `analyses` est rempli,
+  // rien n'a ete enregistre.
+  const [analyses, setAnalyses] = useState(null);
+  const [champsParEntite, setChampsParEntite] = useState(null);
+  const [fichiersEnvoyes, setFichiersEnvoyes] = useState([]);
+  const [analyzing, setAnalyzing] = useState(false);
   const [purging, setPurging] = useState(false);
   const [manualEntity, setManualEntity] = useState("");
   const { company } = useCompany();
@@ -75,27 +83,71 @@ export default function ImportPage() {
         uploadedFiles.push({ file_url, file_name: file.name });
       }
       setUploading(false);
-      setProcessing(true);
-      const res = await base44.functions.invoke("importMultiData", { files: uploadedFiles, entity_override: manualEntity || null });
+      setAnalyzing(true);
+      setImportResult(null);
+      const res = await base44.functions.invoke("importMultiData", {
+        files: uploadedFiles,
+        entity_override: manualEntity || null,
+        mode: "analyser",
+      });
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
-      } else {
-        setImportResult(data);
-        const totalRows = (data.results || []).reduce((s, r) => s + (r.rows || 0), 0);
-        const okCount = (data.results || []).filter((r) => r.status === "complete").length;
-        toast({
-          title: "Import terminé",
-          description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`,
-        });
-        qc.invalidateQueries();
+        return;
       }
+      const lisibles = (data.results || []).filter((r) => r.plan);
+      // Les feuilles vides ou illisibles n'ont pas de plan : elles vont
+      // directement au recapitulatif, il n'y a rien a confirmer dessus.
+      const nonLisibles = (data.results || []).filter((r) => !r.plan);
+      if (lisibles.length === 0) {
+        setImportResult({ results: nonLisibles });
+        toast({ title: "Aucun fichier lisible", variant: "destructive" });
+        return;
+      }
+      setFichiersEnvoyes(uploadedFiles);
+      setChampsParEntite(data.champs_par_entite || {});
+      setAnalyses(lisibles);
     } catch (e) {
       toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
     } finally {
       setUploading(false);
+      setAnalyzing(false);
+    }
+  };
+
+  /** Deuxieme temps : l'utilisateur a valide la lecture, on ecrit. */
+  const lancerImport = async (plans) => {
+    setProcessing(true);
+    try {
+      const res = await base44.functions.invoke("importMultiData", {
+        files: fichiersEnvoyes,
+        entity_override: manualEntity || null,
+        plans,
+      });
+      const data = res.data || res;
+      if (data.error) {
+        toast({ title: data.error, variant: "destructive" });
+        return;
+      }
+      setAnalyses(null);
+      setImportResult(data);
+      const totalRows = (data.results || []).reduce((s, r) => s + (r.rows || 0), 0);
+      const okCount = (data.results || []).filter((r) => r.status === "complete").length;
+      toast({
+        title: "Import terminé",
+        description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`,
+      });
+      qc.invalidateQueries();
+    } catch (e) {
+      toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
+    } finally {
       setProcessing(false);
     }
+  };
+
+  const annulerAnalyse = () => {
+    setAnalyses(null);
+    setFichiersEnvoyes([]);
   };
 
   /**
