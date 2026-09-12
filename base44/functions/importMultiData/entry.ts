@@ -2,15 +2,16 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
 import { detectEntityByName, detectEntityByHeaders, sheetRows } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
+import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const schemaCache: Record<string, any> = {};
+const schemaCache: Record<string, { properties: any; required: string[] } | null> = {};
 
-async function getEntityProperties(base44: any, entityName: string) {
+async function getEntitySchema(base44: any, entityName: string) {
   if (schemaCache[entityName] !== undefined) return schemaCache[entityName];
   try {
     const schema = await base44.entities[entityName].schema();
-    schemaCache[entityName] = schema.properties || {};
+    schemaCache[entityName] = { properties: schema.properties || {}, required: schema.required || [] };
   } catch {
     schemaCache[entityName] = null;
   }
@@ -34,7 +35,9 @@ async function importRows(
   sourceType: string,
   fileLabel: string,
 ) {
-  const properties = await getEntityProperties(base44, entityName);
+  const schema = await getEntitySchema(base44, entityName);
+  const properties = schema ? schema.properties : null;
+  const required = schema ? schema.required : [];
 
   const importRec = await base44.entities.Import.create({
     source_type: sourceType,
@@ -48,30 +51,27 @@ async function importRows(
 
   const toCreate: Record<string, any>[] = [];
   let quarantined = 0;
+  const missingFields = new Set<string>();
   rows.forEach((row) => {
     if (!row || typeof row !== "object") { quarantined++; return; }
     const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType);
     if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) { quarantined++; return; }
+    // Reject up front rather than letting one row fail its whole batch.
+    const missing = missingRequired(normalized, required);
+    if (missing.length > 0) {
+      missing.forEach((m) => missingFields.add(m));
+      quarantined++;
+      return;
+    }
     toCreate.push(normalized);
   });
 
-  let created = 0;
-  for (let i = 0; i < toCreate.length; i += 200) {
-    const batch = toCreate.slice(i, i + 200);
-    try {
-      await base44.entities[entityName].bulkCreate(batch);
-      created += batch.length;
-    } catch {
-      for (const row of batch) {
-        try {
-          await base44.entities[entityName].create(row);
-          created++;
-        } catch {
-          quarantined++;
-        }
-      }
-    }
-  }
+  const { created, quarantined: rejected, errors } = await insertRows(base44, entityName, toCreate);
+  quarantined += rejected;
+
+  const messages: string[] = [];
+  if (missingFields.size > 0) messages.push(`champs obligatoires manquants : ${Array.from(missingFields).join(", ")}`);
+  if (errors.length > 0) messages.push(errors[0]);
 
   const quality = rows.length > 0 ? Math.round((created / rows.length) * 100) : 0;
   await base44.entities.Import.update(importRec.id, {
@@ -87,6 +87,7 @@ async function importRows(
     rows_read: rows.length,
     rows: created,
     quarantined,
+    message: messages.join(" · ") || undefined,
   };
 }
 
