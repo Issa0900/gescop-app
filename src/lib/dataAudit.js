@@ -189,11 +189,19 @@ export function runCoherenceChecks(d) {
  * so this compares the import journal to the records actually stored.
  */
 export function runReconciliation(imports = [], d = {}) {
+  // EVERY entity that can be imported must be listed here. This check is the
+  // only thing that catches rows disappearing after a successful import, and it
+  // covered just 11 of the 18 importable entities: an unscoped delete wiped 500
+  // imported ExternalSignal rows while the journal still reported them loaded,
+  // and nothing flagged it because ExternalSignal was not in this map.
   const ENTITY_ROWS = {
     Transaction: d.transactions, Order: d.orders, Customer: d.customers,
     Product: d.products, Inventory: d.inventory, Cashflow: d.cashflow,
     Expense: d.expenses, Payroll: d.payroll, Employee: d.employees,
     Campaign: d.campaigns, CampaignDaily: d.campaignDaily,
+    Supplier: d.suppliers, Purchase: d.purchases, Interaction: d.interactions,
+    Competitor: d.competitors, Goal: d.goals, Event: d.events,
+    ExternalSignal: d.externalSignals,
   };
   const out = [];
 
