@@ -57,6 +57,10 @@ export async function buildBusinessContext(base44) {
   const txnExpenses = transactions.filter((t) => t.type === "expense");
   const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
   const totalExpenses = txnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
+  // NOTE: cumulative over the whole imported history, and NET (all expenses
+  // deducted, not just cost of goods). The screens show a 3-month aggregated
+  // margin, so the two figures answer different questions — the prompt below
+  // labels this one explicitly so the AI does not present it as "the" margin.
   const grossMargin = totalIncome - totalExpenses;
   const marginPct = totalIncome > 0 ? Math.round((grossMargin / totalIncome) * 100) : 0;
 
@@ -96,12 +100,27 @@ export async function buildBusinessContext(base44) {
   });
   const segmentStr = Object.entries(bySegment).map(([s, v]) => `${s}: ${v}`).join(", ");
 
-  const inactiveCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu" || c.segment === "inactif" || c.segment === "a_risque");
+  // Same churn definition as every screen: STATUS only. Counting "a_risque"
+  // here made the AI reports quote a higher churn than the KPI page showed for
+  // the same customers, which destroys trust in both.
+  const inactiveCustomers = customers.filter((c) => c.status === "inactif" || c.status === "perdu");
+  const atRiskCustomers = customers.filter((c) => c.status === "actif" && Number(c.churn_risk) >= 0.7);
   const churnRate = totalCustomers > 0 ? Math.round((inactiveCustomers.length / totalCustomers) * 100) : 0;
 
-  const sortedByRevenue = [...customers].sort((a, b) => (b.total_revenue || 0) - (a.total_revenue || 0));
-  const top5Revenue = sortedByRevenue.slice(0, 5).reduce((s, c) => s + (c.total_revenue || 0), 0);
-  const allCustomerRevenue = customers.reduce((s, c) => s + (c.total_revenue || 0), 0);
+  // Concentration computed from ORDERS, not from the customer file's
+  // total_revenue column: the audit page already warns that this column goes
+  // stale, and the app's own screens use orders. Falls back to the column only
+  // when there are no orders at all.
+  const revByCustomer = {};
+  orders.forEach((o) => {
+    if (!o.customer_id) return;
+    revByCustomer[o.customer_id] = (revByCustomer[o.customer_id] || 0) + (Number(o.total) || 0);
+  });
+  const useOrderRevenue = Object.keys(revByCustomer).length > 0;
+  const custRevenue = (c) => (useOrderRevenue ? revByCustomer[c.customer_id] || 0 : Number(c.total_revenue) || 0);
+  const sortedByRevenue = [...customers].sort((a, b) => custRevenue(b) - custRevenue(a));
+  const top5Revenue = sortedByRevenue.slice(0, 5).reduce((s, c) => s + custRevenue(c), 0);
+  const allCustomerRevenue = customers.reduce((s, c) => s + custRevenue(c), 0);
   const concentration = allCustomerRevenue > 0 ? Math.round((top5Revenue / allCustomerRevenue) * 100) : 0;
   const topCustomersStr = sortedByRevenue.slice(0, 5).map((c) => `${c.customer_id || c.first_name || "?"}: ${round(c.total_revenue || 0)} $ (${c.segment || "?"})`).join("\n");
 
@@ -233,7 +252,7 @@ Objectifs: ${(company.objectives || []).join(", ") || "non précisés"}`
   const financeSection = `Total transactions: ${transactions.length}
 Revenus totaux: ${round(totalIncome)} $
 Dépenses totales: ${round(totalExpenses)} $
-Marge brute: ${round(grossMargin)} $ (${marginPct}%)
+Marge nette cumulée sur tout l'historique importé: ${round(grossMargin)} $ (${marginPct}%) — les écrans affichent la marge agrégée des 3 derniers mois complets, qui peut légitimement différer de ce cumul
 Évolution mensuelle (12 derniers mois):
 ${txnMonthlyStr || "insuffisant"}
 Top catégories de dépenses:
@@ -250,7 +269,7 @@ ${channelStr || "insuffisant"}`;
 
   const customerSection = `Total clients: ${totalCustomers}
 Segments: ${segmentStr || "insuffisant"}
-Taux de churn: ${churnRate}%
+Taux de churn (clients au statut inactif ou perdu, cumulé sur toute la base): ${churnRate}% — ${atRiskCustomers.length} clients actifs sont par ailleurs à risque élevé de départ, sans être encore perdus
 Concentration top 5: ${concentration}% du CA
 Top clients:
 ${topCustomersStr || "insuffisant"}`;
