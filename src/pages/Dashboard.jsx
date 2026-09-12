@@ -294,8 +294,8 @@ export default function Dashboard() {
 
   // === DIMENSIONS ===
   const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses: expenseRecords,
-  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenseRecords]);
+    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses: expenseRecords, company,
+  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenseRecords, company]);
 
   const dimTrendDeltas = useMemo(() => {
     if (!analysisRuns || analysisRuns.length === 0) return {};
