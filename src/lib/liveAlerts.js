@@ -74,9 +74,9 @@ export function computeLiveAlerts(data) {
   const priorMargin = previousMarginPct(revMonthly, expMonthly, 3);
   if (recentMargin !== null) {
     if (recentMargin < 0) {
-      out.push(alert("critique", "Finance", "Marge négative sur 3 mois", `La marge moyenne des 3 derniers mois complets est de ${recentMargin.toFixed(0)} %.`));
+      out.push(alert("critique", "Finance", "Marge négative sur 3 mois", `La marge sur les 3 derniers mois complets est de ${recentMargin.toFixed(0)} %.`));
     } else if (recentMargin < 10) {
-      out.push(alert("important", "Finance", "Marge faible", `Marge moyenne de ${recentMargin.toFixed(0)} % sur les 3 derniers mois complets.`));
+      out.push(alert("important", "Finance", "Marge faible", `Marge de ${recentMargin.toFixed(0)} % sur les 3 derniers mois complets.`));
     }
   }
   // Variation de marge exprimée en POINTS : passer de 2 % à 4 % est +2 points,
@@ -145,33 +145,29 @@ export function computeLiveAlerts(data) {
     );
   }
 
-  // --- Clients : churn ---
-  const totalCustomers = (customers || []).length;
-  if (totalCustomers > 0) {
-    const churned = (customers || []).filter((c) => c.status === "inactif" || c.status === "perdu").length;
-    const churnRate = (churned / totalCustomers) * 100;
-    if (churnRate >= 20) {
-      out.push(alert("critique", "Clients", "Taux d'attrition élevé", `${churnRate.toFixed(0)} % des clients sont inactifs ou perdus (${churned} sur ${totalCustomers}).`));
-    } else if (churnRate >= 10) {
-      out.push(alert("important", "Clients", "Attrition à surveiller", `${churnRate.toFixed(0)} % des clients sont inactifs ou perdus.`));
+  // --- Clients : churn (définition unique, partagée avec les KPI et l'audit) ---
+  const churn = churnStats(customers);
+  if (churn.rate !== null) {
+    if (churn.rate >= 20) {
+      out.push(alert("critique", "Clients", "Taux d'attrition élevé", `${churn.rate.toFixed(0)} % des clients sont inactifs ou perdus (${churn.churned} sur ${churn.total}).`));
+    } else if (churn.rate >= 10) {
+      out.push(alert("important", "Clients", "Attrition à surveiller", `${churn.rate.toFixed(0)} % des clients sont inactifs ou perdus.`));
     }
-    const atRisk = (customers || []).filter((c) => Number(c.churn_risk) >= 0.7 && c.status === "actif").length;
-    if (atRisk > 0) {
-      out.push(alert("important", "Clients", `${atRisk} clients actifs à risque de départ`, "Risque de départ élevé : une relance est recommandée."));
+    if (churn.atRisk > 0) {
+      out.push(alert("important", "Clients", `${churn.atRisk} clients actifs à risque de départ`, "Risque de départ élevé : une relance est recommandée."));
     }
   }
 
   // --- Marketing : ROAS ---
   const spendM = monthlyAggComplete(campaignDaily || [], "date", "spend");
   const revM = monthlyAggComplete(campaignDaily || [], "date", "revenue");
-  const s3 = sumLast(spendM, 3);
-  if (s3 > 0) {
-    const roas = sumLast(revM, 3) / s3;
-    const sp3 = sumPrev(spendM, 3);
-    const roasPrev = sp3 > 0 ? sumPrev(revM, 3) / sp3 : 0;
+  const roas = roasWindow(spendM, revM, 3);
+  if (roas !== null) {
+    const roasPrev = previousRoasWindow(spendM, revM, 3);
+    const roasTrend = trendPct(roas, roasPrev);
     if (roas < 1) {
       out.push(alert("critique", "Marketing", "ROAS inférieur à 1", `Chaque dollar investi rapporte ${roas.toFixed(2)} $ : les campagnes détruisent de la valeur.`));
-    } else if (roasPrev > 0 && trendPct(roas, roasPrev) < -25) {
+    } else if (roasTrend !== null && roasTrend < -25) {
       out.push(
         alert(
           "important",
