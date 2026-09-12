@@ -19,21 +19,6 @@ export default async function(req) {
       }, { status: 400 });
     }
 
-    // Clear previous analysis artifacts (keep history but remove stale auto-generated ones).
-    // Anomaly / Risk / Opportunity / Kpi are produced ONLY by this function, so
-    // wiping them wholesale is safe. Recommendation is already scoped by source_type
-    // because users can create their own.
-    await base44.entities.Anomaly.deleteMany({});
-    await base44.entities.Risk.deleteMany({});
-    await base44.entities.Opportunity.deleteMany({});
-    await base44.entities.Recommendation.deleteMany({ source_type: { $in: ["risk", "opportunity", "anomaly"] } });
-    await base44.entities.Kpi.deleteMany({});
-    // ExternalSignal is DIFFERENT: it is an importable entity. An unscoped wipe
-    // here destroyed every signal the user had imported (500 rows vanished while
-    // the import journal still reported them as loaded). Only the signals this
-    // function generated — the ones with no import_id — may be cleared.
-    await base44.entities.ExternalSignal.deleteMany({ import_id: null });
-
     const prompt = `Tu es GESCOP, un système intelligent de pilotage pour PME. Analyse les données multi-sources de cette entreprise et produis un diagnostic complet en croisant toutes les sources disponibles.
 
 ${context}
@@ -207,12 +192,47 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       },
     });
 
-    const data = typeof result === "string" ? JSON.parse(result) : result;
+    let data;
+    try {
+      data = typeof result === "string" ? JSON.parse(result) : result;
+    } catch {
+      data = null;
+    }
+    // Nothing usable came back: stop here, WITHOUT touching the existing
+    // analysis. Wiping first meant a failed model call left the dashboard empty
+    // and the diagnostic looked like it never completed.
+    if (!data || !Array.isArray(data.dimensions) || data.dimensions.length === 0) {
+      return Response.json({
+        error: "L'analyse n'a pas abouti : le moteur d'IA n'a pas renvoyé de diagnostic exploitable. "
+          + "Votre analyse précédente a été conservée. Relancez le diagnostic.",
+      }, { status: 502 });
+    }
+
+    // The model answers with labels ("Finance", "Trésorerie"); the app reads
+    // canonical keys ("finance", "tresorerie"). Unnormalized, every score was
+    // stored under a key nothing looked up, so trends read as absent.
+    const dimKey = (name) => String(name || "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().trim().replace(/\s+/g, "_");
+
+    // Only now that we hold a valid diagnostic: clear the previous artifacts.
+    // Anomaly / Risk / Opportunity / Kpi are produced ONLY by this function, so
+    // wiping them wholesale is safe. Recommendation is already scoped by source_type
+    // because users can create their own.
+    await base44.entities.Anomaly.deleteMany({});
+    await base44.entities.Risk.deleteMany({});
+    await base44.entities.Opportunity.deleteMany({});
+    await base44.entities.Recommendation.deleteMany({ source_type: { $in: ["risk", "opportunity", "anomaly"] } });
+    await base44.entities.Kpi.deleteMany({});
+    // ExternalSignal is DIFFERENT: it is an importable entity. An unscoped wipe
+    // here destroyed every signal the user had imported. Only the signals this
+    // function generated — the ones with no import_id — may be cleared.
+    await base44.entities.ExternalSignal.deleteMany({ import_id: null });
 
     // Update company health
     const dimScores = {};
     (data.dimensions || []).forEach((d) => {
-      dimScores[d.name] = { score: d.score, trend: d.trend, explanation: d.explanation };
+      dimScores[dimKey(d.name)] = { score: d.score, trend: d.trend, explanation: d.explanation };
     });
     await base44.entities.Company.update(company.id, {
       health_score: data.health_score,
