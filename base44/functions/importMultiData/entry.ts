@@ -15,7 +15,7 @@ import * as XLSX from "npm:xlsx@0.18.5";
  * Then: name, exact header signature, and finally a best-fit score over the
  * columns, which rescues sheets that carry no recognizable id column.
  */
-function detect(label: string, headers: string[], fileGuess?: string | null, manual?: string | null) {
+export function detect(label: string, headers: string[], fileGuess?: string | null, manual?: string | null) {
   if (manual) return { entity: manual, via: "manuel" };
   const byName = detectEntityByName(label);
   const byHeaders = detectEntityByHeaders(headers);
