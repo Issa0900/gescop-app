@@ -230,7 +230,13 @@ export default function Kpis() {
       const totalCampRev = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
       const totalClicks = campaigns.reduce((s, c) => s + (Number(c.clicks) || 0), 0);
       const totalImpressions = campaigns.reduce((s, c) => s + (Number(c.impressions) || 0), 0);
-      const cac = totalNewCust > 0 ? totalSpend / totalNewCust : 0;
+      // Same fallback as the Marketing page: an absent "new_customers" column
+      // must not turn into a CAC of 0 € next to a large spend. Conversions are
+      // the standard proxy; when neither exists the KPI is simply not shown.
+      const cacBasis = totalNewCust > 0 ? "clients" : totalConv > 0 ? "conversions" : null;
+      const cac = cacBasis === "clients" ? totalSpend / totalNewCust
+        : cacBasis === "conversions" ? totalSpend / totalConv
+          : null;
       const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
       const convRate = totalClicks > 0 ? (totalConv / totalClicks) * 100 : 0;
 
@@ -254,7 +260,16 @@ export default function Kpis() {
       }
       // These three are all-time cumulative figures: campaign rows carry no date,
       // so they cannot be windowed and must not pretend to have a trend.
-      result.push({ name: "CAC moyen (cumul)", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
+      if (cac !== null) {
+        result.push({
+          name: cacBasis === "conversions" ? "Coût par conversion (cumul)" : "CAC moyen (cumul)",
+          domain: "marketing",
+          value: Math.round(cac),
+          previous: null,
+          trend: "stable",
+          unit: "$",
+        });
+      }
       result.push({ name: "Taux de clic (CTR, cumul)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
       result.push({ name: "Taux de conversion (cumul)", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
     }
