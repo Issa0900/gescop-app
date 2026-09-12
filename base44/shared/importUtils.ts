@@ -160,6 +160,25 @@ const MONTHS_FR: Record<string, string> = {
  * A wrong separator guess silently divides or multiplies a metric by 1000,
  * so the decimal separator is decided by the LAST separator present.
  */
+/**
+ * A single separator followed by exactly three digits is a thousands group
+ * ("1.234" = 1234, "45,000" = 45000) — UNLESS the integer part is "0" or is
+ * longer than three digits, in which case it is a genuine decimal ("0.125" is a
+ * rate, and "1234.567" would have been written "1.234,567" if dotted).
+ *
+ * The dot branch used to skip this test entirely (its guard was dead code:
+ * `!single || (... && !single)`), so a European-formatted export turned
+ * "1.234" into 1.234 and "45.000" into 45 — every amount silently divided by
+ * 1000. The comma branch had the mirror problem on "0,125", which came out as
+ * 125 and displayed a 12 500 % churn risk.
+ */
+function isThousandsGroup(s: string, sepIdx: number): boolean {
+  const decimals = s.length - sepIdx - 1;
+  if (decimals !== 3) return false;
+  const intPart = s.slice(0, sepIdx);
+  return /^[1-9]\d{0,2}$/.test(intPart);
+}
+
 export function parseNumber(value: any): number | null {
   if (typeof value === "number") return isNaN(value) ? null : value;
   if (value === null || value === undefined) return null;
@@ -175,14 +194,13 @@ export function parseNumber(value: any): number | null {
     // Both present: the rightmost one is the decimal separator.
     s = lastComma > lastDot ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
   } else if (lastComma >= 0) {
-    const decimals = s.length - lastComma - 1;
     const single = s.indexOf(",") === lastComma;
-    // "1,234" is a thousands group; "1,5" / "1,56" is a decimal.
-    s = single && decimals === 3 ? s.replace(",", "") : s.replace(/,/g, ".");
+    s = single && isThousandsGroup(s, lastComma) ? s.replace(",", "") : s.replace(/,/g, ".");
   } else if (lastDot >= 0) {
-    const decimals = s.length - lastDot - 1;
     const single = s.indexOf(".") === lastDot;
-    if (!single || (decimals === 3 && s.replace(/\./g, "").length > 3 && !single)) s = s.replace(/\./g, "");
+    // Several dots can only be thousands groups ("1.234.567").
+    if (!single) s = s.replace(/\./g, "");
+    else if (isThousandsGroup(s, lastDot)) s = s.replace(".", "");
   }
   const n = Number(s);
   if (isNaN(n)) return null;
@@ -284,8 +302,15 @@ export function normalizeRow(
     if (["revenu", "revenue", "credit", "entree", "income"].includes(typeNorm)) type = "income";
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
     if (["remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "expense";
+    // An unparseable date must NOT silently become today. Those rows used to
+    // land in the in-progress month, which every calculation excludes — so they
+    // vanished from all analyses while still inflating the all-time totals, and
+    // the "lignes sans date" quality check could not see them because they had
+    // a date. Leaving the field empty sends the row to quarantine, where it is
+    // counted and reported to the user.
+    const parsedDate = parseDate(r.date);
     return {
-      date: parseDate(r.date) || new Date().toISOString().slice(0, 10),
+      date: parsedDate,
       description: r.description || "",
       amount: Math.abs(amount),
       type,
