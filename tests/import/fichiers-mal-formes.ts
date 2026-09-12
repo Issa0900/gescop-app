@@ -2,7 +2,8 @@
 // titres avant les en-tetes, colonnes mal nommees, lignes vides, cellules
 // manquantes. On mesure combien de lignes SURVIVENT jusqu'aux indicateurs.
 import { parseDelimitedText } from "../../base44/shared/csvParse.ts";
-import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap } from "../../base44/shared/sheetDetect.ts";
+import { detectEntityByName } from "../../base44/shared/sheetDetect.ts";
+import { detect } from "../../base44/functions/importMultiData/entry.ts";
 import { normalizeRow } from "../../base44/shared/importUtils.ts";
 import { getSchema } from "../../base44/shared/entitySchemas.ts";
 import { missingRequired } from "../../base44/shared/bulkInsert.ts";
@@ -14,13 +15,16 @@ function traiter(nomFichier: string, texte: string) {
   let erreur = "";
   try { rows = parseDelimitedText(texte); } catch (e: any) { erreur = e.message; }
   const entetes = rows.length > 0 ? Object.keys(rows[0]) : [];
-  const entite = detectEntityByName(nomFichier) || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes);
+  const { entity: entite } = detect(nomFichier, entetes, detectEntityByName(nomFichier), null);
   let ok = 0, quarantaine = 0;
+  const dates: string[] = []; const montants: number[] = [];
   for (const r of rows) {
     const n = normalizeRow("Transaction", r, "i", schema.properties, "csv", []);
-    if (missingRequired(n, schema.required).length === 0) ok++; else quarantaine++;
+    if (missingRequired(n, schema.required).length === 0) {
+      ok++; dates.push(String(n.date)); montants.push(Number(n.amount));
+    } else quarantaine++;
   }
-  return { rows: rows.length, entetes, entite, ok, quarantaine, erreur };
+  return { rows: rows.length, entetes, entite, ok, quarantaine, erreur, dates, montants };
 }
 
 const LIGNES_UTILES = 3; // chaque fichier contient 3 transactions valides
@@ -77,12 +81,28 @@ const cas: [string, string, string][] = [
    "Date\tMontant\tType\n2026-03-01\t1000\tRevenu\n2026-03-02\t500\tDépense\n2026-03-03\t750\tRevenu\n"],
 ];
 
+// Compter les lignes acceptees ne suffit pas : une ligne peut etre acceptee
+// avec une valeur FAUSSE, ce qui est pire qu'un rejet puisque rien ne le
+// signale. C'est ainsi qu'une lecture a l'americaine de « 01/03/2026 » (3
+// janvier au lieu du 1er mars) a survecu a toute une suite de tests verts.
+// Chaque fichier contient donc les memes trois transactions, et on verifie
+// les VALEURS obtenues, pas seulement leur nombre.
+const DATES_ATTENDUES = ["2026-03-01", "2026-03-02", "2026-03-03"];
+const MONTANTS_ATTENDUS = [500, 750, 1000];
+const memeListe = (a: any[], b: any[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
 let echecs = 0;
 for (const [libelle, nom, texte] of cas) {
   const r = traiter(nom, texte);
-  const parfait = r.ok === LIGNES_UTILES && !r.erreur;
+  const bonnesDates = memeListe([...r.dates].sort(), DATES_ATTENDUES);
+  const bonsMontants = memeListe([...r.montants].sort((x, y) => x - y), MONTANTS_ATTENDUS);
+  const parfait = r.ok === LIGNES_UTILES && bonnesDates && bonsMontants && !r.erreur;
   if (!parfait) echecs++;
-  console.log(`${parfait ? "ok  " : "KO  "} ${libelle.padEnd(36)} lignes lues:${String(r.rows).padStart(2)} | acceptees:${r.ok}/${LIGNES_UTILES} | quarantaine:${r.quarantaine} | type:${r.entite}${r.erreur ? " | ERREUR " + r.erreur : ""}`);
-  if (!parfait) console.log(`     en-tetes lus: ${JSON.stringify(r.entetes)}`);
+  console.log(`${parfait ? "ok  " : "KO  "} ${libelle.padEnd(36)} lues:${String(r.rows).padStart(2)} | acceptees:${r.ok}/${LIGNES_UTILES} | quarantaine:${r.quarantaine} | type:${r.entite}${r.erreur ? " | ERREUR " + r.erreur : ""}`);
+  if (!parfait) {
+    console.log(`     en-tetes lus : ${JSON.stringify(r.entetes)}`);
+    if (!bonnesDates) console.log(`     DATES   obtenues ${JSON.stringify([...r.dates].sort())}  attendues ${JSON.stringify(DATES_ATTENDUES)}`);
+    if (!bonsMontants) console.log(`     MONTANTS obtenus ${JSON.stringify([...r.montants].sort((x, y) => x - y))}  attendus ${JSON.stringify(MONTANTS_ATTENDUS)}`);
+  }
 }
 console.log("\nfichiers en echec :", echecs, "/", cas.length);
