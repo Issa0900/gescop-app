@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import PriorityBadge from "@/components/PriorityBadge";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
+import { fetchAll } from "@/lib/fetchAll";
 import { Bell, Check, Activity } from "lucide-react";
 
 const levelOrder = { critique: 0, important: 1, modere: 2, info: 3, faible: 4 };
@@ -19,14 +20,18 @@ export default function Alertes() {
   const { data: live } = useQuery({
     queryKey: ["alerts-live"],
     queryFn: async () => {
-      const [transactions, orders, customers, campaignDaily, inventory, cashflow] = await Promise.all([
-        base44.entities.Transaction.list("-date", 500),
-        base44.entities.Customer.list("-created_date", 500),
-        base44.entities.Order.list("-date", 500),
-        base44.entities.CampaignDaily.list("-date", 500),
-        base44.entities.Inventory.list("-date", 500),
-        base44.entities.Cashflow.list("-date", 100),
-      ]).then(([t, c, o, cd, i, cf]) => [t, o, c, cd, i, cf]);
+      // Read in full: alerts are thresholds on aggregates, so a truncated
+      // source moves the threshold. Cashflow in particular was capped at 100
+      // rows here, which is barely three months of daily balances to judge a
+      // runway on. Destructured by name to keep the order unambiguous.
+      const [transactions, customers, orders, campaignDaily, inventory, cashflow] = await Promise.all([
+        fetchAll(base44.entities.Transaction, "-date"),
+        fetchAll(base44.entities.Customer, "-created_date"),
+        fetchAll(base44.entities.Order, "-date"),
+        fetchAll(base44.entities.CampaignDaily, "-date"),
+        fetchAll(base44.entities.Inventory, "-date"),
+        fetchAll(base44.entities.Cashflow, "-date"),
+      ]);
       return computeLiveAlerts({ transactions, orders, customers, campaignDaily, inventory, cashflow });
     },
   });
