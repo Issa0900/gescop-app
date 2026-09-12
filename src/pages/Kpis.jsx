@@ -255,30 +255,20 @@ export default function Kpis() {
 
     // === OPÉRATIONS === (only if products or inventory exist)
     if ((products || []).length > 0 || (inventory || []).length > 0) {
-      // Latest snapshot per product — counting every historical inventory row
-      // over-counts the same problem once per recorded day.
-      const latestInv = latestByKey(inventory || [], "product_id", "date");
-      const dormantStock = latestInv.filter((i) => i.stock_status === "dormant").length;
-      const ruptureStock = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
+      // Same shortage definition as the Produits page and the alert centre —
+      // the company threshold included. "Alertes rupture" used to read the
+      // imported stock_status alone and never moved when the user changed their
+      // threshold, so the two screens disagreed on the same rows.
+      const stock = computeStockAlerts(products, inventory, stockSettings);
       const avgMargin = (products || []).length > 0
         ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
         : 0;
-      // Reorder check against the recorded closing stock, not the imported
-      // inventory_level field, so it matches the Produits page.
-      const invByProduct = {};
-      latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
-      const lowStockProducts = (products || []).filter((p) => {
-        if (!p.reorder_point) return false;
-        const snap = invByProduct[p.product_id];
-        const stock = snap && snap.closing_stock != null ? Number(snap.closing_stock) : Number(p.inventory_level) || 0;
-        return stock <= p.reorder_point;
-      }).length;
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
       // Counts, not trends: there is no previous snapshot to compare against.
-      result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Produits à réapprovisionner", domain: "operations", value: lowStockProducts, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Stock dormant", domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Alertes rupture", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Produits en rupture totale", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
     }
 
     // === CLIENTS === (only if customers exist)
