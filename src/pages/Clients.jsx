@@ -8,6 +8,8 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+import { churnStats, customerValue } from "@/lib/metrics";
+import { fetchAll } from "@/lib/fetchAll";
 
 const segmentColors = {
   nouveau: "#3b82f6",
@@ -32,17 +34,15 @@ const segmentLabels = {
 export default function Clients() {
   const { data: customers, isLoading } = useQuery({
     queryKey: ["customers"],
-    queryFn: async () => {
-      const list = await base44.entities.Customer.list();
-      return list || [];
-    },
+    // Paginated: a single list() call caps at 500 rows, so reading customers and
+    // orders with one call each truncated the base and made the top-5
+    // concentration and the revenue per client depend on how much history
+    // happened to fit.
+    queryFn: () => fetchAll(base44.entities.Customer),
   });
   const { data: orders, isLoading: lo } = useQuery({
     queryKey: ["orders-clients"],
-    queryFn: async () => {
-      const list = await base44.entities.Order.list("-date", 500);
-      return list || [];
-    },
+    queryFn: () => fetchAll(base44.entities.Order, "-date"),
   });
 
   if (isLoading || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
@@ -74,7 +74,7 @@ export default function Clients() {
       : 0,
     // churn_risk is imported as a 0–1 ratio; displaying it raw showed "1%" for
     // a client with a 70% departure risk.
-    _churnPct: Math.round((Number(c.churn_risk) || 0) <= 1 ? (Number(c.churn_risk) || 0) * 100 : Number(c.churn_risk)),
+    _churnPct: Math.round((Number(c.churn_risk) || 0) <= 1 ? (Number(c.churn_risk) || 0) * 100 : Number(c.churn_risk) || 0),
   }));
 
   const total = enriched.length;
