@@ -94,7 +94,7 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "bas": ["inferieur"], "moyen": ["egal"], "eleve": ["superieur"],
   "haute": ["elevee", "urgente"], "critique": ["urgente"], "basse": ["faible"],
   "en retard": ["non_atteint"], "en attente": ["en_attente", "en_cours"],
-  "avis": ["question"], "rh": ["administration", "service_client"],
+  "avis": ["avis", "question"], "reclamation": ["reclamation", "plainte"], "rh": ["administration", "service_client"],
   "recu": ["recu"], "en cours": ["en_cours"],
 };
 
