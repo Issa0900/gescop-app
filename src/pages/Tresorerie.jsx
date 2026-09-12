@@ -8,19 +8,23 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend,
 } from "recharts";
+import { fetchAll } from "@/lib/fetchAll";
+import { latestCashBalance } from "@/lib/metrics";
 
 export default function Tresorerie() {
   const { data: cashflow, isLoading: lcf } = useQuery({
     queryKey: ["cashflow-summary"],
-    queryFn: async () => (await base44.entities.Cashflow.list("-date", 1000)) || [],
+    // list() caps at 500 rows whatever limit is passed, so "1000" read roughly
+    // 17 months of daily cash and silently dropped everything older.
+    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
   });
   const { data: expenses, isLoading: lex } = useQuery({
     queryKey: ["expenses-summary"],
-    queryFn: async () => (await base44.entities.Expense.list("-date", 1000)) || [],
+    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
   });
   const { data: payroll, isLoading: lp } = useQuery({
     queryKey: ["payroll-summary"],
-    queryFn: async () => (await base44.entities.Payroll.list("-period", 1000)) || [],
+    queryFn: () => fetchAll(base44.entities.Payroll, "-period"),
   });
 
   // These query keys are shared with the Dashboard, so this page can render
@@ -40,8 +44,10 @@ export default function Tresorerie() {
     );
   }
 
-  const currentCash = cashflowRows[0]?.closing_cash || 0;
-  const sorted = [...cashflowRows].sort((a, b) => (a.date < b.date ? -1 : 1));
+  // Sorted explicitly rather than trusting the order the API happened to return.
+  const currentCash = latestCashBalance(cashflowRows) || 0;
+  const sorted = [...cashflowRows].sort((a, b) => ((a.date || "") < (b.date || "") ? -1 : 1));
+  const latestRow = sorted[sorted.length - 1];
   // Cashflow is imported one row per day. Showing the last 12 rows meant showing
   // 12 days labelled as an evolution, so flows are aggregated by month:
   // in/out are summed, the balance is the month's closing value.
@@ -107,7 +113,7 @@ export default function Tresorerie() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString()} $`} sublabel={`au ${cashflowRows[0]?.date || "—"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString("fr-CA")} $`} sublabel={`au ${latestRow?.date || "—"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Flux net moyen / mois" value={`${avgNet.toLocaleString()} $`} sublabel={`${last3.length} derniers mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Coût paie / mois" value={`${Math.round(avgMonthlyPayroll).toLocaleString()} $`} sublabel={`moyenne sur ${payrollPeriods.size} périodes`} icon={RefreshCw} />
         <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
