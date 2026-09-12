@@ -82,9 +82,31 @@ async function planPourFeuille(
   return { ...res, signature };
 }
 
-/** Les 5 premieres lignes telles qu'elles seront enregistrees, pour l'ecran de confirmation. */
-function apercu(plan: PlanImport, matrix: any[][]) {
-  try { return appliquerPlan(plan, matrix).slice(0, 5); } catch { return []; }
+/**
+ * Les lignes du fichier selon le plan — avec un filet.
+ *
+ * Un plan dont la ligne d'en-tetes est decalee d'un cran ne rend aucune ligne :
+ * les intitules ne correspondent a rien, et l'import se solderait par « 0 ligne
+ * importee » sans que personne ne sache pourquoi. Quand cela arrive alors que le
+ * fichier contient manifestement des donnees, on rejoue avec les regles
+ * deterministes et on le DIT dans le resultat, plutot que de rendre un echec
+ * muet.
+ */
+function lignesSelonPlan(plan: PlanImport, matrix: any[][], nomFichier: string, entite?: string | null) {
+  let rows: Record<string, any>[] = [];
+  try { rows = appliquerPlan(plan, matrix); } catch { rows = []; }
+  const disponibles = Math.max(matrix.length - plan.ligne_entetes - 1 - plan.lignes_ignorees.length, 0);
+  if (rows.length > 0 || disponibles === 0) return { rows, plan, note: "" };
+
+  const secours = planParRegles(matrix, nomFichier, entite || plan.entite);
+  let rowsSecours: Record<string, any>[] = [];
+  try { rowsSecours = appliquerPlan(secours, matrix); } catch { rowsSecours = []; }
+  if (rowsSecours.length === 0) return { rows, plan, note: "" };
+  return {
+    rows: rowsSecours,
+    plan: secours,
+    note: "Le plan de lecture ne rattachait aucune ligne du fichier ; lecture automatique utilisee a la place.",
+  };
 }
 
 /** Matrice d'une feuille de classeur, meme forme que celle d'un fichier texte. */
@@ -285,7 +307,7 @@ export default async function (req: Request) {
               results.push({
                 file_name: label, sheet: nomFeuille, entity: plan.entite,
                 plan, signature: analyse.signature, refus: analyse.refus, analyse_erreur: analyse.erreur,
-                apercu: apercu(plan, matrix),
+                apercu: lignesSelonPlan(plan, matrix, file_name).rows.slice(0, 5),
                 echantillon: construireEchantillon(matrix, 8),
                 rows_read: Math.max(matrix.length - plan.ligne_entetes - 1, 0),
                 status: "analyse",
@@ -312,12 +334,17 @@ export default async function (req: Request) {
               continue;
             }
 
-            const rows = appliquerPlan(plan, matrix);
-            const res = await importRows(base44, entity, rows, sourceType, label, file_url, {
-              plan, signature: analyse.signature, confirme: Boolean(planValide),
+            const lecture = lignesSelonPlan(plan, matrix, file_name, entity);
+            const res = await importRows(base44, entity, lecture.rows, sourceType, label, file_url, {
+              plan: lecture.plan, signature: analyse.signature, confirme: Boolean(planValide) && !lecture.note,
             });
             if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
-            results.push({ file_name: label, detected_via: via, plan_origine: plan.origine, corrections: plan.corrections, ...res });
+            results.push({
+              file_name: label, detected_via: via,
+              plan_origine: lecture.plan.origine, corrections: lecture.plan.corrections,
+              ...res,
+              message: [lecture.note, res.message].filter(Boolean).join(" · ") || undefined,
+            });
           }
         } catch (e: any) {
           results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
