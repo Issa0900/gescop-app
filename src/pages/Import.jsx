@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCompany } from "@/hooks/useCompany";
-import { fetchAll } from "@/lib/fetchAll";
 import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -159,71 +158,6 @@ export default function ImportPage() {
       toast({ title: `Import supprimé · ${deleted} enregistrement(s) ${entityName} effacé(s)` });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
-    }
-  };
-
-  // Entities that carry an import_id, i.e. whose rows come from a file.
-  const IMPORTED_ENTITIES = [
-    "Transaction", "Order", "Customer", "Product", "Inventory", "Supplier",
-    "Purchase", "Campaign", "CampaignDaily", "Employee", "Payroll", "Expense",
-    "Cashflow", "Interaction", "Competitor", "Goal", "Event", "ExternalSignal",
-  ];
-
-  /**
-   * Remove rows left behind by an import that no longer exists.
-   *
-   * Until the fix above, deleting an import could remove the journal entry
-   * while its rows survived. Those rows still carry an import_id, but it points
-   * at nothing — so no screen offers to delete them, and they keep feeding every
-   * total. This finds them by comparing each row's import_id against the imports
-   * that actually exist, and clears only those. Rows with no import_id at all
-   * are left alone: they were not created by an import.
-   */
-  const handleCleanOrphans = async () => {
-    try {
-      setPurging(true);
-      const imports = await fetchAll(base44.entities.Import);
-      const liveIds = new Set((imports || []).map((i) => i.id));
-
-      const found = [];
-      for (const name of IMPORTED_ENTITIES) {
-        const entity = base44.entities[name];
-        if (!entity) continue;
-        const rows = await fetchAll(entity);
-        const orphanIds = new Set(
-          (rows || [])
-            .map((r) => r.import_id)
-            .filter((id) => id && !liveIds.has(id)),
-        );
-        const count = (rows || []).filter((r) => r.import_id && !liveIds.has(r.import_id)).length;
-        if (count > 0) found.push({ name, count, orphanIds: Array.from(orphanIds) });
-      }
-
-      if (found.length === 0) {
-        toast({ title: "Aucune donnée orpheline", description: "Chaque enregistrement est rattaché à un import existant." });
-        return;
-      }
-
-      const total = found.reduce((s, f) => s + f.count, 0);
-      const detail = found.map((f) => `${f.count} ${f.name}`).join(", ");
-      if (!window.confirm(
-        `${total} enregistrement(s) proviennent d'imports qui n'existent plus : ${detail}.\n\n`
-        + "Ces lignes continuent d'alimenter vos totaux sans être rattachées à aucun fichier. Les supprimer ?",
-      )) return;
-
-      let removed = 0;
-      for (const { name, orphanIds } of found) {
-        for (const importId of orphanIds) {
-          const res = await base44.entities[name].deleteMany({ import_id: importId });
-          removed += Number(res?.deleted) || 0;
-        }
-      }
-      qc.invalidateQueries();
-      toast({ title: `${removed} enregistrement(s) orphelin(s) supprimé(s)` });
-    } catch (e) {
-      toast({ title: "Erreur: " + e.message, variant: "destructive" });
-    } finally {
-      setPurging(false);
     }
   };
 
@@ -471,25 +405,6 @@ export default function ImportPage() {
         )}
       </div>
 
-      {/* Nettoyage ciblé — à essayer avant la purge totale */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-5">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-900">Nettoyer les données orphelines</p>
-            <p className="mt-1 text-sm text-amber-800">
-              Recherche les enregistrements rattachés à un import qui n'existe plus. Ces lignes continuent
-              d'alimenter vos totaux alors qu'aucun fichier ne les revendique — c'est ce qui fait qu'on peut
-              supprimer un import et voir des données subsister. Vous verrez le décompte par type avant de
-              confirmer. Vos imports en cours ne sont pas touchés.
-            </p>
-          </div>
-          <Button variant="outline" onClick={handleCleanOrphans} disabled={purging}>
-            {purging ? "Analyse…" : "Rechercher"}
-          </Button>
-        </div>
-      </div>
-
       {/* Danger zone */}
       <div className="rounded-xl border border-red-200 bg-red-50/30 p-5">
         <div className="flex items-start gap-3">
@@ -498,8 +413,7 @@ export default function ImportPage() {
             <p className="text-sm font-semibold text-red-900">Purger toutes les données</p>
             <p className="mt-1 text-sm text-red-700">
               Supprime définitivement toutes vos données importées ainsi que les KPI, anomalies, risques,
-              opportunités et recommandations produits par l'analyse. Irréversible — essayez d'abord le
-              nettoyage des données orphelines ci-dessus.
+              opportunités et recommandations produits par l'analyse. Irréversible.
             </p>
           </div>
           <Button variant="destructive" onClick={handlePurgeAll} disabled={purging}>
