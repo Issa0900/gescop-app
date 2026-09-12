@@ -20,6 +20,12 @@ export function currentMonthKey(now = new Date()) {
   return now.toISOString().slice(0, 7);
 }
 
+/** Dernier mois complet, c'est-a-dire le mois precedent celui en cours. */
+export function previousMonthKey(now = new Date()) {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  return d.toISOString().slice(0, 7);
+}
+
 /** "2025-03" + 1 → "2025-04" */
 function shiftMonth(key, n) {
   const [y, m] = key.split("-").map(Number);
@@ -38,11 +44,18 @@ function monthDiff(a, b) {
  * Insert a zero bucket for every calendar month missing between the first and
  * last month of the series, so positional slicing means calendar months.
  */
-export function densify(series) {
+export function densify(series, endMonth = null) {
   const arr = series || [];
-  if (arr.length < 2) return arr;
+  if (arr.length === 0) return arr;
+  if (arr.length < 2 && !endMonth) return arr;
   const out = [];
-  const span = monthDiff(arr[0].month, arr[arr.length - 1].month);
+  const dernier = arr[arr.length - 1].month;
+  // Une serie qui s'arrete avant `endMonth` doit etre prolongee par des mois a
+  // zero : sinon "les 3 derniers mois" designe les 3 derniers mois AYANT des
+  // donnees, et une entreprise qui n'importe plus depuis l'ete voit ses chiffres
+  // du printemps presentes comme ceux du mois dernier.
+  const fin = endMonth && monthDiff(dernier, endMonth) > 0 ? endMonth : dernier;
+  const span = monthDiff(arr[0].month, fin);
   // Defensive: a corrupt key would otherwise allocate an unbounded array.
   if (!Number.isFinite(span) || span < 0 || span > 600) return arr;
   const byMonth = {};
@@ -85,7 +98,11 @@ export function monthlyAgg(items, dateField, valueField, mode = "sum") {
 export function monthlyAggComplete(items, dateField, valueField, mode = "sum") {
   const cm = currentMonthKey();
   const sparse = monthlyAgg(items, dateField, valueField, mode).filter((x) => x.month !== cm);
-  return densify(sparse);
+  // Prolonge jusqu'au dernier mois complet pour que le decoupage positionnel
+  // designe de vrais mois calendaires, meme quand les imports se sont arretes.
+  // Tous les appelants agregent des FLUX (sommes, comptes) : un mois sans
+  // donnee vaut donc zero. Ne pas utiliser pour un solde, qui se reporte.
+  return densify(sparse, previousMonthKey());
 }
 
 export function dropCurrentMonth(series) {

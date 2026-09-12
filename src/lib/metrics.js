@@ -76,6 +76,10 @@ export function netBurnRate(revSeries, expSeries, n = 3) {
  */
 export function runwayMonths(cash, burn) {
   if (burn === null || burn === undefined) return null;
+  // Une tresorerie nulle ou negative n'a aucune autonomie, meme si l'activite
+  // degage du cash : annoncer "tresorerie autofinancee" a une entreprise a
+  // decouvert est le pire contresens que puisse faire un outil de pilotage.
+  if (num(cash) <= 0) return 0;
   if (burn <= 0) return Infinity;
   return num(cash) / burn;
 }
