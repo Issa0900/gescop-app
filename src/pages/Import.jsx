@@ -98,16 +98,63 @@ export default function ImportPage() {
     }
   };
 
+  /**
+   * Delete an import AND the records it created.
+   *
+   * The journal entry is the ONLY link between a row and the file it came from,
+   * so it must never be removed while rows still point at it. The previous
+   * version deleted it unconditionally: if the cascade matched nothing — an
+   * import whose entity_type was empty (it silently fell back to "Transaction"),
+   * an entity the client does not expose, or a partial server-side delete — the
+   * import vanished from the list, the rows stayed, and the toast still said
+   * "supprimés". Those rows then became unreachable: nothing pointed to them
+   * any more, and only the global purge could clear them.
+   *
+   * Now: delete, verify, and keep the journal entry if anything survives.
+   */
   const handleDelete = async (imp) => {
-    const entityName = imp.entity_type || "Transaction";
+    const entityName = imp.entity_type;
+    if (!entityName || !base44.entities[entityName]) {
+      toast({
+        title: "Suppression impossible",
+        description: `Cet import ne précise pas de type d'entité valide (${entityName || "vide"}). `
+          + "Le supprimer laisserait ses données sans rattachement. Utilisez « Tout supprimer » si vous voulez repartir de zéro.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!window.confirm(`Supprimer cet import effacera aussi tous les enregistrements ${entityName} associés. Continuer ?`)) return;
+
+    const entity = base44.entities[entityName];
     try {
-      if (base44.entities[entityName]) {
-        await base44.entities[entityName].deleteMany({ import_id: imp.id });
+      let deleted = 0;
+      let remaining = 0;
+      // Loop in case the server caps how many rows one call removes.
+      for (let pass = 0; pass < 10; pass += 1) {
+        const res = await entity.deleteMany({ import_id: imp.id });
+        deleted += Number(res?.deleted) || 0;
+        const left = await entity.filter({ import_id: imp.id }, null, 1);
+        remaining = (left || []).length;
+        if (remaining === 0) break;
+        // No progress on this pass: retrying will not help.
+        if (!res?.deleted) break;
       }
+
+      if (remaining > 0) {
+        // Keep the import record so the rows stay reachable and deletable.
+        toast({
+          title: "Suppression incomplète",
+          description: `${deleted} enregistrement(s) ${entityName} supprimé(s), mais il en reste. `
+            + "L'import a été conservé pour que vous puissiez relancer la suppression — sinon ces lignes deviendraient introuvables.",
+          variant: "destructive",
+        });
+        qc.invalidateQueries();
+        return;
+      }
+
       await base44.entities.Import.delete(imp.id);
       qc.invalidateQueries();
-      toast({ title: `Import et ${entityName} supprimés` });
+      toast({ title: `Import supprimé · ${deleted} enregistrement(s) ${entityName} effacé(s)` });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     }
