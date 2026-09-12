@@ -52,7 +52,7 @@ function forecastAt(f, x) {
 
 const metrics = [
   { key: "ca", label: "Chiffre d'affaires" },
-  { key: "marge", label: "Marge brute" },
+  { key: "marge", label: "Marge nette" },
   { key: "tresorerie", label: "Trésorerie" },
 ];
 
@@ -200,7 +200,7 @@ export default function Previsions() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ForecastCard label="Chiffre d'affaires" current={fmt(result.currentIncome)} f30={fmt(result.incomeF[0].value)} f90={fmt(result.incomeF[2].value)} />
-        <ForecastCard label="Marge brute" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
+        <ForecastCard label="Marge nette" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
         <ForecastCard label={result.cashDate ? `Trésorerie (solde au ${result.cashDate})` : "Trésorerie projetée"} current={fmt(result.cumulativeNow)} f30={fmt(result.cash30)} f90={fmt(result.cash90)} />
       </div>
 
@@ -219,7 +219,7 @@ export default function Previsions() {
           : "Faute de flux nets datés dans le fichier de trésorerie, la projection de trésorerie utilise la marge comptable : elle ignore délais de paiement, taxes et investissements, et reste donc indicative."}
       </div>
 
-      {result.shortfall > 0 && (
+      {result.shortfall > 0 && result.currentMargin > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50/50 p-4">
           <AlertTriangle className="h-5 w-5 shrink-0 text-orange-600" />
           <div>
