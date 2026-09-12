@@ -404,6 +404,16 @@ export default async function (req: Request) {
       }
     }
 
+    // En mode analyse, l'ecran de confirmation doit pouvoir proposer les champs
+    // de n'importe quel type : l'utilisateur peut corriger le type detecte, et
+    // la liste des champs doit suivre. On l'envoie une fois, pas par feuille.
+    if (analyseSeule) {
+      const champsParEntite: Record<string, string[]> = {};
+      for (const [nom, schema] of Object.entries(ENTITY_SCHEMAS)) {
+        champsParEntite[nom] = Object.keys(schema.properties).filter((c) => c !== "import_id");
+      }
+      return Response.json({ results, champs_par_entite: champsParEntite });
+    }
     return Response.json({ results });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
