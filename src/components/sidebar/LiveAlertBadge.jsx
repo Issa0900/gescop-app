@@ -3,10 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
 import { fetchAll } from "@/lib/fetchAll";
+import { useCompany } from "@/hooks/useCompany";
 
 // Counts only what needs attention now: unread stored alerts plus live
 // critical/important ones computed from current data.
 export default function LiveAlertBadge({ compact }) {
+  // Stock alerts follow the company threshold, like every other screen.
+  const { company } = useCompany();
   const { data: stored } = useQuery({
     queryKey: ["alerts-badge"],
     queryFn: async () => (await base44.entities.Alert.list("-created_date", 100)) || [],
@@ -40,8 +43,12 @@ export default function LiveAlertBadge({ compact }) {
     queryKey: ["campaign-daily-dashboard"],
     queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
   });
+  const { data: products } = useQuery({
+    queryKey: ["products-dashboard"],
+    queryFn: () => fetchAll(base44.entities.Product),
+  });
 
-  const live = computeLiveAlerts({ transactions, orders, customers, campaignDaily, inventory, cashflow });
+  const live = computeLiveAlerts({ transactions, orders, customers, campaignDaily, products, inventory, cashflow, company });
   const liveCount = live.filter((a) => a.level === "critique" || a.level === "important").length;
   const unreadStored = (stored || []).filter((a) => a.status !== "lue").length;
   const count = liveCount + unreadStored;
