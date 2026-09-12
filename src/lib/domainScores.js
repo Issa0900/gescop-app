@@ -20,6 +20,7 @@ import {
   sumPrev,
   latestByKey,
 } from "@/lib/periods";
+import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
 import {
   aggregateMarginPct,
   previousMarginPct,
@@ -51,7 +52,7 @@ function applyTrend(score, pct, bonus = 8, penalty = 12, threshold = 5) {
 }
 
 export function computeDomainScores(data) {
-  const { transactions, orders, customers, campaigns, campaignDaily, inventory, cashflow } = data;
+  const { transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, company } = data;
   const scores = {};
 
   // === FINANCE — aggregated margin over 3 complete months ===
@@ -185,12 +186,15 @@ export function computeDomainScores(data) {
   };
 
   // === OPÉRATIONS — latest stock snapshot per product, not every history row ===
-  const latestInv = latestByKey(inventory || [], "product_id", "date");
-  const trackedCount = latestInv.length;
-  const dormantCount = latestInv.filter((i) => i.stock_status === "dormant").length;
-  const ruptureCount = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
-  const lowCount = latestInv.filter((i) => i.stock_status === "faible").length;
-  // Ratio over products actually tracked, not the full catalogue.
+  // Uses the SAME shortage definition as the Produits page and the alert centre,
+  // including the threshold the user set on their company. This score used to
+  // read the imported stock_status only, so lowering the threshold changed the
+  // Produits list while this score stayed put on the same data.
+  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company));
+  const trackedCount = stock.tracked;
+  const dormantCount = stock.dormantCount;
+  const ruptureCount = stock.alertCount;
+  const lowCount = stock.lowStockCount;
   const issueRatio = trackedCount > 0 ? (dormantCount + ruptureCount) / trackedCount : 0;
 
   let opsScore;
