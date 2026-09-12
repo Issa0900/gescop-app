@@ -94,22 +94,26 @@ export default function Produits() {
   // Inventory arrives as one row per product per date. Counting every historical
   // row multiplies each situation by its number of recorded days, so all stock
   // figures use the most recent snapshot per product.
+  //
+  // One shared computation drives the cards, the alert list and the table, and
+  // it follows the threshold. The cards used to count the imported stock_status
+  // label instead: on a file where every row says "optimal" they showed 0 en
+  // rupture right above a panel reporting 20 produits en alerte, from the same
+  // rows. A label from the source system is not a substitute for looking at the
+  // stock actually on hand.
+  const stock = computeStockAlerts(products, inventory, alertSettings);
   const latestInv = latestByKey(inventory || [], "product_id", "date");
-  const invByProduct = {};
-  latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
+  const invByProduct = stock.byProduct;
   const stockOf = (p) => {
     const snap = invByProduct[p.product_id];
     return snap && snap.closing_stock != null ? Number(snap.closing_stock) : Number(p.inventory_level) || 0;
   };
-  const dormantCount = latestInv.filter((i) => i.stock_status === "dormant").length;
-  // Same definition as the KPI page: the recorded stock state is authoritative,
-  // with the reorder threshold as a second signal for products it doesn't flag.
-  const ruptureCount = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
-  const nearRupture = products.filter((p) => {
-    const st = invByProduct[p.product_id]?.stock_status;
-    if (["rupture", "proche_rupture"].includes(st)) return true;
-    return isStockAlert(stockOf(p), p.reorder_point, alertSettings);
-  });
+  const dormantCount = stock.dormantCount;
+  const nearRupture = stock.alerts.map((r) => r.product);
+  const ruptureCount = nearRupture.length;
+  // Products the source system itself flagged as out of stock, kept separate so
+  // the card can say how many are a hard rupture versus simply low.
+  const outOfStockCount = stock.outOfStockCount;
 
   // Sales per product over the last 3 COMPLETE months.
   //
