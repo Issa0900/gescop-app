@@ -136,9 +136,14 @@ export function computeDomainScores(data) {
     explanation:
       revTrend !== null
         ? `${revTrend >= 0 ? "+" : ""}${revTrend.toFixed(0)} % sur 3 mois`
-        : orderRevMonthly.length > 0
-          ? `${orderRevMonthly.length} mois complets — 6 requis pour comparer`
-          : "",
+        : orderRevMonthly.length === 0
+          ? ""
+          : revPrev3 === null
+            // Not enough history to line up two 3-month blocks.
+            ? `${orderRevMonthly.length} mois complets — 6 requis pour comparer`
+            // Two blocks exist but the earlier one is empty: a percentage
+            // change from zero has no meaning, so none is shown.
+            : `${Math.round(rev3).toLocaleString("fr-CA")} $ sur 3 mois · aucune vente sur les 3 mois précédents`,
   };
 
   // === MARKETING — recent ROAS with a real computed trend ===
