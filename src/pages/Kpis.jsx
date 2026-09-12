@@ -293,9 +293,13 @@ export default function Kpis() {
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
       // Counts, not trends: there is no previous snapshot to compare against.
+      // Les deux compteurs ci-dessous mesurent des choses differentes et
+      // s'affichent cote a cote : alertCount = produits AU OU SOUS leur seuil de
+      // reapprovisionnement, outOfStockCount = produits a stock nul. Nommer les
+      // deux "rupture" faisait lire "24 ruptures" a cote de "0 rupture".
       result.push({ name: `Stock dormant (${stock.dormantMonths} mois sans vente)`, domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Alertes rupture", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Produits en rupture totale", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Stock à réapprovisionner", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Produits en rupture (stock nul)", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
     }
 
     // === CLIENTS === (only if customers exist)
