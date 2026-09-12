@@ -30,6 +30,8 @@ export const FIELD_ALIASES: Record<string, string> = {
   "pays": "country", "telephone": "phone",
   "total_commandes": "total_orders", "nombre_commandes": "total_orders",
   "ca_total": "total_revenue", "chiffre_affaires": "total_revenue", "ca total": "total_revenue",
+  "total_spent": "total_revenue", "total spent": "total_revenue", "montant_total": "total_revenue",
+  "depense_totale": "total_revenue", "revenu_total": "total_revenue",
   "panier_moyen": "average_order_value", "valeur_panier": "average_order_value",
   "valeur_vie": "lifetime_value", "ltv": "lifetime_value", "valeur vie client": "lifetime_value",
   "risque_churn": "churn_risk", "risque de churn": "churn_risk",
@@ -264,6 +266,15 @@ export function normalizeRow(
   sourceType?: string
 ): Record<string, any> {
   const r = normalizeKeys(row, properties);
+
+  // A single "name"/"nom" column on an entity that stores first + last name would
+  // otherwise be dropped entirely, leaving nameless records.
+  if (properties?.first_name && r.name && !r.first_name) {
+    const parts = String(r.name).trim().split(/\s+/);
+    r.first_name = parts[0];
+    if (parts.length > 1) r.last_name = parts.slice(1).join(" ");
+    delete r.name;
+  }
 
   if (entityName === "Transaction") {
     const amount = parseNumber(r.amount) || 0;
