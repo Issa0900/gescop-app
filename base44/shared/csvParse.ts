@@ -72,7 +72,7 @@ function detecterSeparateur(texte: string): string {
 }
 
 export function parseDelimitedText(text: string): Record<string, any>[] {
-  const clean = text.replace(/^﻿/, "");
+  const clean = text.replace(/^\uFEFF/, "");
   const delimiter = detecterSeparateur(clean);
   const wb = XLSX.read(clean, { type: "string", raw: false, FS: delimiter });
   const sheet = wb.Sheets[wb.SheetNames[0]];
