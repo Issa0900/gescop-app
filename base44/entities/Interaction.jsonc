@@ -31,7 +31,11 @@
         "plainte",
         "retour",
         "question",
-        "support"
+        "support",
+        "avis",
+        "remerciement",
+        "reclamation",
+        "autre"
       ]
     },
     "subject": {
