@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/lib/AuthContext";
 import LiveAlertBadge from "@/components/sidebar/LiveAlertBadge";
+import BrandLogo from "@/components/BrandLogo";
 
 const navGroups = [
   {
@@ -129,9 +130,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
         {/* Header */}
         <div className={cn("flex items-center py-5", compact ? "justify-center px-2" : "justify-between px-5")}>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-primary to-blue-500 shadow-lg shadow-sidebar-primary/20">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
+            <BrandLogo className="h-9 w-9 shrink-0 p-0.5 shadow-lg shadow-black/20" />
             {!compact && (
               <div>
                 <p className="text-base font-bold tracking-tight text-sidebar-accent-foreground">GESCOP</p>

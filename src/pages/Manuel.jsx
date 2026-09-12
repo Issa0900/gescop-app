@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Book, ChevronDown, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, Users, Package, Megaphone, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ManualTableOfContents from "@/components/ManualTableOfContents";
+import BrandLogo from "@/components/BrandLogo";
 
 const groups = [
   {
@@ -350,9 +351,12 @@ export default function Manuel() {
       {/* Sidebar nav */}
       <aside className="lg:w-64 shrink-0">
         <div className="lg:sticky lg:top-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Book className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Manuel utilisateur</h1>
+          <div className="mb-4 flex items-center gap-3">
+            <BrandLogo className="h-11 w-11 shrink-0 border border-border" />
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Manuel utilisateur</h1>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">GESCOP · Intelligence stratégique</p>
+            </div>
           </div>
           <button
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
