@@ -132,18 +132,22 @@ export default function Previsions() {
       });
       Object.keys(byM).sort().forEach((m) => cashHistory.push({ month: m, value: byM[m] }));
     }
-    const cash30 = cumulativeNow + marginF[0].value;
-    const cash90 = cumulativeNow + marginF[0].value + marginF[1].value + marginF[2].value;
+    const cash30 = cumulativeNow + cashF[0].value;
+    const cash90 = cumulativeNow + cashF[0].value + cashF[1].value + cashF[2].value;
     const currentIncome = monthly[monthly.length - 1].income;
     const currentMargin = monthly[monthly.length - 1].margin;
     const projected90Margin = marginF.reduce((s, f) => s + f.value, 0);
     const shortfall = currentMargin * 3 - projected90Margin;
-    return { monthly, incomeF, marginF, cash30, cash90, currentIncome, currentMargin, cumulativeNow, cashDate, cashHistory, shortfall, incomeFit, marginFit };
+    return {
+      monthly, incomeF, marginF, cashF, cash30, cash90, currentIncome, currentMargin,
+      cumulativeNow, cashDate, cashHistory, shortfall, incomeFit, marginFit,
+      cashFlowFit, usesRealCashFlow,
+    };
   }, [transactions, cashflow]);
 
   const chartData = useMemo(() => {
     if (!result) return [];
-    const { monthly, incomeF, marginF, cumulativeNow, cashHistory, marginFit } = result;
+    const { monthly, incomeF, marginF, cashF, cashHistory } = result;
     if (metric === "tresorerie") {
       let cum = 0;
       // Real monthly closing balances when treasury data was imported;
@@ -155,7 +159,16 @@ export default function Previsions() {
       hist[hist.length - 1].range = [hist[hist.length - 1].value, hist[hist.length - 1].value];
       let runCum = cum;
       const fcstMonths = ["+30j", "+60j", "+90j"];
-      const fcst = marginF.map((f, i) => { runCum += f.value; const err = marginFit.stderr * (i + 1); return { month: fcstMonths[i], value: null, forecast: Math.round(runCum), range: [Math.round(runCum - err), Math.round(runCum + err)] }; });
+      // Uncertainty on a CUMULATIVE balance compounds: the errors of each
+      // projected month add up, so the band widens as sqrt of the sum of
+      // variances rather than by a flat multiple.
+      let varSum = 0;
+      const fcst = cashF.map((f, i) => {
+        runCum += f.value;
+        varSum += f.se * f.se;
+        const err = Math.sqrt(varSum);
+        return { month: fcstMonths[i], value: null, forecast: Math.round(runCum), range: [Math.round(runCum - err), Math.round(runCum + err)] };
+      });
       return [...hist, ...fcst];
     }
     const f = metric === "ca" ? incomeF : marginF;
@@ -189,6 +202,21 @@ export default function Previsions() {
         <ForecastCard label="Chiffre d'affaires" current={fmt(result.currentIncome)} f30={fmt(result.incomeF[0].value)} f90={fmt(result.incomeF[2].value)} />
         <ForecastCard label="Marge brute" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
         <ForecastCard label={result.cashDate ? `Trésorerie (solde au ${result.cashDate})` : "Trésorerie projetée"} current={fmt(result.cumulativeNow)} f30={fmt(result.cash30)} f90={fmt(result.cash90)} />
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
+        <span className="font-semibold text-foreground">Fiabilité de ces projections.</span>{" "}
+        Tendance linéaire ajustée sur {result.monthly.length} mois complets, sans saisonnalité.
+        Qualité d'ajustement : R² de {(result.incomeFit.r2 * 100).toFixed(0)} % sur le chiffre d'affaires
+        et {(result.marginFit.r2 * 100).toFixed(0)} % sur la marge
+        {result.incomeFit.r2 < 0.5 || result.marginFit.r2 < 0.5
+          ? " — en dessous de 50 %, la tendance explique moins de la moitié des variations : lisez la fourchette, pas le chiffre central."
+          : " — la tendance explique l'essentiel des variations observées."}
+        {" "}La fourchette grise est un intervalle de prédiction : elle s'élargit avec l'horizon, car une
+        projection à 90 jours est mécaniquement moins précise qu'à 30 jours.
+        {" "}{result.usesRealCashFlow
+          ? "La trésorerie est projetée à partir des flux nets réels de votre fichier de trésorerie."
+          : "Faute de flux nets datés dans le fichier de trésorerie, la projection de trésorerie utilise la marge comptable : elle ignore délais de paiement, taxes et investissements, et reste donc indicative."}
       </div>
 
       {result.shortfall > 0 && (
