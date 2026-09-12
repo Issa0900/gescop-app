@@ -18,7 +18,8 @@ export default function ForgotPassword() {
     try {
       await base44.auth.resetPasswordRequest(email);
     } catch {
-      // Always show success regardless
+      // Succes affiche quoi qu'il arrive : ne jamais reveler si l'adresse
+      // existe dans la base (protection contre l'enumeration de comptes).
     } finally {
       setLoading(false);
       setSent(true);
@@ -28,22 +29,22 @@ export default function ForgotPassword() {
   return (
     <AuthLayout
       icon={Mail}
-      title="Reset password"
-      subtitle="We'll send you a link to reset it"
+      title="Mot de passe oublié"
+      subtitle="Nous vous enverrons un lien pour le réinitialiser"
       footer={
         <Link to="/login" className="text-primary font-medium hover:underline">
-          <ArrowLeft className="w-3 h-3 inline mr-1" />Back to log in
+          <ArrowLeft className="w-3 h-3 inline mr-1" aria-hidden="true" />Retour à la connexion
         </Link>
       }
     >
       {sent ? (
         <p className="text-sm text-foreground text-center">
-          If an account exists with that email, you'll receive a password reset link shortly.
+          Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation dans quelques instants. Pensez à vérifier vos courriers indésirables.
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email">Adresse courriel</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
@@ -51,7 +52,7 @@ export default function ForgotPassword() {
                 type="email"
                 autoComplete="email"
                 autoFocus
-                placeholder="you@example.com"
+                placeholder="vous@exemple.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-12"
@@ -63,10 +64,10 @@ export default function ForgotPassword() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Sending...
+                Envoi en cours...
               </>
             ) : (
-              "Send reset link"
+              "Envoyer le lien"
             )}
           </Button>
         </form>
