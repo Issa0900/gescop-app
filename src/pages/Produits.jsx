@@ -48,7 +48,19 @@ function formatMonthLabel(m) {
 export default function Produits() {
   const [filters, setFilters] = useState({ search: "", category: "all", status: "all" });
   const { company, refetch: refetchCompany } = useCompany();
-  const alertSettings = getStockAlertSettings(company);
+
+  // The threshold is applied LIVE. It used to take effect only after "Appliquer"
+  // saved it to the company record and that query refetched, so moving the
+  // control showed nothing until you committed a value you could not preview.
+  //
+  // `draft` holds the value being tried out; null means "use what is saved", so
+  // no effect is needed to sync when the company record loads or changes.
+  const savedSettings = getStockAlertSettings(company);
+  const [draft, setDraft] = useState(null);
+  const alertSettings = draft || savedSettings;
+  const isDraft = draft !== null
+    && (draft.threshold !== savedSettings.threshold
+      || draft.useReorderPoint !== savedSettings.useReorderPoint);
   const { data: products, isLoading: lp } = useQuery({
     queryKey: ["products"],
     queryFn: () => fetchAll(base44.entities.Product),
