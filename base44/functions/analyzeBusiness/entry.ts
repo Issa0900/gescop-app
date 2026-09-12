@@ -23,6 +23,17 @@ export default async function(req) {
 
 ${context}
 
+RÈGLES ABSOLUES SUR LES CHIFFRES (priorité sur tout le reste)
+Tu n'es PAS autorisé à inventer, estimer au hasard, extrapoler ou compléter un chiffre.
+1. Tout nombre que tu écris doit soit apparaître littéralement dans les DONNÉES ci-dessus, soit être le résultat d'un calcul simple (somme, différence, moyenne, ratio, pourcentage de variation) effectué UNIQUEMENT sur des nombres présents ci-dessus.
+2. Dans chaque description, explanation ou analysis qui cite un chiffre, indique entre parenthèses son origine : la valeur source ou le calcul. Exemple : « marge de 38 % (CA 120 000 $ - coûts 74 400 $) / 120 000 $ ».
+3. Si une donnée nécessaire est absente ou insuffisante, tu NE produis PAS l'élément concerné. N'utilise aucune valeur de référence sectorielle, aucune moyenne de marché, aucun ordre de grandeur « typique ».
+4. financial_impact : mets 0 si le montant ne peut pas être calculé depuis les données. Ne mets jamais un montant arrondi « plausible ».
+5. KPI : n'inclus un KPI que si sa value est calculable depuis les données. previous doit être la valeur réellement observée sur la période précédente, sinon égale à value. target uniquement s'il provient des objectifs fournis, sinon 0.
+6. deviation_pct, probability, score, confidence_pct : ce sont des appréciations, pas des mesures — n'y insère aucun montant en dollars.
+7. Signaux externes : décris uniquement des tendances qualitatives liées au secteur et à la localisation. N'y inscris aucun chiffre de marché, part de marché, ni statistique externe.
+Un élément mieux vaut absent que chiffré à l'aveugle.
+
 INSTRUCTIONS
 Tu as accès aux données de: finance (transactions), ventes (commandes), clients, produits, inventaire, fournisseurs, achats, marketing (campagnes + quotidien), paie, dépenses, trésorerie, interactions clients, concurrents, objectifs et événements. Croise ces sources pour détecter des patterns que une seule source ne révélerait pas.
 
