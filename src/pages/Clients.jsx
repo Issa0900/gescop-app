@@ -86,7 +86,7 @@ export default function Clients() {
   // Same churn definition as the KPI page, the scores and the audit page.
   // This page used to also count "segment a_risque" as churned, so it showed a
   // higher rate than every other screen from the exact same rows.
-  const churn = churnStats(customers);
+  const churn = churnStats(customers, orders);
   const churnRate = churn.rate === null ? 0 : Math.round(churn.rate);
   // "0 client à risque" is only meaningful if the risk column was imported.
   const hasChurnRisk = columnPresent(customers, "churn_risk");
@@ -123,7 +123,25 @@ export default function Clients() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total clients" value={total.toLocaleString()} icon={Users} />
-        <StatCard label="Taux de churn" value={`${churnRate}%`} sublabel={`${churn.churned} inactifs ou perdus${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`} icon={UserMinus} accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
+        {/* Two different questions, so two cards. The cumulative share answers
+            "how much of the base have we ever lost"; the period rate answers
+            "who has stopped buying lately". Only the second one can improve. */}
+        <StatCard
+          label="Clients perdus (cumul)"
+          value={`${churnRate}%`}
+          sublabel={`${churn.churned} sur ${churn.total} depuis le début${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`}
+          icon={UserMinus}
+          accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
+        />
+        <StatCard
+          label={`Inactifs depuis ${churn.inactiveMonths} mois`}
+          value={churn.behaviourRate !== null ? `${Math.round(churn.behaviourRate)}%` : "—"}
+          sublabel={churn.measurable
+            ? `${churn.lapsed} sur ${churn.buyers} clients ayant déjà commandé`
+            : "historique de commandes absent"}
+          icon={UserMinus}
+          accent={churn.behaviourRate > 30 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
+        />
         <StatCard label="Concentration top 5" value={`${concentration}%`} sublabel="du CA total" icon={Crown} accent={concentration > 40 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard label="Revenu moyen par client" value={`${avgRevenue.toLocaleString("fr-CA")} $`} sublabel={`${value.buyers} clients ayant commandé`} icon={DollarSign} />
       </div>
