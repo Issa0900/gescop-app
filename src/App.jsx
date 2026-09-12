@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -9,35 +10,35 @@ import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
-import Onboarding from '@/pages/Onboarding';
-import Dashboard from '@/pages/Dashboard';
-import Insights from '@/pages/Insights';
-import Previsions from '@/pages/Previsions';
-import Simulateur from '@/pages/Simulateur';
-import Decisions from '@/pages/Decisions';
-import Historique from '@/pages/Historique';
-import ImportPage from '@/pages/Import';
-import Kpis from '@/pages/Kpis';
-import Anomalies from '@/pages/Anomalies';
-import Risques from '@/pages/Risques';
-import Recommandations from '@/pages/Recommandations';
-import Radar from '@/pages/Radar';
-import Taches from '@/pages/Taches';
-import Alertes from '@/pages/Alertes';
-import Rapports from '@/pages/Rapports';
-import Assistant from '@/pages/Assistant';
-import Parametres from '@/pages/Parametres';
-import Manuel from '@/pages/Manuel';
-import PolitiqueConfidentialite from '@/pages/PolitiqueConfidentialite';
-import Clients from '@/pages/Clients';
-import Produits from '@/pages/Produits';
-import Marketing from '@/pages/Marketing';
-import Tresorerie from '@/pages/Tresorerie';
-import Audit from '@/pages/Audit';
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
+const Onboarding = lazy(() => import('@/pages/Onboarding'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Insights = lazy(() => import('@/pages/Insights'));
+const Previsions = lazy(() => import('@/pages/Previsions'));
+const Simulateur = lazy(() => import('@/pages/Simulateur'));
+const Decisions = lazy(() => import('@/pages/Decisions'));
+const Historique = lazy(() => import('@/pages/Historique'));
+const ImportPage = lazy(() => import('@/pages/Import'));
+const Kpis = lazy(() => import('@/pages/Kpis'));
+const Anomalies = lazy(() => import('@/pages/Anomalies'));
+const Risques = lazy(() => import('@/pages/Risques'));
+const Recommandations = lazy(() => import('@/pages/Recommandations'));
+const Radar = lazy(() => import('@/pages/Radar'));
+const Taches = lazy(() => import('@/pages/Taches'));
+const Alertes = lazy(() => import('@/pages/Alertes'));
+const Rapports = lazy(() => import('@/pages/Rapports'));
+const Assistant = lazy(() => import('@/pages/Assistant'));
+const Parametres = lazy(() => import('@/pages/Parametres'));
+const Manuel = lazy(() => import('@/pages/Manuel'));
+const PolitiqueConfidentialite = lazy(() => import('@/pages/PolitiqueConfidentialite'));
+const Clients = lazy(() => import('@/pages/Clients'));
+const Produits = lazy(() => import('@/pages/Produits'));
+const Marketing = lazy(() => import('@/pages/Marketing'));
+const Tresorerie = lazy(() => import('@/pages/Tresorerie'));
+const Audit = lazy(() => import('@/pages/Audit'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -63,7 +64,16 @@ const AuthenticatedApp = () => {
   }
 
   // Render the main app
+  // Les 29 pages etaient importees statiquement : recharts, framer-motion et
+  // l'ensemble des ecrans etaient telecharges avant le premier affichage.
+  const chargement = (
+    <div className="fixed inset-0 flex items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" />
+    </div>
+  );
+
   return (
+    <Suspense fallback={chargement}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -100,6 +110,7 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </Suspense>
   );
 };
 
