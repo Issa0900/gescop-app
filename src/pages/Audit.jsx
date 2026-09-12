@@ -23,6 +23,16 @@ const sources = {
   employees: () => fetchAll(base44.entities.Employee),
   campaigns: () => fetchAll(base44.entities.Campaign),
   campaignDaily: () => fetchAll(base44.entities.CampaignDaily, "-date"),
+  // Needed by the reconciliation check: it compares the import journal against
+  // the rows actually stored, so any entity that can be imported has to be read
+  // here or a silent loss on it goes unnoticed.
+  suppliers: () => fetchAll(base44.entities.Supplier),
+  purchases: () => fetchAll(base44.entities.Purchase, "-date"),
+  interactions: () => fetchAll(base44.entities.Interaction, "-date"),
+  competitors: () => fetchAll(base44.entities.Competitor),
+  goals: () => fetchAll(base44.entities.Goal),
+  events: () => fetchAll(base44.entities.Event, "-date"),
+  externalSignals: () => fetchAll(base44.entities.ExternalSignal, "-date"),
   imports: () => fetchAll(base44.entities.Import, "-created_date"),
 };
 
