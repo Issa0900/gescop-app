@@ -19,7 +19,7 @@
 // la preuve gagne. Voir verifierAvecPreuves().
 
 import { getSchema } from "./entitySchemas.ts";
-import { parseDate, type ConventionDate } from "./importUtils.ts";
+import { parseDate, stripAccents, type ConventionDate } from "./importUtils.ts";
 import { trouverLigneEntetes, detectEntityByHeaders, detectEntityByFieldOverlap } from "./sheetDetect.ts";
 
 export type Confiance = "haute" | "moyenne" | "faible";
@@ -428,4 +428,28 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
     if (Object.keys(obj).length > 0) rows.push(obj);
   }
   return rows;
+}
+
+
+// ---------------------------------------------------------------------------
+// 8. Memoire : reconnaitre un fichier deja vu
+// ---------------------------------------------------------------------------
+
+/**
+ * Empreinte d'un fichier, calculee sur ses seuls intitules de colonnes.
+ *
+ * Deux exports mensuels du meme logiciel ont les memes colonnes et des donnees
+ * differentes : l'empreinte doit donc ignorer le contenu. Elle ignore aussi
+ * l'ordre des colonnes, les accents, la casse et les espaces — un export qui
+ * deplace une colonne reste le meme export.
+ *
+ * Sert a retrouver un plan que l'utilisateur a deja valide, pour ne pas lui
+ * redemander le mois suivant ce qu'il a corrige une fois.
+ */
+export function signatureFichier(entetes: any[]): string {
+  return entetes
+    .map((h) => stripAccents(String(h ?? "").trim().toLowerCase()).replace(/\s+/g, " "))
+    .filter((h) => h !== "")
+    .sort()
+    .join("|");
 }
