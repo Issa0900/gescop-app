@@ -23,7 +23,7 @@ import { parseDate, stripAccents, type ConventionDate } from "./importUtils.ts";
 import { trouverLigneEntetes, detectEntityByHeaders, detectEntityByFieldOverlap } from "./sheetDetect.ts";
 
 export type Confiance = "haute" | "moyenne" | "faible";
-export type OriginePlan = "ia" | "ia+preuves" | "regles";
+export type OriginePlan = "ia" | "ia+preuves" | "regles" | "memoire";
 
 export interface PlanColonne {
   /** Intitule tel qu'il apparait dans le fichier. */
@@ -362,7 +362,7 @@ export function planParRegles(matrix: any[][], nomFichier: string, entiteConnue?
 
 /** Le plan de secours laisse le mapping au pipeline historique. */
 export function planSansRattachement(plan: PlanImport): boolean {
-  return plan.origine === "regles" || plan.colonnes.every((c) => !c.champ);
+  return plan.origine === "regles" && plan.colonnes.every((c) => !c.champ);
 }
 
 // ---------------------------------------------------------------------------
