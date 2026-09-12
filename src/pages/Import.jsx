@@ -21,6 +21,7 @@ import { fetchAll } from "@/lib/fetchAll";
 import { AlertTriangle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import ImportProgress from "@/components/import/ImportProgress";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -316,12 +317,7 @@ export default function ImportPage() {
         }`}
       >
         {uploading || processing ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-sm font-medium">
-              {uploading ? "Téléversement des fichiers…" : "Extraction et normalisation des données…"}
-            </p>
-          </div>
+          <ImportProgress phase={uploading ? "uploading" : "processing"} />
         ) : (
           <div className="flex flex-col items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
