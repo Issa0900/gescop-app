@@ -305,7 +305,9 @@ function dateReelle(annee: string, mois: string, jour: string): boolean {
  * or an Excel serial number (days since 1899-12-30) — serials arrive as plain
  * numbers and would otherwise be stored as unusable text.
  */
-export function parseDate(value: any): string | null {
+export type ConventionDate = "JJ/MM" | "MM/JJ";
+
+export function parseDate(value: any, convention?: ConventionDate | null): string | null {
   if (value === null || value === undefined || value === "") return null;
   if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString().slice(0, 10);
   if (typeof value === "number" || /^\d{5}(\.\d+)?$/.test(String(value).trim())) {
@@ -326,7 +328,13 @@ export function parseDate(value: any): string | null {
     let year = m[3].length === 2 ? `20${m[3]}` : m[3];
     let day = m[1];
     let month = m[2];
-    // Unambiguous US order (13/12/2025 impossible as month).
+    // 03/04/2026 est indechiffrable cellule par cellule : c'est le 3 avril ou
+    // le 4 mars selon la convention du fichier. Le plan de lecture tranche pour
+    // TOUTE la colonne (voir importPlan.ts) ; sans plan on garde l'ordre
+    // europeen, qui est celui des fichiers de nos utilisateurs.
+    if (convention === "MM/JJ") [day, month] = [month, day];
+    // Ordre non ambigu : 13 ne peut pas etre un mois. La preuve presente dans
+    // la cellule l'emporte sur toute convention annoncee.
     if (Number(month) > 12 && Number(day) <= 12) [day, month] = [month, day];
     if (!dateReelle(year, month, day)) return null;
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
