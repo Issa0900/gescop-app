@@ -370,8 +370,20 @@ ${complaintMonthly.map(([m, v]) => `${m}: ${v}`).join("\n") || "insuffisant"}`;
   const goalSection = goalStr || "aucun objectif renseigné";
   const eventSection = eventStr || "aucun événement renseigné";
 
-  const context = `CONTEXTE DE L'ENTREPRISE
+  // Told to the model explicitly. An AI that knows its data is partial can say
+  // so; one that is not told states confident conclusions on a truncated base.
+  const dataQualityNote = truncatedSources.length > 0
+    ? `ATTENTION — LECTURE PARTIELLE DES DONNÉES
+Les sources suivantes dépassent la capacité de lecture et n'ont été lues que partiellement (lignes les plus récentes) : ${truncatedSources.join(", ")}.
+Les totaux cumulés ci-dessous sont donc SOUS-ÉVALUÉS pour ces sources. Mentionne cette limite dans ton analyse et privilégie les tendances récentes aux totaux absolus.
+
+`
+    : "";
+
+  const context = `${dataQualityNote}CONTEXTE DE L'ENTREPRISE
 ${companyProfile}
+
+NOTE DE LECTURE : sauf mention contraire, les totaux de cette fiche sont cumulés sur tout l'historique importé, alors que les écrans de l'application affichent des fenêtres de 3 mois complets. Ne présente pas un cumul comme s'il s'agissait d'une performance récente, et ne contredis pas un chiffre du tableau de bord sans préciser que la période diffère.
 
 === FINANCE ===
 ${financeSection}
