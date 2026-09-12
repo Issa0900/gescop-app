@@ -439,10 +439,10 @@ export function buildMetricTraces(d) {
     note: "Un seul instantané par produit : compter tout l'historique multiplierait le même problème.",
   });
 
-  const churn = churnStats(customers);
+  const churn = churnStats(customers, orders);
   traces.push({
     domain: "Clients",
-    metric: "Taux de churn",
+    metric: "Clients perdus (cumul)",
     formula: "(clients au statut inactif + perdu) ÷ total des clients",
     source: `Clients — ${customers.length} fiches`,
     period: "état actuel des fiches",
@@ -451,9 +451,23 @@ export function buildMetricTraces(d) {
       ["Actifs", String(churn.active)],
       ["Inactifs / perdus", String(churn.churned)],
       ["Dont actifs à risque (non comptés)", String(churn.atRisk)],
-      ["Churn", churn.rate !== null ? `${churn.rate.toFixed(1)} %` : "—"],
+      ["Part cumulée perdue", churn.rate !== null ? `${churn.rate.toFixed(1)} %` : "—"],
     ],
-    note: "Un client « à risque » achète encore : il n'entre pas dans le churn. Le compter comme perdu gonflait le taux sur la page Clients et dans les rapports IA pendant que la page KPI en affichait un autre à partir des mêmes lignes. Ce taux est cumulé sur toute la base, ce n'est pas un taux par période.",
+    note: "Un client « à risque » achète encore : il n'entre pas dans ce compte. Attention à la lecture : c'est une part CUMULÉE depuis le début, pas un taux par période. Elle ne peut que monter à mesure que la base vieillit. Pour piloter, utilisez l'indicateur d'inactivité ci-dessous.",
+  });
+
+  traces.push({
+    domain: "Clients",
+    metric: `Inactifs depuis ${churn.inactiveMonths} mois`,
+    formula: "clients ayant déjà commandé mais sans aucune commande sur la fenêtre ÷ clients ayant déjà commandé",
+    source: `Commandes — ${orders.length} lignes`,
+    period: `${churn.inactiveMonths} derniers mois`,
+    steps: [
+      ["Clients ayant déjà commandé", churn.buyers !== null ? String(churn.buyers) : "—"],
+      ["Sans commande sur la fenêtre", churn.lapsed !== null ? String(churn.lapsed) : "—"],
+      ["Taux d'inactivité", churn.behaviourRate !== null ? `${churn.behaviourRate.toFixed(1)} %` : "—"],
+    ],
+    note: "Mesuré sur les achats réels, pas sur le champ « statut » du fichier clients. C'est le seul des deux qui peut s'améliorer et se comparer d'une période à l'autre.",
   });
 
   const value = customerValue(orders, customers, margin3);
