@@ -64,7 +64,11 @@ export default function Marketing() {
     dépenses: Math.round(v.spend),
     revenus: Math.round(v.revenue),
     roas: v.spend > 0 ? Number((v.revenue / v.spend).toFixed(2)) : 0,
-    cac: v.new_customers > 0 ? Math.round(v.spend / v.new_customers) : 0,
+    // Same basis as the global card: cost per new customer when the column
+    // exists, otherwise per conversion. null renders as « — », never as 0 €.
+    cac: v.new_customers > 0 ? Math.round(v.spend / v.new_customers)
+      : v.conversions > 0 ? Math.round(v.spend / v.conversions)
+        : null,
     conversions: v.conversions,
   }));
 
@@ -169,7 +173,9 @@ export default function Marketing() {
           <tbody className="divide-y divide-border">
             {[...campaigns].sort((a, b) => (b.spend || 0) - (a.spend || 0)).map((c) => {
               const roas = c.spend > 0 ? ((c.revenue || 0) / c.spend).toFixed(1) : "—";
-              const cac = c.new_customers > 0 ? Math.round(c.spend / c.new_customers) : "—";
+              const cac = c.new_customers > 0 ? Math.round(c.spend / c.new_customers)
+                : c.conversions > 0 ? Math.round(c.spend / c.conversions)
+                  : "—";
               return (
                 <tr key={c.id} className="hover:bg-muted/30">
                   <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={c.campaign_name}>{c.campaign_name}</td>
