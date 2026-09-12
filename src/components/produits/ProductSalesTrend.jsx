@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { currentMonthKey } from "@/lib/periods";
 
 const monthLabels = {
   "01": "jan", "02": "fév", "03": "mar", "04": "avr",
@@ -31,10 +32,14 @@ function ChartTooltip({ active, payload, label }) {
 
 export default function ProductSalesTrend({ orders }) {
   const data = useMemo(() => {
+    // The month in progress holds only a few days of orders. Plotted as the
+    // last point of the curve it looks like sales just collapsed, when it is
+    // simply not over yet — so it is left out, as everywhere else in the app.
+    const cm = currentMonthKey();
     const map = {};
     (orders || []).forEach((o) => {
       const m = (o.date || "").slice(0, 7);
-      if (!m) return;
+      if (!m || m === cm) return;
       if (!map[m]) map[m] = { month: m, quantite: 0, revenu: 0, commandes: 0 };
       map[m].quantite += Number(o.quantity) || 0;
       map[m].revenu += Number(o.total) || 0;
