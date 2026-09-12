@@ -1,12 +1,41 @@
-import { latestByKey } from "@/lib/periods";
+import { latestByKey, currentMonthKey } from "@/lib/periods";
 
 export const DEFAULT_STOCK_THRESHOLD = 10;
+export const DEFAULT_DORMANT_MONTHS = 3;
 
 export function getStockAlertSettings(company) {
   return {
     threshold: company?.stock_alert_threshold != null ? Number(company.stock_alert_threshold) : DEFAULT_STOCK_THRESHOLD,
     useReorderPoint: company?.stock_alert_use_reorder_point !== false,
+    dormantMonths: company?.stock_dormant_months != null
+      ? Math.max(1, Number(company.stock_dormant_months))
+      : DEFAULT_DORMANT_MONTHS,
   };
+}
+
+/** "2026-09" moved back n months. */
+function shiftMonth(key, n) {
+  const [y, m] = key.split("-").map(Number);
+  const total = y * 12 + (m - 1) + n;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Products that recorded at least one sale within the last n COMPLETE months.
+ * The month in progress is excluded: a product that simply has not sold yet
+ * this month is not dormant.
+ */
+function soldRecently(orders, months) {
+  const cutoff = shiftMonth(currentMonthKey(), -Math.max(1, months));
+  const sold = new Set();
+  (orders || []).forEach((o) => {
+    const m = (o.date || "").slice(0, 7);
+    if (!o.product_id || !m) return;
+    if (m < cutoff || m >= currentMonthKey()) return;
+    if ((Number(o.quantity) || 0) <= 0 && (Number(o.total) || 0) <= 0) return;
+    sold.add(o.product_id);
+  });
+  return sold;
 }
 
 // A product is in alert when its stock falls at or under the user-defined
