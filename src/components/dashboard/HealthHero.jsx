@@ -58,11 +58,20 @@ export default function HealthHero({ score, dimensions, summary, trend, onDomain
                   className="group rounded-xl border border-border p-3 text-left transition-all hover:border-primary/30 hover:shadow-sm"
                 >
                   <p className="text-xs font-medium text-muted-foreground">{dimLabels[key]}</p>
-                  <p className="mt-1 text-xl font-bold">{Math.round(d.score || 0)}</p>
-                  <div className="mt-1 flex items-center gap-1">
-                    <TIcon className={cn("h-3 w-3", trendColors[d.trend] || "")} />
-                    <span className={cn("text-xs font-medium", st.color)}>{st.label}</span>
-                  </div>
+                  {d.measured === false ? (
+                    <>
+                      <p className="mt-1 text-xl font-bold text-muted-foreground">—</p>
+                      <p className="mt-1 text-xs font-medium text-muted-foreground">Non mesuré</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-xl font-bold">{Math.round(d.score || 0)}</p>
+                      <div className="mt-1 flex items-center gap-1">
+                        <TIcon className={cn("h-3 w-3", trendColors[d.trend] || "")} />
+                        <span className={cn("text-xs font-medium", st.color)}>{st.label}</span>
+                      </div>
+                    </>
+                  )}
                 </button>
               );
             })}

@@ -18,7 +18,12 @@ const TrendIcon = ({ trend }) => {
 
 export default function DomainScoreList({ domains }) {
   if (!domains || domains.length === 0) return null;
-  const sorted = [...domains].sort((a, b) => a.score - b.score);
+  // Les domaines sans donnee passent en fin de liste : les classer par un score
+  // de repli les ferait passer pour les plus faibles.
+  const sorted = [...domains].sort((a, b) => {
+    if ((a.measured === false) !== (b.measured === false)) return a.measured === false ? 1 : -1;
+    return a.score - b.score;
+  });
 
   return (
     <div className="animate-slide-up divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
@@ -30,15 +35,24 @@ export default function DomainScoreList({ domains }) {
 
             <div className="flex-1">
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div className={`h-full rounded-full ${s.bar} transition-all duration-500`} style={{ width: `${Math.max(2, Math.min(100, d.score))}%` }} />
+                <div className={`h-full rounded-full ${s.bar} transition-all duration-500`} style={{ width: d.measured === false ? "0%" : `${Math.max(2, Math.min(100, d.score))}%` }} />
               </div>
               {d.explanation && <p className="mt-1.5 truncate text-xs text-muted-foreground">{d.explanation}</p>}
             </div>
 
             <div className="flex w-32 shrink-0 items-center justify-end gap-2">
-              <TrendIcon trend={d.trend} />
-              <span className={`text-lg font-bold tabular-nums ${s.text}`}>{d.score}</span>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.chip}`}>{s.label}</span>
+              {d.measured === false ? (
+                <>
+                  <span className="text-lg font-bold tabular-nums text-muted-foreground">—</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Non mesuré</span>
+                </>
+              ) : (
+                <>
+                  <TrendIcon trend={d.trend} />
+                  <span className={`text-lg font-bold tabular-nums ${s.text}`}>{d.score}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.chip}`}>{s.label}</span>
+                </>
+              )}
             </div>
           </div>
         );
