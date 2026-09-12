@@ -9,7 +9,12 @@
 const BATCH = 200;
 const MIN_SPLIT = 20;
 const MAX_ERRORS = 40;
-const MAX_RETRIES = 6;
+// Rate limits here are expressed per MINUTE, so the retry budget has to span a
+// minute. The old schedule (6 tries, capped at 8s) gave up after ~23s and
+// quarantined every remaining row: a 500-row file could come back 0 imported.
+// This one waits ~2 minutes in total before conceding.
+const MAX_RETRIES = 8;
+const MAX_BACKOFF_MS = 30000;
 
 export function missingRequired(row: Record<string, any>, required: string[]): string[] {
   return (required || []).filter((f) => row[f] === undefined || row[f] === null || row[f] === "");
@@ -30,7 +35,10 @@ async function withBackoff<T>(fn: () => Promise<T>): Promise<T> {
       return await fn();
     } catch (e: any) {
       if (!isRateLimit(e) || attempt >= MAX_RETRIES) throw e;
-      await sleep(Math.min(8000, 500 * Math.pow(2, attempt)));
+      // Full jitter: several batches backing off in lockstep would otherwise
+      // retry at the same instant and trip the limit again together.
+      const ceiling = Math.min(MAX_BACKOFF_MS, 1000 * Math.pow(2, attempt));
+      await sleep(ceiling / 2 + Math.random() * (ceiling / 2));
       attempt++;
     }
   }
@@ -57,7 +65,12 @@ export async function insertRows(
       if (isRateLimit(e)) {
         aborted = true;
         quarantined += batch.length;
-        if (errors.length < 5) errors.push("limite de débit atteinte — réessayez l'import dans une minute");
+        if (errors.length < 5) {
+          errors.push(
+            "limite de débit atteinte après plusieurs tentatives — aucune ligne de ce fichier n'a été perdue, "
+            + "elle sont simplement non importées. Attendez une minute puis relancez l'import de ce seul fichier.",
+          );
+        }
         return;
       }
       if (batch.length > MIN_SPLIT) {
