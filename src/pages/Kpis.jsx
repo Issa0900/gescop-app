@@ -20,6 +20,17 @@ import {
   sumPrev,
   latestByKey,
 } from "@/lib/periods";
+import {
+  aggregateMarginPct,
+  previousMarginPct,
+  netBurnRate,
+  runwayMonths,
+  latestCashBalance,
+  churnStats,
+  customerValue,
+  roasWindow,
+  previousRoasWindow,
+} from "@/lib/metrics";
 
 const domainLabels = {
   finance: "Finance",
@@ -132,27 +143,38 @@ export default function Kpis() {
       const prevExp = prevVal(expMonthly);
       const currMarginPct = currRev > 0 ? ((currRev - currExp) / currRev) * 100 : 0;
       const prevMarginPct = prevRev > 0 ? ((prevRev - prevExp) / prevRev) * 100 : 0;
+      // Aggregated 3-month margin — the same figure the audit page traces.
+      const margin3 = aggregateMarginPct(revMonthly, expMonthly, 3);
+      const marginPrev3 = previousMarginPct(revMonthly, expMonthly, 3);
 
       // Cash: latest balance, compared on a 7-day average to avoid daily noise.
-      const cfSorted = (cashflow || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+      const cfSorted = (cashflow || []).slice().sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
       const avgCash = (arr) =>
         arr.length > 0 ? arr.reduce((s, c) => s + (Number(c.closing_cash) || 0), 0) / arr.length : 0;
-      const latestCash = cfSorted[0]?.closing_cash || 0;
+      const latestCash = latestCashBalance(cashflow);
       const cash7 = avgCash(cfSorted.slice(0, 7));
-      const cashPrev7 = avgCash(cfSorted.slice(7, 14));
+      // Only compare against a full prior week, never against 2 stray rows.
+      const cashPrev7 = cfSorted.length >= 14 ? avgCash(cfSorted.slice(7, 14)) : null;
 
       result.push({ name: "Revenus (dernier mois complet)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
       result.push({ name: "Dépenses (dernier mois complet)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
-      result.push({ name: "Marge brute (dernier mois complet)", domain: "finance", value: Math.round(currMarginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
-      if ((cashflow || []).length > 0) {
-        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: cashPrev7 > 0 ? Math.round(cashPrev7) : null, trend: trendDir(cash7, cashPrev7, 1), unit: "$" });
-        // Runway: months of cover at the recent burn rate.
-        const recentBurn = expMonthly.slice(-3).length
-          ? expMonthly.slice(-3).reduce((s, e) => s + e.val, 0) / expMonthly.slice(-3).length
-          : 0;
-        if (recentBurn > 0) {
-          const runway = latestCash / recentBurn;
-          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: runway >= 6 ? "up" : runway < 3 ? "down" : "stable", unit: " mois" });
+      // "Marge nette" and not "brute": the denominator here is ALL expenses
+      // recorded as transactions, not just the cost of goods sold. Calling it
+      // gross margin made the figure irreconcilable with the accountant's.
+      result.push({ name: "Marge nette (dernier mois complet)", domain: "finance", value: Math.round(currMarginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
+      if (margin3 !== null) {
+        result.push({ name: "Marge nette (3 mois)", domain: "finance", value: Math.round(margin3), previous: marginPrev3 !== null ? Math.round(marginPrev3) : null, trend: trendDir(margin3, marginPrev3), unit: "%" });
+      }
+      if (latestCash !== null) {
+        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: cashPrev7 !== null ? Math.round(cashPrev7) : null, trend: trendDir(cash7, cashPrev7, 1), unit: "$" });
+        // Runway on NET burn: a profitable business is not 3 months from the wall.
+        const burn = netBurnRate(revMonthly, expMonthly, 3);
+        const runway = runwayMonths(latestCash, burn);
+        if (runway === Infinity) {
+          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: "Autofinancée", previous: null, trend: "stable", unit: "" });
+        } else if (runway !== null && Number.isFinite(runway)) {
+          // No previous window is computed for runway, so no arrow is shown.
+          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: "stable", unit: " mois" });
         }
       }
     }
