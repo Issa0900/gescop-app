@@ -6,7 +6,8 @@
 // otherwise yields __EMPTY columns and zero usable rows.
 
 import * as XLSX from "npm:xlsx@0.18.5";
-import { stripAccents } from "./importUtils.ts";
+import { stripAccents, FIELD_ALIASES } from "./importUtils.ts";
+import { ENTITY_SCHEMAS } from "./entitySchemas.ts";
 
 const NAME_ENTITY_MAP = [
   { pattern: /campaign.*(daily|jour)|marketing.*(daily|jour)|(daily|jour).*campaign|campagne.*(jour|quotidien)/i, entity: "CampaignDaily" },
@@ -78,8 +79,39 @@ const HEADER_ALIASES: Record<string, string> = {
 };
 
 function normalizeHeader(h: string): string {
-  const base = stripAccents(String(h || "").toLowerCase().trim()).replace(/[\s\-.]+/g, "_");
-  return HEADER_ALIASES[base] || base;
+  const raw = String(h || "").toLowerCase().trim();
+  const base = stripAccents(raw).replace(/[\s\-.]+/g, "_");
+  // The importer's own alias table is consulted too, so a column the import can
+  // actually read ("catégorie", "montant_total") is also visible to detection.
+  return HEADER_ALIASES[base] || FIELD_ALIASES[raw] || FIELD_ALIASES[base] || base;
+}
+
+/**
+ * Last-resort detection: which entity do these columns describe best?
+ *
+ * The signatures above demand an exact key column ("order_id", "customer_id"…).
+ * A perfectly importable export that names its columns differently, or has no id
+ * column at all, matched nothing — the sheet was reported "Type non reconnu" and
+ * zero rows were imported even though every other column lined up. This scores
+ * each entity by how many of the file's columns it explains, and only accepts a
+ * candidate whose required fields are all present, so the rows can actually be
+ * stored rather than quarantined one by one.
+ */
+export function detectEntityByFieldOverlap(headers: string[]): string | null {
+  const set = new Set((headers || []).map(normalizeHeader).filter(Boolean));
+  if (set.size === 0) return null;
+  let best: string | null = null;
+  let bestScore = 0;
+  for (const [entity, schema] of Object.entries(ENTITY_SCHEMAS)) {
+    if (!(schema.required || []).every((r) => set.has(r))) continue;
+    const fields = Object.keys(schema.properties).filter((f) => f !== "import_id");
+    const matched = fields.filter((f) => set.has(f)).length;
+    const coverage = matched / set.size;
+    if (matched < 3 || coverage < 0.5) continue;
+    const score = matched + coverage;
+    if (score > bestScore) { bestScore = score; best = entity; }
+  }
+  return best;
 }
 
 export function detectEntityByHeaders(headers: string[]): string | null {

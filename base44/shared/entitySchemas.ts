@@ -136,7 +136,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
     properties: {
       interaction_id: S, date: D, customer_id: S,
       channel: E("email", "telephone", "chat", "boutique", "reseau_social"),
-      type: E("email", "telephone", "chat", "plainte", "retour", "question", "support"),
+      type: E("email", "telephone", "chat", "plainte", "retour", "question", "support", "avis", "remerciement", "reclamation", "autre"),
       subject: S,
       sentiment: E("positif", "neutre", "negatif", "tres_negatif"),
       resolution_time: N, resolved: B, satisfaction_score: N, import_id: S,

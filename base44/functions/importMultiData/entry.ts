@@ -1,18 +1,29 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
 import { normalizeRow } from "../../shared/importUtils.ts";
-import { detectEntityByName, detectEntityByHeaders, sheetRows } from "../../shared/sheetDetect.ts";
+import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, sheetRows } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
 import { getSchema } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-/** Detect an entity from the sheet/file name first, then from the column headers. */
-function detect(label: string, headers: string[], override?: string | null) {
+/**
+ * Resolve the target entity for a sheet/file.
+ *
+ * `manual` is the type the user picked in the UI and it wins outright: guessing
+ * from the sheet name used to override that explicit choice, so a file whose
+ * name looked like something else landed in the wrong entity — or nowhere.
+ * Then: name, exact header signature, and finally a best-fit score over the
+ * columns, which rescues sheets that carry no recognizable id column.
+ */
+function detect(label: string, headers: string[], fileGuess?: string | null, manual?: string | null) {
+  if (manual) return { entity: manual, via: "manuel" };
   const byName = detectEntityByName(label);
   if (byName) return { entity: byName, via: "nom" };
   const byHeaders = detectEntityByHeaders(headers);
   if (byHeaders) return { entity: byHeaders, via: "colonnes" };
-  if (override) return { entity: override, via: "manuel" };
+  const byOverlap = detectEntityByFieldOverlap(headers);
+  if (byOverlap) return { entity: byOverlap, via: "colonnes (approché)" };
+  if (fileGuess) return { entity: fileGuess, via: "nom du fichier" };
   return { entity: null, via: null };
 }
 
@@ -165,7 +176,7 @@ export default async function (req: Request) {
             }
             // A sheet named "Feuil1"/"Sheet1" carries no information: its columns decide.
             const generic = /^(feuil|sheet|tab|page)\s*\d*$/i.test(sheetName.trim());
-            const { entity, via } = detect(generic ? "" : sheetName, headers, entity_override || detectEntityByName(file_name));
+            const { entity, via } = detect(generic ? "" : sheetName, headers, detectEntityByName(file_name), entity_override);
             if (!entity) {
               results.push({
                 file_name: label,
@@ -192,7 +203,7 @@ export default async function (req: Request) {
         try {
           const rows = await fetchDelimitedRows(file_url);
           const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
-          const { entity, via } = detect(file_name, headers, entity_override);
+          const { entity, via } = detect(file_name, headers, null, entity_override);
           if (!entity) {
             results.push({
               file_name,
