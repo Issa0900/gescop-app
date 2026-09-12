@@ -3,20 +3,8 @@ import { normalizeRow } from "../../shared/importUtils.ts";
 import { detectEntityByName, detectEntityByHeaders, sheetRows } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
+import { getSchema } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
-
-const schemaCache: Record<string, { properties: any; required: string[] } | null> = {};
-
-async function getEntitySchema(base44: any, entityName: string) {
-  if (schemaCache[entityName] !== undefined) return schemaCache[entityName];
-  try {
-    const schema = await base44.entities[entityName].schema();
-    schemaCache[entityName] = { properties: schema.properties || {}, required: schema.required || [] };
-  } catch {
-    schemaCache[entityName] = null;
-  }
-  return schemaCache[entityName];
-}
 
 /** Detect an entity from the sheet/file name first, then from the column headers. */
 function detect(label: string, headers: string[], override?: string | null) {
@@ -36,7 +24,7 @@ async function importRows(
   fileLabel: string,
   fileUrl = "",
 ) {
-  const schema = await getEntitySchema(base44, entityName);
+  const schema = getSchema(entityName);
   const properties = schema ? schema.properties : null;
   const required = schema ? schema.required : [];
 
@@ -187,13 +175,13 @@ export default async function (req: Request) {
 
       try {
         let extractionSchema: any;
-        try {
-          const entitySchema = await base44.entities[entityName].schema();
+        const entitySchema = getSchema(entityName);
+        if (entitySchema) {
           extractionSchema = {
             type: "array",
-            items: { type: "object", properties: entitySchema.properties || {}, additionalProperties: true },
+            items: { type: "object", properties: entitySchema.properties, additionalProperties: true },
           };
-        } catch {
+        } else {
           extractionSchema = {
             type: "array",
             items: {

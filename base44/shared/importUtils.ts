@@ -118,7 +118,17 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
     const eNoAcc = stripAccents(eLow);
     return eLow === raw || eLow === normalized || eNoAcc === rawNoAccents || eNoAcc === normNoAccents;
   });
-  return match || value;
+  if (match) return match;
+  // Labels carry qualifiers the enum doesn't have ("Boutique VIP", "Web Premium",
+  // "Google Ads - Retargeting"). Match on the words instead of losing the field.
+  const words = rawNoAccents.split(/[^a-z0-9]+/).filter(Boolean);
+  for (const w of words) {
+    const direct = enumOptions.find((e) => stripAccents(e.toLowerCase()) === w);
+    if (direct) return direct;
+    const viaTranslation = (ENUM_TRANSLATIONS[w] || []).find((t) => enumOptions.includes(t));
+    if (viaTranslation) return viaTranslation;
+  }
+  return value;
 }
 
 // Normalize enum fields based on the entity schema properties
