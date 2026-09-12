@@ -101,7 +101,7 @@ export default function Produits() {
   // rupture right above a panel reporting 20 produits en alerte, from the same
   // rows. A label from the source system is not a substitute for looking at the
   // stock actually on hand.
-  const stock = computeStockAlerts(products, inventory, alertSettings);
+  const stock = computeStockAlerts(products, inventory, alertSettings, orders);
   const latestInv = latestByKey(inventory || [], "product_id", "date");
   const invByProduct = stock.byProduct;
   const stockOf = (p) => {
@@ -215,7 +215,15 @@ export default function Produits() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
         <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${avgMargin.toFixed(1)}%`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Stock dormant" value={dormantCount} sublabel={`sur ${stock.tracked} produits suivis`} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard
+          label="Stock dormant"
+          value={dormantCount}
+          sublabel={stock.dormancyFromRotation
+            ? `aucune vente depuis ${stock.dormantMonths} mois · sur ${stock.tracked} suivis`
+            : "historique de commandes absent — rotation non mesurable"}
+          icon={Boxes}
+          accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"}
+        />
         <StatCard
           label="Sous le seuil d'alerte"
           value={ruptureCount}
@@ -232,6 +240,8 @@ export default function Produits() {
         settings={alertSettings}
         isDraft={isDraft}
         alertCount={nearRupture.length}
+        dormantCount={dormantCount}
+        dormancyMeasurable={stock.dormancyFromRotation}
         trackedCount={products.length}
         onChange={setDraft}
         onSaved={() => { setDraft(null); refetchCompany(); }}
