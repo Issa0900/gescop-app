@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import CheckRow from "@/components/audit/CheckRow";
 import QualityCard from "@/components/audit/QualityCard";
 import MetricTrace from "@/components/audit/MetricTrace";
-import { runCoherenceChecks, runQualityChecks, buildMetricTraces } from "@/lib/dataAudit";
+import { runCoherenceChecks, runQualityChecks, buildMetricTraces, runReconciliation } from "@/lib/dataAudit";
 import { fetchAll } from "@/lib/fetchAll";
 import { ShieldCheck } from "lucide-react";
 
@@ -23,6 +23,7 @@ const sources = {
   employees: () => fetchAll(base44.entities.Employee),
   campaigns: () => fetchAll(base44.entities.Campaign),
   campaignDaily: () => fetchAll(base44.entities.CampaignDaily, "-date"),
+  imports: () => fetchAll(base44.entities.Import, "-created_date"),
 };
 
 export default function Audit() {
@@ -41,13 +42,15 @@ export default function Audit() {
   const checks = useMemo(() => (data ? runCoherenceChecks(data) : []), [data]);
   const quality = useMemo(() => (data ? runQualityChecks(data) : []), [data]);
   const traces = useMemo(() => (data ? buildMetricTraces(data) : []), [data]);
+  const reconcile = useMemo(() => (data ? runReconciliation(data.imports || [], data) : []), [data]);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Analyse des données…</p>;
 
   const errors = checks.filter((c) => c.status === "error").length;
   const warns = checks.filter((c) => c.status === "warn").length
     + quality.filter((q) => q.status === "warn").length;
-  const qErrors = quality.filter((q) => q.status === "error").length;
+  const qErrors = quality.filter((q) => q.status === "error").length
+    + reconcile.filter((r) => r.status === "error").length;
 
   return (
     <div className="space-y-6">
@@ -69,12 +72,25 @@ export default function Audit() {
         </p>
       </div>
 
-      <Tabs defaultValue="coherence">
+      <Tabs defaultValue="reconcile">
         <TabsList>
+          <TabsTrigger value="reconcile">Exhaustivité</TabsTrigger>
           <TabsTrigger value="coherence">Cohérence</TabsTrigger>
           <TabsTrigger value="quality">Qualité des imports</TabsTrigger>
           <TabsTrigger value="trace">Traçabilité</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reconcile" className="mt-4">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Les données stockées correspondent-elles aux fichiers ?
+            </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Premier niveau de contrôle : si des lignes ont été perdues à l'import, tous les calculs sont sous-évalués.
+            </p>
+            {reconcile.map((c) => <CheckRow key={c.label} check={c} />)}
+          </div>
+        </TabsContent>
 
         <TabsContent value="coherence" className="mt-4">
           <div className="rounded-xl border border-border bg-card p-5">

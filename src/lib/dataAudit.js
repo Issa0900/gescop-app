@@ -173,6 +173,59 @@ export function runCoherenceChecks(d) {
   return out;
 }
 
+/**
+ * Level 0 — reconciliation: does the database hold exactly what the files contained?
+ * Every later calculation is wrong if rows were silently lost at import time,
+ * so this compares the import journal to the records actually stored.
+ */
+export function runReconciliation(imports = [], d = {}) {
+  const ENTITY_ROWS = {
+    Transaction: d.transactions, Order: d.orders, Customer: d.customers,
+    Product: d.products, Inventory: d.inventory, Cashflow: d.cashflow,
+    Expense: d.expenses, Payroll: d.payroll, Employee: d.employees,
+    Campaign: d.campaigns, CampaignDaily: d.campaignDaily,
+  };
+  const out = [];
+
+  const rejected = imports.filter((i) => num(i.rows_quarantined) > 0);
+  const totalRejected = sum(rejected, (i) => i.rows_quarantined);
+  out.push(check(
+    "Lignes rejetées à l'import",
+    totalRejected === 0 ? "ok" : "error",
+    totalRejected === 0
+      ? `Aucune ligne perdue sur ${imports.length} import(s).`
+      : `${totalRejected} lignes n'ont pas été chargées (${rejected.map((i) => i.file_name).slice(0, 3).join(", ")}). Les totaux sont donc sous-évalués : corrigez et réimportez ces fichiers.`,
+  ));
+
+  const failed = imports.filter((i) => i.status === "echoue");
+  if (failed.length > 0) {
+    out.push(check(
+      "Imports en échec",
+      "error",
+      `${failed.length} import(s) ont échoué : ${failed.map((i) => `${i.file_name} → ${i.entity_type || "type inconnu"}`).slice(0, 4).join(" · ")}`,
+    ));
+  }
+
+  Object.entries(ENTITY_ROWS).forEach(([entity, rows]) => {
+    const ims = imports.filter((i) => i.entity_type === entity && i.status === "complete");
+    if (ims.length === 0 || !rows) return;
+    const declared = sum(ims, (i) => i.rows_processed);
+    const stored = rows.length;
+    const gap = Math.abs(declared - stored);
+    out.push(check(
+      `${entity} — journal d'import vs base de données`,
+      gap === 0 ? "ok" : gap / Math.max(declared, 1) < 0.02 ? "warn" : "error",
+      gap === 0
+        ? `${stored} lignes importées, ${stored} lignes présentes.`
+        : `Écart de ${gap} lignes entre ce qui a été importé et ce qui est stocké (suppression manuelle ou double comptage).`,
+      `Importé : ${declared}`,
+      `En base : ${stored}`,
+    ));
+  });
+
+  return out;
+}
+
 /** Level 2b — import quality: missing, aberrant or duplicated data. */
 export function runQualityChecks(d) {
   const sets = [

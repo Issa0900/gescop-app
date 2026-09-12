@@ -135,31 +135,103 @@ export function normalizeEnums(row: Record<string, any>, properties: Record<stri
 
 const BUILTIN_FIELDS = ["id", "created_date", "updated_date", "created_by_id"];
 
+const MONTHS_FR: Record<string, string> = {
+  janv: "01", jan: "01", fevr: "02", fev: "02", feb: "02", mars: "03", mar: "03",
+  avr: "04", apr: "04", mai: "05", may: "05", juin: "06", jun: "06",
+  juil: "07", jul: "07", aout: "08", aug: "08", sept: "09", sep: "09",
+  oct: "10", nov: "11", dec: "12",
+};
+
+/**
+ * Parse a number written in any of the formats spreadsheets produce:
+ * "1 234,56" (FR), "1,234.56" (EN), "1.234,56", "12 %", "1 500,00 $", "(500)".
+ * A wrong separator guess silently divides or multiplies a metric by 1000,
+ * so the decimal separator is decided by the LAST separator present.
+ */
+export function parseNumber(value: any): number | null {
+  if (typeof value === "number") return isNaN(value) ? null : value;
+  if (value === null || value === undefined) return null;
+  let s = String(value).trim();
+  if (s === "" || s === "-" || /^(n\/?a|nd|null)$/i.test(s)) return null;
+  const negative = /^\(.*\)$/.test(s) || s.startsWith("-");
+  s = s.replace(/[()\-+]/g, "");
+  // Strip currency, percent signs and every kind of space (incl. non-breaking).
+  s = s.replace(/[$€£%]|[a-zA-Z]|\s|\u00A0|\u202F/g, "");
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma >= 0 && lastDot >= 0) {
+    // Both present: the rightmost one is the decimal separator.
+    s = lastComma > lastDot ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  } else if (lastComma >= 0) {
+    const decimals = s.length - lastComma - 1;
+    const single = s.indexOf(",") === lastComma;
+    // "1,234" is a thousands group; "1,5" / "1,56" is a decimal.
+    s = single && decimals === 3 ? s.replace(",", "") : s.replace(/,/g, ".");
+  } else if (lastDot >= 0) {
+    const decimals = s.length - lastDot - 1;
+    const single = s.indexOf(".") === lastDot;
+    if (!single || (decimals === 3 && s.replace(/\./g, "").length > 3 && !single)) s = s.replace(/\./g, "");
+  }
+  const n = Number(s);
+  if (isNaN(n)) return null;
+  return negative ? -n : n;
+}
+
+/**
+ * Parse a date to YYYY-MM-DD from ISO, DD/MM/YYYY, DD-MM-YY, "15 janv. 2025",
+ * or an Excel serial number (days since 1899-12-30) — serials arrive as plain
+ * numbers and would otherwise be stored as unusable text.
+ */
+export function parseDate(value: any): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  if (typeof value === "number" || /^\d{5}(\.\d+)?$/.test(String(value).trim())) {
+    const serial = Number(value);
+    if (serial > 20000 && serial < 60000) {
+      const ms = Math.round((serial - 25569) * 86400 * 1000);
+      return new Date(ms).toISOString().slice(0, 10);
+    }
+  }
+  let s = String(value).trim();
+  if (s.includes("T")) s = s.slice(0, 10);
+  // YYYY-MM-DD / YYYY/MM/DD
+  let m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  // DD/MM/YYYY, DD-MM-YY
+  m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/);
+  if (m) {
+    let year = m[3].length === 2 ? `20${m[3]}` : m[3];
+    let day = m[1];
+    let month = m[2];
+    // Unambiguous US order (13/12/2025 impossible as month).
+    if (Number(month) > 12 && Number(day) <= 12) [day, month] = [month, day];
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+  // "15 janv. 2025" / "15 janvier 2025"
+  m = stripAccents(s.toLowerCase()).match(/^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})$/);
+  if (m) {
+    const mm = MONTHS_FR[m[2].slice(0, 4)] || MONTHS_FR[m[2].slice(0, 3)];
+    if (mm) return `${m[3]}-${mm}-${m[1].padStart(2, "0")}`;
+  }
+  // YYYY-MM (period) → first day of month
+  m = s.match(/^(\d{4})[\/\-](\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-01`;
+  return null;
+}
+
 // Coerce a value to the schema property type (date, number, boolean)
 export function coerceType(value: any, prop: any): any {
   if (value === null || value === undefined || value === "") return value;
   if (!prop || !prop.type) return value;
   switch (prop.type) {
     case "string":
-      if (prop.format === "date" && typeof value === "string") {
-        // Handle ISO datetime, DD/MM/YYYY, DD-MM-YYYY → YYYY-MM-DD
-        let s = value.trim();
-        if (s.includes("T")) s = s.slice(0, 10);
-        // DD/MM/YYYY or DD-MM-YYYY
-        const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-        if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
-        // YYYY/MM/DD or YYYY-MM-DD already
-        if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s)) {
-          const parts = s.split(/[\/\-]/);
-          return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
-        }
-        return s.slice(0, 10);
+      if (prop.format === "date" || prop.format === "date-time") {
+        return parseDate(value) || String(value).slice(0, 10);
       }
       return String(value);
     case "number": {
-      if (typeof value === "number") return value;
-      const n = Number(String(value).replace(/[,$\s]/g, ""));
-      return isNaN(n) ? value : n;
+      const n = parseNumber(value);
+      return n === null ? value : n;
     }
     case "boolean": {
       if (typeof value === "boolean") return value;
@@ -184,7 +256,7 @@ export function normalizeRow(
   const r = normalizeKeys(row, properties);
 
   if (entityName === "Transaction") {
-    const amount = Number(r.amount) || 0;
+    const amount = parseNumber(r.amount) || 0;
     let type = (r.type || "").toLowerCase().trim();
     if (!type) type = amount >= 0 ? "income" : "expense";
     const typeNorm = stripAccents(type);
@@ -192,7 +264,7 @@ export function normalizeRow(
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
     if (["remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "expense";
     return {
-      date: (r.date || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+      date: parseDate(r.date) || new Date().toISOString().slice(0, 10),
       description: r.description || "",
       amount: Math.abs(amount),
       type,
