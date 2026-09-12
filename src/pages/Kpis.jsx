@@ -203,8 +203,12 @@ export default function Kpis() {
 
       result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
       result.push({ name: "Commandes (dernier mois complet)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
-      result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: returnRate > 10 ? "down" : "up", unit: "%" });
-      result.push({ name: "CA sur 3 mois", domain: "ventes", value: Math.round(rev3), previous: revPrev3 > 0 ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
+      // No previous window is computed for the return rate, so no arrow:
+      // a trend must come from a change over time, never from the level.
+      result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      if (rev3 !== null) {
+        result.push({ name: "CA sur 3 mois", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
+      }
       result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
     }
 
@@ -224,22 +228,25 @@ export default function Kpis() {
       // rows when available; campaign totals are all-time and have no trend.
       const spendM = monthlyAggComplete(campaignDaily || [], "date", "spend");
       const cRevM = monthlyAggComplete(campaignDaily || [], "date", "revenue");
-      const s3 = sumLast(spendM, 3);
-      const sp3 = sumPrev(spendM, 3);
-      const roas = s3 > 0 ? sumLast(cRevM, 3) / s3 : totalSpend > 0 ? totalCampRev / totalSpend : 0;
-      const roasPrev = sp3 > 0 ? sumPrev(cRevM, 3) / sp3 : 0;
+      const windowRoas = roasWindow(spendM, cRevM, 3);
+      const roasPrev = previousRoasWindow(spendM, cRevM, 3);
+      const roas = windowRoas !== null ? windowRoas : totalSpend > 0 ? totalCampRev / totalSpend : null;
 
-      result.push({
-        name: s3 > 0 ? "ROAS (3 derniers mois)" : "ROAS moyen",
-        domain: "marketing",
-        value: Math.round(roas * 10) / 10,
-        previous: roasPrev > 0 ? Math.round(roasPrev * 10) / 10 : null,
-        trend: roasPrev > 0 ? trendDir(roas, roasPrev) : "stable",
-        unit: "x",
-      });
-      result.push({ name: "CAC moyen", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
-      result.push({ name: "Taux de clic (CTR)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
-      result.push({ name: "Taux de conversion", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      if (roas !== null) {
+        result.push({
+          name: windowRoas !== null ? "ROAS (3 derniers mois)" : "ROAS cumulé (non daté)",
+          domain: "marketing",
+          value: Math.round(roas * 10) / 10,
+          previous: roasPrev !== null ? Math.round(roasPrev * 10) / 10 : null,
+          trend: trendDir(roas, roasPrev),
+          unit: "x",
+        });
+      }
+      // These three are all-time cumulative figures: campaign rows carry no date,
+      // so they cannot be windowed and must not pretend to have a trend.
+      result.push({ name: "CAC moyen (cumul)", domain: "marketing", value: Math.round(cac), previous: null, trend: "stable", unit: "$" });
+      result.push({ name: "Taux de clic (CTR, cumul)", domain: "marketing", value: Math.round(ctr * 100) / 100, previous: null, trend: "stable", unit: "%" });
+      result.push({ name: "Taux de conversion (cumul)", domain: "marketing", value: Math.round(convRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
     }
 
     // === OPÉRATIONS === (only if products or inventory exist)
@@ -264,8 +271,9 @@ export default function Kpis() {
       }).length;
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
-      result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: dormantStock > 0 ? "down" : "up", unit: "" });
-      result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: ruptureStock > 0 ? "down" : "up", unit: "" });
+      // Counts, not trends: there is no previous snapshot to compare against.
+      result.push({ name: "Stock dormant", domain: "operations", value: dormantStock, previous: null, trend: "stable", unit: "" });
+      result.push({ name: "Alertes rupture", domain: "operations", value: ruptureStock, previous: null, trend: "stable", unit: "" });
       result.push({ name: "Produits à réapprovisionner", domain: "operations", value: lowStockProducts, previous: null, trend: "stable", unit: "" });
     }
 
