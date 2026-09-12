@@ -301,7 +301,7 @@ export default function Kpis() {
     // === CLIENTS === (only if customers exist)
     if ((customers || []).length > 0) {
       // One shared churn definition (status only — "a_risque" is not churn).
-      const churn = churnStats(customers);
+      const churn = churnStats(customers, orders);
       const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
       const newCustomers = lastVal(custMonthly);
       const prevNewCustomers = prevVal(custMonthly);
@@ -311,7 +311,13 @@ export default function Kpis() {
       const value = customerValue(orders, customers, margin3Overall);
 
       result.push({ name: "Clients actifs", domain: "clients", value: churn.active, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Taux de churn", domain: "clients", value: Math.round((churn.rate || 0) * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      // Cumulative share of the base ever lost — named as such, because it is
+      // not a rate over a period and can never go down.
+      result.push({ name: "Clients perdus (cumul)", domain: "clients", value: Math.round((churn.rate || 0) * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      // The actionable one: attrition measured on real purchase behaviour.
+      if (churn.behaviourRate !== null) {
+        result.push({ name: `Inactifs depuis ${churn.inactiveMonths} mois`, domain: "clients", value: Math.round(churn.behaviourRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      }
       if (churn.atRisk > 0) {
         result.push({ name: "Clients actifs à risque", domain: "clients", value: churn.atRisk, previous: null, trend: "stable", unit: "" });
       }
