@@ -9,6 +9,37 @@ async function safeList(entity, ...args) {
   }
 }
 
+const PAGE = 500;
+
+/**
+ * Read a source in full, page by page.
+ *
+ * Every figure in this context is an AGGREGATE, so a truncated read does not
+ * merely omit rows — it changes the number the AI reports. A single list() call
+ * caps at 500 rows, so the previous `list("-date", 500)` quietly rewrote the
+ * totals of any company past that size, and the AI then contradicted the
+ * dashboards it was supposed to explain.
+ *
+ * `truncated` is surfaced in the prompt rather than hidden: an AI told its data
+ * is partial can say so; one that is not told invents confident conclusions.
+ */
+async function listAll(entity, sort = "-created_date", maxPages = 24) {
+  const out = [];
+  let truncated = false;
+  for (let page = 0; page < maxPages; page += 1) {
+    let batch;
+    try {
+      batch = await entity.list(sort, PAGE, page * PAGE);
+    } catch {
+      break;
+    }
+    out.push(...(batch || []));
+    if (!batch || batch.length < PAGE) return { rows: out, truncated: false };
+    if (page === maxPages - 1) truncated = true;
+  }
+  return { rows: out, truncated };
+}
+
 function round(n) {
   return Math.round(n || 0);
 }
@@ -27,12 +58,20 @@ export async function buildBusinessContext(base44) {
   const companies = await base44.entities.Company.list();
   const company = companies && companies[0] ? companies[0] : null;
 
-  // Fetch all data sources
-  const transactions = await safeList(base44.entities.Transaction, "-date", 500);
-  const orders = await safeList(base44.entities.Order, "-date", 500);
-  const customers = await safeList(base44.entities.Customer);
-  const products = await safeList(base44.entities.Product);
-  const inventory = await safeList(base44.entities.Inventory, "-date", 500);
+  // Fetch all data sources. The ones that drive totals are read in full;
+  // the rest are recent-N lists used only as qualitative context.
+  const truncatedSources = [];
+  const readAll = async (entity, label, sort) => {
+    const { rows, truncated } = await listAll(entity, sort);
+    if (truncated) truncatedSources.push(label);
+    return rows;
+  };
+
+  const transactions = await readAll(base44.entities.Transaction, "transactions", "-date");
+  const orders = await readAll(base44.entities.Order, "commandes", "-date");
+  const customers = await readAll(base44.entities.Customer, "clients", "-created_date");
+  const products = await readAll(base44.entities.Product, "produits", "-created_date");
+  const inventory = await readAll(base44.entities.Inventory, "inventaire", "-date");
   const suppliers = await safeList(base44.entities.Supplier);
   const purchases = await safeList(base44.entities.Purchase, "-date", 200);
   const campaigns = await safeList(base44.entities.Campaign);
@@ -122,7 +161,7 @@ export async function buildBusinessContext(base44) {
   const top5Revenue = sortedByRevenue.slice(0, 5).reduce((s, c) => s + custRevenue(c), 0);
   const allCustomerRevenue = customers.reduce((s, c) => s + custRevenue(c), 0);
   const concentration = allCustomerRevenue > 0 ? Math.round((top5Revenue / allCustomerRevenue) * 100) : 0;
-  const topCustomersStr = sortedByRevenue.slice(0, 5).map((c) => `${c.customer_id || c.first_name || "?"}: ${round(c.total_revenue || 0)} $ (${c.segment || "?"})`).join("\n");
+  const topCustomersStr = sortedByRevenue.slice(0, 5).map((c) => `${c.customer_id || c.first_name || "?"}: ${round(custRevenue(c))} $ (${c.segment || "?"})`).join("\n");
 
   // === PRODUITS ===
   const totalProducts = products.length;
