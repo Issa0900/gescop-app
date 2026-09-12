@@ -148,7 +148,7 @@ export function computeLiveAlerts(data) {
   }
 
   // --- Clients : churn (définition unique, partagée avec les KPI et l'audit) ---
-  const churn = churnStats(customers);
+  const churn = churnStats(customers, orders);
   if (churn.rate !== null) {
     if (churn.rate >= 20) {
       out.push(alert("critique", "Clients", "Taux d'attrition élevé", `${churn.rate.toFixed(0)} % des clients sont inactifs ou perdus (${churn.churned} sur ${churn.total}).`));
@@ -158,6 +158,16 @@ export function computeLiveAlerts(data) {
     if (churn.atRisk > 0) {
       out.push(alert("important", "Clients", `${churn.atRisk} clients actifs à risque de départ`, "Risque de départ élevé : une relance est recommandée."));
     }
+  }
+  // Attrition réelle, mesurée sur les achats : celle-là peut s'améliorer, donc
+  // elle mérite une alerte séparée du cumul historique.
+  if (churn.behaviourRate !== null && churn.behaviourRate >= 40 && churn.buyers >= 10) {
+    out.push(alert(
+      "important",
+      "Clients",
+      `${churn.lapsed} clients n'ont plus commandé depuis ${churn.inactiveMonths} mois`,
+      `${Math.round(churn.behaviourRate)} % des clients ayant déjà commandé se sont arrêtés : une campagne de réactivation est le levier le plus rentable.`,
+    ));
   }
 
   // --- Marketing : ROAS ---
