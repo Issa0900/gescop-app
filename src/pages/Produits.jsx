@@ -218,8 +218,11 @@ export default function Produits() {
       <StockThresholdSettings
         company={company}
         settings={alertSettings}
+        isDraft={isDraft}
         alertCount={nearRupture.length}
-        onSaved={refetchCompany}
+        trackedCount={products.length}
+        onChange={setDraft}
+        onSaved={() => { setDraft(null); refetchCompany(); }}
       />
 
       <div className="rounded-xl border border-border bg-card p-6">
