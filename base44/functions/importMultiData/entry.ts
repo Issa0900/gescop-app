@@ -42,14 +42,29 @@ async function importRows(
   let quarantined = 0;
   const missingFields = new Set<string>();
   const samples: string[] = [];
+  // Values present in the file but refused by the schema, counted per field and
+  // per value so the report can name them instead of claiming the field is absent.
+  const refusedValues: Record<string, Record<string, number>> = {};
+  const allowedByField: Record<string, string[]> = {};
   rows.forEach((row) => {
     if (!row || typeof row !== "object") { quarantined++; return; }
-    const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType);
+    const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
+    const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType, enumIssues);
     if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) { quarantined++; return; }
     // Reject up front rather than letting one row fail its whole batch.
     const missing = missingRequired(normalized, required);
     if (missing.length > 0) {
-      missing.forEach((m) => missingFields.add(m));
+      missing.forEach((m) => {
+        // Was the field actually absent, or present with a refused value?
+        const refused = enumIssues.find((e) => e.field === m);
+        if (refused) {
+          if (!refusedValues[m]) refusedValues[m] = {};
+          refusedValues[m][refused.value] = (refusedValues[m][refused.value] || 0) + 1;
+          allowedByField[m] = refused.allowed;
+        } else {
+          missingFields.add(m);
+        }
+      });
       if (samples.length < 2) samples.push(JSON.stringify(row).slice(0, 220));
       quarantined++;
       return;
@@ -61,8 +76,24 @@ async function importRows(
   quarantined += rejected;
 
   const messages: string[] = [];
+  // Refused values first: this is the actionable one, and it used to be
+  // reported as a missing field, which sent users looking for a column that
+  // was right there in their file.
+  for (const [field, counts] of Object.entries(refusedValues)) {
+    const listed = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([val, n]) => `« ${val} » (${n})`)
+      .join(", ");
+    const total = Object.values(counts).reduce((s, n) => s + n, 0);
+    messages.push(
+      `${field} : ${total} ligne(s) rejetée(s) pour cause de valeur non reconnue — ${listed}. `
+      + `Valeurs acceptées : ${(allowedByField[field] || []).join(", ")}. `
+      + `Corrigez cette colonne dans votre fichier, puis réimportez.`,
+    );
+  }
   if (missingFields.size > 0) {
-    messages.push(`champs obligatoires manquants : ${Array.from(missingFields).join(", ")}`);
+    messages.push(`champs obligatoires absents du fichier : ${Array.from(missingFields).join(", ")}`);
     if (samples.length > 0) messages.push(`exemple de ligne rejetée : ${samples[0]}`);
   }
   if (errors.length > 0) messages.push(errors[0]);
