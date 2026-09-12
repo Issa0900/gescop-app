@@ -7,6 +7,21 @@ export function stripAccents(str: string): string {
 
 // Map common French column names to schema field names
 export const FIELD_ALIASES: Record<string, string> = {
+  // --- Identifiants et colonnes cles ---
+  // Ces alias ne vivaient que dans sheetDetect.ts (detection du type de feuille).
+  // L'import, lui, consultait cette table-ci, qui ne les avait pas : un fichier
+  // "Commandes" etait donc correctement RECONNU puis integralement mis en
+  // quarantaine, faute de trouver order_id. Les deux couches partagent
+  // desormais la meme table.
+  "id_commande": "order_id", "commande_id": "order_id", "no_commande": "order_id",
+  "n_commande": "order_id", "numero_commande": "order_id", "num_commande": "order_id",
+  "id_produit": "product_id", "id_client": "customer_id",
+  "id_fournisseur": "supplier_id", "id_employe": "employee_id",
+  "id_campagne": "campaign_id", "id_depense": "expense_id", "depense_id": "expense_id",
+  "date_operation": "date", "periode": "period",
+  "solde_cloture": "closing_cash", "solde_final": "closing_cash",
+  "encaissements": "cash_in", "decaissements": "cash_out",
+  "entrees": "cash_in", "sorties": "cash_out",
   "categorie": "category", "catégorie": "category",
   "nom": "name", "nom du produit": "product_name", "nom_produit": "product_name",
   "prix": "price", "prix_vente": "selling_price", "prix de vente": "selling_price",
@@ -62,16 +77,38 @@ export const FIELD_ALIASES: Record<string, string> = {
   "note_moyenne": "average_rating",
 };
 
+/**
+ * Cle reduite : sans accent, sans ponctuation, separateurs unifies.
+ * "Date d'acquisition" et "date-d-acquisition" donnent la meme cle, sans quoi
+ * une apostrophe suffisait a faire perdre une colonne parfaitement lisible.
+ */
+function cleCanonique(k: string): string {
+  return stripAccents(String(k).toLowerCase().trim())
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+// La table d'alias est elle-meme indexee sous forme canonique : ses cles sont
+// ecrites avec des espaces ("date d acquisition") et ne matchaient donc jamais
+// une colonne ponctuee ("Date d'acquisition").
+const ALIAS_CANONIQUES: Record<string, string> = Object.fromEntries(
+  Object.entries(FIELD_ALIASES).map(([k, v]) => [cleCanonique(k), v]),
+);
+
 export function normalizeKeys(row: Record<string, any>, properties?: Record<string, any> | null): Record<string, any> {
   const out: Record<string, any> = {};
   const schemaFields = properties ? Object.keys(properties) : [];
   for (const [k, v] of Object.entries(row || {})) {
     const lower = k.toLowerCase().trim();
-    const alias = FIELD_ALIASES[lower] || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")] || lower;
+    const canon = cleCanonique(k);
+    const alias = FIELD_ALIASES[lower]
+      || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")]
+      || FIELD_ALIASES[canon]
+      || ALIAS_CANONIQUES[canon]
+      || (schemaFields.includes(canon) ? canon : lower);
     // If alias is not a schema field, try fuzzy match against schema field names
     if (schemaFields.length > 0 && !schemaFields.includes(alias)) {
-      const noAccents = stripAccents(lower).replace(/[\s-]/g, "_");
-      const fuzzyMatch = schemaFields.find((f) => stripAccents(f.toLowerCase()) === noAccents);
+      const fuzzyMatch = schemaFields.find((f) => cleCanonique(f) === canon);
       if (fuzzyMatch) {
         out[fuzzyMatch] = v;
         continue;
