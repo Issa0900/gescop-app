@@ -391,6 +391,14 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
     if (idx >= 0) rattachement.set(idx, col);
   });
 
+  // Une colonne sans champ ne veut pas dire la meme chose selon l'origine du
+  // plan : avec les regles, le rattachement n'a simplement pas ete tente et
+  // c'est la table de synonymes qui s'en chargera ; avec l'analyse, cela
+  // signifie « cette colonne ne correspond a rien » et la reproposer au
+  // pipeline irait contre sa lecture. Le discriminant est donc l'origine du
+  // PLAN, pas l'etat de la colonne.
+  const rattacherParSynonymes = planSansRattachement(plan);
+
   const rows: Record<string, any>[] = [];
   for (let i = plan.ligne_entetes + 1; i < matrix.length; i += 1) {
     if (ignorees.has(i)) continue;
@@ -415,22 +423,9 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
       }
 
       if (col && col.champ) obj[col.champ] = valeur;
-      // Sans rattachement explicite (plan de secours, ou colonne que l'analyse
-      // n'a pas su nommer), on conserve l'intitule d'origine : la table de
-      // synonymes de normalizeKeys reste alors la voie normale.
-      else if (!col || planSansRattachementColonne(col)) obj[entete] = valeur;
+      else if (rattacherParSynonymes) obj[entete] = valeur;
     });
     if (Object.keys(obj).length > 0) rows.push(obj);
   }
   return rows;
-}
-
-/**
- * Une colonne que l'analyse a explicitement laissee sans champ doit-elle etre
- * passee au pipeline ? Oui tant que le plan vient des regles (le rattachement
- * n'a simplement pas ete tente) ; non quand l'IA a decide que la colonne ne
- * correspondait a rien — auquel cas la lui reproposer irait contre sa lecture.
- */
-function planSansRattachementColonne(col: PlanColonne): boolean {
-  return col.champ === null && col.convention_date == null && !col.valeurs;
 }
