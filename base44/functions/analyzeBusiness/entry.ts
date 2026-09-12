@@ -19,13 +19,20 @@ export default async function(req) {
       }, { status: 400 });
     }
 
-    // Clear previous analysis artifacts (keep history but remove stale auto-generated ones)
+    // Clear previous analysis artifacts (keep history but remove stale auto-generated ones).
+    // Anomaly / Risk / Opportunity / Kpi are produced ONLY by this function, so
+    // wiping them wholesale is safe. Recommendation is already scoped by source_type
+    // because users can create their own.
     await base44.entities.Anomaly.deleteMany({});
     await base44.entities.Risk.deleteMany({});
     await base44.entities.Opportunity.deleteMany({});
     await base44.entities.Recommendation.deleteMany({ source_type: { $in: ["risk", "opportunity", "anomaly"] } });
     await base44.entities.Kpi.deleteMany({});
-    await base44.entities.ExternalSignal.deleteMany({});
+    // ExternalSignal is DIFFERENT: it is an importable entity. An unscoped wipe
+    // here destroyed every signal the user had imported (500 rows vanished while
+    // the import journal still reported them as loaded). Only the signals this
+    // function generated — the ones with no import_id — may be cleared.
+    await base44.entities.ExternalSignal.deleteMany({ import_id: null });
 
     const prompt = `Tu es GESCOP, un système intelligent de pilotage pour PME. Analyse les données multi-sources de cette entreprise et produis un diagnostic complet en croisant toutes les sources disponibles.
 
