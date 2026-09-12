@@ -7,8 +7,10 @@
 import {
   construireEchantillon, conventionDateProuvee, estLigneDeTotaux,
   validerPlan, verifierAvecPreuves, analyserFichier, construirePrompt,
+  appliquerPlan, planParRegles, signatureFichier,
   type PlanImport,
 } from "../../base44/shared/importPlan.ts";
+import { matriceDepuisTexte } from "../../base44/shared/csvParse.ts";
 
 let echecs = 0;
 const v = (ok: boolean, t: string) => { if (!ok) echecs++; console.log(`  ${ok ? "OK   " : "ECHEC"} ${t}`); };
@@ -111,6 +113,35 @@ console.log("\n===== 6. L'IA est indisponible : l'import continue =====");
   v(prompt.includes("Tu ne recopies aucune valeur"), "consigne explicite : decrire, pas transcrire");
   v(prompt.includes("N'invente jamais un nom de champ"), "interdiction d'inventer un champ");
   v(prompt.includes("25/03/26"), "l'echantillon reel est bien joint");
+
+  console.log("\n===== 8. Application du plan : l'IA a decrit, le code applique =====");
+  const lignes = appliquerPlan(r1.plan!, FICHIER);
+  console.log("     ", JSON.stringify(lignes, null, 0));
+  v(lignes.length === 3, "3 lignes de donnees (en-tete de rapport et TOTAUX ecartes)");
+  v(lignes[0].date === "2026-03-25", "25/03/26 lu le 25 mars, selon la convention du plan");
+  v(lignes[0].type === "income" && lignes[1].type === "expense", "codes C/D traduits");
+  v(lignes[0].amount === "1 250,50", "le montant n'est PAS retouche : la normalisation s'en charge");
+  v(!("Centre de cout" in lignes[0]) && !("centre_de_cout" in lignes[0]),
+    "colonne jugee sans correspondance par l'IA : absente du resultat");
+  v(lignes[0].description === "Vente comptoir", "libelle rattache");
+
+  console.log("\n===== 9. Plan de secours : les intitules passent aux synonymes =====");
+  const secours = planParRegles(FICHIER, "grand-livre.csv");
+  const lignesSecours = appliquerPlan(secours, FICHIER);
+  v(secours.ligne_entetes === 4, "ligne d'en-tetes trouvee sans IA");
+  v(lignesSecours.length >= 3, "les lignes sont produites malgre l'absence d'IA");
+  v("Date ope." in lignesSecours[0], "intitule d'origine conserve : normalizeKeys fera le rattachement");
+  v(!("Centre de cout" in lignesSecours[0]) === false, "aucune colonne n'est ecartee d'office par les regles");
+
+  console.log("\n===== 10. Memoire : reconnaitre le meme export le mois suivant =====");
+  const marsCSV = "Date ope.;Libelle;Sens;Mtt HT reel\n25/03/26;Vente;C;1 250,50\n";
+  const avrilCSV = "Date ope.;Libelle;Sens;Mtt HT reel\n03/04/26;Vente;C;980,00\n02/04/26;Achat;D;120,00\n";
+  const autreCSV = "Date;Montant;Type\n2026-03-01;1000;Revenu\n";
+  const sig = (csv: string) => signatureFichier(matriceDepuisTexte(csv)[0] || []);
+  v(sig(marsCSV) === sig(avrilCSV), "mars et avril du meme export : meme empreinte");
+  v(sig(marsCSV) !== sig(autreCSV), "un autre fichier : empreinte differente");
+  v(signatureFichier(["Date", "Montant"]) === signatureFichier(["  MONTANT ", "Daté"]),
+    "ordre, casse, accents et espaces ignores");
 
   console.log("\ncas en echec :", echecs);
 })();
