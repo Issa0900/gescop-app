@@ -23,6 +23,7 @@ import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
 import TimeFilter from "@/components/dashboard/TimeFilter";
 import { computeDomainScores } from "@/lib/domainScores";
+import { fetchAll } from "@/lib/fetchAll";
 import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
 
 const analysisSteps = [
