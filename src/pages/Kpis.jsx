@@ -166,8 +166,8 @@ export default function Kpis() {
       // Only compare against a full prior week, never against 2 stray rows.
       const cashPrev7 = cfSorted.length >= 14 ? avgCash(cfSorted.slice(7, 14)) : null;
 
-      result.push({ name: "Revenus (dernier mois complet)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
-      result.push({ name: "Dépenses (dernier mois complet)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
+      result.push({ name: "Revenus encaissés (dernier mois complet)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
+      result.push({ name: "Dépenses enregistrées (dernier mois complet)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
       // "Marge nette" and not "brute": the denominator here is ALL expenses
       // recorded as transactions, not just the cost of goods sold. Calling it
       // gross margin made the figure irreconcilable with the accountant's.
@@ -189,6 +189,11 @@ export default function Kpis() {
       }
     }
 
+    // Les indicateurs Ventes proviennent des commandes (entite Order), tandis
+    // que les indicateurs Finance proviennent des transactions encaissees
+    // (entite Transaction). Les deux ne se reconcilient pas : une PME peut
+    // encaisser sans commande saisie, et inversement. Les libelles nomment
+    // donc explicitement la source pour qu'un ecart ne passe pas pour une erreur.
     // === VENTES === (only if orders exist)
     if ((orders || []).length > 0) {
       const orderRevMonthly = monthlyAggComplete(orders, "date", "total");
@@ -215,15 +220,15 @@ export default function Kpis() {
       const rev3 = sumLast(orderRevMonthly, 3);
       const revPrev3 = sumPrev(orderRevMonthly, 3);
 
-      result.push({ name: "Panier moyen", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
-      result.push({ name: "Commandes (dernier mois complet)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
+      result.push({ name: "Panier moyen (commandes)", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
+      result.push({ name: "Commandes enregistrées (dernier mois complet)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
       // No previous window is computed for the return rate, so no arrow:
       // a trend must come from a change over time, never from the level.
       if (hasReturnSignal) {
         result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
       }
       if (rev3 !== null) {
-        result.push({ name: "CA sur 3 mois", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
+        result.push({ name: "CA facturé sur 3 mois (commandes)", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
       }
       result.push({ name: "Revenu total (commandes)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
     }
