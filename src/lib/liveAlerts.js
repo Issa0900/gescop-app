@@ -8,8 +8,8 @@ import {
   sumLast,
   sumPrev,
   hasWindow,
-  latestByKey,
 } from "@/lib/periods";
+import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
 import {
   aggregateMarginPct,
   previousMarginPct,
@@ -27,7 +27,7 @@ function alert(level, category, title, message) {
 }
 
 export function computeLiveAlerts(data) {
-  const { transactions, orders, customers, campaignDaily, inventory, cashflow } = data;
+  const { transactions, orders, customers, campaignDaily, products, inventory, cashflow, company } = data;
   const out = [];
 
   const incomes = (transactions || []).filter((t) => t.type === "income");
@@ -113,11 +113,13 @@ export function computeLiveAlerts(data) {
     }
   }
 
-  // --- Opérations : état de stock le plus récent par produit ---
-  const latestInv = latestByKey(inventory || [], "product_id", "date");
-  const ruptures = latestInv.filter((i) => i.stock_status === "rupture");
-  const proches = latestInv.filter((i) => i.stock_status === "proche_rupture" || i.stock_status === "faible");
-  const dormants = latestInv.filter((i) => i.stock_status === "dormant");
+  // --- Opérations : même définition de rupture que la page Produits et les KPI,
+  // seuil de l'entreprise compris. Ces alertes ignoraient le seuil réglé par
+  // l'utilisateur et ne lisaient que le statut importé. ---
+  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company));
+  const ruptures = stock.rows.filter((r) => r.status === "rupture");
+  const proches = stock.alerts.filter((r) => r.status !== "rupture");
+  const dormants = stock.rows.filter((r) => r.dormant);
   if (ruptures.length > 0) {
     out.push(
       alert(
@@ -129,10 +131,10 @@ export function computeLiveAlerts(data) {
     );
   }
   if (proches.length >= 10) {
-    out.push(alert("modere", "Opérations", `${proches.length} produits en stock faible`, "À réapprovisionner pour éviter la rupture."));
+    out.push(alert("modere", "Opérations", `${proches.length} produits sous votre seuil d'alerte`, "À réapprovisionner pour éviter la rupture."));
   }
   if (dormants.length > 0) {
-    const dormantValue = dormants.reduce((s, i) => s + (Number(i.inventory_value) || 0), 0);
+    const dormantValue = dormants.reduce((s, r) => s + (Number(r.snapshot?.inventory_value) || 0), 0);
     out.push(
       alert(
         "modere",
