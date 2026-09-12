@@ -160,6 +160,71 @@ export default function ImportPage() {
     }
   };
 
+  // Entities that carry an import_id, i.e. whose rows come from a file.
+  const IMPORTED_ENTITIES = [
+    "Transaction", "Order", "Customer", "Product", "Inventory", "Supplier",
+    "Purchase", "Campaign", "CampaignDaily", "Employee", "Payroll", "Expense",
+    "Cashflow", "Interaction", "Competitor", "Goal", "Event", "ExternalSignal",
+  ];
+
+  /**
+   * Remove rows left behind by an import that no longer exists.
+   *
+   * Until the fix above, deleting an import could remove the journal entry
+   * while its rows survived. Those rows still carry an import_id, but it points
+   * at nothing — so no screen offers to delete them, and they keep feeding every
+   * total. This finds them by comparing each row's import_id against the imports
+   * that actually exist, and clears only those. Rows with no import_id at all
+   * are left alone: they were not created by an import.
+   */
+  const handleCleanOrphans = async () => {
+    try {
+      setPurging(true);
+      const imports = await fetchAll(base44.entities.Import);
+      const liveIds = new Set((imports || []).map((i) => i.id));
+
+      const found = [];
+      for (const name of IMPORTED_ENTITIES) {
+        const entity = base44.entities[name];
+        if (!entity) continue;
+        const rows = await fetchAll(entity);
+        const orphanIds = new Set(
+          (rows || [])
+            .map((r) => r.import_id)
+            .filter((id) => id && !liveIds.has(id)),
+        );
+        const count = (rows || []).filter((r) => r.import_id && !liveIds.has(r.import_id)).length;
+        if (count > 0) found.push({ name, count, orphanIds: Array.from(orphanIds) });
+      }
+
+      if (found.length === 0) {
+        toast({ title: "Aucune donnée orpheline", description: "Chaque enregistrement est rattaché à un import existant." });
+        return;
+      }
+
+      const total = found.reduce((s, f) => s + f.count, 0);
+      const detail = found.map((f) => `${f.count} ${f.name}`).join(", ");
+      if (!window.confirm(
+        `${total} enregistrement(s) proviennent d'imports qui n'existent plus : ${detail}.\n\n`
+        + "Ces lignes continuent d'alimenter vos totaux sans être rattachées à aucun fichier. Les supprimer ?",
+      )) return;
+
+      let removed = 0;
+      for (const { name, orphanIds } of found) {
+        for (const importId of orphanIds) {
+          const res = await base44.entities[name].deleteMany({ import_id: importId });
+          removed += Number(res?.deleted) || 0;
+        }
+      }
+      qc.invalidateQueries();
+      toast({ title: `${removed} enregistrement(s) orphelin(s) supprimé(s)` });
+    } catch (e) {
+      toast({ title: "Erreur: " + e.message, variant: "destructive" });
+    } finally {
+      setPurging(false);
+    }
+  };
+
   const handlePurgeAll = async () => {
     if (!window.confirm("Cela supprimera DÉFINITIVEMENT toutes vos transactions, KPI, anomalies, risques, opportunités et recommandations. Continuer ?")) return;
     try {
