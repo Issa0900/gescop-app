@@ -99,9 +99,22 @@ export default function Produits() {
     return isStockAlert(stockOf(p), p.reorder_point, alertSettings);
   });
 
-  // Compute actual sales per product from orders (most recent month)
-  const orderMonths = (orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean).sort();
-  const latestMonth = orderMonths.length > 0 ? orderMonths[orderMonths.length - 1] : null;
+  // Sales per product over the last 3 COMPLETE months.
+  //
+  // This used to rank products on the single most recent month present in the
+  // orders — which is the month in progress. With 11 days of September against
+  // 18 months of history, almost every product scored 0 and the "Top 10" chart
+  // came up empty. The in-progress month is excluded here like everywhere else,
+  // and three months are used so one quiet month cannot empty the ranking.
+  const cm = currentMonthKey();
+  const completeMonths = Array.from(
+    new Set((orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean)),
+  ).filter((m) => m !== cm).sort();
+  const windowMonths = new Set(completeMonths.slice(-3));
+  const windowLabel = windowMonths.size > 0
+    ? `${formatMonthLabel(completeMonths.slice(-3)[0])} → ${formatMonthLabel(completeMonths[completeMonths.length - 1])}`
+    : null;
+
   const salesByProduct = {};
   const totalSalesByProduct = {};
   const totalRevByProduct = {};
@@ -113,13 +126,13 @@ export default function Produits() {
     const rev = Number(o.total) || 0;
     totalSalesByProduct[pid] = (totalSalesByProduct[pid] || 0) + qty;
     totalRevByProduct[pid] = (totalRevByProduct[pid] || 0) + rev;
-    if (latestMonth && m !== latestMonth) return;
+    if (windowMonths.size > 0 && !windowMonths.has(m)) return;
     salesByProduct[pid] = (salesByProduct[pid] || 0) + qty;
   });
   const topBySales = [...products]
     .map((p) => ({
       ...p,
-      _recentSales: salesByProduct[p.product_id] || (latestMonth ? 0 : (p.monthly_sales || 0)),
+      _recentSales: salesByProduct[p.product_id] || (windowMonths.size > 0 ? 0 : (p.monthly_sales || 0)),
     }))
     .sort((a, b) => (b._recentSales || 0) - (a._recentSales || 0))
     .slice(0, 10);
@@ -139,7 +152,21 @@ export default function Produits() {
     value: v,
     key: s,
   }));
-  const inventoryValue = latestInv.reduce((s, i) => s + (Number(i.inventory_value) || 0), 0);
+  // Stock value: use the imported inventory_value when present, otherwise
+  // derive it from the recorded stock and the product's purchase cost. That
+  // column is often empty in exports, and summing it blindly displayed 0 $
+  // worth of stock next to hundreds of tracked products.
+  const productById = {};
+  products.forEach((p) => { productById[p.product_id] = p; });
+  let inventoryValueEstimated = false;
+  const inventoryValue = latestInv.reduce((s, i) => {
+    const stated = Number(i.inventory_value);
+    if (Number.isFinite(stated) && stated > 0) return s + stated;
+    const cost = Number(productById[i.product_id]?.purchase_cost) || 0;
+    const qty = Number(i.closing_stock) || 0;
+    if (cost > 0 && qty > 0) inventoryValueEstimated = true;
+    return s + cost * qty;
+  }, 0);
 
   // Table rows + filtering (search, category, real stock status)
   const statusOf = (p) => invByProduct[p.product_id]?.stock_status || p.status;
@@ -192,7 +219,7 @@ export default function Produits() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Top 10 produits {latestMonth ? `(${formatMonthLabel(latestMonth)})` : "(ventes/mois)"}
+            Top 10 produits {windowLabel ? `(${windowLabel})` : "(ventes/mois)"}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={topBarData} margin={{ left: 10, right: 10, bottom: 60 }}>
