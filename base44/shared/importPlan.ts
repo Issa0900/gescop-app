@@ -19,7 +19,8 @@
 // la preuve gagne. Voir verifierAvecPreuves().
 
 import { getSchema } from "./entitySchemas.ts";
-import type { ConventionDate } from "./importUtils.ts";
+import { parseDate, type ConventionDate } from "./importUtils.ts";
+import { trouverLigneEntetes, detectEntityByHeaders, detectEntityByFieldOverlap } from "./sheetDetect.ts";
 
 export type Confiance = "haute" | "moyenne" | "faible";
 export type OriginePlan = "ia" | "ia+preuves" | "regles";
@@ -328,4 +329,108 @@ export async function analyserFichier(
   const { plan, refus } = validerPlan(brut, matrix);
   if (!plan) return { plan: planDeSecours, refus, erreur: "plan refuse" };
   return { plan: verifierAvecPreuves(plan, matrix), refus };
+}
+
+// ---------------------------------------------------------------------------
+// 6. Plan de secours : les regles deterministes, quand l'IA n'a pas repondu
+// ---------------------------------------------------------------------------
+
+/**
+ * Un import ne doit jamais echouer parce qu'un service d'IA est en panne, lent
+ * ou saturé. Ce plan reproduit le comportement historique : ligne d'en-tetes
+ * trouvee par heuristique, entite deduite des colonnes, rattachement des
+ * colonnes laisse a la table de synonymes de normalizeKeys (champ: null ici
+ * signifie « le pipeline decidera », pas « colonne ignoree »).
+ */
+export function planParRegles(matrix: any[][], nomFichier: string, entiteConnue?: string | null): PlanImport {
+  const ligne = matrix.length > 0 ? trouverLigneEntetes(matrix) : 0;
+  const entetes = (matrix[ligne] || []).map((h: any) => String(h ?? "").trim()).filter((h: string) => h !== "");
+  const entite = entiteConnue || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
+  return {
+    entite,
+    ligne_entetes: ligne,
+    lignes_ignorees: [],
+    colonnes: entetes.map((c: string) => ({ colonne: c, champ: null })),
+    confiance: "faible",
+    explication: entite
+      ? `Lecture automatique de ${nomFichier} : ${entetes.length} colonnes reconnues comme des donnees de type ${entite}.`
+      : `Lecture automatique de ${nomFichier} : le type de donnees n'a pas pu etre determine.`,
+    origine: "regles",
+    corrections: [],
+  };
+}
+
+/** Le plan de secours laisse le mapping au pipeline historique. */
+export function planSansRattachement(plan: PlanImport): boolean {
+  return plan.origine === "regles" || plan.colonnes.every((c) => !c.champ);
+}
+
+// ---------------------------------------------------------------------------
+// 7. Application du plan
+// ---------------------------------------------------------------------------
+
+/**
+ * Transforme la matrice brute en lignes exploitables, selon le plan.
+ *
+ * C'est ici que se materialise la separation : l'IA a decrit le fichier, le
+ * code l'applique — a chaque ligne, de la meme facon, sans jamais redemander
+ * son avis a personne. Deux imports du meme fichier donnent donc exactement le
+ * meme resultat, ce qu'un appel par ligne ne pourrait pas garantir.
+ *
+ * Les valeurs illisibles ne sont PAS corrigees ni supprimees : elles passent
+ * telles quelles a la normalisation, qui les mettra en quarantaine avec un
+ * motif. Masquer une valeur douteuse serait exactement le defaut qu'on cherche
+ * a eviter.
+ */
+export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string, any>[] {
+  const entetes = (matrix[plan.ligne_entetes] || []).map((h: any, i: number) => String(h ?? "").trim() || `col_${i + 1}`);
+  const ignorees = new Set(plan.lignes_ignorees);
+  const rattachement = new Map<number, PlanColonne>();
+  plan.colonnes.forEach((col) => {
+    const idx = entetes.indexOf(col.colonne);
+    if (idx >= 0) rattachement.set(idx, col);
+  });
+
+  const rows: Record<string, any>[] = [];
+  for (let i = plan.ligne_entetes + 1; i < matrix.length; i += 1) {
+    if (ignorees.has(i)) continue;
+    const brute = matrix[i] || [];
+    if (brute.every((c: any) => String(c ?? "").trim() === "")) continue;
+
+    const obj: Record<string, any> = {};
+    entetes.forEach((entete, idx) => {
+      const col = rattachement.get(idx);
+      let valeur = brute[idx] ?? "";
+
+      // Traduction des codes maison ("D" -> expense) decidee par l'analyse.
+      if (col?.valeurs) {
+        const cle = String(valeur ?? "").trim();
+        if (Object.prototype.hasOwnProperty.call(col.valeurs, cle)) valeur = col.valeurs[cle];
+      }
+      // Convention de date imposee a toute la colonne. Si la valeur reste
+      // illisible on garde l'originale : la quarantaine dira pourquoi.
+      if (col?.convention_date) {
+        const d = parseDate(valeur, col.convention_date);
+        if (d !== null) valeur = d;
+      }
+
+      if (col && col.champ) obj[col.champ] = valeur;
+      // Sans rattachement explicite (plan de secours, ou colonne que l'analyse
+      // n'a pas su nommer), on conserve l'intitule d'origine : la table de
+      // synonymes de normalizeKeys reste alors la voie normale.
+      else if (!col || planSansRattachementColonne(col)) obj[entete] = valeur;
+    });
+    if (Object.keys(obj).length > 0) rows.push(obj);
+  }
+  return rows;
+}
+
+/**
+ * Une colonne que l'analyse a explicitement laissee sans champ doit-elle etre
+ * passee au pipeline ? Oui tant que le plan vient des regles (le rattachement
+ * n'a simplement pas ete tente) ; non quand l'IA a decide que la colonne ne
+ * correspondait a rien — auquel cas la lui reproposer irait contre sa lecture.
+ */
+function planSansRattachementColonne(col: PlanColonne): boolean {
+  return col.champ === null && col.convention_date == null && !col.valeurs;
 }
