@@ -7,7 +7,7 @@ import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
 import ProductFilters from "@/components/produits/ProductFilters";
 import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
 import { useCompany } from "@/hooks/useCompany";
-import { getStockAlertSettings, isStockAlert } from "@/lib/stockAlerts";
+import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
 import { latestByKey, currentMonthKey } from "@/lib/periods";
 import { fetchAll } from "@/lib/fetchAll";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
@@ -215,8 +215,16 @@ export default function Produits() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
         <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${avgMargin.toFixed(1)}%`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Stock dormant" value={dormantCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Rupture / proche rupture" value={ruptureCount} sublabel={`sur ${latestInv.length} produits suivis`} icon={AlertTriangle} accent={ruptureCount > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Stock dormant" value={dormantCount} sublabel={`sur ${stock.tracked} produits suivis`} icon={Boxes} accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard
+          label="Sous le seuil d'alerte"
+          value={ruptureCount}
+          sublabel={outOfStockCount > 0
+            ? `dont ${outOfStockCount} en rupture totale · seuil ${alertSettings.threshold} u.`
+            : `seuil ${alertSettings.threshold} unité${alertSettings.threshold === 1 ? "" : "s"} · sur ${stock.tracked} suivis`}
+          icon={AlertTriangle}
+          accent={ruptureCount > 0 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
+        />
       </div>
 
       <StockThresholdSettings
