@@ -70,6 +70,12 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
+      // The default fast model skimmed this long multi-source brief and declared
+      // whole sections "données absentes" — trésorerie, clients, marketing — even
+      // though the figures were right there in the prompt. A stronger model
+      // actually reads them, which is the difference between a diagnostic and a
+      // page of false gaps.
+      model: "gemini_3_1_pro",
       response_json_schema: {
         type: "object",
         properties: {
