@@ -5,7 +5,7 @@ import SliderControl from "@/components/simulateur/SliderControl";
 import EmptyState from "@/components/EmptyState";
 import { Calculator, Upload, TrendingUp, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn, formatPct } from "@/lib/utils";
 import { currentMonthKey } from "@/lib/periods";
 
 export default function Simulateur() {
@@ -74,7 +74,7 @@ export default function Simulateur() {
   if (!current || !sim) return null;
 
   const fmt = (v) => `${Math.round(v).toLocaleString("fr-CA")} $`;
-  const fmtPct = (v) => `${v.toFixed(1)}%`;
+  const fmtPct = (v) => `${formatPct(v)}`;
   const rows = [
     { label: "Prix moyen", actual: fmt(current.avgPrice), sim: fmt(sim.newPrice) },
     { label: "Volume (nb de transactions de vente)", actual: Math.round(current.volume).toLocaleString("fr-CA"), sim: Math.round(sim.newVolume).toLocaleString("fr-CA") },

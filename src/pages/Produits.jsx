@@ -1,3 +1,4 @@
+import { formatPct } from "@/lib/utils";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -215,7 +216,7 @@ export default function Produits() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
-        <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${avgMargin.toFixed(1)}%`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${formatPct(avgMargin)}`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard
           label="Stock dormant"
           value={dormantCount}
