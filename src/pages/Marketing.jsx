@@ -12,11 +12,11 @@ import {
 export default function Marketing() {
   const { data: campaigns, isLoading: lc } = useQuery({
     queryKey: ["campaigns"],
-    queryFn: async () => (await base44.entities.Campaign.list()) || [],
+    queryFn: () => fetchAll(base44.entities.Campaign),
   });
   const { data: daily, isLoading: ld } = useQuery({
     queryKey: ["campaign-daily-summary"],
-    queryFn: async () => (await base44.entities.CampaignDaily.list("-date", 500)) || [],
+    queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
   });
 
   if (lc || ld) return <p className="text-sm text-muted-foreground">Chargement…</p>;
