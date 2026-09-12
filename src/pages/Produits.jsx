@@ -9,6 +9,7 @@ import StockThresholdSettings from "@/components/produits/StockThresholdSettings
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert } from "@/lib/stockAlerts";
 import { latestByKey } from "@/lib/periods";
+import { fetchAll } from "@/lib/fetchAll";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
