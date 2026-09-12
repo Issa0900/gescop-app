@@ -2,11 +2,21 @@
 // and metric traceability (formula + source + period + intermediate values).
 // Read-only — it never modifies data, it only reports what the metrics are built on.
 
-import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, latestByKey, meanOf } from "@/lib/periods";
+import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, latestByKey, meanOf } from "@/lib/periods";
+import {
+  aggregateMarginPct,
+  netBurnRate,
+  runwayMonths,
+  fmtRunway,
+  latestCashBalance,
+  churnStats,
+  customerValue,
+} from "@/lib/metrics";
 
 const num = (v) => Number(v) || 0;
 const sum = (arr, f) => (arr || []).reduce((s, x) => s + num(f(x)), 0);
-const fmt$ = (v) => `${Math.round(v).toLocaleString("fr-CA")} $`;
+// null means "not computable" and must render as such, never as 0 $.
+const fmt$ = (v) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? "—" : `${Math.round(v).toLocaleString("fr-CA")} $`);
 const pctGap = (a, b) => {
   const base = Math.max(Math.abs(a), Math.abs(b));
   return base > 0 ? (Math.abs(a - b) / base) * 100 : 0;
@@ -312,35 +322,39 @@ export function buildMetricTraces(d) {
   const rev3 = sumLast(revM, 3);
   const exp3 = sumLast(expM, 3);
 
+  const margin3 = aggregateMarginPct(revM, expM, 3);
   traces.push({
     domain: "Finance",
-    metric: "Marge brute (3 mois)",
-    formula: "(revenus − dépenses) ÷ revenus, sur les 3 derniers mois complets",
+    metric: "Marge nette (3 mois)",
+    formula: "(revenus − dépenses) ÷ revenus, agrégé sur les 3 derniers mois complets",
     source: `Transactions — ${incomes.length} revenus, ${txnExp.length} dépenses`,
-    period: revM.length ? revM.slice(-3).map((m) => m.month).join(", ") : "—",
+    period: revM.length >= 3 ? revM.slice(-3).map((m) => m.month).join(", ") : "—",
     steps: [
       ["Revenus 3 mois", fmt$(rev3)],
       ["Dépenses 3 mois", fmt$(exp3)],
-      ["Marge", rev3 > 0 ? `${(((rev3 - exp3) / rev3) * 100).toFixed(1)} %` : "—"],
+      ["Marge", margin3 !== null ? `${margin3.toFixed(1)} %` : "—"],
     ],
-    note: "Le mois en cours est exclu : partiel, il ferait chuter artificiellement la marge.",
+    note: "Marge agrégée sur le trimestre, et non moyenne des marges mensuelles : un mois à 2 000 $ de revenus ne doit pas peser autant qu'un mois à 100 000 $. Nette et non brute : toutes les dépenses sont déduites, pas seulement le coût des ventes. Le mois en cours est exclu.",
   });
 
-  const cfSorted = [...cashflow].sort((a, b) => (a.date < b.date ? 1 : -1));
-  const latestCash = num(cfSorted[0]?.closing_cash);
-  const burn = meanOf(expM.slice(-3).map((e) => e.val));
+  const cfSorted = [...cashflow].sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+  const latestCash = latestCashBalance(cashflow);
+  const burn = netBurnRate(revM, expM, 3);
+  const runway = latestCash === null ? null : runwayMonths(latestCash, burn);
   traces.push({
     domain: "Trésorerie",
     metric: "Autonomie (runway)",
-    formula: "solde de clôture le plus récent ÷ dépenses mensuelles moyennes (3 mois)",
+    formula: "solde de clôture le plus récent ÷ consommation NETTE de trésorerie par mois (dépenses − revenus, sur 3 mois)",
     source: `Trésorerie — ${cashflow.length} relevés quotidiens`,
     period: cfSorted[0]?.date ? `solde au ${cfSorted[0].date}` : "—",
     steps: [
       ["Solde actuel", fmt$(latestCash)],
-      ["Dépenses moy./mois", fmt$(burn)],
-      ["Autonomie", burn > 0 ? `${(latestCash / burn).toFixed(1)} mois` : "—"],
+      ["Revenus 3 mois", fmt$(rev3)],
+      ["Dépenses 3 mois", fmt$(exp3)],
+      ["Burn net / mois", burn === null ? "—" : burn === 0 ? "aucun (autofinancée)" : fmt$(burn)],
+      ["Autonomie", fmtRunway(runway)],
     ],
-    note: "Le solde vient du fichier trésorerie importé, jamais du cumul des marges.",
+    note: "Le burn est NET : une entreprise qui encaisse plus qu'elle ne dépense n'a pas de problème d'autonomie. Comparer le solde aux dépenses brutes déclenchait une alerte critique sur une entreprise rentable. Le solde vient du fichier trésorerie importé, jamais du cumul des marges.",
   });
 
   const oRevM = monthlyAggComplete(orders, "date", "total");
