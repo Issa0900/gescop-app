@@ -61,47 +61,67 @@ export default function Previsions() {
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ["transactions-forecast"],
-    queryFn: async () => { const l = await base44.entities.Transaction.list("-date", 500); return l || []; },
+    // Paginated: capping at 500 rows truncated the OLDEST month in the window,
+    // leaving a partial month as the first point of the regression and tilting
+    // the whole trend upwards. The same care taken with the in-progress month
+    // has to be taken at the other end of the series.
+    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
   });
   // Real imported cash position — the projection must start from the actual
   // balance, not from an accumulation of transaction margins.
   const { data: cashflow } = useQuery({
     queryKey: ["cashflow-forecast"],
-    queryFn: async () => { const l = await base44.entities.Cashflow.list("-date", 1000); return l || []; },
+    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
   });
 
   const result = useMemo(() => {
     if (!transactions || transactions.length === 0) return null;
-    const byMonth = {};
-    transactions.forEach((t) => {
-      const m = (t.date || "").slice(0, 7);
-      if (!m) return;
-      if (!byMonth[m]) byMonth[m] = { income: 0, expense: 0 };
-      if (t.type === "income") byMonth[m].income += t.amount || 0;
-      else byMonth[m].expense += t.amount || 0;
-    });
-    // The in-progress month holds only a few days of data: leaving it in drags
-    // the regression down and invents a downward trend.
-    const cm = currentMonthKey();
-    const months = Object.keys(byMonth).filter((m) => m !== cm).sort();
-    if (months.length < 3) return null;
-    const monthly = months.map((m, i) => ({
-      month: m, income: byMonth[m].income, expense: byMonth[m].expense,
-      margin: byMonth[m].income - byMonth[m].expense, x: i,
+    // monthlyAggComplete drops the in-progress month AND fills missing months
+    // with zero. Indexing the array positions used to be the regression's x
+    // axis, so a month with no activity compressed the timeline and bent the
+    // slope; the x axis is now genuine calendar distance.
+    const incomeSeries = monthlyAggComplete(
+      transactions.filter((t) => t.type === "income"), "date", "amount",
+    );
+    const expenseSeries = monthlyAggComplete(
+      transactions.filter((t) => t.type === "expense"), "date", "amount",
+    );
+    const expByMonth = {};
+    expenseSeries.forEach((e) => { expByMonth[e.month] = e.val; });
+    const monthly = incomeSeries.map((r, i) => ({
+      month: r.month,
+      income: r.val,
+      expense: expByMonth[r.month] || 0,
+      margin: r.val - (expByMonth[r.month] || 0),
+      x: i,
     }));
+    if (monthly.length < 3) return null;
+
     const xs = monthly.map((d) => d.x);
     const incomeFit = fit(xs, monthly.map((d) => d.income));
     const marginFit = fit(xs, monthly.map((d) => d.margin));
     const lastX = xs[xs.length - 1];
-    const fcst = (f, x) => { const v = f.slope * x + f.intercept; return { value: v, lower: v - f.stderr, upper: v + f.stderr }; };
-    const incomeF = [1, 2, 3].map((i) => fcst(incomeFit, lastX + i));
-    const marginF = [1, 2, 3].map((i) => fcst(marginFit, lastX + i));
-    const cfSorted = (cashflow || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const incomeF = [1, 2, 3].map((i) => forecastAt(incomeFit, lastX + i));
+    const marginF = [1, 2, 3].map((i) => forecastAt(marginFit, lastX + i));
+
+    const cfSorted = (cashflow || []).slice().sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
     const hasCash = cfSorted.length > 0;
     const cumulativeNow = hasCash
       ? Number(cfSorted[0].closing_cash) || 0
       : monthly.reduce((s, d) => s + d.margin, 0);
     const cashDate = hasCash ? cfSorted[0].date : null;
+
+    // Cash projection: regress the REAL monthly net cash flow when the treasury
+    // file carries it. Accounting margin is not cash — receivables, payables,
+    // sales tax, capex and loan repayments all sit between the two — so adding
+    // projected margins to a bank balance was mixing two different quantities.
+    const netFlowSeries = monthlyAggComplete(cashflow || [], "date", "net_cash_flow");
+    const usesRealCashFlow = netFlowSeries.length >= 3;
+    const cashFlowFit = usesRealCashFlow
+      ? fit(netFlowSeries.map((_, i) => i), netFlowSeries.map((d) => d.val))
+      : marginFit;
+    const cashLastX = usesRealCashFlow ? netFlowSeries.length - 1 : lastX;
+    const cashF = [1, 2, 3].map((i) => forecastAt(cashFlowFit, cashLastX + i));
     // Monthly closing balances give the treasury chart its real history.
     const cashHistory = [];
     if (hasCash) {
