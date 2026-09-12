@@ -34,6 +34,7 @@ async function importRows(
   rows: Record<string, any>[],
   sourceType: string,
   fileLabel: string,
+  fileUrl = "",
 ) {
   const schema = await getEntitySchema(base44, entityName);
   const properties = schema ? schema.properties : null;
@@ -42,7 +43,7 @@ async function importRows(
   const importRec = await base44.entities.Import.create({
     source_type: sourceType,
     file_name: fileLabel,
-    file_url: "",
+    file_url: fileUrl,
     entity_type: entityName,
     status: "en_cours",
     rows_processed: 0,
@@ -52,6 +53,7 @@ async function importRows(
   const toCreate: Record<string, any>[] = [];
   let quarantined = 0;
   const missingFields = new Set<string>();
+  const samples: string[] = [];
   rows.forEach((row) => {
     if (!row || typeof row !== "object") { quarantined++; return; }
     const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType);
@@ -60,6 +62,7 @@ async function importRows(
     const missing = missingRequired(normalized, required);
     if (missing.length > 0) {
       missing.forEach((m) => missingFields.add(m));
+      if (samples.length < 2) samples.push(JSON.stringify(row).slice(0, 220));
       quarantined++;
       return;
     }
@@ -70,7 +73,10 @@ async function importRows(
   quarantined += rejected;
 
   const messages: string[] = [];
-  if (missingFields.size > 0) messages.push(`champs obligatoires manquants : ${Array.from(missingFields).join(", ")}`);
+  if (missingFields.size > 0) {
+    messages.push(`champs obligatoires manquants : ${Array.from(missingFields).join(", ")}`);
+    if (samples.length > 0) messages.push(`exemple de ligne rejetée : ${samples[0]}`);
+  }
   if (errors.length > 0) messages.push(errors[0]);
 
   const quality = rows.length > 0 ? Math.round((created / rows.length) * 100) : 0;
@@ -138,7 +144,7 @@ export default async function (req: Request) {
               });
               continue;
             }
-            const res = await importRows(base44, entity, rows, sourceType, label);
+            const res = await importRows(base44, entity, rows, sourceType, label, file_url);
             results.push({ file_name: label, detected_via: via, ...res });
           }
         } catch (e: any) {
@@ -164,7 +170,7 @@ export default async function (req: Request) {
             });
             continue;
           }
-          const res = await importRows(base44, entity, rows, sourceType, file_name);
+          const res = await importRows(base44, entity, rows, sourceType, file_name, file_url);
           results.push({ file_name, detected_via: via, ...res });
         } catch (e: any) {
           results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
@@ -216,7 +222,7 @@ export default async function (req: Request) {
           else if (out && Array.isArray(Object.values(out)[0])) rows = Object.values(out)[0] as any[];
         }
 
-        const res = await importRows(base44, entityName, rows, sourceType, file_name);
+        const res = await importRows(base44, entityName, rows, sourceType, file_name, file_url);
         results.push({ file_name, detected_via: entity_override ? "manuel" : "nom", ...res });
       } catch (e: any) {
         results.push({ file_name, entity: entityName, status: "echoue", rows_read: 0, rows: 0, error: e.message });
