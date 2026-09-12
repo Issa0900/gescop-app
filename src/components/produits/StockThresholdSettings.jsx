@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { SlidersHorizontal, Check, RotateCcw } from "lucide-react";
 
 const SLIDER_MAX = 100;
+const DORMANT_MAX = 24;
 
 /**
  * Stock alert threshold — applied live.
@@ -24,6 +25,8 @@ export default function StockThresholdSettings({
   settings,
   isDraft,
   alertCount,
+  dormantCount,
+  dormancyMeasurable,
   trackedCount,
   onChange,
   onSaved,
@@ -47,6 +50,7 @@ export default function StockThresholdSettings({
       await base44.entities.Company.update(company.id, {
         stock_alert_threshold: Math.max(0, Number(settings.threshold) || 0),
         stock_alert_use_reorder_point: settings.useReorderPoint,
+        stock_dormant_months: Math.max(1, Number(settings.dormantMonths) || 3),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -67,11 +71,18 @@ export default function StockThresholdSettings({
             Seuil d'alerte stock
           </h2>
         </div>
-        {/* Live count: the whole point of the control is watching this move. */}
+        {/* Live counts: the whole point of the controls is watching these move. */}
         <p className="text-sm text-muted-foreground">
           <span className="text-base font-semibold text-foreground">{alertCount}</span>
-          {" "}produit{alertCount === 1 ? "" : "s"} en alerte
-          {trackedCount > 0 && <span className="ml-1 text-xs">({share} % du catalogue)</span>}
+          {" "}en alerte
+          {trackedCount > 0 && <span className="ml-1 text-xs">({share} %)</span>}
+          {dormancyMeasurable && (
+            <>
+              <span className="mx-2 text-border">·</span>
+              <span className="text-base font-semibold text-foreground">{dormantCount}</span>
+              {" "}dormant{dormantCount === 1 ? "" : "s"}
+            </>
+          )}
         </p>
       </div>
 
@@ -105,7 +116,40 @@ export default function StockThresholdSettings({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 lg:pb-6">
+        <div className="min-w-0 flex-1">
+          <Label htmlFor="dormant-range" className="text-xs text-muted-foreground">
+            Dormant après {settings.dormantMonths} mois sans vente
+          </Label>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              id="dormant-range"
+              type="range"
+              min="1"
+              max={DORMANT_MAX}
+              step="1"
+              value={Math.min(DORMANT_MAX, Number(settings.dormantMonths) || 3)}
+              onChange={(e) => set({ dormantMonths: Number(e.target.value) })}
+              className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
+              disabled={!dormancyMeasurable}
+            />
+            <Input
+              type="number"
+              min="1"
+              aria-label="Dormance en mois sans vente"
+              value={String(settings.dormantMonths)}
+              onChange={(e) => set({ dormantMonths: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
+              className="w-20 shrink-0"
+              disabled={!dormancyMeasurable}
+            />
+          </div>
+          <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+            <span>1 mois</span><span>{DORMANT_MAX} mois</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2">
           <Switch
             id="use-reorder"
             checked={settings.useReorderPoint}
@@ -116,7 +160,7 @@ export default function StockThresholdSettings({
           </Label>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 lg:pb-4">
+        <div className="flex shrink-0 items-center gap-2">
           {isDraft && (
             <Button variant="ghost" size="sm" onClick={() => onChange(null)} disabled={saving}>
               <RotateCcw className="mr-1.5 h-4 w-4" /> Rétablir
