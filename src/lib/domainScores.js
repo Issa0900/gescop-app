@@ -210,7 +210,7 @@ export function computeDomainScores(data) {
   };
 
   // === CLIENTS — single churn definition + acquisition trend ===
-  const churn = churnStats(customers);
+  const churn = churnStats(customers, orders);
   const custMonthly = monthlyAggComplete(customers || [], "acquisition_date", "customer_id", "count");
   const new3 = sumLast(custMonthly, 3);
   const newPrev3 = sumPrev(custMonthly, 3);
