@@ -72,18 +72,23 @@ export async function buildBusinessContext(base44) {
   const customers = await readAll(base44.entities.Customer, "clients", "-created_date");
   const products = await readAll(base44.entities.Product, "produits", "-created_date");
   const inventory = await readAll(base44.entities.Inventory, "inventaire", "-date");
-  const suppliers = await safeList(base44.entities.Supplier);
-  const purchases = await safeList(base44.entities.Purchase, "-date", 200);
-  const campaigns = await safeList(base44.entities.Campaign);
-  const campaignDaily = await safeList(base44.entities.CampaignDaily, "-date", 200);
-  const employees = await safeList(base44.entities.Employee);
-  const payroll = await safeList(base44.entities.Payroll, "-period", 100);
-  const expenses = await safeList(base44.entities.Expense, "-date", 200);
-  const cashflow = await safeList(base44.entities.Cashflow, "-date", 100);
-  const interactions = await safeList(base44.entities.Interaction, "-date", 200);
-  const competitors = await safeList(base44.entities.Competitor);
-  const goals = await safeList(base44.entities.Goal);
-  const events = await safeList(base44.entities.Event, "-date", 50);
+  // These were read with a small cap (100–500 rows) while each source holds
+  // thousands: every total built from them — coût paie, dépenses, trésorerie,
+  // achats, ROAS, taux de plaintes — was computed on a fraction of the data and
+  // the AI reported figures far below reality. They feed aggregates, so they
+  // must be read in full like the sources above.
+  const suppliers = await readAll(base44.entities.Supplier, "fournisseurs", "-created_date");
+  const purchases = await readAll(base44.entities.Purchase, "achats", "-date");
+  const campaigns = await readAll(base44.entities.Campaign, "campagnes", "-created_date");
+  const campaignDaily = await readAll(base44.entities.CampaignDaily, "campagnes quotidiennes", "-date");
+  const employees = await readAll(base44.entities.Employee, "employés", "-created_date");
+  const payroll = await readAll(base44.entities.Payroll, "paie", "-period");
+  const expenses = await readAll(base44.entities.Expense, "dépenses", "-date");
+  const cashflow = await readAll(base44.entities.Cashflow, "trésorerie", "-date");
+  const interactions = await readAll(base44.entities.Interaction, "interactions", "-date");
+  const competitors = await readAll(base44.entities.Competitor, "concurrents", "-created_date");
+  const goals = await readAll(base44.entities.Goal, "objectifs", "-created_date");
+  const events = await readAll(base44.entities.Event, "événements", "-date");
   const kpis = await safeList(base44.entities.Kpi);
   const anomalies = await safeList(base44.entities.Anomaly, "-created_date", 20);
   const risks = await safeList(base44.entities.Risk);
