@@ -234,7 +234,14 @@ export default async function (req: Request) {
     if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await req.json();
-    const { files, entity_override } = body;
+    const { files, entity_override, mode, plans } = body;
+    // Deux temps : "analyser" lit le fichier et rend un plan sans rien ecrire ;
+    // l'import n'a lieu qu'ensuite, avec le plan que l'utilisateur a valide ou
+    // corrige. Un appel sans `mode` garde le comportement historique.
+    const analyseSeule = mode === "analyser";
+    // Les plans confirmes par l'utilisateur, indexes par libelle de feuille.
+    const plansFournis: Record<string, PlanImport> = {};
+    if (plans && typeof plans === "object") Object.assign(plansFournis, plans);
     if (!files || !Array.isArray(files) || files.length === 0) {
       return Response.json({ error: "files requis (tableau de {file_url, file_name})" }, { status: 400 });
     }
@@ -246,64 +253,72 @@ export default async function (req: Request) {
       const ext = (file_name || "").split(".").pop().toLowerCase();
       const sourceType = ["csv", "xlsx", "xls", "tsv", "pdf"].includes(ext) ? ext : "csv";
 
-      // === Excel: every sheet is processed on its own ===
-      if (["xlsx", "xls"].includes(ext)) {
+      // === Classeurs et fichiers texte : meme traitement, a la lecture pres ===
+      if (["xlsx", "xls", "csv", "tsv"].includes(ext)) {
         try {
-          const resp = await fetch(file_url);
-          const ab = await resp.arrayBuffer();
-          const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
+          const feuilles: { label: string; nomFeuille: string; matrix: any[][] }[] = [];
+          if (["xlsx", "xls"].includes(ext)) {
+            const ab = await (await fetch(file_url)).arrayBuffer();
+            const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
+            for (const sheetName of wb.SheetNames) {
+              feuilles.push({ label: `${file_name} [${sheetName}]`, nomFeuille: sheetName, matrix: matriceDeFeuille(wb.Sheets[sheetName]) });
+            }
+          } else {
+            feuilles.push({ label: file_name, nomFeuille: "", matrix: await fetchMatrice(file_url) });
+          }
 
-          for (const sheetName of wb.SheetNames) {
-            const label = `${file_name} [${sheetName}]`;
-            const { rows, headers } = sheetRows(wb.Sheets[sheetName]);
-            if (rows.length === 0) {
+          for (const feuille of feuilles) {
+            const { label, nomFeuille, matrix } = feuille;
+            if (matrix.length === 0) {
               results.push({ file_name: label, entity: null, status: "ignore", rows_read: 0, rows: 0, message: "Feuille vide" });
               continue;
             }
-            // A sheet named "Feuil1"/"Sheet1" carries no information: its columns decide.
-            const generic = /^(feuil|sheet|tab|page)\s*\d*$/i.test(sheetName.trim());
-            const { entity, via } = detect(generic ? "" : sheetName, headers, detectEntityByName(file_name), entity_override);
-            if (!entity) {
+
+            // Le plan valide par l'utilisateur, s'il nous l'a renvoye.
+            const planValide = plansFournis[label];
+            const analyse = planValide
+              ? { plan: planValide, signature: signatureFichier(matrix[planValide.ligne_entetes] || []), refus: [], erreur: undefined }
+              : await planPourFeuille(base44, { matrix, label, nomFichier: file_name, manual: entity_override });
+            const plan = analyse.plan;
+
+            if (analyseSeule) {
               results.push({
-                file_name: label,
-                entity: null,
-                status: "ignore",
-                rows_read: rows.length,
-                rows: 0,
-                message: `Type non reconnu — colonnes lues : ${headers.slice(0, 6).join(", ")}`,
+                file_name: label, sheet: nomFeuille, entity: plan.entite,
+                plan, signature: analyse.signature, refus: analyse.refus, analyse_erreur: analyse.erreur,
+                apercu: apercu(plan, matrix),
+                echantillon: construireEchantillon(matrix, 8),
+                rows_read: Math.max(matrix.length - plan.ligne_entetes - 1, 0),
+                status: "analyse",
               });
               continue;
             }
-            const res = await importRows(base44, entity, rows, sourceType, label, file_url);
-            if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
-            results.push({ file_name: label, detected_via: via, ...res });
-          }
-        } catch (e: any) {
-          results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
-        }
-        continue;
-      }
 
-      // === CSV / TSV: parsed literally, nothing truncated ===
-      if (["csv", "tsv"].includes(ext)) {
-        try {
-          const rows = await fetchDelimitedRows(file_url);
-          const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
-          const { entity, via } = detect(file_name, headers, null, entity_override);
-          if (!entity) {
-            results.push({
-              file_name,
-              entity: null,
-              status: "ignore",
-              rows_read: rows.length,
-              rows: 0,
-              message: `Type non reconnu — colonnes lues : ${headers.slice(0, 6).join(", ")}`,
+            // Une feuille generique ("Feuil1") ne dit rien : ses colonnes decident.
+            const generic = /^(feuil|sheet|tab|page)\s*\d*$/i.test(nomFeuille.trim());
+            const entetesLues = (matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim());
+            let entity = plan.entite;
+            let via = plan.origine;
+            if (!entity) {
+              const parRegles = detect(generic ? "" : (nomFeuille || file_name), entetesLues, detectEntityByName(file_name), entity_override);
+              entity = parRegles.entity;
+              via = parRegles.via as any;
+            }
+            if (!entity) {
+              results.push({
+                file_name: label, entity: null, status: "ignore",
+                rows_read: Math.max(matrix.length - plan.ligne_entetes - 1, 0), rows: 0,
+                message: `Type non reconnu — colonnes lues : ${entetesLues.slice(0, 6).join(", ")}`,
+              });
+              continue;
+            }
+
+            const rows = appliquerPlan(plan, matrix);
+            const res = await importRows(base44, entity, rows, sourceType, label, file_url, {
+              plan, signature: analyse.signature, confirme: Boolean(planValide),
             });
-            continue;
+            if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
+            results.push({ file_name: label, detected_via: via, plan_origine: plan.origine, corrections: plan.corrections, ...res });
           }
-          const res = await importRows(base44, entity, rows, sourceType, file_name, file_url);
-          if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
-          results.push({ file_name, detected_via: via, ...res });
         } catch (e: any) {
           results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
         }
