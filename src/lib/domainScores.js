@@ -18,7 +18,6 @@ import {
   trendDir,
   sumLast,
   sumPrev,
-  latestByKey,
 } from "@/lib/periods";
 import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
 import {
