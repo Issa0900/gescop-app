@@ -116,7 +116,7 @@ export function computeLiveAlerts(data) {
   // --- Opérations : même définition de rupture que la page Produits et les KPI,
   // seuil de l'entreprise compris. Ces alertes ignoraient le seuil réglé par
   // l'utilisateur et ne lisaient que le statut importé. ---
-  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company));
+  const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company), orders);
   const ruptures = stock.rows.filter((r) => r.status === "rupture");
   const proches = stock.alerts.filter((r) => r.status !== "rupture");
   const dormants = stock.rows.filter((r) => r.dormant);
@@ -139,7 +139,7 @@ export function computeLiveAlerts(data) {
       alert(
         "modere",
         "Opérations",
-        `${dormants.length} produits dormants`,
+        `${dormants.length} produits dormants (aucune vente depuis ${stock.dormantMonths} mois)`,
         dormantValue > 0
           ? `${Math.round(dormantValue).toLocaleString("fr-CA")} $ de capital immobilisé.`
           : "Capital immobilisé sans rotation."
