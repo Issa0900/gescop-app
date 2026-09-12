@@ -32,6 +32,7 @@ import {
   customerValue,
   roasWindow,
   previousRoasWindow,
+  anyColumnPresent,
 } from "@/lib/metrics";
 
 const domainLabels = {
@@ -205,6 +206,10 @@ export default function Kpis() {
         o.payment_status === "rembourse" ||
         o.fulfillment_status === "retourne"
       );
+      // 0 % only means "no returns" when at least one column could have
+      // reported one. If all three are absent from the import, the rate is
+      // unknown and the KPI is withheld rather than shown as a clean zero.
+      const hasReturnSignal = anyColumnPresent(orders, ["return_status", "payment_status", "fulfillment_status"]);
       const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
       // 3-month blocks: less sensitive to a single outlier month than 1-vs-1.
@@ -215,7 +220,9 @@ export default function Kpis() {
       result.push({ name: "Commandes (dernier mois complet)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
       // No previous window is computed for the return rate, so no arrow:
       // a trend must come from a change over time, never from the level.
-      result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      if (hasReturnSignal) {
+        result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      }
       if (rev3 !== null) {
         result.push({ name: "CA sur 3 mois", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
       }
