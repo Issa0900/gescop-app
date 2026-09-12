@@ -33,9 +33,13 @@ export default function SignalCard({ signal, prominent = false }) {
       )}
 
       <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground">
-        {signal.source && <span>{signal.source}</span>}
+        {signal.source && (
+          signal.url
+            ? <a href={signal.url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">{signal.source}</a>
+            : <span>{signal.source}</span>
+        )}
         {signal.date && <span>· {signal.date}</span>}
-        {signal.url && <a href={signal.url} target="_blank" rel="noopener noreferrer" className="ml-auto flex items-center gap-0.5 text-primary hover:underline">Consulter <ExternalLink className="h-3 w-3" /></a>}
+        {signal.url && <a href={signal.url} target="_blank" rel="noopener noreferrer" className="ml-auto flex items-center gap-0.5 text-primary hover:underline">Consulter la source <ExternalLink className="h-3 w-3" /></a>}
       </div>
     </div>
   );

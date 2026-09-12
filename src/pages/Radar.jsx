@@ -5,6 +5,7 @@ import SignalCard from "@/components/radar/SignalCard";
 import EmptyState from "@/components/EmptyState";
 import { Radar as RadarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import RadarScanButton from "@/components/radar/RadarScanButton";
 
 const familyLabels = {
   gouvernement: "Gouvernement", economie: "Économie", marche: "Marché",
@@ -28,7 +29,7 @@ export default function Radar() {
   });
 
   if (isLoading) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
-  if (!signals || signals.length === 0) return <EmptyState icon={RadarIcon} title="Radar externe vide" description="Lancez l'analyse IA pour détecter les signaux externes pertinents pour votre entreprise." />;
+  if (!signals || signals.length === 0) return <EmptyState icon={RadarIcon} title="Radar externe vide" description="Le radar ne se déclenche qu'à votre demande. Il ne retient qu'une information liée à votre secteur, votre localisation ou vos concurrents, et uniquement si elle cite une source consultable." action={<RadarScanButton />} />;
 
   const top3 = signals.slice(0, 3);
   const rest = signals.slice(3);
@@ -37,12 +38,17 @@ export default function Radar() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <div className="flex items-center gap-2">
-          <RadarIcon className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">Radar externe</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <RadarIcon className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">Radar externe</h1>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Scan à la demande. Seules les informations liées à votre secteur, votre localisation ou vos concurrents sont retenues, et chaque signal renvoie à sa source d'origine.
+          </p>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">Les signaux externes qui concernent directement votre entreprise.</p>
+        <RadarScanButton variant="outline" />
       </div>
 
       {top3.length > 0 && (
