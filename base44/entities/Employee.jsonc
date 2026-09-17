@@ -55,9 +55,6 @@
     "full_name": {
       "type": "string"
     },
-    "name": {
-      "type": "string"
-    },
     "annual_salary": {
       "type": "number"
     },
@@ -65,9 +62,6 @@
       "type": "number"
     },
     "branch": {
-      "type": "string"
-    },
-    "location": {
       "type": "string"
     },
     "status": {
