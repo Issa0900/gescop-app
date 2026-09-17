@@ -13,8 +13,8 @@ import { fetchAll } from "@/lib/fetchAll";
 import { validSalesOrders } from "@/lib/metrics";
 
 function formatCurrency(val) {
-  if (val === null || val === undefined) return "-";
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(val);
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
+  return `${Math.round(val).toLocaleString("fr-CA")} $`;
 }
 
 export default function RessourcesHumaines() {
@@ -30,6 +30,12 @@ export default function RessourcesHumaines() {
       const normalizedEmployees = (employees || []).map((employee) => ({
         ...employee,
         employee_id: employee.employee_id || employee.id || employee.employee_number || employee.matricule,
+        display_name: `${employee.first_name || ""} ${employee.last_name || ""}`.trim()
+          || employee.full_name
+          || employee.name
+          || employee.employee_id
+          || employee.id
+          || "Inconnu",
         status: employee.status || "actif",
       }));
       const normalizedPayrolls = (payrolls || []).map((payroll) => ({
@@ -282,9 +288,12 @@ export default function RessourcesHumaines() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold shadow-sm">
-                        {String(emp.employee_id || "?").slice(0, 2).toUpperCase()}
+                        {String(emp.display_name || "?").slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="font-medium text-slate-900">{emp.employee_id || "Inconnu"}</div>
+                      <div>
+                        <div className="font-medium text-slate-900">{emp.display_name}</div>
+                        {emp.employee_id && <div className="text-xs text-muted-foreground">{emp.employee_id}</div>}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-600">
