@@ -10,6 +10,7 @@ import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
@@ -38,6 +39,8 @@ const Clients = lazy(() => import('@/pages/Clients'));
 const Produits = lazy(() => import('@/pages/Produits'));
 const Marketing = lazy(() => import('@/pages/Marketing'));
 const Tresorerie = lazy(() => import('@/pages/Tresorerie'));
+const Finance = lazy(() => import('@/pages/Finance'));
+const RessourcesHumaines = lazy(() => import('@/pages/RessourcesHumaines'));
 const Audit = lazy(() => import('@/pages/Audit'));
 
 const AuthenticatedApp = () => {
@@ -56,10 +59,6 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
     }
   }
 
@@ -89,11 +88,14 @@ const AuthenticatedApp = () => {
           <Route path="/decisions" element={<Decisions />} />
           <Route path="/historique" element={<Historique />} />
           <Route path="/importer" element={<ImportPage />} />
+          <Route path="/import" element={<ImportPage />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/produits" element={<Produits />} />
           <Route path="/marketing" element={<Marketing />} />
+          <Route path="/rh" element={<RessourcesHumaines />} />
           <Route path="/tresorerie" element={<Tresorerie />} />
+          <Route path="/finance" element={<Finance />} />
           <Route path="/kpis" element={<Kpis />} />
           <Route path="/anomalies" element={<Anomalies />} />
           <Route path="/risques" element={<Risques />} />
@@ -121,8 +123,10 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
+          <ErrorBoundary>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </ErrorBoundary>
         </Router>
         <Toaster />
       </QueryClientProvider>

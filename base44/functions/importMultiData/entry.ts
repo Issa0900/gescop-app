@@ -1,5 +1,5 @@
-import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
-import { normalizeRow } from "../../shared/importUtils.ts";
+import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
+import { normalizeRow, isSummaryOrTotalRow } from "../../shared/importUtils.ts";
 import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import {
@@ -7,6 +7,13 @@ import {
   construireEchantillon, type PlanImport,
 } from "../../shared/importPlan.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
+import { buildBusinessContext } from "../../shared/businessContext.ts";
+import { normalizeRow as normalizeRowForCore } from "../../shared/normalizationEngine.ts";
+import { profileData } from "../../shared/dataProfiler.ts";
+import { matchConcept } from "../../shared/semanticMatcher.ts";
+import { detectGrain } from "../../shared/grainEngine.ts";
+import { generateObservations } from "../../shared/observationEngine.ts";
+import { deduplicateRows } from "../../shared/deduplication.ts";
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
@@ -37,6 +44,19 @@ export function detect(label: string, headers: string[], fileGuess?: string | nu
   return { entity: null, via: null };
 }
 
+function forceTransactionColumns(plan: PlanImport): PlanImport {
+  if (plan.entite !== "Transaction") return plan;
+  return {
+    ...plan,
+    colonnes: plan.colonnes.map((col: any) => {
+      const key = String(col.colonne || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
+      if (key === "type") return { ...col, champ: "type" };
+      if (key === "category" || key === "categorie") return { ...col, champ: "category" };
+      return col;
+    }),
+  };
+}
+
 
 /**
  * Plan de lecture d'une feuille : memoire, puis IA, puis regles.
@@ -61,7 +81,7 @@ async function planPourFeuille(
       { plan_signature: signature, plan_confirmed: true }, "-created_date", 1,
     );
     if (memo && memo.length > 0 && memo[0].read_plan && memo[0].read_plan.colonnes) {
-      const plan: PlanImport = { ...memo[0].read_plan, origine: "memoire", corrections: [] };
+      const plan: PlanImport = forceTransactionColumns({ ...memo[0].read_plan, origine: "memoire", corrections: [] });
       if (manual) plan.entite = manual;
       return { plan, signature, refus: [] as string[], erreur: undefined as string | undefined };
     }
@@ -77,6 +97,17 @@ async function planPourFeuille(
     }),
     { matrix, nomFichier: label, entitesPossibles: Object.keys(ENTITY_SCHEMAS), planDeSecours: secours },
   );
+  const entiteParNom = detectEntityByName(label);
+  const entetesNormalisees = entetes.map((h) => String(h).trim());
+  if (entiteParNom && entiteCompatible(entiteParNom, entetesNormalisees)) {
+    res.plan.entite = entiteParNom;
+    if (entiteParNom === "Transaction") {
+      // The semantic recognizer can confuse Transaction.category with type.
+      // For this entity the two headers are unambiguous: preserve them before
+      // the plan reaches the write phase.
+      res.plan = forceTransactionColumns(res.plan);
+    }
+  }
   // Le type choisi explicitement par l'utilisateur n'est jamais discute.
   if (manual) res.plan.entite = manual;
   return { ...res, signature };
@@ -96,7 +127,14 @@ function lignesSelonPlan(plan: PlanImport, matrix: any[][], nomFichier: string, 
   let rows: Record<string, any>[] = [];
   try { rows = appliquerPlan(plan, matrix); } catch { rows = []; }
   const disponibles = Math.max(matrix.length - plan.ligne_entetes - 1 - plan.lignes_ignorees.length, 0);
-  if (rows.length > 0 || disponibles === 0) return { rows, plan, note: "" };
+  // Une ligne d'en-tetes decalee d'un cran ne rend pas toujours 0 ligne : les
+  // intitules pointent alors sur de vraies donnees, qui deviennent des colonnes
+  // au nom absurde produisant 1 ou 2 lignes bien formees mais illisibles. Le
+  // signal fiable n'est donc pas "0 ligne" mais "aucune des colonnes decrites
+  // par le plan n'a ete retrouvee dans la ligne d'en-tetes reelle".
+  const entetesReelles = new Set((matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim()));
+  const aucuneColonneRattachee = plan.colonnes.length > 0 && plan.colonnes.every((c) => !entetesReelles.has(c.colonne));
+  if ((rows.length > 0 && !aucuneColonneRattachee) || disponibles === 0) return { rows, plan, note: "" };
 
   const secours = planParRegles(matrix, nomFichier, entite || plan.entite);
   let rowsSecours: Record<string, any>[] = [];
@@ -123,21 +161,6 @@ async function importRows(
   fileUrl = "",
   memoire?: { plan: PlanImport | null; signature: string; confirme: boolean },
 ) {
-  // Ré-importer le même fichier/feuille dupliquait chaque ligne : un fichier
-  // importé 6 fois donnait 6 copies et des chiffres contradictoires partout.
-  const already = await base44.entities.Import.filter({ file_name: fileLabel, entity_type: entityName }, null, 1);
-  if (already && already.length > 0) {
-    return {
-      entity: entityName,
-      status: "ignore",
-      rows_read: rows.length,
-      rows: 0,
-      quarantined: 0,
-      message: "Déjà importé — supprimez d'abord l'import existant pour le remplacer (évite les doublons).",
-      rateLimited: false,
-    };
-  }
-
   const schema = getSchema(entityName);
   const properties = schema ? schema.properties : null;
   const required = schema ? schema.required : [];
@@ -158,6 +181,7 @@ async function importRows(
   });
 
   const toCreate: Record<string, any>[] = [];
+  const rawObservations = [];
   let quarantined = 0;
   const missingFields = new Set<string>();
   const samples: string[] = [];
@@ -165,11 +189,28 @@ async function importRows(
   // per value so the report can name them instead of claiming the field is absent.
   const refusedValues: Record<string, Record<string, number>> = {};
   const allowedByField: Record<string, string[]> = {};
+  // Colonnes du fichier qui n'ont pu être associées à aucun champ de
+  // l'entité cible — un fichier peut "réussir" son import tout en ayant
+  // silencieusement ignoré une colonne financière que personne n'a vue.
+  const unmappedColumns = new Set<string>();
+
+  // ── NOUVEAU PIPELINE SÉMANTIQUE (Phase 1) ──
+  let profile, matchedConcepts, grain;
+  try {
+    profile = profileData(rows.slice(0, 50));
+    matchedConcepts = {};
+    for (const [col, p] of Object.entries(profile.columns)) {
+      const match = matchConcept(p);
+      if (match) matchedConcepts[col] = match;
+    }
+    grain = detectGrain(profile, matchedConcepts);
+  } catch(e) { console.error("Semantic engine failed", e); }
+
   rows.forEach((row) => {
-    if (!row || typeof row !== "object") { quarantined++; return; }
+    if (!row || typeof row !== "object" || isSummaryOrTotalRow(row)) return;
     const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
-    const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType, enumIssues);
-    if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) { quarantined++; return; }
+    const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType, enumIssues, unmappedColumns);
+    if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) return;
     // Reject up front rather than letting one row fail its whole batch.
     const missing = missingRequired(normalized, required);
     if (missing.length > 0) {
@@ -189,12 +230,43 @@ async function importRows(
       return;
     }
     toCreate.push(normalized);
+
+    // Génération de l'Observation
+    if (profile && matchedConcepts && grain) {
+      const normalizedObs = normalizeRowForCore(row, profile.columns);
+      const obsList = generateObservations(normalizedObs, matchedConcepts, fileLabel, grain);
+      rawObservations.push(...obsList);
+    }
   });
 
-  const { created, quarantined: rejected, errors } = await insertRows(base44, entityName, toCreate);
-  quarantined += rejected;
-
   const messages: string[] = [];
+  if (unmappedColumns.size > 0) {
+    messages.push(
+      `${unmappedColumns.size} colonne(s) non reconnue(s) et ignorée(s) pour ${entityName} : ${Array.from(unmappedColumns).slice(0, 10).join(", ")}` +
+      (unmappedColumns.size > 10 ? "…" : "") +
+      ". Leur contenu brut reste conservé dans original_data si besoin de le récupérer.",
+    );
+  }
+
+  // GESCOP Phase 5 SSOT: Deduplication
+  const { newRows, duplicateCount } = await deduplicateRows(base44, entityName, toCreate);
+  if (duplicateCount > 0) {
+    messages.push(`${duplicateCount} doublon(s) détecté(s) et ignoré(s).`);
+  }
+
+  const { created, quarantined: rejected, errors } = await insertRows(base44, entityName, newRows);
+  quarantined += rejected + duplicateCount;
+
+  // Sauvegarde des Observations (Silencieuse pour ne pas bloquer l'import)
+  if (rawObservations.length > 0) {
+    try {
+      // On sauvegarde par lots de 100
+      for (let i = 0; i < rawObservations.length; i += 100) {
+        await base44.entities.Observation.bulkCreate(rawObservations.slice(i, i + 100));
+      }
+    } catch(e) { console.warn("Failed to save observations", e); }
+  }
+
   // Refused values first: this is the actionable one, and it used to be
   // reported as a missing field, which sent users looking for a column that
   // was right there in their file.
@@ -304,13 +376,65 @@ export default async function (req: Request) {
             const plan = analyse.plan;
 
             if (analyseSeule) {
+              const lecture = lignesSelonPlan(plan, matrix, file_name);
+              const totalRows = Math.max(matrix.length - plan.ligne_entetes - 1 - (plan.lignes_ignorees?.length || 0), 0);
+              
+              let validCount = 0;
+              let mappedCount = 0;
+              let quarantinedCount = 0;
+              const quarantine: any[] = [];
+              const properties = getSchema(plan.entite)?.properties || null;
+              const required = getSchema(plan.entite)?.required || [];
+
+              if (plan.entite && properties) {
+                for (let i = 0; i < lecture.rows.length; i++) {
+                  const row = lecture.rows[i];
+                  if (!row || typeof row !== "object" || isSummaryOrTotalRow(row)) continue;
+                  
+                  const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
+                  const normalized = normalizeRow(plan.entite, row, "tmp", properties, sourceType, enumIssues);
+                  
+                  if (Object.keys(normalized).filter(k => k !== "import_id").length === 0) {
+                    continue; // Ligne vide ou total filtré : ne pas générer de faux positif en quarantaine
+                  }
+                  mappedCount++;
+
+                  const errors: string[] = [];
+                  const missing = missingRequired(normalized, required);
+                  if (missing.length > 0) errors.push(`Champs obligatoires manquants: ${missing.join(", ")}`);
+                  if (enumIssues.length > 0) {
+                    enumIssues.forEach(e => errors.push(`Valeur refusée pour ${e.field}: "${e.value}" (acceptées: ${e.allowed.join(", ")})`));
+                  }
+
+                  if (errors.length > 0) {
+                    quarantinedCount++;
+                    if (quarantine.length < 50) {
+                      quarantine.push({ rowIndex: i + plan.ligne_entetes + 1, original: row, mapped: normalized, errors });
+                    }
+                  } else {
+                    validCount++;
+                  }
+                }
+              }
+
+              const completeness = lecture.rows.length > 0 ? (mappedCount / lecture.rows.length) * 100 : 0;
+              const validity = lecture.rows.length > 0 ? (validCount / lecture.rows.length) * 100 : 0;
+              const quality_score = Math.round((completeness + validity) / 2);
+
               results.push({
                 file_name: label, sheet: nomFeuille, entity: plan.entite,
                 plan, signature: analyse.signature, refus: analyse.refus, analyse_erreur: analyse.erreur,
-                apercu: lignesSelonPlan(plan, matrix, file_name).rows.slice(0, 5),
+                apercu: lecture.rows.slice(0, 5),
                 echantillon: construireEchantillon(matrix, 8),
-                rows_read: Math.max(matrix.length - plan.ligne_entetes - 1, 0),
+                rows_read: totalRows,
                 status: "analyse",
+                quality: {
+                  score: quality_score || 0,
+                  valid_rows: validCount,
+                  total_rows: totalRows,
+                  quarantined_rows: quarantinedCount,
+                  quarantine_samples: quarantine
+                }
               });
               continue;
             }

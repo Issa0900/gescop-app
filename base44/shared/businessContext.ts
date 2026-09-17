@@ -97,10 +97,17 @@ export async function buildBusinessContext(base44) {
   const tasks = await safeList(base44.entities.Task, "-created_date", 30);
 
   // === FINANCE (transactions) ===
-  const incomes = transactions.filter((t) => t.type === "income");
-  const txnExpenses = transactions.filter((t) => t.type === "expense");
-  const totalIncome = incomes.reduce((s, t) => s + (t.amount || 0), 0);
-  const totalExpenses = txnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
+  const INCOME_TYPES = ["income", "entree", "credit", "revenu", "encaissement", "vente", "ventes", "recette", "recettes", "revenue"];
+  const isIncome = (t) => {
+    const s = String(t.type || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return INCOME_TYPES.includes(s);
+  };
+  const isExpense = (t) => !isIncome(t);
+  
+  const incomes = transactions.filter(isIncome);
+  const txnExpenses = transactions.filter(isExpense);
+  const totalIncome = incomes.reduce((s, t) => s + Math.abs(t.amount || 0), 0);
+  const totalExpenses = txnExpenses.reduce((s, t) => s + Math.abs(t.amount || 0), 0);
   // NOTE: cumulative over the whole imported history, and NET (all expenses
   // deducted, not just cost of goods). The screens show a 3-month aggregated
   // margin, so the two figures answer different questions — the prompt below
@@ -208,6 +215,7 @@ export async function buildBusinessContext(base44) {
   const totalCampaignRevenue = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
   const totalNewCustomers = campaigns.reduce((s, c) => s + (Number(c.new_customers) || 0), 0);
   const overallRoas = totalSpend > 0 ? Math.round((totalCampaignRevenue / totalSpend) * 100) / 100 : 0;
+  const overallRoi = totalSpend > 0 ? Math.round(((totalCampaignRevenue - totalSpend) / totalSpend) * 100) : 0;
   const overallCac = totalNewCustomers > 0 ? Math.round(totalSpend / totalNewCustomers) : 0;
 
   const campaignByChannel = {};
@@ -221,8 +229,9 @@ export async function buildBusinessContext(base44) {
   });
   const channelMarketingStr = Object.entries(campaignByChannel).map(([ch, v]) => {
     const roas = v.spend > 0 ? (v.revenue / v.spend).toFixed(1) : "—";
+    const roi = v.spend > 0 ? Math.round(((v.revenue - v.spend) / v.spend) * 100) : "—";
     const cac = v.new_customers > 0 ? Math.round(v.spend / v.new_customers) : "—";
-    return `${ch}: dépenses ${round(v.spend)} $, revenus ${round(v.revenue)} $, ROAS ${roas}, CAC ${cac} $`;
+    return `${ch}: dépenses ${round(v.spend)} $, revenus ${round(v.revenue)} $, ROAS ${roas}, ROI ${roi}%, CAC ${cac} $`;
   }).join("\n");
 
   const worstCampaigns = [...campaigns].filter((c) => c.spend > 0).sort((a, b) => {
@@ -230,7 +239,11 @@ export async function buildBusinessContext(base44) {
     const rb = (a.revenue || 0) / (a.spend || 1);
     return ra - rb;
   }).slice(0, 3);
-  const worstCampaignsStr = worstCampaigns.map((c) => `${c.campaign_name}: dépenses ${round(c.spend)} $, revenus ${round(c.revenue || 0)} $, ROAS ${c.spend > 0 ? ((c.revenue || 0) / c.spend).toFixed(1) : "—"}`).join("\n");
+  const worstCampaignsStr2 = worstCampaigns.map((c) => {
+    const roas = c.spend > 0 ? ((c.revenue || 0) / c.spend).toFixed(1) : "—";
+    const roi = c.spend > 0 ? Math.round((((c.revenue || 0) - c.spend) / c.spend) * 100) : "—";
+    return `${c.campaign_name}: dépenses ${round(c.spend)} $, revenus ${round(c.revenue || 0)} $, ROAS ${roas}, ROI ${roi}%`;
+  }).join("\n");
 
   // Marketing daily trend
   const dailyMonthly = monthlySum(campaignDaily, "date", "spend");
@@ -293,7 +306,15 @@ Clientèle: ${company.clientele || "non précisée"}
 Objectifs: ${(company.objectives || []).join(", ") || "non précisés"}`
     : "Aucune entreprise configurée.";
 
-  const financeSection = `Total transactions: ${transactions.length}
+  // transactions.length === 0 makes totalIncome/totalExpenses/grossMargin all
+  // 0 by construction (sum of nothing), not a measured "0% margin" — without
+  // this marker the headline read "Marge nette cumulée: 0 $ (0%)" right next
+  // to "Total transactions: 0", and the model could present a genuine absence
+  // of data as a fact about the business (sec16 of the audit: never let a
+  // conclusion rest on an absent figure).
+  const financeSection = transactions.length === 0
+    ? "Total transactions: 0\nAucune transaction importée — revenus, dépenses et marge non mesurables (pas \"nuls\", non disponibles)."
+    : `Total transactions: ${transactions.length}
 Revenus totaux: ${round(totalIncome)} $
 Dépenses totales: ${round(totalExpenses)} $
 Marge nette cumulée sur tout l'historique importé: ${round(grossMargin)} $ (${marginPct}%) — les écrans affichent la marge agrégée des 3 derniers mois complets, qui peut légitimement différer de ce cumul
@@ -302,7 +323,11 @@ ${txnMonthlyStr || "insuffisant"}
 Top catégories de dépenses:
 ${topExpCats || "insuffisant"}`;
 
-  const salesSection = `Commandes: ${orderCount}
+  // Same principle as financeSection: 0 commandes ne veut pas dire panier
+  // moyen de 0 $, ça veut dire panier moyen non mesurable.
+  const salesSection = orderCount === 0
+    ? "Commandes: 0\nAucune commande importée — revenu commandes, panier moyen et taux de retour non mesurables (pas \"nuls\", non disponibles)."
+    : `Commandes: ${orderCount}
 Revenu commandes: ${round(orderRevenue)} $
 Panier moyen: ${aov} $
 Taux de retour: ${returnRate}%
@@ -341,16 +366,17 @@ Achats en retard (>5j): ${delayedPurchases.length}
 ${purchaseMonthlyStr || "insuffisant"}`;
 
   const marketingSection = `Dépenses totales: ${round(totalSpend)} $
-Revenus attribués: ${round(totalCampaignRevenue)} $
-ROAS global: ${overallRoas}
-CAC global: ${overallCac} $
-Nouveaux clients: ${totalNewCustomers}
-Par canal:
-${channelMarketingStr || "insuffisant"}
-Pires campagnes (ROAS bas):
-${worstCampaignsStr || "insuffisant"}
-Tendance dépenses marketing:
-${spendTrendStr || "insuffisant"}`;
+  Revenus attribues: ${round(totalCampaignRevenue)} $
+  ROAS global: ${overallRoas}
+  ROI Marketing: ${overallRoi}%
+  CAC global: ${overallCac} $
+  Nouveaux clients: ${totalNewCustomers}
+  Par canal:
+  ${channelMarketingStr || "insuffisant"}
+  Pires campagnes (ROAS bas):
+  ${worstCampaignsStr2 || "insuffisant"}
+  Tendance dépenses marketing:
+  ${spendTrendStr || "insuffisant"}`;
 
   const payrollSection = `Coût total paie: ${round(totalPayrollCost)} $
 Employés actifs: ${activeEmployees.length}

@@ -5,6 +5,18 @@
     "employee_id": {
       "type": "string"
     },
+    "name": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
     "department": {
       "type": "string",
       "enum": [
@@ -14,7 +26,8 @@
         "logistique",
         "administration",
         "service_client",
-        "atelier"
+        "atelier",
+        "autre"
       ]
     },
     "role": {
@@ -38,6 +51,24 @@
     },
     "weekly_hours": {
       "type": "number"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "annual_salary": {
+      "type": "number"
+    },
+    "salary": {
+      "type": "number"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
     },
     "status": {
       "type": "string",

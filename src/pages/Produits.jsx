@@ -11,6 +11,8 @@ import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
 import { latestByKey, currentMonthKey } from "@/lib/periods";
 import { fetchAll } from "@/lib/fetchAll";
+import { validSalesOrders } from "@/lib/metrics";
+import DataErrorState from "@/components/DataErrorState";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -63,20 +65,42 @@ export default function Produits() {
     && (draft.threshold !== savedSettings.threshold
       || draft.useReorderPoint !== savedSettings.useReorderPoint
       || draft.dormantMonths !== savedSettings.dormantMonths);
-  const { data: products, isLoading: lp } = useQuery({
+  const { data: products, isLoading: lp, isError: productsError, refetch: refetchProducts } = useQuery({
     queryKey: ["products"],
-    queryFn: () => fetchAll(base44.entities.Product),
+    queryFn: async () => {
+      const rows = await fetchAll(base44.entities.Product);
+      return (Array.isArray(rows) ? rows : []).map((p) => ({
+        ...p,
+        product_id: p.product_id || p.id || p.sku || p.code,
+      }));
+    },
   });
-  const { data: inventory, isLoading: li } = useQuery({
+  const { data: inventory, isLoading: li, isError: inventoryError, refetch: refetchInventory } = useQuery({
     queryKey: ["inventory-summary"],
-    queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
+    queryFn: async () => {
+      const rows = await fetchAll(base44.entities.Inventory, "-date");
+      return (Array.isArray(rows) ? rows : []).map((i) => ({
+        ...i,
+        product_id: i.product_id || i.id_product || i.sku || i.product_code,
+      }));
+    },
   });
-  const { data: orders, isLoading: lo } = useQuery({
+  const { data: orders, isLoading: lo, isError: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: ["orders-produits"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
+    queryFn: async () => {
+      const rows = await fetchAll(base44.entities.Order, "-date");
+      return Array.isArray(rows) ? rows : [];
+    },
   });
 
   if (lp || li || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (productsError || inventoryError || ordersError) {
+    return (
+      <DataErrorState
+        onRetry={() => Promise.all([refetchProducts(), refetchInventory(), refetchOrders()])}
+      />
+    );
+  }
   if (!products || products.length === 0) {
     return (
       <EmptyState
@@ -104,7 +128,6 @@ export default function Produits() {
   // rows. A label from the source system is not a substitute for looking at the
   // stock actually on hand.
   const stock = computeStockAlerts(products, inventory, alertSettings, orders);
-  const latestInv = latestByKey(inventory || [], "product_id", "date");
   const invByProduct = stock.byProduct;
   const stockOf = (p) => {
     const snap = invByProduct[p.product_id];
@@ -120,7 +143,7 @@ export default function Produits() {
   // Sales per product over the last 3 COMPLETE months.
   //
   // This used to rank products on the single most recent month present in the
-  // orders — which is the month in progress. With 11 days of September against
+  // orders - which is the month in progress. With 11 days of September against
   // 18 months of history, almost every product scored 0 and the "Top 10" chart
   // came up empty. The in-progress month is excluded here like everywhere else,
   // and three months are used so one quiet month cannot empty the ranking.
@@ -136,7 +159,9 @@ export default function Produits() {
   const salesByProduct = {};
   const totalSalesByProduct = {};
   const totalRevByProduct = {};
-  (orders || []).forEach((o) => {
+  // Refunded orders are excluded - their quantity/revenue was reversed and
+  // must not count as a sale.
+  validSalesOrders(orders).forEach((o) => {
     const m = (o.date || "").slice(0, 7);
     const pid = o.product_id;
     if (!pid) return;
@@ -147,7 +172,8 @@ export default function Produits() {
     if (windowMonths.size > 0 && !windowMonths.has(m)) return;
     salesByProduct[pid] = (salesByProduct[pid] || 0) + qty;
   });
-  const topBySales = [...products]
+
+  const topBySales = products
     .map((p) => ({
       ...p,
       _recentSales: salesByProduct[p.product_id] || (windowMonths.size > 0 ? 0 : (p.monthly_sales || 0)),
@@ -161,7 +187,8 @@ export default function Produits() {
   }));
 
   const stockDist = {};
-  latestInv.forEach((i) => {
+  const latestInventory = latestByKey(inventory || [], "product_id", "date");
+  latestInventory.forEach((i) => {
     const s = i.stock_status || "non_precise";
     stockDist[s] = (stockDist[s] || 0) + 1;
   });
@@ -177,11 +204,11 @@ export default function Produits() {
   const productById = {};
   products.forEach((p) => { productById[p.product_id] = p; });
   let inventoryValueEstimated = false;
-  const inventoryValue = latestInv.reduce((s, i) => {
-    const stated = Number(i.inventory_value);
+  const inventoryValue = products.reduce((s, p) => {
+    const stated = Number(latestInventory.find(i => i.product_id === p.product_id)?.inventory_value);
     if (Number.isFinite(stated) && stated > 0) return s + stated;
-    const cost = Number(productById[i.product_id]?.purchase_cost) || 0;
-    const qty = Number(i.closing_stock) || 0;
+    const cost = Number(p.purchase_cost) || 0;
+    const qty = stockOf(p);
     if (cost > 0 && qty > 0) inventoryValueEstimated = true;
     return s + cost * qty;
   }, 0);
@@ -222,7 +249,7 @@ export default function Produits() {
           value={dormantCount}
           sublabel={stock.dormancyFromRotation
             ? `aucune vente depuis ${stock.dormantMonths} mois · sur ${stock.tracked} suivis`
-            : "historique de commandes absent — rotation non mesurable"}
+            : "historique de commandes absent - rotation non mesurable"}
           icon={Boxes}
           accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"}
         />
@@ -251,7 +278,7 @@ export default function Produits() {
 
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution des ventes par mois</h2>
-        <p className="mb-4 text-xs text-muted-foreground">Quantité vendue (axe gauche) — revenu $ (axe droit) · 12 derniers mois</p>
+        <p className="mb-4 text-xs text-muted-foreground">Quantité vendue (axe gauche) - revenu $ (axe droit) · 12 derniers mois</p>
         <ProductSalesTrend orders={orders} />
       </div>
 
@@ -336,7 +363,9 @@ export default function Produits() {
               <th className="px-4 py-3 font-medium">Prix vente</th>
               <th className="px-4 py-3 font-medium">Marge</th>
               <th className="px-4 py-3 font-medium">Unités vendues</th>
-              <th className="px-4 py-3 font-medium">Stock</th>
+              <th className="px-4 py-3 font-medium text-blue-600" title="ESTIMATION : Stock observé - Ventes récentes admissibles">
+                Stock analytique estimé *
+              </th>
               <th className="px-4 py-3 font-medium">Statut</th>
             </tr>
           </thead>
@@ -344,7 +373,7 @@ export default function Produits() {
             {filteredRows.slice(0, 50).map((p) => (
               <tr key={p.id} className="hover:bg-muted/30">
                 <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={p.product_name}>{p.product_name || p.product_id}</td>
-                <td className="px-4 py-3 text-muted-foreground">{p.category || "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground">{p.category || "-"}</td>
                 <td className="px-4 py-3">{Math.round(p.purchase_cost || 0)} $</td>
                 <td className="px-4 py-3">{Math.round(p.selling_price || 0)} $</td>
                 <td className="px-4 py-3">
@@ -364,7 +393,7 @@ export default function Produits() {
                         : st === "optimal" || st === "actif"
                           ? "text-emerald-600"
                           : "text-muted-foreground";
-                    return <span className={cls}>{stockLabels[st] || st || "—"}</span>;
+                    return <span className={cls}>{stockLabels[st] || st || "-"}</span>;
                   })()}
                 </td>
               </tr>

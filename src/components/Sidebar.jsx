@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Brain, Upload, BarChart3, AlertTriangle, ShieldAlert, Lightbulb,
   TrendingUp, Calculator, CheckSquare, Bell, Target, FileText, MessageSquare,
   Radar as RadarIcon, History, Book, Settings, Menu, X, ChevronDown,
-  Users, Package, Megaphone, Wallet, PanelLeftClose, PanelLeftOpen, LogOut, ShieldCheck,
+  Users, Package, Megaphone, Wallet, PanelLeftClose, PanelLeftOpen, LogOut, ShieldCheck, Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
@@ -20,6 +20,7 @@ const navGroups = [
       { to: "/", label: "Vue d'ensemble", icon: LayoutDashboard, end: true },
       { to: "/kpis", label: "KPI", icon: BarChart3 },
       { to: "/tresorerie", label: "Trésorerie", icon: Wallet },
+      { to: "/finance", label: "Finance", icon: Banknote },
       { to: "/previsions", label: "Prévisions", icon: TrendingUp },
       { to: "/simulateur", label: "Simulateur", icon: Calculator },
     ],
@@ -31,6 +32,7 @@ const navGroups = [
       { to: "/clients", label: "Clients", icon: Users },
       { to: "/produits", label: "Produits", icon: Package },
       { to: "/marketing", label: "Marketing", icon: Megaphone },
+      { to: "/rh", label: "Ressources Humaines", icon: Users },
     ],
   },
   {
@@ -60,7 +62,7 @@ const navGroups = [
     label: "Outils",
     icon: Upload,
     items: [
-      { to: "/importer", label: "Sources", icon: Upload },
+      { to: "/importer", label: "Importer des données", icon: Upload },
       { to: "/audit", label: "Audit des calculs", icon: ShieldCheck },
       { to: "/manuel", label: "Manuel", icon: Book },
     ],
@@ -121,6 +123,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
     <>
       <button
         onClick={() => setOpen(true)}
+        aria-label="Ouvrir le menu de navigation"
         className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/70 shadow-md backdrop-blur transition-transform hover:scale-105 md:hidden"
       >
         <Menu className="h-5 w-5" />
@@ -146,7 +149,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             )}
           </div>
           {!compact && (
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white md:hidden">
+            <button aria-label="Fermer le menu de navigation" onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white md:hidden">
               <X className="h-5 w-5" />
             </button>
           )}
@@ -158,7 +161,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-white">{company.name}</p>
-                <p className="truncate text-xs text-sidebar-foreground/70">{company.sector || "—"}</p>
+                <p className="truncate text-xs text-sidebar-foreground/70">{company.sector || "-"}</p>
               </div>
               <ChevronDown className="h-4 w-4 shrink-0 text-sidebar-foreground/60" />
             </div>
@@ -175,6 +178,8 @@ export default function Sidebar({ compact, onToggleCompact }) {
                 {!compact ? (
                   <button
                     onClick={() => toggle(group.label)}
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Réduire" : "Développer"} le groupe ${group.label}`}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150",
                       isActiveGroup ? "text-[#10B981]" : "text-[#9CA3AF] hover:text-white"
@@ -200,7 +205,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
           })}
         </nav>
 
-        {/* User profile — no harsh borders */}
+        {/* User profile - no harsh borders */}
         <div className="px-3 py-3">
           {!compact && user ? (
             <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] px-3 py-2.5 transition-colors duration-150 hover:bg-white/[0.07]">
@@ -242,6 +247,8 @@ export default function Sidebar({ compact, onToggleCompact }) {
         <div className="px-3 pb-3">
           <button
             onClick={onToggleCompact}
+            aria-label={compact ? "Développer la barre latérale" : "Réduire la barre latérale"}
+            aria-pressed={compact}
             className={cn(
               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors duration-150 hover:bg-white/5 hover:text-white",
               compact && "justify-center px-0"

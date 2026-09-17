@@ -1,15 +1,20 @@
 import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion } from "@/lib/fake-framer-motion.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { formatPct } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
+import { useObservations } from "@/hooks/useObservations";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/components/ui/use-toast";
-import { Sparkles, RefreshCw, ArrowRight, Check, Loader2, ChevronDown } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, Check, Loader2, ChevronDown, Upload, Bell, ClipboardCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useKpiEngine } from "@/lib/useKpiEngine";
+import { financialMonthlySeries } from "@/lib/financialData";
+import { latestCashBalance, validSalesOrders } from "@/lib/metrics";
+import { validateChartAggregation, METRIC_TYPES } from "@/components/ChartValidation";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import HealthHero from "@/components/dashboard/HealthHero";
 import InsightCard from "@/components/dashboard/InsightCard";
@@ -64,6 +69,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const { data: observations } = useObservations();
 
   // Every source below is read with fetchAll: a single list() call caps at 500
   // rows, so passing 500 or 1000 silently truncated the history and left this
@@ -124,11 +131,11 @@ export default function Dashboard() {
     queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
   });
   const { data: campaigns } = useQuery({
-    queryKey: ["campaigns-dashboard"],
+    queryKey: ["campaigns-summary"],
     queryFn: () => fetchAll(base44.entities.Campaign),
   });
   const { data: campaignDaily } = useQuery({
-    queryKey: ["campaign-daily-dashboard"],
+    queryKey: ["campaign-daily-summary"],
     queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
   });
   const [showDetails, setShowDetails] = useState(false);
@@ -153,7 +160,7 @@ export default function Dashboard() {
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
       } else {
-        toast({ title: "Analyse terminée", description: `Score de santé: ${data.health_score}/100` });
+        toast({ title: "Analyse terminée", description: data.health_score == null ? "Aucune dimension n'a pu être mesurée — importez des données pour obtenir un score." : `Score de santé: ${data.health_score}/100` });
         qc.invalidateQueries();
       }
     } catch (e) {
@@ -165,46 +172,61 @@ export default function Dashboard() {
     }
   };
 
-  // === COMPUTATIONS ===
+  // GESCOP Phase 4 SSOT : Centralisation
+  const fTxn = useMemo(() => (transactions || []).filter((t) => inPeriod(t.date)), [transactions, cutoffDate]);
+  const fOrders = useMemo(() => (orders || []).filter((o) => inPeriod(o.date)), [orders, cutoffDate]);
+  const fExpenses = useMemo(() => (expenseRecords || []).filter((e) => inPeriod(e.date)), [expenseRecords, cutoffDate]);
+  const fCustomers = useMemo(() => (customers || []).filter((c) => inPeriod(c.acquisition_date)), [customers, cutoffDate]);
+  const fObservations = useMemo(() => (observations || []).filter((o) => inPeriod(o.date)), [observations, cutoffDate]);
+
+  const { kpis: engineKpis } = useKpiEngine({
+    transactions: fTxn,
+    orders: fOrders,
+    expenses: fExpenses,
+    customers: fCustomers,
+    observations: fObservations,
+    cashflow: cashflow || []
+  }, ["total_revenue", "total_expense", "net_income", "net_margin_pct", "aov", "active_customers", "customer_sentiment_score"]);
+
+  // === COMPUTATIONS (Hybride : Ancien + Nouveau) ===
   const computed = useMemo(() => {
-    // Period-filtered totals (for KPI cards)
-    const fTxn = (transactions || []).filter((t) => inPeriod(t.date));
-    const fOrders = (orders || []).filter((o) => inPeriod(o.date));
-    const fExpenses = (expenseRecords || []).filter((e) => inPeriod(e.date));
-    const fCustomers = (customers || []).filter((c) => inPeriod(c.acquisition_date));
+    // Consommation officielle de la SSOT (KPI Engine)
+    const totalIncome = engineKpis.get("total_revenue")?.value || 0;
+    const totalExpensesTxn = engineKpis.get("total_expense")?.value || 0;
+    // "Marge nette" = revenus - TOUTES les dépenses (net_income), pas la
+    // marge brute (coût des marchandises vendues uniquement).
+    const margin = engineKpis.get("net_income")?.value || 0;
+    const marginPct = engineKpis.get("net_margin_pct")?.value || 0;
+    
+    const aov = engineKpis.get("aov")?.value || 0;
+    const activeCustomers = engineKpis.get("active_customers")?.value || 0;
+    const customerSentiment = engineKpis.get("customer_sentiment_score")?.value ?? null;
+    const totalExpenseAmount = totalExpensesTxn;
 
-    const fIncomes = fTxn.filter((t) => t.type === "income");
-    const fTxnExpenses = fTxn.filter((t) => t.type === "expense");
-    const totalIncome = fIncomes.reduce((s, t) => s + (t.amount || 0), 0);
-    const totalExpensesTxn = fTxnExpenses.reduce((s, t) => s + (t.amount || 0), 0);
-    const margin = totalIncome - totalExpensesTxn;
-    const marginPct = totalIncome > 0 ? (margin / totalIncome) * 100 : 0;
-
-    const orderRevenue = fOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    // Trésorerie : cashflow ne se filtre pas par période car c'est un stock continu
+    let latestCash = latestCashBalance(cashflow) || 0;
+    
+    // Fallback temporaire pour les statistiques non couvertes
     const orderCount = fOrders.length;
-    const aov = orderCount > 0 ? orderRevenue / orderCount : 0;
-    const activeCustomers = (customers || []).filter((c) => c.status === "actif").length;
-    const latestCash = (cashflow || [])[0]?.closing_cash || 0;
-    const totalExpenseAmount = fExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const orderRevenue = fOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
 
     // Full monthly data (ALL records, not period-filtered) for charts and trends
-    const allIncomes = (transactions || []).filter((t) => t.type === "income");
-    const allTxnExpenses = (transactions || []).filter((t) => t.type === "expense");
-    const allExpenses = expenseRecords || [];
-
-    // Flow metrics (sums/counts) use COMPLETE months only: the in-progress month
-    // holds a few days of data and would read as a collapse.
-    const revenueMonthly = monthlyAggComplete(allIncomes, "date", "amount");
-    const expenseMonthly = monthlyAggComplete(allTxnExpenses, "date", "amount");
-    const marginMonthly = revenueMonthly.map((m) => {
-      const exp = expenseMonthly.find((e) => e.month === m.month);
-      const inc = m.val;
-      const expVal = exp ? exp.val : 0;
-      return { month: m.month, val: inc > 0 ? ((inc - expVal) / inc) * 100 : 0 };
-    });
+    const financialMonthly = financialMonthlySeries(transactions || [], expenseRecords || []);
+    const revenueMonthly = financialMonthly.map((pt) => ({ month: pt.month, val: pt.income }));
+    const expenseMonthly = financialMonthly.map((pt) => ({ month: pt.month, val: pt.expense }));
+    const marginMonthly = financialMonthly.map((pt) => ({
+      month: pt.month,
+      val: pt.income > 0 ? (pt.margin / pt.income) * 100 : 0,
+    }));
+    
     // Cash is a balance, not a flow: the running month's closing balance is valid.
-    const cashMonthly = monthlyAgg(cashflow || [], "date", "closing_cash", "last");
-    const costsMonthly = monthlyAggComplete(allExpenses, "date", "amount");
+    const cashMode = validateChartAggregation(METRIC_TYPES.STOCK, "last", "Cash");
+    const cashMonthly = monthlyAgg(cashflow || [], "date", "closing_cash", cashMode.toLowerCase());
+    
+    const costMode = validateChartAggregation(METRIC_TYPES.FLOW, "sum", "Costs");
+    const costsMonthly = monthlyAggComplete(expenseRecords || [], "date", "amount", costMode.toLowerCase());
+    
+    const clientMode = validateChartAggregation(METRIC_TYPES.STOCK, "count", "Clients"); // or FLOW
     const clientsMonthly = monthlyAggComplete(customers || [], "acquisition_date", "customer_id", "count");
 
     const sparkCount = { day: 3, month: 3, quarter: 6, year: 12 }[period];
@@ -213,8 +235,13 @@ export default function Dashboard() {
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
     const marginTrend = trendPct(lastVal(marginMonthly), prevVal(marginMonthly));
     const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
-    const aovRevMonthly = monthlyAggComplete(orders || [], "date", "total");
-    const aovCntMonthly = monthlyAggComplete(orders || [], "date", "total", "count");
+    
+    // Refunded orders' money went back to the customer - excluded so a
+    // refund-heavy month doesn't inflate the basket-size trend shown here.
+    const aovOrders = validSalesOrders(orders);
+    const aovRevMode = validateChartAggregation(METRIC_TYPES.FLOW, "sum", "Order Revenue");
+    const aovRevMonthly = monthlyAggComplete(aovOrders, "date", "total", aovRevMode.toLowerCase());
+    const aovCntMonthly = monthlyAggComplete(aovOrders, "date", "total", "count");
     const aovMonthly = aovRevMonthly.map((m) => {
       const cnt = aovCntMonthly.find((c) => c.month === m.month);
       return { month: m.month, val: cnt && cnt.val > 0 ? m.val / cnt.val : 0 };
@@ -266,7 +293,7 @@ export default function Dashboard() {
 
     return {
       totalIncome, totalExpensesTxn, margin, marginPct, orderRevenue, orderCount, aov,
-      activeCustomers, latestCash, totalExpenseAmount,
+      activeCustomers, latestCash, totalExpenseAmount, customerSentiment,
       monthlyData, spark, aovMonthly,
       revTrend, marginTrend, cashTrend, aovTrend, clientTrend, costTrend,
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
@@ -324,18 +351,43 @@ export default function Dashboard() {
 
   const rtHealthScore = useMemo(() => {
     const keys = ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"];
-    // Un domaine sans donnee porte un score de repli de 50 : l'inclure reviendrait
-    // a moyenner une demi-sante inventee avec des mesures reelles.
-    const scores = keys
-      .filter((k) => rtScores[k]?.measured !== false)
+    const measuredKeys = keys.filter((k) => rtScores[k]?.measured !== false);
+    const scores = measuredKeys
       .map((k) => rtScores[k]?.score || 0)
       .filter((s) => s > 0);
-    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-  }, [rtScores]);
+    
+    if (scores.length === 0) return 0;
+
+    let baseScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+    // Vérifier les anomalies critiques et la présence des piliers financiers
+    const criticalAnomalies = (anomalies || []).filter((a) => a.severity === "critique" || a.level === "critique");
+    const hasCoreFinance = rtScores.finance?.measured !== false || rtScores.ventes?.measured !== false || rtScores.tresorerie?.measured !== false;
+
+    // Si des anomalies critiques sont ouvertes, plafonner le score en zone de vigilance
+    if (criticalAnomalies.length > 0) {
+      baseScore = Math.min(baseScore, 48);
+    } else if (!hasCoreFinance && scores.length < 3) {
+      // Données financières fondamentales absentes : modérer le score global
+      baseScore = Math.min(baseScore, 55);
+    }
+
+    return baseScore;
+  }, [rtScores, anomalies]);
 
   // === SUMMARY ===
   const summary = useMemo(() => {
     const score = rtHealthScore;
+    const criticalAnomalies = (anomalies || []).filter((a) => a.severity === "critique" || a.level === "critique");
+    const hasCoreFinance = rtScores.finance?.measured !== false || rtScores.ventes?.measured !== false || rtScores.tresorerie?.measured !== false;
+
+    if (criticalAnomalies.length > 0) {
+      return `Attention : ${criticalAnomalies.length} anomalie(s) critique(s) détectée(s). Une intervention immédiate est requise.`;
+    }
+    if (!hasCoreFinance) {
+      return "Données financières partielles : importez vos ventes, transactions ou flux de trésorerie pour consolider le score de santé.";
+    }
+
     const scored = dimensions
       .filter((d) => d.measured !== false && (d.score || 0) > 0)
       .sort((a, b) => (a.score || 0) - (b.score || 0));
@@ -343,7 +395,7 @@ export default function Dashboard() {
     if (score >= 75) return "Votre entreprise est en bonne santé. Continuez à surveiller les indicateurs clés.";
     if (score >= 50) return `Votre entreprise progresse, mais ${lowest.join(" et ")} nécessitent une attention particulière.`;
     return `Votre entreprise rencontre des difficultés. Une intervention est recommandée sur ${lowest.join(" et ")}.`;
-  }, [rtHealthScore, dimensions]);
+  }, [rtHealthScore, dimensions, anomalies, rtScores]);
 
   // === TREND ===
   const healthTrend = useMemo(() => {
@@ -389,6 +441,24 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <DashboardHeader greeting={greeting} date={today} lastAnalysis={lastAnalysis} onAnalyze={handleAnalyze} analyzing={analyzing} hasData={hasData} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Actions rapides">
+        {[
+          { label: "Importer des données", to: "/importer", icon: Upload, hint: "Ajouter ou synchroniser un fichier" },
+          { label: "Voir les alertes", to: "/alertes", icon: Bell, hint: "Risques et anomalies à traiter" },
+          { label: "Contrôler la qualité", to: "/audit", icon: ClipboardCheck, hint: "Vérifier les données et calculs" },
+        ].map(({ label, to, icon: Icon, hint }) => (
+          <Link key={to} to={to} className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold">{label}</span>
+              <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+            </span>
+            <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
 
       {hasData && (
         <motion.div
@@ -439,15 +509,30 @@ export default function Dashboard() {
           <div>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicateurs clés</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <KpiCard label="Trésorerie" value={`${Math.round(computed.latestCash).toLocaleString("fr-CA")} $`}
-                change={`${formatPct(Math.abs(computed.cashTrend))}`} changeDir={computed.cashTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.cash)} status={computed.latestCash > 0 ? "good" : "critical"} statusLabel={computed.latestCash > 0 ? "Bon" : "Critique"} onClick={() => navigate("/tresorerie")} />
-              <KpiCard label="Chiffre d'affaires" value={`${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $`}
-                change={`${formatPct(Math.abs(computed.revTrend))}`} changeDir={computed.revTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.revenue)} status={computed.revTrend >= 0 ? "good" : "warning"} statusLabel={computed.revTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/kpis")} />
-              <KpiCard label="Marge brute" value={`${formatPct(computed.marginPct)}`}
-                change={`${formatPct(Math.abs(computed.marginTrend))}`} changeDir={computed.marginTrend >= 0 ? "up" : "down"}
-                sparkline={computed.spark(computed.monthlyData.margin)} status={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning"} statusLabel={computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention"} onClick={() => navigate("/kpis")} />
+              <KpiCard label="Trésorerie"
+                value={(cashflow?.length || 0) > 0 ? `${Math.round(computed.latestCash).toLocaleString("fr-CA")} $` : "—"}
+                change={(cashflow?.length || 0) > 1 ? `${formatPct(Math.abs(computed.cashTrend))}` : null}
+                changeDir={computed.cashTrend >= 0 ? "up" : "down"}
+                sparkline={computed.spark(computed.monthlyData.cash)}
+                status={(cashflow?.length || 0) > 0 ? (computed.latestCash > 0 ? "good" : "critical") : "unmeasured"}
+                statusLabel={(cashflow?.length || 0) > 0 ? (computed.latestCash > 0 ? "Bon" : "Critique") : "Non mesuré"}
+                onClick={() => navigate("/tresorerie")} />
+              <KpiCard label="Chiffre d'affaires"
+                value={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? `${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $` : "—"}
+                change={((transactions?.length || 0) + (orders?.length || 0)) > 0 && computed.monthlyData.revenue.length > 1 ? `${formatPct(Math.abs(computed.revTrend))}` : null}
+                changeDir={computed.revTrend >= 0 ? "up" : "down"}
+                sparkline={computed.spark(computed.monthlyData.revenue)}
+                status={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "good" : "warning") : "unmeasured"}
+                statusLabel={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
+                onClick={() => navigate("/kpis")} />
+              <KpiCard label="Marge nette"
+                value={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? `${formatPct(computed.marginPct)}` : "—"}
+                change={((transactions?.length || 0) + (orders?.length || 0)) > 0 && computed.monthlyData.margin.length > 1 ? `${formatPct(Math.abs(computed.marginTrend))}` : null}
+                changeDir={computed.marginTrend >= 0 ? "up" : "down"}
+                sparkline={computed.spark(computed.monthlyData.margin)}
+                status={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning") : "unmeasured"}
+                statusLabel={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention") : "Non mesuré"}
+                onClick={() => navigate("/kpis")} />
             </div>
           </div>
 
@@ -466,16 +551,38 @@ export default function Dashboard() {
             {showDetails && (
               <div className="space-y-6 border-t border-border p-4">
                 {/* KPI secondaires */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <KpiCard label="Coûts opérationnels" value={`${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $`}
-                    change={`${formatPct(Math.abs(computed.costTrend))}`} changeDir={computed.costTrend >= 0 ? "up" : "down"}
-                    sparkline={computed.spark(computed.monthlyData.costs)} status={computed.costTrend > 5 ? "warning" : "neutral"} statusLabel={computed.costTrend > 5 ? "Attention" : "Stable"} onClick={() => navigate("/tresorerie")} />
-                  <KpiCard label="Clients actifs" value={computed.activeCustomers.toLocaleString("fr-CA")}
-                    change={`${formatPct(Math.abs(computed.clientTrend))}`} changeDir={computed.clientTrend >= 0 ? "up" : "down"}
-                    sparkline={computed.spark(computed.monthlyData.clients)} status={computed.clientTrend >= 0 ? "good" : "warning"} statusLabel={computed.clientTrend >= 0 ? "Bon" : "Attention"} onClick={() => navigate("/clients")} />
-                  <KpiCard label="Panier moyen" value={`${computed.aov.toFixed(2)} $`}
-                    change={`${formatPct(Math.abs(computed.aovTrend))}`} changeDir={computed.aovTrend >= 0 ? "up" : "down"}
-                    sparkline={computed.spark(computed.aovMonthly)} status={computed.aovTrend >= 0 ? "neutral" : "warning"} statusLabel={computed.aovTrend >= 0 ? "Stable" : "Attention"} onClick={() => navigate("/clients")} />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <KpiCard label="Coûts opérationnels"
+                    value={(expenseRecords?.length || 0) > 0 ? `${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $` : "—"}
+                    change={(expenseRecords?.length || 0) > 1 ? `${formatPct(Math.abs(computed.costTrend))}` : null}
+                    changeDir={computed.costTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.monthlyData.costs)}
+                    status={(expenseRecords?.length || 0) > 0 ? (computed.costTrend > 5 ? "warning" : "neutral") : "unmeasured"}
+                    statusLabel={(expenseRecords?.length || 0) > 0 ? (computed.costTrend > 5 ? "Attention" : "Stable") : "Non mesuré"}
+                    onClick={() => navigate("/tresorerie")} />
+                  <KpiCard label="Clients actifs"
+                    value={(customers?.length || 0) > 0 ? computed.activeCustomers.toLocaleString("fr-CA") : "—"}
+                    change={(customers?.length || 0) > 1 ? `${formatPct(Math.abs(computed.clientTrend))}` : null}
+                    changeDir={computed.clientTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.monthlyData.clients)}
+                    status={(customers?.length || 0) > 0 ? (computed.clientTrend >= 0 ? "good" : "warning") : "unmeasured"}
+                    statusLabel={(customers?.length || 0) > 0 ? (computed.clientTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
+                    onClick={() => navigate("/clients")} />
+                  <KpiCard label="Panier moyen"
+                    value={(orders?.length || 0) > 0 && computed.aov > 0 ? `${computed.aov.toFixed(2)} $` : "—"}
+                    change={(orders?.length || 0) > 1 ? `${formatPct(Math.abs(computed.aovTrend))}` : null}
+                    changeDir={computed.aovTrend >= 0 ? "up" : "down"}
+                    sparkline={computed.spark(computed.aovMonthly)}
+                    status={(orders?.length || 0) > 0 && computed.aov > 0 ? (computed.aovTrend >= 0 ? "neutral" : "warning") : "unmeasured"}
+                    statusLabel={(orders?.length || 0) > 0 && computed.aov > 0 ? (computed.aovTrend >= 0 ? "Stable" : "Attention") : "Non mesuré"}
+                    onClick={() => navigate("/clients")} />
+                  <KpiCard label="Sentiment Client"
+                    value={computed.customerSentiment != null ? `${computed.customerSentiment.toFixed(1)}/10` : "—"}
+                    change={null} changeDir="stable"
+                    sparkline={[]}
+                    status={computed.customerSentiment != null ? (computed.customerSentiment >= 7 ? "good" : computed.customerSentiment <= 4 ? "critical" : "warning") : "unmeasured"}
+                    statusLabel={computed.customerSentiment != null ? (computed.customerSentiment >= 7 ? "Bon" : computed.customerSentiment <= 4 ? "Critique" : "Moyen") : "Non mesuré"}
+                    onClick={() => navigate("/kpis")} />
                 </div>
 
                 {/* Insights */}

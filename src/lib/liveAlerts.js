@@ -10,6 +10,7 @@ import {
   hasWindow,
 } from "@/lib/periods";
 import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
+import { warnIfDataMissing } from "@/lib/core/dataCompleteness";
 import {
   aggregateMarginPct,
   previousMarginPct,
@@ -20,6 +21,7 @@ import {
   churnStats,
   roasWindow,
   previousRoasWindow,
+  validSalesOrders,
 } from "@/lib/metrics";
 
 function alert(level, category, title, message) {
@@ -27,13 +29,23 @@ function alert(level, category, title, message) {
 }
 
 export function computeLiveAlerts(data) {
-  const { transactions, orders, customers, campaignDaily, products, inventory, cashflow, company } = data;
+  warnIfDataMissing("computeLiveAlerts", data, [
+    "transactions", "orders", "customers", "campaignDaily",
+    "products", "inventory", "cashflow", "expenses", "company",
+  ]);
+  const { transactions, orders, customers, campaignDaily, products, inventory, cashflow, expenses, company } = data;
   const out = [];
 
   const incomes = (transactions || []).filter((t) => t.type === "income");
   const txnExpenses = (transactions || []).filter((t) => t.type === "expense");
   const revMonthly = monthlyAggComplete(incomes, "date", "amount");
-  const expMonthly = monthlyAggComplete(txnExpenses, "date", "amount");
+  // Costs can live in expense-typed Transaction rows, in the dedicated
+  // Expense entity, or both - both are read so the runway/margin alerts
+  // above never miss real costs recorded in the other one.
+  const expMonthly = monthlyAggComplete(
+    [...txnExpenses, ...(expenses || []).map((e) => ({ ...e, amount: Number(e.amount) || 0 }))],
+    "date", "amount"
+  );
 
   // --- Trésorerie : runway sur le burn NET ---
   // Une entreprise rentable n'a pas de problème d'autonomie : comparer le solde
@@ -80,7 +92,7 @@ export function computeLiveAlerts(data) {
     }
   }
   // Variation de marge exprimée en POINTS : passer de 2 % à 4 % est +2 points,
-  // pas "+100 %" — la lecture relative déclenchait des alertes sur du bruit.
+  // pas "+100 %" - la lecture relative déclenchait des alertes sur du bruit.
   const marginDrop = marginDeltaPoints(recentMargin, priorMargin);
   if (marginDrop !== null && marginDrop < -5) {
     out.push(
@@ -186,6 +198,68 @@ export function computeLiveAlerts(data) {
           "Marketing",
           "Rentabilité publicitaire en baisse",
           `ROAS passé de ${roasPrev.toFixed(1)}x à ${roas.toFixed(1)}x sur les 3 derniers mois complets.`
+        )
+      );
+    }
+  }
+
+  // =====================================================================
+  // PHASE 4 : INTERCONNEXIONS MÉTIER SÉMANTIQUES (Croisement de domaines)
+  // =====================================================================
+  
+  // 1. Marketing -> Finance : La baisse de l'efficacité publicitaire détruit la marge
+  const roasPrevVal = previousRoasWindow(spendM, revM, 3);
+  const roasTrendVal = trendPct(roas, roasPrevVal);
+  if (roasTrendVal !== null && roasTrendVal < -15 && marginDrop !== null && marginDrop < -2) {
+    out.push(
+      alert(
+        "critique",
+        "Finance & Marketing",
+        "Le marketing dégrade votre marge nette",
+        `L'inefficacité publicitaire (ROAS en baisse de ${Math.abs(roasTrendVal).toFixed(0)}%) pèse directement sur votre rentabilité globale (marge en baisse de ${Math.abs(marginDrop).toFixed(1)} points). Optimisez vos campagnes en urgence.`
+      )
+    );
+  }
+
+  // 2. Produits -> Ventes : Rupture sur les produits phares
+  // Identifier si les ruptures concernent les produits qui génèrent le plus de CA
+  if (ruptures.length > 0 && orders && orders.length > 0) {
+    // Refunded orders' money went back to the customer - counting them here
+    // could crown a heavily-returned product "top seller" and misdirect this alert.
+    const salesOrders = validSalesOrders(orders);
+    const revenueByProduct = {};
+    salesOrders.forEach(o => {
+      const pid = o.product_id;
+      if (pid) revenueByProduct[pid] = (revenueByProduct[pid] || 0) + (Number(o.total) || 0);
+    });
+    // Trier les produits en rupture par leur revenu historique
+    const rupturesWithRev = ruptures.map(r => ({ ...r, rev: revenueByProduct[r.product_id] || 0 }));
+    rupturesWithRev.sort((a, b) => b.rev - a.rev);
+
+    // Si le produit en rupture générait des revenus significatifs (> 5% du revenu total ou juste un top 5 absolu)
+    const totalOrderRev = salesOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    if (totalOrderRev > 0 && rupturesWithRev[0].rev > (totalOrderRev * 0.02)) {
+      out.push(
+        alert(
+          "critique",
+          "Ventes & Opérations",
+          "Rupture sur un produit phare (Top Ventes)",
+          `Le produit "${rupturesWithRev[0].product_name}" est en rupture de stock. Il représente historiquement une part importante de vos revenus. L'impact sur les Ventes sera immédiat.`
+        )
+      );
+    }
+  }
+
+  // 3. Clients -> Trésorerie : L'attrition menace le runway
+  if (churn.behaviourRate !== null && churn.behaviourRate >= 30 && latestCash !== null && recentBurn !== null && recentBurn > 0) {
+    const runwayCheck = runwayMonths(latestCash, recentBurn);
+    if (runwayCheck < 6) {
+      out.push(
+        alert(
+          "critique",
+          "Trésorerie & Clients",
+          "Attrition dangereuse pour la trésorerie",
+          `Forte perte d'acheteurs actifs (${Math.round(churn.behaviourRate)}%) alors que votre couverture de trésorerie est tendue (${runwayCheck.toFixed(1)} mois). Priorité absolue : réactiver vos clients existants.`
         )
       );
     }

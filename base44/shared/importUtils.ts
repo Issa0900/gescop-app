@@ -1,4 +1,7 @@
 // Shared import normalization utilities — used by importData and importMultiData
+import { ENTITY_SCHEMAS } from "./entitySchemas.ts";
+
+import { buildFieldAliasesFromRegistry } from "./registry/generateAliases.ts";
 
 // Strip accents/diacritics for comparison (é→e, à→a, etc.)
 export function stripAccents(str: string): string {
@@ -20,19 +23,26 @@ export const FIELD_ALIASES: Record<string, string> = {
   "id_campagne": "campaign_id", "id_depense": "expense_id", "depense_id": "expense_id",
   "date_operation": "date", "periode": "period",
   "solde_cloture": "closing_cash", "solde_final": "closing_cash",
+  "solde_banque": "closing_cash", "solde_bancaire": "closing_cash", "solde": "closing_cash",
   "encaissements": "cash_in", "decaissements": "cash_out",
   "entrees": "cash_in", "sorties": "cash_out",
   "categorie": "category", "catégorie": "category",
-  "nom": "name", "nom du produit": "product_name", "nom_produit": "product_name",
+  "nom": "name", "nom du produit": "product_name", "nom_produit": "product_name", "nom_complet": "full_name",
   "prix": "price", "prix_vente": "selling_price", "prix de vente": "selling_price",
   "cout": "cost", "cout_achat": "purchase_cost", "coût": "cost", "coût_achat": "purchase_cost",
-  "marge": "gross_margin",
-  "quantite": "quantity", "quantité": "quantity",
-  "date_achat": "date", "date_vente": "date", "date_commande": "date",
+  "cout_produits": "total_cost", "cout_produit": "unit_cost", "cout_total": "total_cost",
+  "profit_brut": "gross_profit",
+  "marge": "gross_margin", "marge_pct": "gross_margin", "%_marge": "gross_margin",
+  "quantite": "quantity", "quantité": "quantity", "quantite_articles": "quantity", "quantite_commandee": "quantity",
+  "date_achat": "date", "date_vente": "date", "date_commande": "date", "date_de_commande": "date", "date de commande": "date",
   "client_id": "customer_id", "produit_id": "product_id",
   "fournisseur_id": "supplier_id", "fournisseur_nom": "supplier_name",
   "employe_id": "employee_id", "employé_id": "employee_id",
-  "montant": "amount", "sous_total": "subtotal",
+  "montant": "amount", "montant_ttc": "total", "montant_ht": "subtotal", "total_ttc": "total", "total_ht": "subtotal",
+  "salaire_annuel": "annual_salary", "salaire": "salary",
+  "ventes_totales": "total", "ventes_brutes": "gross_revenue",
+  "clics_pub": "clicks", "impressions_pub": "impressions", "budget_depense": "spend", "revenu_attribue": "revenue",
+  "sous_total": "subtotal",
   "statut": "status", "canal": "channel", "segment": "segment",
   "ventes_mensuelles": "monthly_sales", "ventes mensuelles": "monthly_sales",
   "niveau_stock": "inventory_level", "seuil_reappro": "reorder_point",
@@ -51,10 +61,10 @@ export const FIELD_ALIASES: Record<string, string> = {
   "valeur_vie": "lifetime_value", "ltv": "lifetime_value", "valeur vie client": "lifetime_value",
   "risque_churn": "churn_risk", "risque de churn": "churn_risk",
   "type_client": "customer_type", "type de client": "customer_type",
-  "premiere_commande": "first_purchase_date", "premiere achat": "first_purchase_date",
-  "derniere_commande": "last_purchase_date", "dernier achat": "last_purchase_date",
-  "date_acquisition": "acquisition_date", "date d acquisition": "acquisition_date",
-  "id produit": "product_id", "nom_campagne": "campaign_name",
+  "premiere_commande": "first_purchase_date", "premiere_achat": "first_purchase_date",
+  "derniere_commande": "last_purchase_date", "dernier_achat": "last_purchase_date",
+  "date_acquisition": "acquisition_date", "date_d_acquisition": "acquisition_date",
+  "id_produit": "product_id", "nom_campagne": "campaign_name",
   "id_concurrent": "competitor_id",
   "cout_unitaire": "unit_cost", "cout_total": "total_cost",
   "prix_unitaire": "unit_price", "quantite_vendue": "quantity",
@@ -80,7 +90,7 @@ export const FIELD_ALIASES: Record<string, string> = {
  * "Date d'acquisition" et "date-d-acquisition" donnent la meme cle, sans quoi
  * une apostrophe suffisait a faire perdre une colonne parfaitement lisible.
  */
-function cleCanonique(k: string): string {
+export function cleCanonique(k: string): string {
   return stripAccents(String(k).toLowerCase().trim())
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
@@ -89,28 +99,1387 @@ function cleCanonique(k: string): string {
 // La table d'alias est elle-meme indexee sous forme canonique : ses cles sont
 // ecrites avec des espaces ("date d acquisition") et ne matchaient donc jamais
 // une colonne ponctuee ("Date d'acquisition").
-const ALIAS_CANONIQUES: Record<string, string> = Object.fromEntries(
-  Object.entries(FIELD_ALIASES).map(([k, v]) => [cleCanonique(k), v]),
-);
+export const ALIAS_CANONIQUES: Record<string, string> = {
+  "chiffre_d_affaires": "revenue",
+  "chiffre_affaire": "revenue",
+  "chiffre_affaires": "revenue",
+  "ca": "revenue",
+  "ventes": "revenue",
+  "vente": "revenue",
+  "revenus": "revenue",
+  "revenu": "revenue",
+  "recettes_commerciales": "revenue",
+  "recettes": "revenue",
+  "recettes_de_vente": "revenue",
+  "revenu_des_ventes": "revenue",
+  "revenus_des_ventes": "revenue",
+  "montant_des_ventes": "revenue",
+  "valeur_des_ventes": "revenue",
+  "ventes_nettes": "net_revenue",
+  "client": "customer_name",
+  "nom_client": "customer_name",
+  "nom_du_client": "customer_name",
+  "id_transaction": "order_id",
+  "code_produit": "product_id",
+  "description_produit": "product_name",
+  "sku": "product_id",
+  "raison_sociale": "supplier_name",
+  "nom_de_la_campagne": "campaign_name",
+  "nom_de_campagne": "campaign_name",
+  "nom_campagne": "campaign_name",
+  "profit_brut": "gross_profit",
+  "succursale": "branch",
+  "mode_de_paiement": "payment_method",
+  "chiffre_d_affaires_net": "net_revenue",
+  "ca_net": "net_revenue",
+  "revenu_commercial": "revenue",
+  "produit_des_ventes": "revenue",
+  "produit_de_vente": "revenue",
+  "sales": "revenue",
+  "sales_revenue": "revenue",
+  "total_sales": "revenue",
+  "revenue": "revenue",
+  "revenues": "revenue",
+  "turnover": "revenue",
+  "net_sales": "net_revenue",
+  "sales_amount": "revenue",
+  "sales_value": "revenue",
+  "gross_sales": "gross_revenue",
+  "commercial_revenue": "revenue",
+  "operating_revenue": "revenue",
+  "ca_brut": "gross_revenue",
+  "chiffre_d_affaires_brut": "gross_revenue",
+  "ventes_brutes": "gross_revenue",
+  "revenus_bruts": "gross_revenue",
+  "recettes_brutes": "gross_revenue",
+  "total_brut_des_ventes": "gross_revenue",
+  "gross_revenue": "gross_revenue",
+  "gross_turnover": "gross_revenue",
+  "revenus_nets": "net_revenue",
+  "recettes_nettes": "net_revenue",
+  "net_revenue": "net_revenue",
+  "net_turnover": "net_revenue",
+  "sales_after_returns": "net_revenue",
+  "quantite_vendue": "sales_quantity",
+  "quantites_vendues": "sales_quantity",
+  "volume_vendu": "sales_quantity",
+  "unites_vendues": "sales_quantity",
+  "unites_ecoulees": "sales_quantity",
+  "nombre_d_unites_vendues": "sales_quantity",
+  "ventes_en_unites": "sales_quantity",
+  "quantite_de_vente": "sales_quantity",
+  "quantite_ventes": "sales_quantity",
+  "volume_des_ventes": "sales_quantity",
+  "volume_de_vente": "sales_quantity",
+  "quantite_commandee": "sales_quantity",
+  "units_sold": "sales_quantity",
+  "sold_quantity": "sales_quantity",
+  "sales_quantity": "sales_quantity",
+  "sales_volume": "sales_quantity",
+  "volume_sold": "sales_quantity",
+  "nombre_de_ventes": "sales_count",
+  "nombre_de_transactions": "sales_count",
+  "nombre_de_ventes_realisees": "sales_count",
+  "ventes_realisees": "sales_count",
+  "transactions_de_vente": "sales_count",
+  "operations_de_vente": "sales_count",
+  "sales_count": "sales_count",
+  "number_of_sales": "sales_count",
+  "sales_transactions": "sales_count",
+  "transaction_count": "sales_count",
+  "nombre_de_commandes": "order_count",
+  "commandes": "order_count",
+  "total_commandes": "order_count",
+  "nombre_commandes": "order_count",
+  "volume_de_commandes": "order_count",
+  "commandes_recues": "order_count",
+  "orders": "order_count",
+  "order_count": "order_count",
+  "number_of_orders": "order_count",
+  "orders_count": "order_count",
+  "total_orders": "order_count",
+  "valeur_commande": "order_value",
+  "valeur_de_commande": "order_value",
+  "montant_commande": "order_value",
+  "montant_de_commande": "order_value",
+  "total_commande": "order_value",
+  "total_de_commande": "order_value",
+  "montant_total_commande": "order_value",
+  "valeur_totale_commande": "order_value",
+  "order_value": "order_value",
+  "order_amount": "order_value",
+  "order_total": "order_value",
+  "total_order_value": "order_value",
+  "order_revenue": "order_value",
+  "panier_moyen": "average_order_value",
+  "valeur_moyenne_commande": "average_order_value",
+  "valeur_moyenne_des_commandes": "average_order_value",
+  "montant_moyen_commande": "average_order_value",
+  "montant_moyen_des_commandes": "average_order_value",
+  "ticket_moyen": "average_order_value",
+  "panier_moyen_client": "average_order_value",
+  "aov": "average_order_value",
+  "average_order_value": "average_order_value",
+  "average_basket": "average_order_value",
+  "average_order_amount": "average_order_value",
+  "average_ticket": "average_order_value",
+  "cout_des_biens_vendus": "cogs",
+  "cout_des_marchandises_vendues": "cogs",
+  "cout_des_produits_vendus": "cogs",
+  "cout_de_revient_des_ventes": "cogs",
+  "cout_des_ventes": "cogs",
+  "couts_des_ventes": "cogs",
+  "cout_marchandises": "cogs",
+  "cout_produit_vendu": "cogs",
+  "cout_des_articles_vendus": "cogs",
+  "cout_d_achat_des_produits_vendus": "cogs",
+  "cmv": "cogs",
+  "cogs": "cogs",
+  "cost_of_goods_sold": "cogs",
+  "cost_of_sales": "cogs",
+  "cost_of_goods": "cogs",
+  "product_cost_sold": "cogs",
+  "marge_brute_en_montant": "gross_profit",
+  "profit_brut": "gross_profit",
+  "benefice_brut": "gross_profit",
+  "resultat_brut": "gross_profit",
+  "gain_brut": "gross_profit",
+  "marge_brute": "gross_margin",
+  "marge_brute_montant": "gross_profit",
+  "gross_profit": "gross_profit",
+  "gross_margin_amount": "gross_profit",
+  "gross_earnings": "gross_profit",
+  "gross_income": "gross_profit",
+  "taux_de_marge_brute": "gross_margin",
+  "taux_marge_brute": "gross_margin",
+  "marge_commerciale": "gross_margin",
+  "taux_de_marge_commerciale": "gross_margin",
+  "taux_de_profit_brut": "gross_margin",
+  "pourcentage_marge_brute": "gross_margin",
+  "marge_brute_pourcentage": "gross_margin",
+  "gross_margin": "gross_margin",
+  "gross_margin_rate": "gross_margin",
+  "gross_profit_margin": "gross_margin",
+  "gross_margin_percentage": "gross_margin",
+  "gm": "gross_margin",
+  "gross_profit_rate": "gross_margin",
+  "benefice_net": "net_profit",
+  "profit_net": "net_margin",
+  "resultat_net": "net_margin",
+  "revenu_net": "net_profit",
+  "gain_net": "net_profit",
+  "benefice_final": "net_profit",
+  "resultat_final": "net_profit",
+  "profit_apres_depenses": "net_profit",
+  "net_profit": "net_profit",
+  "net_income": "net_profit",
+  "net_earnings": "net_profit",
+  "bottom_line": "net_profit",
+  "net_result": "net_profit",
+  "marge_nette": "net_margin",
+  "taux_de_marge_nette": "net_margin",
+  "taux_marge_nette": "net_margin",
+  "rentabilite_nette": "net_margin",
+  "marge_beneficiaire_nette": "net_margin",
+  "net_margin": "net_margin",
+  "net_profit_margin": "net_margin",
+  "net_margin_rate": "net_margin",
+  "net_profitability": "net_margin",
+  "resultat_d_exploitation": "operating_profit",
+  "benefice_d_exploitation": "operating_profit",
+  "profit_operationnel": "operating_profit",
+  "resultat_operationnel": "operating_profit",
+  "marge_operationnelle_en_montant": "operating_profit",
+  "operating_profit": "operating_profit",
+  "operating_income": "operating_profit",
+  "ebit": "operating_profit",
+  "operating_earnings": "operating_profit",
+  "marge_operationnelle": "operating_margin",
+  "taux_de_marge_operationnelle": "operating_margin",
+  "rentabilite_operationnelle": "operating_margin",
+  "marge_d_exploitation": "operating_margin",
+  "operating_margin": "operating_margin",
+  "operating_profit_margin": "operating_margin",
+  "operating_profitability": "operating_margin",
+  "depense": "expense",
+  "depenses": "expense",
+  "depense_totale": "expense",
+  "total_depenses": "expense",
+  "charge": "expense",
+  "charges": "expense",
+  "frais": "expense",
+  "frais_totaux": "expense",
+  "cout_operationnel": "expense",
+  "couts_operationnels": "expense",
+  "depenses_operationnelles": "expense",
+  "charges_operationnelles": "expense",
+  "frais_d_exploitation": "expense",
+  "operating_expense": "expense",
+  "operating_expenses": "expense",
+  "opex": "expense",
+  "expense": "expense",
+  "expenses": "expense",
+  "costs": "expense",
+  "operating_costs": "expense",
+  "couts_fixes": "fixed_cost",
+  "cout_fixe": "fixed_cost",
+  "charges_fixes": "fixed_cost",
+  "frais_fixes": "fixed_cost",
+  "depenses_fixes": "fixed_cost",
+  "couts_structurels": "fixed_cost",
+  "frais_structurels": "fixed_cost",
+  "fixed_cost": "fixed_cost",
+  "fixed_costs": "fixed_cost",
+  "fixed_expenses": "fixed_cost",
+  "couts_variables": "variable_cost",
+  "cout_variable": "variable_cost",
+  "charges_variables": "variable_cost",
+  "frais_variables": "variable_cost",
+  "depenses_variables": "variable_cost",
+  "variable_cost": "variable_cost",
+  "variable_costs": "variable_cost",
+  "variable_expenses": "variable_cost",
+  "seuil_de_rentabilite": "break_even",
+  "point_mort": "break_even",
+  "seuil_de_rentabilite_financier": "break_even",
+  "chiffre_d_affaires_au_seuil": "break_even",
+  "ca_au_point_mort": "break_even",
+  "break_even": "break_even",
+  "break_even_point": "break_even",
+  "break_even_sales": "break_even",
+  "break_even_revenue": "break_even",
+  "marge_sur_couts_variables": "contribution_margin",
+  "marge_contributive": "contribution_margin",
+  "taux_de_marge_sur_couts_variables": "contribution_margin",
+  "marge_de_contribution": "contribution_margin",
+  "contribution_margin": "contribution_margin",
+  "contribution_margin_ratio": "contribution_margin",
+  "cm_ratio": "contribution_margin",
+  "tresorerie": "cash_balance",
+  "tresorerie_disponible": "cash_balance",
+  "solde_de_tresorerie": "cash_balance",
+  "solde_bancaire": "cash_balance",
+  "encaisse": "cash_balance",
+  "encaisse_disponible": "cash_balance",
+  "liquidites": "cash_balance",
+  "cash": "cash_balance",
+  "cash_disponible": "cash_balance",
+  "cash_balance": "cash_balance",
+  "cash_position": "cash_balance",
+  "bank_balance": "cash_balance",
+  "available_cash": "cash_balance",
+  "cash_on_hand": "cash_balance",
+  "tresorerie_initiale": "opening_cash",
+  "solde_initial": "opening_cash",
+  "encaisse_initiale": "opening_cash",
+  "cash_initial": "opening_cash",
+  "solde_de_depart": "opening_cash",
+  "opening_cash": "opening_cash",
+  "opening_cash_balance": "opening_cash",
+  "beginning_cash": "opening_cash",
+  "starting_cash": "opening_cash",
+  "tresorerie_finale": "closing_cash",
+  "solde_final": "closing_cash",
+  "encaisse_finale": "closing_cash",
+  "cash_final": "closing_cash",
+  "solde_de_cloture": "closing_cash",
+  "closing_cash": "closing_cash",
+  "closing_cash_balance": "closing_cash",
+  "ending_cash": "closing_cash",
+  "ending_cash_balance": "closing_cash",
+  "entrees_de_tresorerie": "cash_in",
+  "entree_de_cash": "cash_in",
+  "encaissements": "cash_in",
+  "recettes_encaissees": "cash_in",
+  "cash_entrant": "cash_in",
+  "flux_entrants": "cash_in",
+  "encaissements_clients": "cash_in",
+  "cash_inflow": "cash_in",
+  "cash_inflows": "cash_in",
+  "cash_receipts": "cash_in",
+  "cash_received": "cash_in",
+  "sorties_de_tresorerie": "cash_out",
+  "sortie_de_cash": "cash_out",
+  "decaissements": "cash_out",
+  "paiements": "cash_out",
+  "cash_sortant": "cash_out",
+  "flux_sortants": "cash_out",
+  "cash_outflow": "cash_out",
+  "cash_outflows": "cash_out",
+  "cash_payments": "cash_out",
+  "cash_paid": "cash_out",
+  "comptes_clients": "accounts_receivable",
+  "comptes_a_recevoir": "accounts_receivable",
+  "creances_clients": "accounts_receivable",
+  "creances": "accounts_receivable",
+  "clients_a_recevoir": "accounts_receivable",
+  "montant_du_par_clients": "accounts_receivable",
+  "factures_clients_impayees": "accounts_receivable",
+  "ar": "accounts_receivable",
+  "a_r": "accounts_receivable",
+  "accounts_receivable": "accounts_receivable",
+  "receivables": "accounts_receivable",
+  "customer_receivables": "accounts_receivable",
+  "trade_receivables": "accounts_receivable",
+  "comptes_fournisseurs": "accounts_payable",
+  "comptes_a_payer": "accounts_payable",
+  "dettes_fournisseurs": "accounts_payable",
+  "fournisseurs_a_payer": "accounts_payable",
+  "factures_fournisseurs_impayees": "accounts_payable",
+  "montant_du_aux_fournisseurs": "accounts_payable",
+  "ap": "accounts_payable",
+  "a_p": "accounts_payable",
+  "accounts_payable": "accounts_payable",
+  "payables": "accounts_payable",
+  "supplier_payables": "accounts_payable",
+  "trade_payables": "accounts_payable",
+  "besoin_en_fonds_de_roulement": "working_capital",
+  "bfr": "working_capital",
+  "fonds_de_roulement": "working_capital",
+  "besoin_fonds_roulement": "working_capital",
+  "working_capital": "working_capital",
+  "working_capital_requirement": "working_capital",
+  "wcr": "working_capital",
+  "nwc": "working_capital",
+  "net_working_capital": "working_capital",
+  "flux_de_tresorerie": "cash_flow",
+  "flux_de_cash": "cash_flow",
+  "flux_financier": "cash_flow",
+  "mouvement_de_tresorerie": "cash_flow",
+  "cash_flow": "cash_flow",
+  "cashflow": "cash_flow",
+  "net_cash_flow": "cash_flow",
+  "cash_movement": "cash_flow",
+  "tresorerie_nette_generee": "net_cash_generated",
+  "cash_net_genere": "net_cash_generated",
+  "flux_net_genere": "net_cash_generated",
+  "generation_de_tresorerie": "net_cash_generated",
+  "net_cash_generated": "net_cash_generated",
+  "net_cash_flow_generated": "net_cash_generated",
+  "autonomie_de_tresorerie": "runway",
+  "duree_de_tresorerie": "runway",
+  "duree_de_vie_du_cash": "runway",
+  "runway": "runway",
+  "cash_runway": "runway",
+  "cash_survival": "runway",
+  "months_of_cash": "runway",
+  "nombre_de_clients": "customer_count",
+  "nombre_clients": "customer_count",
+  "clients": "customer_count",
+  "total_clients": "customer_count",
+  "clientele": "customer_count",
+  "base_clients": "customer_count",
+  "nombre_de_comptes_clients": "customer_count",
+  "customer_count": "customer_count",
+  "number_of_customers": "customer_count",
+  "customers": "customer_count",
+  "client_base": "customer_count",
+  "nouveaux_clients": "new_customer_count",
+  "nouveaux_clients_acquis": "new_customer_count",
+  "nombre_de_nouveaux_clients": "new_customer_count",
+  "nouveaux_comptes": "new_customer_count",
+  "acquisition_clients": "new_customer_count",
+  "new_customers": "new_customer_count",
+  "new_customer_count": "new_customer_count",
+  "new_clients": "new_customer_count",
+  "customer_acquisition": "new_customer_count",
+  "clients_recurrents": "returning_customer_count",
+  "clients_existants": "returning_customer_count",
+  "clients_fideles": "returning_customer_count",
+  "clients_de_retour": "returning_customer_count",
+  "repeat_customers": "returning_customer_count",
+  "returning_customers": "returning_customer_count",
+  "returning_clients": "returning_customer_count",
+  "repeat_buyers": "returning_customer_count",
+  "cout_acquisition_client": "customer_acquisition_cost",
+  "cout_d_acquisition_client": "customer_acquisition_cost",
+  "cac": "customer_acquisition_cost",
+  "cout_acquisition": "cpa",
+  "cout_moyen_acquisition": "customer_acquisition_cost",
+  "cout_pour_acquerir_un_client": "customer_acquisition_cost",
+  "customer_acquisition_cost": "customer_acquisition_cost",
+  "customer_acquisition_cost_per_customer": "customer_acquisition_cost",
+  "valeur_vie_client": "customer_lifetime_value",
+  "valeur_vie_du_client": "customer_lifetime_value",
+  "valeur_client_a_vie": "customer_lifetime_value",
+  "valeur_vie_clientele": "customer_lifetime_value",
+  "ltv": "customer_lifetime_value",
+  "clv": "customer_lifetime_value",
+  "lifetime_value": "customer_lifetime_value",
+  "customer_lifetime_value": "customer_lifetime_value",
+  "customer_lifetime_revenue": "customer_lifetime_value",
+  "taux_d_attrition": "churn_rate",
+  "taux_de_desabonnement": "churn_rate",
+  "taux_de_depart_clients": "churn_rate",
+  "taux_de_perte_clients": "churn_rate",
+  "attrition_client": "churn_rate",
+  "churn": "churn_rate",
+  "churn_rate": "churn_rate",
+  "customer_churn": "churn_rate",
+  "customer_attrition_rate": "churn_rate",
+  "taux_de_retention": "retention_rate",
+  "taux_fidelisation": "retention_rate",
+  "taux_de_conservation_clients": "retention_rate",
+  "retention_client": "retention_rate",
+  "retention_rate": "retention_rate",
+  "customer_retention": "retention_rate",
+  "retention_percentage": "retention_rate",
+  "taux_de_reachat": "repeat_purchase_rate",
+  "taux_de_clients_qui_rachetent": "repeat_purchase_rate",
+  "frequence_de_reachat": "repeat_purchase_rate",
+  "repeat_purchase_rate": "repeat_purchase_rate",
+  "repeat_customer_rate": "repeat_purchase_rate",
+  "repurchase_rate": "repeat_purchase_rate",
+  "satisfaction_client": "customer_satisfaction",
+  "satisfaction_clients": "customer_satisfaction",
+  "score_satisfaction": "customer_satisfaction",
+  "note_satisfaction": "customer_satisfaction",
+  "indice_satisfaction": "customer_satisfaction",
+  "satisfaction_moyenne": "customer_satisfaction",
+  "customer_satisfaction": "customer_satisfaction",
+  "csat": "customer_satisfaction",
+  "customer_satisfaction_score": "customer_satisfaction",
+  "nps": "nps",
+  "score_nps": "nps",
+  "net_promoter_score": "nps",
+  "indice_de_recommandation": "nps",
+  "score_de_recommandation": "nps",
+  "taux_promoteurs_net": "nps",
+  "taux_de_conversion": "conversion_rate",
+  "taux_conversion": "conversion_rate",
+  "conversion": "conversion_rate",
+  "taux_transformation": "conversion_rate",
+  "taux_de_transformation": "conversion_rate",
+  "conversion_rate": "conversion_rate",
+  "conversion_percentage": "conversion_rate",
+  "sales_conversion_rate": "conversion_rate",
+  "nombre_prospects": "lead_count",
+  "prospects": "lead_count",
+  "leads": "lead_count",
+  "prospects_commerciaux": "lead_count",
+  "pistes_commerciales": "lead_count",
+  "opportunites_potentielles": "lead_count",
+  "lead_count": "lead_count",
+  "prospects_count": "lead_count",
+  "nombre_opportunites": "opportunity_count",
+  "opportunites": "opportunity_count",
+  "occasions_de_vente": "opportunity_count",
+  "opportunites_commerciales": "opportunity_count",
+  "sales_opportunities": "opportunity_count",
+  "opportunity_count": "opportunity_count",
+  "opportunities": "opportunity_count",
+  "taux_de_reussite": "win_rate",
+  "taux_de_gain": "win_rate",
+  "taux_de_conclusion": "win_rate",
+  "taux_de_ventes_gagnees": "win_rate",
+  "win_rate": "win_rate",
+  "sales_win_rate": "win_rate",
+  "opportunity_win_rate": "win_rate",
+  "close_rate": "win_rate",
+  "cycle_de_vente_moyen": "average_sales_cycle",
+  "duree_moyenne_vente": "average_sales_cycle",
+  "duree_cycle_commercial": "average_sales_cycle",
+  "temps_moyen_de_conversion": "average_sales_cycle",
+  "sales_cycle": "average_sales_cycle",
+  "average_sales_cycle": "average_sales_cycle",
+  "sales_cycle_length": "average_sales_cycle",
+  "croissance_des_ventes": "sales_growth",
+  "croissance_ca": "sales_growth",
+  "croissance_chiffre_affaires": "sales_growth",
+  "evolution_ventes": "sales_growth",
+  "variation_ventes": "sales_growth",
+  "croissance_revenus": "sales_growth",
+  "sales_growth": "sales_growth",
+  "revenue_growth": "sales_growth",
+  "sales_increase": "sales_growth",
+  "objectif_ventes": "sales_target",
+  "cible_ventes": "sales_target",
+  "objectif_ca": "sales_target",
+  "cible_ca": "sales_target",
+  "quota_ventes": "sales_target",
+  "objectif_chiffre_d_affaires": "sales_target",
+  "sales_target": "sales_target",
+  "sales_goal": "sales_target",
+  "revenue_target": "sales_target",
+  "sales_quota": "sales_target",
+  "depenses_marketing": "marketing_spend",
+  "budget_marketing_consomme": "marketing_spend",
+  "cout_marketing": "marketing_spend",
+  "depenses_de_marketing": "marketing_spend",
+  "frais_marketing": "marketing_spend",
+  "investissement_marketing": "marketing_spend",
+  "marketing_spend": "marketing_spend",
+  "marketing_expenses": "marketing_spend",
+  "marketing_cost": "marketing_spend",
+  "marketing_budget_spent": "marketing_spend",
+  "depenses_publicitaires": "advertising_spend",
+  "cout_publicite": "advertising_spend",
+  "couts_publicitaires": "advertising_spend",
+  "budget_publicite_consomme": "advertising_spend",
+  "depenses_ads": "advertising_spend",
+  "depenses_annonces": "advertising_spend",
+  "ad_spend": "advertising_spend",
+  "advertising_spend": "advertising_spend",
+  "advertising_cost": "advertising_spend",
+  "paid_media_spend": "advertising_spend",
+  "taux_de_clic": "ctr",
+  "taux_clic": "ctr",
+  "ctr": "ctr",
+  "taux_de_clics": "ctr",
+  "click_through_rate": "ctr",
+  "click_rate": "ctr",
+  "cout_par_clic": "cpc",
+  "cout_moyen_par_clic": "cpc",
+  "cpc": "cpc",
+  "cost_per_click": "cpc",
+  "average_cost_per_click": "cpc",
+  "cout_par_acquisition": "cpa",
+  "cpa": "cpa",
+  "cout_par_conversion": "cpa",
+  "cost_per_acquisition": "cpa",
+  "cost_per_action": "cpa",
+  "cost_per_conversion": "cpa",
+  "retour_sur_depenses_publicitaires": "roas",
+  "retour_publicite": "roas",
+  "roas": "roas",
+  "rendement_publicitaire": "roas",
+  "return_on_ad_spend": "roas",
+  "advertising_return": "roas",
+  "ad_spend_return": "roas",
+  "retour_sur_investissement_marketing": "romi",
+  "rendement_marketing": "romi",
+  "romi": "romi",
+  "retour_marketing": "romi",
+  "return_on_marketing_investment": "romi",
+  "marketing_roi": "romi",
+  "impressions": "impressions",
+  "affichages": "impressions",
+  "vues_publicitaires": "impressions",
+  "nombre_affichages": "impressions",
+  "nombre_d_impressions": "impressions",
+  "ad_impressions": "impressions",
+  "impressions_count": "impressions",
+  "clics": "clicks",
+  "nombre_de_clics": "clicks",
+  "clics_publicitaires": "clicks",
+  "clicks": "clicks",
+  "click_count": "clicks",
+  "ad_clicks": "clicks",
+  "portee": "reach",
+  "portee_publicitaire": "reach",
+  "personnes_atteintes": "reach",
+  "audience_atteinte": "reach",
+  "reach": "reach",
+  "advertising_reach": "reach",
+  "audience_reach": "reach",
+  "nombre_produits": "product_count",
+  "nombre_de_produits": "product_count",
+  "produits": "product_count",
+  "references": "product_count",
+  "nombre_references": "product_count",
+  "sku_count": "product_count",
+  "product_count": "product_count",
+  "number_of_products": "product_count",
+  "products": "product_count",
+  "id_produit": "product_id",
+  "identifiant_produit": "product_id",
+  "code_produit": "product_id",
+  "reference_produit": "product_id",
+  "sku": "product_id",
+  "code_sku": "product_id",
+  "product_id": "product_id",
+  "product_code": "product_id",
+  "sku_code": "product_id",
+  "item_id": "product_id",
+  "nom_produit": "product_name",
+  "nom_du_produit": "product_name",
+  "produit": "product_name",
+  "designation": "product_name",
+  "libelle_produit": "product_name",
+  "description_produit": "product_name",
+  "product_name": "product_name",
+  "item_name": "product_name",
+  "product_description": "product_name",
+  "categorie": "category",
+  "categorie_produit": "category",
+  "famille_produit": "category",
+  "groupe_produit": "category",
+  "classe_produit": "category",
+  "segment_produit": "category",
+  "category": "category",
+  "product_category": "category",
+  "product_family": "category",
+  "product_group": "category",
+  "prix_unitaire": "unit_price",
+  "prix_par_unite": "unit_price",
+  "tarif_unitaire": "unit_price",
+  "prix_de_vente_unitaire": "unit_price",
+  "prix_moyen_unitaire": "unit_price",
+  "unit_price": "unit_price",
+  "selling_price_per_unit": "unit_price",
+  "price_per_unit": "unit_price",
+  "cout_unitaire": "unit_cost",
+  "cout_par_unite": "unit_cost",
+  "cout_produit": "unit_cost",
+  "cout_d_achat_unitaire": "unit_cost",
+  "prix_coutant": "unit_cost",
+  "unit_cost": "unit_cost",
+  "cost_per_unit": "unit_cost",
+  "product_unit_cost": "unit_cost",
+  "quantite_en_stock": "inventory_quantity",
+  "quantite_stock": "inventory_quantity",
+  "stock_quantite": "inventory_quantity",
+  "unites_en_stock": "inventory_quantity",
+  "niveau_de_stock": "inventory_quantity",
+  "inventaire_quantite": "inventory_quantity",
+  "quantite_inventaire": "inventory_quantity",
+  "inventory_quantity": "inventory_quantity",
+  "stock_quantity": "inventory_quantity",
+  "units_in_stock": "inventory_quantity",
+  "inventory_units": "inventory_quantity",
+  "valeur_stock": "inventory_value",
+  "valeur_des_stocks": "inventory_value",
+  "valeur_inventaire": "inventory_value",
+  "valeur_de_l_inventaire": "inventory_value",
+  "stock_en_valeur": "inventory_value",
+  "inventory_value": "inventory_value",
+  "inventory_valuation": "inventory_value",
+  "stock_value": "inventory_value",
+  "rotation_des_stocks": "stock_turnover",
+  "taux_rotation_stock": "stock_turnover",
+  "rotation_stock": "stock_turnover",
+  "coefficient_rotation": "stock_turnover",
+  "stock_turnover": "stock_turnover",
+  "inventory_turnover": "stock_turnover",
+  "inventory_turnover_ratio": "stock_turnover",
+  "ruptures_de_stock": "stockout_count",
+  "nombre_ruptures": "stockout_count",
+  "rupture_stock": "stockout_count",
+  "nombre_de_ruptures": "stockout_count",
+  "stockout_count": "stockout_count",
+  "stock_outs": "stockout_count",
+  "inventory_stockouts": "stockout_count",
+  "taux_rupture": "stockout_rate",
+  "taux_de_rupture_stock": "stockout_rate",
+  "taux_ruptures": "stockout_rate",
+  "stockout_rate": "stockout_rate",
+  "stockout_percentage": "stockout_rate",
+  "out_of_stock_rate": "stockout_rate",
+  "jours_de_stock": "days_inventory",
+  "jours_couverture_stock": "days_inventory",
+  "couverture_stock_en_jours": "days_inventory",
+  "nombre_jours_stock": "days_inventory",
+  "inventory_days": "days_inventory",
+  "days_inventory": "days_inventory",
+  "days_of_stock": "days_inventory",
+  "inventory_coverage_days": "days_inventory",
+  "point_de_commande": "reorder_point",
+  "seuil_commande": "reorder_point",
+  "niveau_reapprovisionnement": "reorder_point",
+  "seuil_reapprovisionnement": "reorder_point",
+  "reorder_point": "reorder_point",
+  "reorder_level": "reorder_point",
+  "replenishment_point": "reorder_point",
+  "demarque": "shrinkage",
+  "demarque_inconnue": "shrinkage",
+  "pertes_inventaire": "shrinkage",
+  "pertes_de_stock": "shrinkage",
+  "ecarts_stock": "shrinkage",
+  "vol": "shrinkage",
+  "casse": "shrinkage",
+  "stock_shrinkage": "shrinkage",
+  "inventory_shrinkage": "shrinkage",
+  "inventory_loss": "shrinkage",
+  "taux_de_demarque": "shrinkage_rate",
+  "taux_demarque_inconnue": "shrinkage_rate",
+  "taux_de_pertes_stock": "shrinkage_rate",
+  "taux_pertes_inventaire": "shrinkage_rate",
+  "shrinkage_rate": "shrinkage_rate",
+  "inventory_shrinkage_rate": "shrinkage_rate",
+  "nombre_fournisseurs": "supplier_count",
+  "fournisseurs": "supplier_count",
+  "nombre_de_fournisseurs": "supplier_count",
+  "total_fournisseurs": "supplier_count",
+  "supplier_count": "supplier_count",
+  "number_of_suppliers": "supplier_count",
+  "suppliers": "supplier_count",
+  "montant_achats": "purchase_amount",
+  "achats": "purchase_amount",
+  "total_achats": "purchase_amount",
+  "valeur_achats": "purchase_amount",
+  "depenses_achats": "purchase_amount",
+  "achats_fournisseurs": "purchase_amount",
+  "purchase_amount": "purchase_amount",
+  "purchases": "purchase_amount",
+  "purchase_value": "purchase_amount",
+  "procurement_spend": "purchase_amount",
+  "quantite_achetee": "purchase_quantity",
+  "volume_achats": "purchase_quantity",
+  "unites_achetees": "purchase_quantity",
+  "quantite_achat": "purchase_quantity",
+  "purchase_quantity": "purchase_quantity",
+  "purchased_quantity": "purchase_quantity",
+  "units_purchased": "purchase_quantity",
+  "nombre_commandes_fournisseurs": "purchase_order_count",
+  "commandes_achats": "purchase_order_count",
+  "bons_de_commande": "purchase_order_count",
+  "nombre_bons_commande": "purchase_order_count",
+  "purchase_orders": "purchase_order_count",
+  "purchase_order_count": "purchase_order_count",
+  "po_count": "purchase_order_count",
+  "delai_fournisseur": "supplier_lead_time",
+  "delai_livraison_fournisseur": "supplier_lead_time",
+  "delai_approvisionnement": "supplier_lead_time",
+  "temps_approvisionnement": "supplier_lead_time",
+  "lead_time_fournisseur": "supplier_lead_time",
+  "supplier_lead_time": "supplier_lead_time",
+  "supplier_delivery_time": "supplier_lead_time",
+  "procurement_lead_time": "supplier_lead_time",
+  "cout_fournisseur": "supplier_cost",
+  "prix_fournisseur": "supplier_cost",
+  "cout_achat_fournisseur": "supplier_cost",
+  "supplier_cost": "supplier_cost",
+  "supplier_price": "supplier_cost",
+  "procurement_cost": "supplier_cost",
+  "nombre_employes": "employee_count",
+  "nombre_salaries": "employee_count",
+  "effectif": "employee_count",
+  "effectifs": "employee_count",
+  "employes": "employee_count",
+  "salaries": "employee_count",
+  "personnel": "employee_count",
+  "collaborateurs": "employee_count",
+  "headcount": "employee_count",
+  "employee_count": "employee_count",
+  "number_of_employees": "employee_count",
+  "staff_count": "employee_count",
+  "workforce": "employee_count",
+  "masse_salariale": "payroll_cost",
+  "cout_salarial": "payroll_cost",
+  "couts_salariaux": "payroll_cost",
+  "cout_personnel": "labor_cost",
+  "cout_de_personnel": "payroll_cost",
+  "paie_totale": "payroll_cost",
+  "salaires_totaux": "payroll_cost",
+  "depenses_paie": "payroll_cost",
+  "payroll": "payroll_cost",
+  "payroll_cost": "payroll_cost",
+  "payroll_expenses": "payroll_cost",
+  "labor_cost": "labor_cost",
+  "staff_cost": "payroll_cost",
+  "salaire_moyen": "average_salary",
+  "remuneration_moyenne": "average_salary",
+  "salaire_moyen_employe": "average_salary",
+  "paie_moyenne": "average_salary",
+  "cout_salarial_moyen": "average_salary",
+  "average_salary": "average_salary",
+  "average_wage": "average_salary",
+  "average_compensation": "average_salary",
+  "cout_de_main_d_oeuvre": "labor_cost",
+  "cout_main_d_oeuvre": "labor_cost",
+  "cout_du_travail": "labor_cost",
+  "cout_travail": "labor_cost",
+  "labour_cost": "labor_cost",
+  "workforce_cost": "labor_cost",
+  "taux_de_roulement": "employee_turnover",
+  "roulement_du_personnel": "employee_turnover",
+  "turnover_employes": "employee_turnover",
+  "taux_turnover": "employee_turnover",
+  "rotation_personnel": "employee_turnover",
+  "employee_turnover": "employee_turnover",
+  "staff_turnover": "employee_turnover",
+  "employee_turnover_rate": "employee_turnover",
+  "taux_absenteisme": "absenteeism_rate",
+  "absenteisme": "absenteeism_rate",
+  "taux_d_absence": "absenteeism_rate",
+  "absence_employes": "absenteeism_rate",
+  "absenteeism_rate": "absenteeism_rate",
+  "absence_rate": "absenteeism_rate",
+  "employee_absenteeism": "absenteeism_rate",
+  "heures_travaillees": "hours_worked",
+  "heures_travail": "hours_worked",
+  "nombre_heures": "hours_worked",
+  "heures_effectuees": "hours_worked",
+  "heures_payees": "hours_worked",
+  "temps_travaille": "hours_worked",
+  "hours_worked": "hours_worked",
+  "worked_hours": "hours_worked",
+  "paid_hours": "hours_worked",
+  "delai_traitement_commande": "order_fulfillment_time",
+  "delai_preparation_commande": "order_fulfillment_time",
+  "temps_traitement_commande": "order_fulfillment_time",
+  "temps_fulfillment": "order_fulfillment_time",
+  "fulfillment_time": "order_fulfillment_time",
+  "order_fulfillment_time": "order_fulfillment_time",
+  "order_processing_time": "order_fulfillment_time",
+  "delai_livraison": "delivery_time",
+  "temps_livraison": "delivery_time",
+  "duree_livraison": "delivery_time",
+  "delai_moyen_livraison": "delivery_time",
+  "delivery_time": "delivery_time",
+  "delivery_lead_time": "delivery_time",
+  "shipping_time": "delivery_time",
+  "taux_annulation": "cancellation_rate",
+  "taux_d_annulation_commandes": "cancellation_rate",
+  "commandes_annulees": "cancellation_rate",
+  "cancellation_rate": "cancellation_rate",
+  "order_cancellation_rate": "cancellation_rate",
+  "taux_retour": "return_rate",
+  "taux_de_retours": "return_rate",
+  "retours_produits": "return_rate",
+  "taux_retours_produits": "return_rate",
+  "return_rate": "return_rate",
+  "product_return_rate": "return_rate",
+  "returns_percentage": "return_rate",
+  "montant_remboursements": "refund_amount",
+  "remboursements": "refund_amount",
+  "valeur_remboursements": "refund_amount",
+  "total_remboursements": "refund_amount",
+  "refund_amount": "refund_amount",
+  "refunds": "refund_amount",
+  "refunded_amount": "refund_amount",
+  "refund_value": "refund_amount",
+  "montant_remise": "discount_amount",
+  "montant_rabais": "discount_amount",
+  "remises": "discount_amount",
+  "rabais": "discount_amount",
+  "reduction": "discount_amount",
+  "reductions": "discount_amount",
+  "valeur_remise": "discount_amount",
+  "discount_amount": "discount_amount",
+  "discount_value": "discount_amount",
+  "discounts": "discount_amount",
+  "taux_remise": "discount_rate",
+  "taux_rabais": "discount_rate",
+  "pourcentage_remise": "discount_rate",
+  "remise_moyenne": "discount_rate",
+  "discount_rate": "discount_rate",
+  "discount_percentage": "discount_rate",
+  "average_discount": "discount_rate",
+  "ventes_promotionnelles": "promotion_sales",
+  "ventes_en_promotion": "promotion_sales",
+  "chiffre_affaires_promotion": "promotion_sales",
+  "ca_promotion": "promotion_sales",
+  "revenus_promotionnels": "promotion_sales",
+  "promotional_sales": "promotion_sales",
+  "promotion_revenue": "promotion_sales",
+  "nombre_promotions": "promotion_count",
+  "promotions_actives": "promotion_count",
+  "campagnes_promotionnelles": "promotion_count",
+  "promotions": "promotion_count",
+  "promotion_count": "promotion_count",
+  "number_of_promotions": "promotion_count",
+  "date": "date",
+  "date_transaction": "date",
+  "date_operation": "date",
+  "date_commande": "date",
+  "date_vente": "date",
+  "date_evenement": "date",
+  "jour": "date",
+  "transaction_date": "date",
+  "order_date": "date",
+  "sales_date": "date",
+  "operation_date": "date",
+  "annee": "year",
+  "an": "year",
+  "exercice": "year",
+  "annee_fiscale": "year",
+  "annee_financiere": "year",
+  "year": "year",
+  "fiscal_year": "year",
+  "financial_year": "year",
+  "mois": "month",
+  "periode_mensuelle": "month",
+  "mois_fiscal": "month",
+  "month": "month",
+  "monthly_period": "month",
+  "fiscal_month": "month",
+  "trimestre": "quarter",
+  "trimestre_fiscal": "quarter",
+  "periode_trimestrielle": "quarter",
+  "quarter": "quarter",
+  "fiscal_quarter": "quarter",
+  "quarterly_period": "quarter",
+  "semaine": "week",
+  "semaine_fiscale": "week",
+  "periode_hebdomadaire": "week",
+  "week": "week",
+  "fiscal_week": "week",
+  "weekly_period": "week",
+  "id_transaction": "transaction_id",
+  "identifiant_transaction": "transaction_id",
+  "numero_transaction": "transaction_id",
+  "no_transaction": "transaction_id",
+  "numero_operation": "transaction_id",
+  "transaction_id": "transaction_id",
+  "transaction_number": "transaction_id",
+  "transaction_reference": "transaction_id",
+  "id_commande": "order_id",
+  "identifiant_commande": "order_id",
+  "numero_commande": "order_id",
+  "no_commande": "order_id",
+  "num_commande": "order_id",
+  "num_cde": "order_id",
+  "no_cde": "order_id",
+  "cde_no": "order_id",
+  "cde_id": "order_id",
+  "ref_cde": "order_id",
+  "ref_commande": "order_id",
+  "bon_commande": "order_id",
+  "bc_no": "order_id",
+  "order_id": "order_id",
+  "order_number": "order_id",
+  "order_reference": "order_id",
+  "id_client": "customer_id",
+  "identifiant_client": "customer_id",
+  "numero_client": "customer_id",
+  "code_client": "customer_id",
+  "customer_id": "customer_id",
+  "customer_number": "customer_id",
+  "customer_code": "customer_id",
+  "id_fournisseur": "supplier_id",
+  "identifiant_fournisseur": "supplier_id",
+  "numero_fournisseur": "supplier_id",
+  "code_fournisseur": "supplier_id",
+  "supplier_id": "supplier_id",
+  "supplier_number": "supplier_id",
+  "supplier_code": "supplier_id",
+  "id_employe": "employee_id",
+  "identifiant_employe": "employee_id",
+  "matricule": "employee_id",
+  "numero_employe": "employee_id",
+  "code_employe": "employee_id",
+  "employee_id": "employee_id",
+  "employee_number": "employee_id",
+  "employee_code": "employee_id",
+  "region": "region",
+  "region_administrative": "region",
+  "territoire": "region",
+  "zone": "region",
+  "secteur_geographique": "region",
+  "region_commerciale": "region",
+  "geographic_region": "region",
+  "territory": "region",
+  "sales_region": "region",
+  "ville": "city",
+  "municipalite": "city",
+  "commune": "city",
+  "city": "city",
+  "municipality": "city",
+  "town": "city",
+  "pays": "country",
+  "nation": "country",
+  "country": "country",
+  "market_country": "country",
+  "magasin": "store",
+  "boutique": "store",
+  "succursale": "store",
+  "point_de_vente": "store",
+  "magasin_physique": "store",
+  "store": "store",
+  "shop": "store",
+  "branch": "store",
+  "retail_location": "store",
+  "location": "store",
+  "canal_de_vente": "channel",
+  "canal_commercial": "channel",
+  "canal": "channel",
+  "canal_publicitaire": "channel",
+  "canal_marketing": "channel",
+  "canal_de_campagne": "channel",
+  "canal_de_communication": "channel",
+  "mode_de_vente": "channel",
+  "circuit_de_vente": "channel",
+  "sales_channel": "channel",
+  "sales_source": "channel",
+  "distribution_channel": "channel",
+  "budget_alloue": "budget",
+  "budget_total": "budget",
+  "budget_campagne": "budget",
+  "depenses_reelles": "spend",
+  "depense_reelle": "spend",
+  "depense": "spend",
+  "depenses": "spend",
+  "cout_campagne": "spend",
+  "frais_marketing": "spend",
+  "revenu_ventes": "revenue",
+  "revenus_ventes": "revenue",
+  "chiffre_affaires_campagne": "revenue",
+  "ca_genere": "revenue",
+  "ventes_generees": "revenue",
+  "cout_achat": "unit_cost",
+  "cout_unitaire": "unit_cost",
+  "prix_achat": "unit_cost",
+  "purchase_cost": "unit_cost",
+  "statut_paiement": "payment_status",
+  "etat_paiement": "payment_status",
+  "etat_livraison": "fulfillment_status",
+  "statut_livraison": "fulfillment_status",
+  "vendeur": "sales_rep",
+  "representant_commercial": "sales_rep",
+  "conseiller_ventes": "sales_rep",
+  "representant": "sales_rep",
+  "commercial": "sales_rep",
+  "agent_commercial": "sales_rep",
+  "sales_representative": "sales_rep",
+  "sales_rep": "sales_rep",
+  "salesperson": "sales_rep",
+  "account_executive": "sales_rep",
+  "paniers": "cart_count",
+  "paniers_crees": "cart_count",
+  "nombre_paniers": "cart_count",
+  "shopping_carts": "cart_count",
+  "cart_count": "cart_count",
+  "carts_created": "cart_count",
+  "taux_abandon_panier": "cart_abandonment_rate",
+  "taux_d_abandon_panier": "cart_abandonment_rate",
+  "paniers_abandonnes": "cart_abandonment_rate",
+  "abandon_panier": "cart_abandonment_rate",
+  "cart_abandonment": "cart_abandonment_rate",
+  "cart_abandonment_rate": "cart_abandonment_rate",
+  "abandoned_cart_rate": "cart_abandonment_rate",
+  "passages_caisse": "checkout_count",
+  "checkouts": "checkout_count",
+  "nombre_checkouts": "checkout_count",
+  "checkout_count": "checkout_count",
+  "completed_checkout_attempts": "checkout_count",
+  "sessions_site": "website_sessions",
+  "sessions_web": "website_sessions",
+  "visites_site": "website_sessions",
+  "sessions": "website_sessions",
+  "visites": "website_sessions",
+  "trafic_site": "website_sessions",
+  "website_sessions": "website_sessions",
+  "web_sessions": "website_sessions",
+  "site_visits": "website_sessions",
+  "visits": "website_sessions",
+  "taux_rebond": "bounce_rate",
+  "taux_de_rebond": "bounce_rate",
+  "rebond": "bounce_rate",
+  "bounce_rate": "bounce_rate",
+  "website_bounce_rate": "bounce_rate",
+  "objectif": "target",
+  "cible": "target",
+  "cible_kpi": "target",
+  "valeur_cible": "target",
+  "objectif_kpi": "target",
+  "target": "target",
+  "target_value": "target",
+  "goal": "target",
+  "goal_value": "target",
+  "kpi_target": "target",
+  "valeur_actuelle": "actual_value",
+  "valeur_reelle": "actual_value",
+  "realise": "actual_value",
+  "realisation": "actual_value",
+  "resultat_actuel": "actual_value",
+  "valeur_observee": "actual_value",
+  "actual": "actual_value",
+  "actual_value": "actual_value",
+  "current_value": "actual_value",
+  "achieved_value": "actual_value",
+  "ecart": "variance",
+  "variance": "variance",
+  "difference": "variance",
+  "ecart_objectif": "variance",
+  "ecart_cible": "variance",
+  "ecart_realise": "variance",
+  "variation_par_rapport_objectif": "variance",
+  "target_variance": "variance",
+  "actual_vs_target": "variance",
+  "taux_atteinte_objectif": "achievement_rate",
+  "taux_realisation": "achievement_rate",
+  "taux_d_atteinte": "achievement_rate",
+  "progression_objectif": "achievement_rate",
+  "realisation_objectif": "achievement_rate",
+  "target_achievement": "achievement_rate",
+  "achievement_rate": "achievement_rate",
+  "goal_completion_rate": "achievement_rate",
+  "taux_croissance": "growth_rate",
+  "taux_de_croissance": "growth_rate",
+  "croissance": "growth_rate",
+  "evolution": "change_rate",
+  "progression": "growth_rate",
+  "variation_relative": "growth_rate",
+  "growth_rate": "growth_rate",
+  "growth_percentage": "growth_rate",
+  "growth": "growth_rate",
+  "variation_montant": "change_amount",
+  "ecart_montant": "change_amount",
+  "difference_montant": "change_amount",
+  "changement_montant": "change_amount",
+  "delta": "change_amount",
+  "amount_change": "change_amount",
+  "absolute_change": "change_amount",
+  "delta_amount": "change_amount",
+  "variation": "change_rate",
+  "variation_pourcentage": "change_rate",
+  "taux_variation": "change_rate",
+  "changement": "change_rate",
+  "percentage_change": "change_rate",
+  "change_rate": "change_rate",
+  "relative_change": "change_rate",
+  "moyenne": "average",
+  "moyenne_generale": "average",
+  "moyenne_ponderee": "average",
+  "valeur_moyenne": "average",
+  "average": "average",
+  "mean": "average",
+  "weighted_average": "average",
+  "minimum": "minimum",
+  "valeur_minimale": "minimum",
+  "plus_petite_valeur": "minimum",
+  "min": "minimum",
+  "minimum_value": "minimum",
+  "lowest_value": "minimum",
+  "maximum": "maximum",
+  "valeur_maximale": "maximum",
+  "plus_grande_valeur": "maximum",
+  "max": "maximum",
+  "maximum_value": "maximum",
+  "highest_value": "maximum",
+  "mediane": "median",
+  "valeur_mediane": "median",
+  "median": "median",
+  "median_value": "median",
+  "statut": "status",
+  "etat": "status",
+  "situation": "status",
+  "status": "status",
+  "state": "status",
+  "condition": "status",
+  "type": "type",
+  "classe": "type",
+  "nature": "type",
+  "genre": "type",
+  "type_of": "type",
+  "class": "type",
+  "kind": "type",
+  "description": "description",
+  "detail": "description",
+  "commentaire": "description",
+  "notes": "description",
+  "remarque": "description",
+  "information": "description",
+  "details": "description",
+  "comment": "description",
+  "remarks": "description",
+  "devise": "currency",
+  "monnaie": "currency",
+  "currency": "currency",
+  "currency_code": "currency",
+  "currency_type": "currency",
+  "monnaie_utilisee": "currency",
 
-export function normalizeKeys(row: Record<string, any>, properties?: Record<string, any> | null): Record<string, any> {
+  // --- KAGGLE / STANDARD DATASETS ADDITIONS ---
+  // Kaggle Superstore / E-Commerce
+  "ship_date": "shipping_date",
+  "ship_mode": "shipping_method",
+  "customer_name": "customer_id", // Fallback to id or name
+  "segment": "customer_type",
+  "country": "country",
+  "city": "city",
+  "state": "region",
+  "postal_code": "zip_code",
+  "region": "region",
+  "sub_category": "category",
+  "sales": "revenue",
+  "profit": "gross_margin",
+  "discount": "discount",
+  "quantity": "sales_quantity",
+
+  // Kaggle Bank Transactions / Credit Card
+  "txn_date": "date",
+  "post_date": "date",
+  "value_date": "date",
+  "debit_amount": "expense_amount",
+  "credit_amount": "income_amount",
+  "txn_desc": "description",
+  "merch_name": "source",
+  "merchant": "source",
+  "mcc": "category",
+  "statement_bal": "closing_cash",
+  
+  // Kaggle Churn / CRM
+  "customerid": "customer_id",
+  "surname": "last_name",
+  "creditscore": "quality_score",
+  "geography": "country",
+  "gender": "gender",
+  "tenure": "customer_tenure",
+  "balance": "balance",
+  "numofproducts": "total_orders",
+  "hascrcard": "has_credit_card",
+  "isactivemember": "status",
+  "estimatedsalary": "estimated_revenue",
+  "exited": "churn_risk",
+
+  // Kaggle HR / Payroll
+  "employee_name": "employee_id",
+  "empid": "employee_id",
+  "salary": "regular_pay",
+  "position": "role",
+  "dob": "birth_date",
+  "sex": "gender",
+  "maritaldesc": "marital_status",
+  "employmentstatus": "status",
+  "managername": "manager_id",
+  "performancescore": "quality_score",
+  
+  // Kaggle Marketing / Ads
+  "campaign_id": "campaign_id",
+  "clicks": "clicks",
+  "impressions": "impressions",
+  "cost": "spend",
+  "conversions": "conversions",
+
+  // --- OPEN DATA / HUGGING FACE / DONNEES QUEBEC ADDITIONS ---
+  // Quebec / Canadian standard terminology (Tax, accounting, retail)
+  "tps": "tax_amount",
+  "tvq": "tax_amount",
+  "taxes": "tax_amount",
+  "rabais": "discount",
+  "escompte": "discount",
+  "no_facture": "order_id",
+  "date_vente": "date",
+  "article": "product_name",
+  "qte": "quantity",
+  "succursale": "location_id",
+  
+  // Finance / Accounting Data (Accounts receivable/payable, Cash flow)
+  "accounts_receivable": "amount", // Contextual mapping for debts
+  "creances": "amount",
+  "comptes_clients": "amount",
+  "accounts_payable": "expense_amount",
+  "comptes_fournisseurs": "expense_amount",
+  "encours": "balance",
+  "solde_bancaire": "closing_cash",
+  "available_cash": "closing_cash",
+  "cash_flow": "amount", // General money movement
+  
+  // Inventory & Supply Chain
+  "inventory": "inventory_level",
+  "inventaire": "inventory_level",
+  "stock_on_hand": "inventory_level",
+  "qte_en_stock": "inventory_level",
+  "qte_stock": "inventory_level",
+  "quantite_en_stock": "inventory_level",
+  "stock_quantity": "inventory_level",
+  "stock_disponible": "inventory_level",
+  "seuil_d_alerte": "reorder_point",
+  "seuil_alerte": "reorder_point",
+  "seuil_reapprovisionnement": "reorder_point",
+  "point_de_commande": "reorder_point",
+  "reorder_point": "reorder_point",
+  "valeur_du_stock_cout": "inventory_value",
+  "valeur_stock_cout": "inventory_value",
+  "valeur_stock_vente": "inventory_value",
+  "valeur_du_stock": "inventory_value",
+  "valeur_stock": "inventory_value",
+  "prix_de_vente": "selling_price",
+  "prix_vente": "selling_price",
+  "ugs": "sku",
+  "fournisseur": "supplier_name",
+  "supplier": "supplier_name",
+  "lead_time": "delivery_time",
+  "cogs": "cogs", // Cost of Goods Sold
+  "cout_des_marchandises": "cogs",
+  "coutant": "unit_cost",
+  
+  // Store Performance & Business KPIs
+  "store_performance": "quality_score",
+  "store_id": "location_id",
+  "demand_forecast": "predicted_sales",
+  "economic_indicator": "external_metric",
+  "competitor_price": "competitor_price",
+
+  // Genere depuis le registre unique (registry/conceptRegistry.ts, spec v2
+  // section 3) : concepts de mesure (revenu, couts, marketing...), y compris
+  // les en-tetes de canal publicitaire ("Facebook Ads", "Google Ads"...) qui
+  // n'avaient jamais d'alias de COLONNE ici — seulement de VALEUR de cellule
+  // dans ENUM_TRANSLATIONS, ce qui les rendait invisibles a l'import quand un
+  // fichier a une colonne nommee "Facebook Ads" plutot qu'une colonne
+  // "canal" contenant la valeur "Facebook Ads". Place en dernier : gagne sur
+  // toute collision avec les alias structurels ecrits a la main ci-dessus.
+  ...buildFieldAliasesFromRegistry(),
+};
+
+// FIELD_ALIASES/ALIAS_CANONIQUES resolve every revenue synonym (CA, Ventes,
+// Sales, Revenue, Net Sales, "Chiffre d'affaires" with the apostrophe...) to
+// one of these canonical concept names, regardless of which entity is being
+// imported. No entity schema actually has a field literally called "revenue"
+// — Transaction/Expense track it as "amount", Order/Customer/ExecutiveSummary
+// as "total_revenue" — so whenever the resolved alias didn't happen to be the
+// exact target field, the row's money value was silently dropped and the row
+// quarantined for a missing required field. A financial column this central
+// must never disappear without explanation, so on a schema mismatch we place
+// it in whichever generic revenue-carrying field the target entity actually
+// has, instead of an alias name nothing declares.
+const REVENUE_CONCEPT_ALIASES = new Set(["revenue", "net_revenue", "gross_revenue", "total_revenue"]);
+const REVENUE_LANDING_FIELDS = ["total_revenue", "amount", "gross_revenue", "net_revenue"];
+
+export function normalizeKeys(
+  row: Record<string, any>,
+  properties?: Record<string, any>,
+  // Filled with the ORIGINAL column names (not aliases) that could not be
+  // matched to any field of the target entity — a financial or business
+  // column must never disappear from a column that isn't in the schema
+  // without the user being told which one and why (sec6 of the audit).
+  unmapped?: Set<string>,
+): Record<string, any> {
   const out: Record<string, any> = {};
   const schemaFields = properties ? Object.keys(properties) : [];
   for (const [k, v] of Object.entries(row || {})) {
     const lower = k.toLowerCase().trim();
     const canon = cleCanonique(k);
-    const alias = FIELD_ALIASES[lower]
+    const direct = schemaFields.includes(k) ? k
+      : schemaFields.includes(lower) ? lower
+        : schemaFields.includes(canon) ? canon
+          : null;
+    const alias = direct || FIELD_ALIASES[lower]
       || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")]
       || FIELD_ALIASES[canon]
       || ALIAS_CANONIQUES[canon]
       || (schemaFields.includes(canon) ? canon : lower);
-    // If alias is not a schema field, try fuzzy match against schema field names
+    // If alias is not a schema field, try fuzzy match against schema field names or contextual adaptations
     if (schemaFields.length > 0 && !schemaFields.includes(alias)) {
       const fuzzyMatch = schemaFields.find((f) => cleCanonique(f) === canon);
       if (fuzzyMatch) {
         out[fuzzyMatch] = v;
         continue;
       }
+      // Last resort: a revenue-family column with nowhere else to go. Land it
+      // on the first revenue-carrying field this entity actually declares,
+      // in priority order, instead of losing the value under an alias name
+      // that isn't one of this entity's fields.
+      if (REVENUE_CONCEPT_ALIASES.has(alias) || REVENUE_CONCEPT_ALIASES.has(canon)) {
+        const landing = REVENUE_LANDING_FIELDS.find((f) => schemaFields.includes(f) && out[f] === undefined);
+        if (landing) {
+          out[landing] = v;
+          continue;
+        }
+      }
+      if (alias === "status" && schemaFields.includes("fulfillment_status") && !schemaFields.includes("status")) {
+        out["fulfillment_status"] = v;
+        continue;
+      }
+      if (alias === "amount" && schemaFields.includes("total") && !schemaFields.includes("amount")) {
+        out["total"] = v;
+        continue;
+      }
+      if (alias === "customer_name" && schemaFields.includes("customer_id") && !schemaFields.includes("customer_name")) {
+        out["customer_id"] = v;
+        continue;
+      }
+      if (alias === "expense" && schemaFields.includes("expense_amount") && !schemaFields.includes("expense")) {
+        out["expense_amount"] = v;
+        continue;
+      }
+      if (["expense", "depense", "debit"].includes(alias) && schemaFields.includes("amount") && !schemaFields.includes(alias)) {
+        out["amount"] = v;
+        continue;
+      }
+      if (unmapped) unmapped.add(k);
     }
     out[alias] = v;
   }
@@ -119,20 +1488,68 @@ export function normalizeKeys(row: Record<string, any>, properties?: Record<stri
 
 // English → French enum translations (context-aware: checked against target enum)
 const ENUM_TRANSLATIONS: Record<string, string[]> = {
+  // Statuses (orders, tasks, campaigns, general)
   "paid": ["paye"], "pending": ["en_attente", "en_cours"], "failed": ["echoue"], "refunded": ["rembourse"],
-  "shipped": ["expedie"], "processing": ["en_preparation"], "completed": ["livre", "terminee"], "cancelled": ["annule"], "returned": ["retourne"],
-  "none": ["aucun"], "requested": ["demande"], "approved": ["approuve"], "rejected": ["refuse"],
-  "web": ["shopify"],
-  "google ads": ["google_ads"], "meta ads": ["meta_ads"],
-  "paused": ["pause"], "planned": ["planifiee"], "active": ["active"],
-  "dormant": ["dormant"],
+  "shipped": ["expedie"], "processing": ["en_preparation", "en_cours"], "completed": ["livre", "terminee", "complete"], "cancelled": ["annule", "annulee"], "returned": ["retourne"],
+  "received": ["recu"], "done": ["terminee"], "todo": ["a_faire"], "in progress": ["en_cours"], "in_progress": ["en_cours"],
+  "none": ["aucun"], "requested": ["demande"], "approved": ["approuve"], "rejected": ["refuse", "rejetee"],
+
+  // Levels, Priorities, Risks
+  "low": ["faible", "bas", "basse", "inferieur"], "medium": ["moyenne", "modere", "moyen", "egal"], "high": ["elevee", "eleve", "important", "superieur", "haute"], "urgent": ["urgente", "critique"],
+  "critical": ["critique", "urgente"],
+
+  // States
+  "new": ["nouveau", "nouvelle"], "seen": ["vu", "lue"], "resolved": ["resolu"], "archived": ["archivee", "archive"],
+  "active": ["active", "actif"], "actif": ["active", "actif"], "inactive": ["inactif", "pause", "terminee"], "inactif": ["inactif", "pause", "terminee"], "lost": ["perdu"], "dormant": ["dormant"], "terminated": ["terminee"],
+  "paused": ["pause"], "planned": ["planifiee"], "discontinued": ["discontinue"],
+  "terminee": ["terminee"], "termine": ["terminee"],
+
+  // Channels & Marketing
+  "web": ["web", "shopify", "display"],
+  "google ads": ["google_ads"], "google": ["google_ads"], "sea": ["google_ads"],
+  "meta ads": ["meta_ads"], "meta": ["meta_ads"], "facebook ads": ["meta_ads"],
+  "facebook": ["meta_ads"], "fb ads": ["meta_ads"], "fb": ["meta_ads"],
+  "instagram": ["instagram", "meta_ads"], "instagram ads": ["instagram", "meta_ads"],
+  "tiktok": ["tiktok"], "tiktok ads": ["tiktok"],
+  "email": ["email"], "courriel": ["email"], "courriels": ["email"],
+  "infolettre": ["email"], "infolettres": ["email"], "newsletter": ["email"], "newsletters": ["email"],
+  "mailing": ["email"], "mail": ["email"], "e-mail": ["email"],
+  "affichage / web": ["display", "web"], "affichage": ["display", "web"],
+  "web / affichage": ["display", "web"], "display": ["display", "web"],
+  "banniere": ["display", "web"], "banner": ["display", "web"],
+  "partenariat": ["partenariat", "affiliation"], "partenariats": ["partenariat"],
+  "sponsor": ["partenariat"], "sponsoring": ["partenariat"], "sepaq": ["partenariat"],
+  "affiliation": ["affiliation"], "affilie": ["affiliation"],
+  "influenceur": ["influenceurs", "instagram", "tiktok"], "influenceurs": ["influenceurs"],
+  "linkedin": ["linkedin"], "linkedin ads": ["linkedin"],
+  "youtube": ["youtube"], "youtube ads": ["youtube"],
+  "sms": ["sms"], "print": ["print"], "courrier": ["print"],
+  "autre": ["autre"], "other": ["autre"], "divers": ["autre"],
+
+  // Employee & Customer types & Departments
+  "full time": ["temps_plein"], "part time": ["temps_partiel"], "contractor": ["contractuel"], "intern": ["stagiaire"],
+  "departed": ["depart"], "on leave": ["conge"], "probation": ["essai"],
+  "individual": ["particulier"], "business": ["entreprise", "b2b"],
+  "service client": ["service_client"], "service clientele": ["service_client"], "service a la clientele": ["service_client"], "customer service": ["service_client"], "support": ["service_client"], "operations": ["logistique", "atelier"],
+
+  // Sentiment & Impact
+  "positive": ["positif"], "neutral": ["neutre"], "negative": ["negatif"], "very negative": ["tres_negatif"],
+
+  // Competitor
+  "leader": ["leader"], "challenger": ["challenger"], "follower": ["suiveur"], "niche": ["niche"],
+
+  // Inventory
+  "optimal": ["optimal"], "out of stock": ["rupture"], "overstock": ["surstock"], "low stock": ["faible", "proche_rupture"],
   // French capitalized/common variants → canonical enum values
   "alerte": ["proche_rupture", "faible"], "normal": ["optimal"],
   "bas": ["inferieur"], "moyen": ["egal"], "eleve": ["superieur"],
+  "depart": ["depart"], "conge": ["conge"], "essai": ["essai"], "perdu": ["perdu"],
   "haute": ["elevee", "urgente"], "critique": ["urgente"], "basse": ["faible"],
   "en retard": ["non_atteint"], "en attente": ["en_attente", "en_cours"],
   "avis": ["avis", "question"], "reclamation": ["reclamation", "plainte"], "rh": ["administration", "service_client"],
   "recu": ["recu"], "en cours": ["en_cours"],
+  "income": ["revenu", "revenue", "credit", "entree", "encaissement"],
+  "expense": ["depense", "debit", "sortie", "decaissement", "remboursement", "achat", "charge"],
 
   // --- Familles de veille (ExternalSignal.family) ---
   // Les fichiers de veille décrivent la famille en langage courant (« Engouement
@@ -193,7 +1610,74 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
     const viaTranslation = (ENUM_TRANSLATIONS[w] || []).find((t) => enumOptions.includes(t));
     if (viaTranslation) return viaTranslation;
   }
+  // Si la valeur spécifique est inconnue mais que l'entité prévoit "autre",
+  // replier sur "autre" au lieu de rejeter la ligne de données.
+  if (enumOptions.includes("autre")) {
+    return "autre";
+  }
   return value;
+}
+
+/**
+ * Détecte si une ligne brute (tableau) ou un enregistrement (objet) représente une ligne
+ * de total, sous-total, synthèse ou moyenne Excel qui ne doit pas être traitée
+ * comme un enregistrement individuel de données (évite les fausses alertes de quarantaine
+ * et les doublons de chiffres d'affaires).
+ */
+export function isSummaryOrTotalRow(rowOrArray: any): boolean {
+  if (!rowOrArray) return false;
+
+  const SUMMARY_KEYWORDS = [
+    "total", "totaux", "sous-total", "sous total", "subtotal", "sub-total",
+    "total general", "total global", "grand total", "somme", "sum", "moyenne",
+    "average", "recapitulatif", "synthese", "totales", "totale"
+  ];
+
+  // Cas 1 : Matrice brute (tableau de cellules)
+  if (Array.isArray(rowOrArray)) {
+    const nonEmpties = rowOrArray.filter((c) => String(c ?? "").trim() !== "");
+    if (nonEmpties.length === 0) return false;
+
+    const firstVal = stripAccents(String(nonEmpties[0]).toLowerCase().trim());
+    if (SUMMARY_KEYWORDS.some((kw) => firstVal === kw || firstVal.startsWith(kw + " ") || firstVal.endsWith(" " + kw))) {
+      // Une ligne de total contient très souvent des cellules vides là où se trouvent les libellés détaillés
+      const emptyCount = rowOrArray.length - nonEmpties.length;
+      if (emptyCount >= Math.max(1, Math.floor(rowOrArray.length * 0.2))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Cas 2 : Objet mappé
+  if (typeof rowOrArray === "object") {
+    // 1. Vérifier les champs identifiants majeurs (order_id, id, transaction_id, etc.)
+    const idFields = ["order_id", "id", "transaction_id", "invoice_id", "campaign_id", "customer_id", "product_id", "employee_id", "supplier_id"];
+    for (const f of idFields) {
+      if (rowOrArray[f]) {
+        const str = stripAccents(String(rowOrArray[f]).toLowerCase().trim());
+        if (SUMMARY_KEYWORDS.some((kw) => str === kw || str.startsWith(kw + " ") || str.endsWith(" " + kw))) {
+          return true;
+        }
+      }
+    }
+
+    // 2. Vérifier si un champ textuel vaut "TOTAL" / "Sous-total" alors que date ou nom est vide
+    const hasTotalWord = Object.values(rowOrArray).some((v) => {
+      if (typeof v !== "string") return false;
+      const s = stripAccents(v.toLowerCase().trim());
+      return SUMMARY_KEYWORDS.includes(s);
+    });
+
+    if (hasTotalWord) {
+      if (!rowOrArray.date || String(rowOrArray.date).trim() === "" ||
+          !rowOrArray.customer_id || String(rowOrArray.customer_id).trim() === "") {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 // Normalize enum fields based on the entity schema properties
@@ -268,6 +1752,12 @@ export function parseNumber(value: any): number | null {
   }
   // Strip currency, percent signs and every kind of space (incl. non-breaking).
   s = s.replace(/[$€£%]|[a-zA-Z]|\s|\u00A0|\u202F/g, "");
+  // A value that was ALL letters ("abc", "texte-invalide", a stray currency
+  // code with no amount attached) has nothing left after stripping -- no
+  // digit anywhere. Number("") is 0 in JS, so without this check unreadable
+  // text silently became a valid $0 instead of being rejected: it passed
+  // validation, was counted in volumes, and stayed invisible in every sum.
+  if (!/\d/.test(s)) return null;
   const lastComma = s.lastIndexOf(",");
   const lastDot = s.lastIndexOf(".");
   if (lastComma >= 0 && lastDot >= 0) {
@@ -337,8 +1827,8 @@ export function parseDate(value: any, convention?: ConventionDate | null): strin
     if (!dateReelle(year, month, day)) return null;
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   }
-  // "15 janv. 2025" / "15 janvier 2025"
-  m = stripAccents(s.toLowerCase()).match(/^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})$/);
+  // "15 janv. 2025" / "15 janvier 2025" / "1er janvier 2025" (ordinal du 1er du mois)
+  m = stripAccents(s.toLowerCase()).match(/^(\d{1,2})(?:er|e|eme)?\s+([a-z]+)\.?\s+(\d{4})$/);
   if (m) {
     const mm = MONTHS_FR[m[2].slice(0, 4)] || MONTHS_FR[m[2].slice(0, 3)];
     if (mm) return dateReelle(m[3], mm, m[1]) ? `${m[3]}-${mm}-${m[1].padStart(2, "0")}` : null;
@@ -364,8 +1854,16 @@ export function coerceType(value: any, prop: any): any {
       }
       return String(value);
     case "number": {
+      // Same principle as the date branch just above, generalized: this used
+      // to return the unparsed value as-is on failure, so a malformed number
+      // (bad separator, stray text, an unrecognized unit) was stored VERBATIM
+      // in a numeric field - passing `missingRequired` (the key isn't blank,
+      // just unreadable) and then reading as NaN → 0 everywhere downstream
+      // does `Number(x) || 0`. Only Transaction.amount got this fix before;
+      // every other entity's numeric fields (Expense.amount, Order.total,
+      // Payroll.total_cost, Cashflow balances...) kept the old behavior.
       const n = parseNumber(value);
-      return n === null ? value : n;
+      return n === null ? null : n;
     }
     case "boolean": {
       if (typeof value === "boolean") return value;
@@ -386,21 +1884,32 @@ export type EnumIssue = { field: string; value: string; allowed: string[] };
 export function normalizeRow(
   entityName: string,
   row: Record<string, any>,
-  importId: string,
-  properties: Record<string, any> | null,
+  importId: string = "default",
+  properties: Record<string, any> | null = null,
   sourceType?: string,
-  // Optional sink for diagnostics. A rejected enum value used to be dropped in
-  // silence, and the row was then reported as "champ obligatoire manquant" —
-  // pointing at a field the user could plainly see in their file. Collecting
-  // the refused values lets the import tell the truth: the field is there, its
-  // value is not one of the accepted ones.
   enumIssues?: EnumIssue[],
+  unmapped?: Set<string>,
 ): Record<string, any> {
-  const r = normalizeKeys(row, properties);
+  const schemaProps = properties || ENTITY_SCHEMAS[entityName]?.properties || null;
+
+  if (isSummaryOrTotalRow(row)) return {};
+  const r = normalizeKeys(row, schemaProps, unmapped);
+  if (isSummaryOrTotalRow(r)) return {};
+
+  // Preserve explicit Transaction headers before aliases or legacy plans can
+  // reinterpret them. This is intentionally based on the raw row: a previous
+  // version mapped `catégorie` to `type`, so looking only at `r` was already
+  // too late to recover the distinction.
+  if (entityName === "Transaction") {
+    const rawType = Object.entries(row || {}).find(([key]) => cleCanonique(key) === "type")?.[1];
+    const rawCategory = Object.entries(row || {}).find(([key]) => ["category", "categorie"].includes(cleCanonique(key)))?.[1];
+    if (rawType !== undefined) r.type = rawType;
+    if (rawCategory !== undefined) r.category = rawCategory;
+  }
 
   // A single "name"/"nom" column on an entity that stores first + last name would
   // otherwise be dropped entirely, leaving nameless records.
-  if (properties?.first_name && r.name && !r.first_name) {
+  if (schemaProps?.first_name && r.name && !r.first_name) {
     const parts = String(r.name).trim().split(/\s+/);
     r.first_name = parts[0];
     if (parts.length > 1) r.last_name = parts.slice(1).join(" ");
@@ -415,11 +1924,30 @@ export function normalizeRow(
     // comptees dans les volumes, invisibles dans les sommes.
     const amount = parseNumber(r.amount);
     let type = (r.type || "").toLowerCase().trim();
+    const categoryType = (r.category || "").toLowerCase().trim();
+    const recognizedTypes = ["revenu", "revenue", "credit", "entree", "income", "depense", "expense", "debit", "sortie", "decaissement", "remboursement", "achat", "charge", "refund", "transfer", "transfert"];
+    const typeNormRaw = stripAccents(type);
+    const categoryNormRaw = stripAccents(categoryType);
+
+    if (!recognizedTypes.includes(typeNormRaw)) {
+      // Le champ "type" contient une catégorie métier (ex: "utilitaires", "salaires").
+      // On la sauvegarde dans category si category est vide, et on déduit le type
+      // financier réel à partir du signe du montant ou du contenu de category.
+      if (!categoryType) {
+        r.category = r.type; // ex: "utilitaires"
+      }
+      if (recognizedTypes.includes(categoryNormRaw)) {
+        type = categoryType; // category avait un type reconnu
+      } else {
+        // Déduction par signe du montant
+        type = (amount ?? 0) >= 0 ? "income" : "expense";
+      }
+    }
     if (!type) type = (amount ?? 0) >= 0 ? "income" : "expense";
     const typeNorm = stripAccents(type);
     if (["revenu", "revenue", "credit", "entree", "income"].includes(typeNorm)) type = "income";
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
-    if (["remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "expense";
+    if (["achat", "charge", "charges", "frais", "remboursement", "refund", "transfer", "transfert"].includes(typeNorm)) type = "expense";
     // An unparseable date must NOT silently become today. Those rows used to
     // land in the in-progress month, which every calculation excludes — so they
     // vanished from all analyses while still inflating the all-time totals, and
@@ -427,18 +1955,23 @@ export function normalizeRow(
     // a date. Leaving the field empty sends the row to quarantine, where it is
     // counted and reported to the user.
     const parsedDate = parseDate(r.date);
+    const normalizedType = ["income", "expense"].includes(type) ? type : undefined;
     return {
       date: parsedDate,
       description: r.description || "",
       // undefined (et non 0) : missingRequired met alors la ligne en quarantaine.
       amount: amount === null ? undefined : Math.abs(amount),
-      type,
+      type: normalizedType,
       category: r.category || "",
       source: sourceType || "csv",
-      currency: "CAD",
+      // Une colonne Devise/Currency explicite doit etre respectee : sans ce
+      // fallback, un fichier en USD ou EUR etait toujours etiquete CAD,
+      // faussant silencieusement toute conversion ou tout total multi-devise.
+      currency: r.currency || "CAD",
       client: r.client || r.customer_id || "",
       product: r.product || r.product_id || "",
       import_id: importId,
+      original_data: JSON.stringify(row)
     };
   }
 
@@ -461,18 +1994,131 @@ export function normalizeRow(
     if (r.cac == null && spend && conversions) r.cac = Math.round((spend / conversions) * 100) / 100;
   }
 
+  // Les inventaires instantanés n'ont souvent pas de colonne date explicite.
+  // Assurer une date du jour par défaut évite le rejet en base de données.
+  if (entityName === "Inventory" && !r.date) {
+    r.date = new Date().toISOString().slice(0, 10);
+  }
+
+  // Pour les employés avec salaire annuel sans taux horaire, dériver le taux horaire.
+  if (entityName === "Employee") {
+    if (r.annual_salary && !r.hourly_rate) {
+      const sal = parseNumber(r.annual_salary);
+      const hours = parseNumber(r.weekly_hours) || 37.5;
+      if (sal) r.hourly_rate = Math.round((sal / (52 * hours)) * 100) / 100;
+    }
+  }
+
+  // --- ORDER RESCUE HOOKS ---
+  if (entityName === "Order") {
+    if (!r.order_id) {
+      r.order_id = r.transaction_id || r.id_transaction || r.num_cde || r.no_cde || r.num_commande || r.numero_commande || r.order_number || r.cde_no || r.cde_id || r.ref_commande || r.code_commande || r.id;
+      if (!r.order_id && (r.location_id || r.succursale || r.store || r.location)) {
+        const loc = String(r.location_id || r.succursale || r.store || r.location).trim();
+        r.order_id = `ORD-${stripAccents(loc).toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+      }
+    }
+    if (!r.date) {
+      r.date = new Date().toISOString().slice(0, 10);
+    }
+    const qty = parseNumber(r.quantity) || 1;
+    const price = parseNumber(r.unit_price) || 0;
+    const cost = parseNumber(r.unit_cost) || 0;
+    if (r.total_revenue == null || r.total_revenue === "") {
+      if (price > 0) r.total_revenue = Math.round(qty * price * 100) / 100;
+    }
+    if (r.total_cost == null || r.total_cost === "") {
+      if (cost > 0) r.total_cost = Math.round(qty * cost * 100) / 100;
+    }
+    if (r.gross_profit == null || r.gross_profit === "") {
+      const totRev = parseNumber(r.total_revenue);
+      const totCost = parseNumber(r.total_cost);
+      if (totRev != null && totCost != null) r.gross_profit = Math.round((totRev - totCost) * 100) / 100;
+    }
+    if (r.gross_margin == null || r.gross_margin === "") {
+      const totRev = parseNumber(r.total_revenue);
+      const profit = parseNumber(r.gross_profit);
+      if (totRev && profit != null) r.gross_margin = Math.round((profit / totRev) * 10000) / 100;
+    }
+  }
+
+  // --- EXECUTIVE SUMMARY RESCUE HOOKS ---
+  if (entityName === "ExecutiveSummary") {
+    if (!r.location_id) {
+      r.location_id = r.succursale || r.store || r.location || r.ville || r.site || r.id;
+    }
+    if (!r.summary_id && r.location_id) {
+      r.summary_id = `SUM-${stripAccents(String(r.location_id)).toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+    }
+    const rev = parseNumber(r.total_revenue);
+    const cost = parseNumber(r.total_cost);
+    if (r.gross_profit == null || r.gross_profit === "") {
+      if (rev != null && cost != null) r.gross_profit = Math.round((rev - cost) * 100) / 100;
+    }
+    if (r.gross_margin == null || r.gross_margin === "") {
+      const profit = parseNumber(r.gross_profit);
+      if (rev && profit != null) r.gross_margin = Math.round((profit / rev) * 10000) / 100;
+    }
+  }
+
+  // --- EMPLOYEE RESCUE HOOKS ---
+  if (entityName === "Employee") {
+    const deptRaw = String(r.department || "").trim();
+    const allowedDepts = ["direction", "ventes", "marketing", "logistique", "administration", "service_client", "atelier"];
+    const deptNorm = stripAccents(deptRaw.toLowerCase());
+    if (deptRaw && !allowedDepts.includes(deptNorm)) {
+      if (!r.location) r.location = deptRaw;
+      const roleStr = stripAccents(String(r.role || "").toLowerCase());
+      if (roleStr.includes("vente") || roleStr.includes("rep") || roleStr.includes("vendeur") || roleStr.includes("gerant") || roleStr.includes("magasin")) {
+        r.department = "ventes";
+      } else if (roleStr.includes("commerce") || roleStr.includes("web") || roleStr.includes("marketing")) {
+        r.department = "marketing";
+      } else if (roleStr.includes("logistique") || roleStr.includes("entrepot") || roleStr.includes("stock") || roleStr.includes("livr")) {
+        r.department = "logistique";
+      } else if (roleStr.includes("direct") || roleStr.includes("dg") || roleStr.includes("admin")) {
+        r.department = "direction";
+      } else if (roleStr.includes("client") || roleStr.includes("support")) {
+        r.department = "service_client";
+      } else if (roleStr.includes("atelier") || roleStr.includes("technicien")) {
+        r.department = "atelier";
+      } else {
+        r.department = "autre";
+      }
+    }
+  }
+
+  // --- PRODUCT RESCUE HOOKS ---
+  if (entityName === "Product") {
+    if (!r.product_id) {
+      r.product_id = r.sku || r.ugs || r.code_produit || r.id;
+    }
+    if (r.inventory_level == null && r.closing_stock != null) {
+      r.inventory_level = r.closing_stock;
+    }
+    if (r.selling_price == null && r.price != null) {
+      r.selling_price = r.price;
+    }
+    if (r.purchase_cost == null && r.unit_cost != null) {
+      r.purchase_cost = r.unit_cost;
+    }
+  }
+
   // For other entities: normalize enums, coerce types, keep only schema fields, strip empty values
-  const withEnums = normalizeEnums(r, properties || {});
+  const withEnums = normalizeEnums(r, schemaProps || {});
   const cleaned: Record<string, any> = {};
   for (const [k, v] of Object.entries(withEnums)) {
     if (BUILTIN_FIELDS.includes(k)) continue;
     if (v === null || v === undefined || v === "") continue;
-    const prop = properties?.[k];
+    const prop = schemaProps?.[k];
     if (prop) {
       // Field is in schema: validate enum, coerce type
       if (prop.enum) {
         const coerced = coerceEnum(v, prop.enum);
         if (!prop.enum.includes(coerced)) {
+          if (prop.enum.includes("autre")) {
+            cleaned[k] = "autre";
+            continue;
+          }
           // Skip the invalid value rather than failing the whole row, but record
           // it so the import can explain what was refused and why.
           if (enumIssues) enumIssues.push({ field: k, value: String(v), allowed: prop.enum });
@@ -482,12 +2128,13 @@ export function normalizeRow(
       } else {
         cleaned[k] = coerceType(v, prop);
       }
-    } else if (!properties) {
+    } else if (!schemaProps) {
       // No schema available: keep value as-is
       cleaned[k] = v;
     }
     // else: field not in schema, skip
   }
   if (importId) cleaned["import_id"] = importId;
+  if (schemaProps && schemaProps.original_data) cleaned["original_data"] = JSON.stringify(row);
   return cleaned;
 }

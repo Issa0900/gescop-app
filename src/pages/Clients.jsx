@@ -8,7 +8,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { churnStats, customerValue, columnPresent } from "@/lib/metrics";
+import { churnStats, customerValue, columnPresent, validSalesOrders } from "@/lib/metrics";
 import { fetchAll } from "@/lib/fetchAll";
 
 const segmentColors = {
@@ -56,10 +56,12 @@ export default function Clients() {
     );
   }
 
-  // Compute real revenue and order counts from orders
+  // Compute real revenue and order counts from orders. Refunded orders are
+  // excluded - their money went back to the customer, so counting them here
+  // overstated concentration, top-client ranking and every client's own CA.
   const revByCustomer = {};
   const ordersByCustomer = {};
-  (orders || []).forEach((o) => {
+  validSalesOrders(orders).forEach((o) => {
     const cid = o.customer_id;
     if (!cid) return;
     revByCustomer[cid] = (revByCustomer[cid] || 0) + (Number(o.total) || 0);
@@ -74,7 +76,7 @@ export default function Clients() {
       : 0,
     // churn_risk is imported as a 0–1 ratio; displaying it raw showed "1%" for
     // a client with a 70% departure risk.
-    // null when the column is absent — rendered as « — ». Showing 0 % on every
+    // null when the column is absent - rendered as « - ». Showing 0 % on every
     // client would read as "nobody is at risk", which is not what an empty
     // column says.
     _churnPct: c.churn_risk === null || c.churn_risk === undefined || c.churn_risk === ""
@@ -87,7 +89,9 @@ export default function Clients() {
   // This page used to also count "segment a_risque" as churned, so it showed a
   // higher rate than every other screen from the exact same rows.
   const churn = churnStats(customers, orders);
-  const churnRate = churn.rate === null ? 0 : Math.round(churn.rate);
+  // null when no customer row has ever carried a status ("actif"/"inactif"/
+  // "perdu") - that means the field was never filled in, not a 0 % churn.
+  const churnRate = churn.rate === null ? null : Math.round(churn.rate);
   // "0 client à risque" is only meaningful if the risk column was imported.
   const hasChurnRisk = columnPresent(customers, "churn_risk");
   const totalRevenue = enriched.reduce((s, c) => s + (c._total_revenue || 0), 0);
@@ -128,14 +132,16 @@ export default function Clients() {
             "who has stopped buying lately". Only the second one can improve. */}
         <StatCard
           label="Clients perdus (cumul)"
-          value={`${churnRate}%`}
-          sublabel={`${churn.churned} sur ${churn.total} depuis le début${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`}
+          value={churnRate === null ? "-" : `${churnRate}%`}
+          sublabel={churn.statusMeasured
+            ? `${churn.churned} sur ${churn.total} depuis le début${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`
+            : "statut client jamais renseigné"}
           icon={UserMinus}
           accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
         />
         <StatCard
           label={`Inactifs depuis ${churn.inactiveMonths} mois`}
-          value={churn.behaviourRate !== null ? `${Math.round(churn.behaviourRate)}%` : "—"}
+          value={churn.behaviourRate !== null ? `${Math.round(churn.behaviourRate)}%` : "-"}
           sublabel={churn.measurable
             ? `${churn.lapsed} sur ${churn.buyers} clients ayant déjà commandé`
             : "historique de commandes absent"}
@@ -195,7 +201,7 @@ export default function Clients() {
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-1.5 text-xs">
                     <span className="h-2 w-2 rounded-full" style={{ background: segmentColors[c.segment] || "#94a3b8" }} />
-                    {segmentLabels[c.segment] || c.segment || "—"}
+                    {segmentLabels[c.segment] || c.segment || "-"}
                   </span>
                 </td>
                 <td className="px-4 py-3">{c._total_orders}</td>
@@ -203,7 +209,7 @@ export default function Clients() {
                 <td className="px-4 py-3">{Math.round(c._aov || 0).toLocaleString()} $</td>
                 <td className="px-4 py-3">
                   {c._churnPct === null ? (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">-</span>
                   ) : (
                     <span className={c._churnPct > 60 ? "text-red-600 font-medium" : c._churnPct > 30 ? "text-amber-600" : "text-muted-foreground"}>
                       {c._churnPct}%
@@ -212,7 +218,7 @@ export default function Clients() {
                 </td>
                 <td className="px-4 py-3">
                   <span className={c.status === "actif" ? "text-emerald-600" : c.status === "inactif" ? "text-red-600" : "text-amber-600"}>
-                    {c.status || "—"}
+                    {c.status || "-"}
                   </span>
                 </td>
               </tr>

@@ -1,7 +1,26 @@
-import { createClientFromRequest } from "npm:@base44/sdk@0.8.44";
+// @ts-nocheck
+import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
+import { analyzeQualitativeObservations } from "../../shared/qualitativeEngine.ts";
+import { buildContextGraph } from "../../shared/contextEngine.ts";
 
-export default async function(req) {
+// sec9-11 de l'audit : un domaine sans donnees ne doit jamais compter comme
+// s'il avait une bonne (ou mauvaise) performance. On ne fait plus confiance
+// au LLM pour la moyenne globale -- il produit un score par dimension avec
+// un flag measured explicite, et c'est ici, cote serveur, que la moyenne est
+// calculee, sur les seules dimensions reellement mesurees. Une dimension qui
+// omet le flag (le modele ne suit pas toujours une instruction a la lettre)
+// est traitee comme mesuree plutot que silencieusement exclue : le risque
+// inverse (l'exclure a tort) fausserait la moyenne sans que rien ne le
+// signale.
+export function computeHealthScore(dimensions) {
+  const measured = (dimensions || []).filter((d) => d && d.measured !== false);
+  if (measured.length === 0) return null;
+  const sum = measured.reduce((s, d) => s + (Number(d.score) || 0), 0);
+  return Math.round(sum / measured.length);
+}
+
+export default async function(req: any) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -10,21 +29,30 @@ export default async function(req) {
     const ctx = await buildBusinessContext(base44);
     const { company, transactions, context, totals } = ctx;
 
+    const recentObs = await base44.entities.Observation.findMany({ limit: 500, orderBy: { date: 'desc' } });
+    const qualSignals = analyzeQualitativeObservations(recentObs);
+    const contextGraph = buildContextGraph(totals, qualSignals, recentObs);
+
     if (!company) {
       return Response.json({ error: "Veuillez configurer votre entreprise d'abord." }, { status: 400 });
     }
-    if (!transactions || transactions.length < 3) {
+    const hasData = (transactions && transactions.length > 0) || 
+                    (totals.orderCount && totals.orderCount > 0) || 
+                    (recentObs && recentObs.length > 0);
+    
+    if (!hasData) {
       return Response.json({
-        error: "Données insuffisantes. Importez au moins quelques transactions avant l'analyse.",
+        error: "Aucune donnée financière trouvée. Importez des données d'abord.",
+        requireOnboarding: true,
       }, { status: 400 });
     }
 
-    const prompt = `Tu es GESCOP, un système intelligent de pilotage pour PME. Analyse les données multi-sources de cette entreprise et produis un diagnostic complet en croisant toutes les sources disponibles.
+    const prompt = `Tu es un conseiller stratégique expert pour une PME.
+Fais un audit complet de la situation de l'entreprise : ${company.name} (${company.industry}).
 
+CONTEXTE BUSINESS :
 ${context}
 
-RÈGLES ABSOLUES SUR LES CHIFFRES (priorité sur tout le reste)
-Tu n'es PAS autorisé à inventer, estimer au hasard, extrapoler ou compléter un chiffre.
 1. Tout nombre que tu écris doit soit apparaître littéralement dans les DONNÉES ci-dessus, soit être le résultat d'un calcul simple (somme, différence, moyenne, ratio, pourcentage de variation) effectué UNIQUEMENT sur des nombres présents ci-dessus.
 2. Dans chaque description, explanation ou analysis qui cite un chiffre, indique entre parenthèses son origine : la valeur source ou le calcul. Exemple : « marge de 38 % (CA 120 000 $ - coûts 74 400 $) / 120 000 $ ».
 3. Si une donnée nécessaire est absente ou insuffisante, tu NE produis PAS l'élément concerné. N'utilise aucune valeur de référence sectorielle, aucune moyenne de marché, aucun ordre de grandeur « typique ».
@@ -37,7 +65,7 @@ Un élément mieux vaut absent que chiffré à l'aveugle.
 INSTRUCTIONS
 Tu as accès aux données de: finance (transactions), ventes (commandes), clients, produits, inventaire, fournisseurs, achats, marketing (campagnes + quotidien), paie, dépenses, trésorerie, interactions clients, concurrents, objectifs et événements. Croise ces sources pour détecter des patterns que une seule source ne révélerait pas.
 
-1. Calcule un score de santé global sur 100 et un score pour chacune des 9 dimensions: finance, ventes, tresorerie, clients, operations, marketing, productivite, risques, croissance. Chaque score entre 0 et 100. Pour chaque dimension donne aussi une tendance (up/down/stable) et une explication courte. Base les scores sur les données réelles, pas sur des suppositions.
+1. Calcule un score pour chacune des 9 dimensions: finance, ventes, tresorerie, clients, operations, marketing, productivite, risques, croissance. Pour CHAQUE dimension, fixe d'abord measured: true si les données ci-dessus permettent réellement de la mesurer, measured: false si les données nécessaires sont absentes ou insuffisantes. Si measured est false, mets score à 0 et l'explication doit dire explicitement "non mesurable : [ce qui manque]" — ne calcule JAMAIS de score pour une dimension non mesurée. Si measured est true, le score (0-100) doit venir des données réelles, jamais d'une supposition. Donne aussi une tendance (up/down/stable) et une explication courte. Ne calcule PAS de score de santé global toi-même : il sera calculé côté serveur à partir des seules dimensions mesurées.
 
 2. Détecte les anomalies en croisant les sources. Cherche notamment:
    - Dépenses inhabituelles ou montants aberrants (transactions)
@@ -96,6 +124,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
               properties: {
                 name: { type: "string" },
                 score: { type: "number" },
+                measured: { type: "boolean" },
                 trend: { type: "string" },
                 explanation: { type: "string" },
               },
@@ -226,13 +255,21 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // fonction (scanExternalRadar), déclenchée à la demande avec recherche web
     // et sources consultables. Le diagnostic ne doit plus écraser ces signaux.
 
+    // Calculé ici, pas lu depuis data.health_score (voir computeHealthScore
+    // plus haut) : null si aucune dimension n'est mesurée (ne devrait pas
+    // arriver puisque hasData est déjà vérifié plus haut, mais un health_score
+    // fantôme serait pire qu'un champ absent). Utilisé partout ci-dessous —
+    // Company, AnalysisRun et la réponse HTTP doivent tous les trois montrer
+    // le même score, jamais celui que le LLM aurait calculé lui-même.
+    const healthScore = computeHealthScore(data.dimensions);
+
     // Update company health
     const dimScores = {};
-    (data.dimensions || []).forEach((d) => {
-      dimScores[dimKey(d.name)] = { score: d.score, trend: d.trend, explanation: d.explanation };
+    (data.dimensions || []).forEach((d: any) => {
+      dimScores[dimKey(d.name)] = { score: d.score, trend: d.trend, explanation: d.explanation, measured: d.measured !== false };
     });
     await base44.entities.Company.update(company.id, {
-      health_score: data.health_score,
+      health_score: healthScore,
       dimension_scores: dimScores,
       last_analysis_date: new Date().toISOString(),
     });
@@ -240,7 +277,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // Create anomalies
     if (data.anomalies && data.anomalies.length) {
       for (let i = 0; i < data.anomalies.length; i += 100) {
-        const batch = data.anomalies.slice(i, i + 100).map((a) => ({
+        const batch = data.anomalies.slice(i, i + 100).map((a: any) => ({
           title: a.title,
           description: a.description || "",
           dimension: a.dimension || "",
@@ -259,7 +296,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // Create risks
     if (data.risks && data.risks.length) {
       for (let i = 0; i < data.risks.length; i += 100) {
-        const batch = data.risks.slice(i, i + 100).map((r) => ({
+        const batch = data.risks.slice(i, i + 100).map((r: any) => ({
           title: r.title,
           description: r.description || "",
           category: r.category || "",
@@ -280,7 +317,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // Create opportunities
     if (data.opportunities && data.opportunities.length) {
       for (let i = 0; i < data.opportunities.length; i += 100) {
-        const batch = data.opportunities.slice(i, i + 100).map((o) => ({
+        const batch = data.opportunities.slice(i, i + 100).map((o: any) => ({
           title: o.title,
           description: o.description || "",
           category: o.category || "",
@@ -300,7 +337,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // Create recommendations
     if (data.recommendations && data.recommendations.length) {
       for (let i = 0; i < data.recommendations.length; i += 100) {
-        const batch = data.recommendations.slice(i, i + 100).map((r) => ({
+        const batch = data.recommendations.slice(i, i + 100).map((r: any) => ({
           title: r.title,
           situation: r.situation || "",
           analysis: r.analysis || "",
@@ -319,7 +356,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     // Create KPIs
     if (data.kpis && data.kpis.length) {
       for (let i = 0; i < data.kpis.length; i += 100) {
-        const batch = data.kpis.slice(i, i + 100).map((k) => ({
+        const batch = data.kpis.slice(i, i + 100).map((k: any) => ({
           name: k.name,
           domain: k.domain || "finance",
           value: k.value || 0,
@@ -334,14 +371,14 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     }
 
     // Create alerts for critical items
-    const alerts = [];
-    (data.anomalies || []).filter((a) => a.severity === "critique").forEach((a) =>
+    const alerts: any[] = [];
+    (data.anomalies || []).filter((a: any) => a.severity === "critique").forEach((a: any) =>
       alerts.push({ title: a.title, message: a.description || a.explanation || "", level: "critique", category: "anomalie", status: "non_lue" })
     );
-    (data.risks || []).filter((r) => (r.score || 0) >= 75).forEach((r) =>
+    (data.risks || []).filter((r: any) => (r.score || 0) >= 75).forEach((r: any) =>
       alerts.push({ title: r.title, message: r.description || "", level: "important", category: "risque", status: "non_lue" })
     );
-    (data.opportunities || []).filter((o) => (o.score || 0) >= 75).forEach((o) =>
+    (data.opportunities || []).filter((o: any) => (o.score || 0) >= 75).forEach((o: any) =>
       alerts.push({ title: o.title, message: o.description || "", level: "info", category: "opportunite", status: "non_lue" })
     );
     if (alerts.length) {
@@ -351,7 +388,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     }
 
     await base44.entities.AnalysisRun.create({
-      health_score: data.health_score,
+      health_score: healthScore,
       dimension_scores: dimScores,
       counts: {
         anomalies: (data.anomalies || []).length,
@@ -364,7 +401,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
     });
 
     return Response.json({
-      health_score: data.health_score,
+      health_score: healthScore,
       dimensions: data.dimensions || [],
       counts: {
         anomalies: (data.anomalies || []).length,
@@ -375,7 +412,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         alerts: alerts.length,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }

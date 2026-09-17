@@ -4,11 +4,21 @@
 // four churn rates (two of them counting "a_risque" clients as already lost),
 // three LTVs (one dividing revenue from ALL customers by ACTIVE customers only,
 // which doubles the figure when half the base has churned), and two margins
-// (a mean of monthly percentages vs. an aggregated margin — 23% vs 10% on the
+// (a mean of monthly percentages vs. an aggregated margin - 23% vs 10% on the
 // same data). A dashboard that contradicts its own audit page is worse than no
 // dashboard, so every definition now lives here and every page imports it.
 
 import { sumLast, sumPrev, meanOf, trendPct } from "@/lib/periods";
+import { computeKpi, computeKpiBatch } from "@/lib/core/kpiEngine";
+import { KPI_REGISTRY, getKpiDefinition, getKpisByDomain } from "@/lib/core/kpiRegistry";
+
+export {
+  computeKpi,
+  computeKpiBatch,
+  KPI_REGISTRY,
+  getKpiDefinition,
+  getKpisByDomain
+};
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
@@ -20,7 +30,7 @@ const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
  * Aggregated margin over the last n complete months: (revenus − dépenses) ÷ revenus.
  *
  * NOT the mean of the monthly margin percentages. A month at 2 000 $ of revenue
- * must not weigh as much as a month at 100 000 $ — on a real series the two
+ * must not weigh as much as a month at 100 000 $ - on a real series the two
  * methods differ by more than a factor of two.
  *
  * Returns null when there is no revenue to divide by.
@@ -32,7 +42,7 @@ export function aggregateMarginPct(revSeries, expSeries, n = 3) {
   return ((rev - exp) / rev) * 100;
 }
 
-/** Same metric over the n months preceding the last n — null if not covered. */
+/** Same metric over the n months preceding the last n - null if not covered. */
 export function previousMarginPct(revSeries, expSeries, n = 3) {
   const rev = sumPrev(revSeries, n);
   const exp = sumPrev(expSeries, n);
@@ -42,7 +52,7 @@ export function previousMarginPct(revSeries, expSeries, n = 3) {
 
 /**
  * Change in margin expressed in POINTS, not in percent of a percent.
- * Going from 2% to 4% is +2 points, not "+100% growth" — the relative reading
+ * Going from 2% to 4% is +2 points, not "+100% growth" - the relative reading
  * used to hand out a full trend bonus for a two-point move on a thin margin.
  */
 export function marginDeltaPoints(currPct, prevPct) {
@@ -85,7 +95,7 @@ export function runwayMonths(cash, burn) {
 }
 
 export function fmtRunway(months) {
-  if (months === null || months === undefined) return "—";
+  if (months === null || months === undefined) return "-";
   if (months === Infinity) return "trésorerie autofinancée";
   return `${months.toFixed(1)} mois`;
 }
@@ -103,7 +113,7 @@ export function latestCashBalance(cashflow) {
 
 /**
  * One churn definition for the whole app: a client is churned when its STATUS
- * says so. "a_risque" is a client still buying — counting it as lost inflated
+ * says so. "a_risque" is a client still buying - counting it as lost inflated
  * the rate on the Clients page and in every AI report while the KPI page showed
  * a lower one from the same rows.
  */
@@ -116,11 +126,15 @@ function shiftMonthKey(key, n) {
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
 }
 
+/**
+ * @deprecated GESCOP Phase 3 SSOT : Ce calcul comportemental décentralisé doit être abandonné.
+ * Veuillez consommer `churn_rate` via `useKpiEngine()`.
+ */
 export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_MONTHS) {
   const rows = customers || [];
   const total = rows.length;
-  const churned = rows.filter((c) => c.status === "inactif" || c.status === "perdu").length;
-  const active = rows.filter((c) => c.status === "actif").length;
+  const churned = rows.filter((c) => ["inactif", "inactive", "perdu", "lost"].includes(String(c.status || "").toLowerCase())).length;
+  const active = rows.filter((c) => ["actif", "active"].includes(String(c.status || "").toLowerCase())).length;
   // Tracked separately: at-risk clients are a leading indicator, not churn.
   const atRisk = rows.filter((c) => {
     if (c.status !== "actif") return false;
@@ -132,7 +146,7 @@ export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_
   // The status-based rate above is a CUMULATIVE share: every customer ever lost,
   // over the whole base. It only grows as the base ages, it cannot be compared
   // month to month, and it says nothing about what is happening now. Calling it
-  // a "taux de churn" oversold it — a rate is measured over a period.
+  // a "taux de churn" oversold it - a rate is measured over a period.
   //
   // This one is: among customers who have ever ordered, how many have stopped
   // buying over the chosen window. Computable whenever order history exists,
@@ -161,13 +175,21 @@ export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_
     behaviourRate = buyers > 0 ? (lapsed / buyers) * 100 : null;
   }
 
+  // A base where NO customer carries "actif", "inactif" or "perdu" is not a
+  // base with 0 % churn - it is a status column that was never filled in.
+  // Without this guard, an unpopulated status field reads as a perfect churn
+  // score everywhere `rate` is consumed (domain score, KPI page, audit).
+  const statusMeasured = active > 0 || churned > 0;
+
   return {
     total,
     active,
     churned,
     atRisk,
-    // Cumulative share of the base marked lost — NOT a period rate.
-    rate: total > 0 ? (churned / total) * 100 : null,
+    // Cumulative share of the base marked lost - NOT a period rate.
+    // null when there is no base, OR when the status field carries no signal.
+    rate: total > 0 && statusMeasured ? (churned / total) * 100 : null,
+    statusMeasured,
     // Period attrition from real purchase behaviour. null = not computable.
     inactiveMonths: months,
     buyers,
@@ -178,15 +200,38 @@ export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_
 }
 
 /**
+ * A refunded order's money went back to the customer - it must not count as
+ * revenue. Matches the same three columns already used to compute the
+ * "Taux de retour" KPI, so revenue and return rate agree on what happened
+ * instead of one excluding refunds and the other silently including them.
+ */
+export function isRefundedOrder(o) {
+  return Boolean(
+    (o.return_status && o.return_status !== "aucun") ||
+    o.payment_status === "rembourse" ||
+    o.fulfillment_status === "retourne"
+  );
+}
+
+/** Orders that represent real, kept revenue - refunds excluded. */
+export function validSalesOrders(orders) {
+  return (orders || []).filter((o) => !isRefundedOrder(o));
+}
+
+/**
  * Average revenue per customer, and a margin-adjusted LTV when the margin is known.
  *
  * The numerator covers every customer that ordered, so the denominator must too.
  * Dividing all-customer revenue by ACTIVE customers only was inflating the
- * figure by 1/(share of active) — a 2x overstatement at 50% churn.
+ * figure by 1/(share of active) - a 2x overstatement at 50% churn.
+ */
+/**
+ * @deprecated GESCOP Phase 3 SSOT : Utilisez `ltv` via `useKpiEngine()`.
+ * Le calcul historique sur l'ensemble de la base faussait l'analyse périodique.
  */
 export function customerValue(orders, customers, marginPct = null) {
-  const ord = orders || [];
-  const totalRevenue = ord.reduce((s, o) => s + num(o.total), 0);
+  const ord = validSalesOrders(orders);
+  const totalRevenue = ord.reduce((s, o) => s + (Number(o.total) || Number(o.revenue_amount) || 0), 0);
   const buyers = new Set(ord.map((o) => o.customer_id).filter(Boolean)).size;
   const totalCustomers = (customers || []).length;
   // Prefer customers who actually ordered; fall back to the whole base.
@@ -229,7 +274,7 @@ export function previousRoasWindow(spendSeries, revSeries, n = 3) {
  *
  * Imports routinely omit columns: `new_customers`, `churn_risk`, `cost`,
  * `inventory_value` were all empty in a real file. Every metric built on such a
- * column collapsed to 0 and was displayed as a fact — "CAC 0 $" next to 623 667 $
+ * column collapsed to 0 and was displayed as a fact - "CAC 0 $" next to 623 667 $
  * of spend, "0 % de risque" on every client. Zero and unknown are different
  * answers, and only one of them is honest here.
  */

@@ -1,4 +1,5 @@
 import { latestByKey, currentMonthKey } from "@/lib/periods";
+import { isValidOrderForStock } from "@/lib/transactionClassifier";
 
 export const DEFAULT_STOCK_THRESHOLD = 10;
 export const DEFAULT_DORMANT_MONTHS = 3;
@@ -79,7 +80,7 @@ export function computeStockAlerts(products, inventory, settings, orders) {
   // A real file had stock_status = "optimal" on all 500 rows, so the dormant
   // count was structurally stuck at 0 while stock genuinely sat unsold. A
   // product holding stock that recorded no sale over the chosen window is
-  // dormant, whatever the label says. Only applied when order history exists —
+  // dormant, whatever the label says. Only applied when order history exists -
   // without it every product would look dormant.
   const months = Math.max(1, Number(settings.dormantMonths) || DEFAULT_DORMANT_MONTHS);
   const hasOrderHistory = (orders || []).some((o) => o.product_id && o.date);
@@ -87,9 +88,18 @@ export function computeStockAlerts(products, inventory, settings, orders) {
 
   const rows = base.map((p) => {
     const snap = invByProduct[p.product_id];
-    const stock = snap && snap.closing_stock != null
+    let stock = snap && snap.closing_stock != null
       ? Number(snap.closing_stock)
       : Number(p.inventory_level) || 0;
+
+    // GESCOP Phase 4 SSOT : Déduction temps réel des Ventes VALIDÉES analytiquement
+    if (snap && snap.date && orders) {
+      const qtySoldAfter = orders
+        .filter(o => o.product_id === p.product_id && o.date > snap.date && isValidOrderForStock(o))
+        .reduce((sum, o) => sum + (Number(o.quantity) || 0), 0);
+      stock -= qtySoldAfter;
+    }
+
     const status = snap?.stock_status || p.status;
     const byStatus = RUPTURE_STATUSES.includes(status);
     const byThreshold = isStockAlert(stock, p.reorder_point, settings);

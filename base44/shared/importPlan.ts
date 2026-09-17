@@ -19,8 +19,13 @@
 // la preuve gagne. Voir verifierAvecPreuves().
 
 import { getSchema } from "./entitySchemas.ts";
-import { parseDate, stripAccents, type ConventionDate } from "./importUtils.ts";
+import { parseDate, stripAccents, FIELD_ALIASES, cleCanonique, ALIAS_CANONIQUES, isSummaryOrTotalRow, type ConventionDate } from "./importUtils.ts";
 import { trouverLigneEntetes, detectEntityByHeaders, detectEntityByFieldOverlap } from "./sheetDetect.ts";
+import { recognizeAllColumns } from "./core/contextualRecognition.ts";
+import { classifyDocumentSheet, type SheetClassificationResult } from "./core/documentClassifier.ts";
+import { calculateQualityProfile, type QualityProfile } from "./core/qualityEngine.ts";
+import { evaluateDecision, type DecisionVerdict } from "./core/decisionMatrix.ts";
+import { DOCUMENT_ARCHETYPES, type DocumentArchetype, type GrainLevel } from "./core/ontology/types.ts";
 
 export type Confiance = "haute" | "moyenne" | "faible";
 export type OriginePlan = "ia" | "ia+preuves" | "regles" | "memoire";
@@ -49,6 +54,13 @@ export interface PlanImport {
   origine: OriginePlan;
   /** Ce que les preuves du fichier ont corrige dans la proposition de l'IA. */
   corrections: string[];
+
+  /** Nouveaux enrichissements universels V3.0 (Spec Section 9, 14, 22, 26) */
+  archetype?: DocumentArchetype;
+  grain?: GrainLevel;
+  isAggregatedSummary?: boolean;
+  qualityProfile?: QualityProfile;
+  decision?: DecisionVerdict;
 }
 
 /** Nombre de lignes soumises a l'IA. Assez pour voir la structure ET des cas limites. */
@@ -156,13 +168,29 @@ export function validerPlan(brut: any, matrix: any[][]): { plan: PlanImport | nu
   const colonnes: PlanColonne[] = [];
   for (const c of Array.isArray(brut.colonnes) ? brut.colonnes : []) {
     if (!c || typeof c.colonne !== "string") continue;
-    const champ = typeof c.champ === "string" && c.champ.trim() !== "" ? c.champ.trim() : null;
+    let champ = typeof c.champ === "string" && c.champ.trim() !== "" ? c.champ.trim() : null;
     if (champ && champsConnus.length > 0 && !champsConnus.includes(champ)) {
-      // L'IA a invente un champ : on garde la colonne, sans rattachement.
+      // L'IA a invente un champ : on garde la colonne, mais on va tenter le rattrapage.
       refus.push(`champ inconnu ignore : ${c.colonne} -> ${champ}`);
-      colonnes.push({ colonne: c.colonne, champ: null });
-      continue;
+      champ = null;
     }
+    
+    // Rattrapage : si l'IA n'a pas su rattacher (ou s'est trompee), on cherche 
+    // une correspondance exacte ou via dictionnaire.
+    if (!champ && champsConnus.length > 0) {
+      const cleanC = c.colonne.toLowerCase().trim();
+      const noAccentC = cleanC.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
+      
+      if (champsConnus.includes(c.colonne)) champ = c.colonne;
+      else if (champsConnus.includes(cleanC)) champ = cleanC;
+      else if (champsConnus.includes(noAccentC)) champ = noAccentC;
+      else {
+          const canon = cleCanonique(c.colonne);
+          const alias = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
+          if (alias && champsConnus.includes(alias)) champ = alias;
+      }
+    }
+    
     const convention = c.convention_date === "JJ/MM" || c.convention_date === "MM/JJ" ? c.convention_date : null;
     const valeurs = c.valeurs && typeof c.valeurs === "object" && !Array.isArray(c.valeurs) ? c.valeurs : null;
     colonnes.push({ colonne: c.colonne, champ, convention_date: convention, valeurs });
@@ -328,7 +356,21 @@ export async function analyserFichier(
 
   const { plan, refus } = validerPlan(brut, matrix);
   if (!plan) return { plan: planDeSecours, refus, erreur: "plan refuse" };
-  return { plan: verifierAvecPreuves(plan, matrix), refus };
+  const verifie = verifierAvecPreuves(plan, matrix);
+
+  // Fallback: override missing mappings from LLM with our deterministic rules & memory
+  for (const col of verifie.colonnes) {
+      if (!col.champ) {
+          const secCol = planDeSecours.colonnes.find(c => c.colonne === col.colonne);
+          if (secCol && secCol.champ) {
+              col.champ = secCol.champ;
+              verifie.corrections.push(`colonne « ${col.colonne} » : rattrapage via memoire/reconnaissance -> ${col.champ}.`);
+              verifie.origine = "ia+preuves";
+          }
+      }
+  }
+
+  return { plan: verifie, refus };
 }
 
 // ---------------------------------------------------------------------------
@@ -342,27 +384,174 @@ export async function analyserFichier(
  * colonnes laisse a la table de synonymes de normalizeKeys (champ: null ici
  * signifie « le pipeline decidera », pas « colonne ignoree »).
  */
-export function planParRegles(matrix: any[][], nomFichier: string, entiteConnue?: string | null): PlanImport {
+export function planParRegles(
+  matrix: any[][], 
+  nomFichier: string, 
+  entiteConnue?: string | null,
+  mappingMemory: any[] = []
+): PlanImport {
   const ligne = matrix.length > 0 ? trouverLigneEntetes(matrix) : 0;
   const entetes = (matrix[ligne] || []).map((h: any) => String(h ?? "").trim()).filter((h: string) => h !== "");
-  const entite = entiteConnue || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
+  
+  // Create sample rows for recognition and profiling
+  const sampleRows: Record<string, any>[] = [];
+  const lignes_ignorees: number[] = [];
+  for(let i = ligne + 1; i < matrix.length; i++) {
+    const rowObj: Record<string, any> = {};
+    const row = matrix[i] || [];
+    entetes.forEach((h: string, idx: number) => {
+      rowObj[h] = row[idx];
+    });
+    // Detection automatique des lignes de total/synthese a ecarter
+    if (isSummaryOrTotalRow(rowObj)) {
+      lignes_ignorees.push(i);
+    } else {
+      if (sampleRows.length < 50) {
+        sampleRows.push(rowObj);
+      }
+    }
+  }
+
+  // 1. Classification universelle de la feuille (Spec Section 9 & 14)
+  const classification = classifyDocumentSheet({
+    sheetName: nomFichier,
+    headers: entetes,
+    rows: sampleRows,
+    matrix,
+  });
+
+  // 2. Détection de l'entité
+  let entite = entiteConnue || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
+  if (!entite && classification.isAggregatedSummary) {
+    entite = "ExecutiveSummary";
+  }
+  
+  // Use Contextual Recognition (Sprint 2)
+  let recognizedCols = new Map();
+  try {
+    recognizedCols = recognizeAllColumns({
+      sheetName: nomFichier,
+      headers: entetes,
+      sampleRows,
+      entityHint: entite || undefined,
+      mappingMemory
+    });
+  } catch (e) {
+    console.warn("Contextual recognition failed, falling back to basic mapping", e);
+  }
+
+  const colonnes = entetes.map((c: string) => {
+    const rec = recognizedCols.get(c);
+    let champ = null;
+    const cleanC = c.toLowerCase().trim();
+    const noAccentC = cleanC.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
+
+    // Exact schema fields always win over semantic guesses
+    if (entite) {
+      const schema = getSchema(entite);
+      if (schema) {
+        const fields = Object.keys(schema.properties);
+        if (fields.includes(c)) champ = c;
+        else if (fields.includes(cleanC)) champ = cleanC;
+        else if (fields.includes(noAccentC)) champ = noAccentC;
+      }
+    }
+    
+    // 1. Semantic contextual recognition (Ontologie Commerciale Universelle)
+    if (!champ && rec && rec.confidence >= 0.5 && rec.canonicalKey !== 'unknown') {
+       const k = rec.canonicalKey;
+       if (k === 'revenue_amount' && entite === 'Order') champ = 'total';
+       else if (k === 'revenue_amount' && entite === 'Campaign') champ = 'revenue';
+       else if (k === 'expense_amount' && entite === 'Expense') champ = 'amount';
+       else if (k === 'cash_balance' && entite === 'Cashflow') champ = 'closing_cash';
+       else if (k === 'employee_identifier' && entite === 'Employee') champ = 'employee_id';
+       else if (k === 'product_identifier' && entite === 'Product') champ = 'product_id';
+       else if (k === 'identifier' && entite === 'Product') champ = 'product_id';
+       else if (k === 'identifier' && entite === 'Employee') champ = 'employee_id';
+       else champ = k;
+       if (rec.targetField) {
+          champ = rec.targetField;
+       }
+    }
+    
+    // 2. Fallback to schema fields so the UI doesn't show 'Ignorer' for valid columns
+    if (!champ && entite) {
+        const schema = getSchema(entite);
+        if (schema) {
+            const canon = cleCanonique(c);
+            const alias = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
+            if (alias && Object.keys(schema.properties).includes(alias)) champ = alias;
+        }
+    }
+
+    // 3. Adaptations ciblées par entité (Order, Product, Employee, ExecutiveSummary)
+    if (entite === 'Order') {
+      if (champ === 'transaction_id') champ = 'order_id';
+      if (champ === 'succursale' || champ === 'store') champ = 'location_id';
+    }
+    if (entite === 'Product') {
+      if (champ === 'closing_stock' || champ === 'stock_quantity') champ = 'inventory_level';
+      if (champ === 'unit_cost') champ = 'purchase_cost';
+    }
+    if (entite === 'Employee' && (champ === 'store' || champ === 'location_id' || champ === 'succursale')) {
+      champ = 'location';
+    }
+    if (entite === 'ExecutiveSummary') {
+      const normC = stripAccents(c.toLowerCase()).replace(/[^a-z0-9]+/g, "_");
+      if (normC.includes("succursale") || normC.includes("store") || normC.includes("location") || normC.includes("ville")) champ = 'location_id';
+      else if (normC.includes("cout") || normC.includes("cost") || normC.includes("charge")) champ = 'total_cost';
+      else if (normC.includes("profit") || normC.includes("benefice")) champ = 'gross_profit';
+      else if (normC.includes("marge") || normC.includes("margin") || normC.includes("pct")) champ = 'gross_margin';
+      else if (normC.includes("vente") || normC.includes("revenue") || normC.includes("ca")) champ = 'total_revenue';
+    }
+
+    return { colonne: c, champ };
+  });
+
+  // 4. Calcul du profil de qualité et décision
+  const avgConfidence = recognizedCols.size > 0
+    ? Array.from(recognizedCols.values()).reduce((s: number, r: any) => s + (r.confidence || 0.8), 0) / recognizedCols.size
+    : 0.85;
+
+  const qualityProfile = calculateQualityProfile({
+    headers: entetes,
+    rows: sampleRows,
+    mappedColumnsCount: colonnes.filter((c) => c.champ).length,
+    totalColumnsCount: entetes.length,
+    averageSemanticConfidence: avgConfidence,
+    isAggregatedSummary: classification.isAggregatedSummary,
+  });
+
+  const decision = evaluateDecision(qualityProfile, avgConfidence);
+
+  const explication = classification.isAggregatedSummary
+    ? classification.explanation
+    : (entite
+        ? `Lecture sémantique de ${nomFichier} : reconnaissance de ${colonnes.filter((c) => c.champ).length}/${entetes.length} colonnes pour l'entité ${entite}.`
+        : `Lecture automatique de ${nomFichier} : ${classification.explanation}`);
+
   return {
     entite,
     ligne_entetes: ligne,
-    lignes_ignorees: [],
-    colonnes: entetes.map((c: string) => ({ colonne: c, champ: null })),
-    confiance: "faible",
-    explication: entite
-      ? `Lecture automatique de ${nomFichier} : ${entetes.length} colonnes reconnues comme des donnees de type ${entite}.`
-      : `Lecture automatique de ${nomFichier} : le type de donnees n'a pas pu etre determine.`,
+    lignes_ignorees,
+    colonnes,
+    confiance: decision.confidenceScore >= 90 ? "haute" : decision.confidenceScore >= 70 ? "moyenne" : "faible",
+    explication,
     origine: "regles",
     corrections: [],
+    archetype: classification.archetype,
+    grain: classification.grain.primaryGrain,
+    isAggregatedSummary: classification.isAggregatedSummary,
+    qualityProfile,
+    decision,
   };
 }
 
 /** Le plan de secours laisse le mapping au pipeline historique. */
 export function planSansRattachement(plan: PlanImport): boolean {
-  return plan.origine === "regles" && plan.colonnes.every((c) => !c.champ);
+  // Dans un plan par règles, on autorise toujours le rattrapage par synonymes 
+  // pour les colonnes dont le champ est resté à null.
+  return plan.origine === "regles";
 }
 
 // ---------------------------------------------------------------------------
@@ -404,6 +593,7 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
     if (ignorees.has(i)) continue;
     const brute = matrix[i] || [];
     if (brute.every((c: any) => String(c ?? "").trim() === "")) continue;
+    if (isSummaryOrTotalRow(brute)) continue;
 
     const obj: Record<string, any> = {};
     entetes.forEach((entete, idx) => {
@@ -422,9 +612,18 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
         if (d !== null) valeur = d;
       }
 
-      if (col && col.champ) obj[col.champ] = valeur;
-      else if (rattacherParSynonymes) obj[entete] = valeur;
+      if (col && col.champ) {
+        obj[col.champ] = valeur;
+      } else if (!col || rattacherParSynonymes) {
+        // Colonne jamais rattachée par le plan (ou plan par règles, qui
+        // n'a pas tenté le rattachement) : on conserve l'entête d'origine
+        // pour que le dictionnaire d'alias et la normalisation la rattrapent.
+        obj[entete] = valeur;
+      }
+      // Sinon : l'analyse a explicitement jugé cette colonne sans
+      // correspondance (col.champ === null) — on ne la réintroduit pas.
     });
+    if (isSummaryOrTotalRow(obj)) continue;
     if (Object.keys(obj).length > 0) rows.push(obj);
   }
   return rows;
