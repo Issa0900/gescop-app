@@ -1,6 +1,6 @@
 // Test bout-en-bout avec les fichiers Ventes.csv / Depenses.csv de Pelletier Deco Surfaces
 // (chiffres calcules a la main, comme le ferait un utilisateur qui verifie son propre fichier source)
-import { detectEntityByHeaders } from "../../base44/shared/sheetDetect.ts";
+import { detectEntityByHeaders, detectEntityByFieldOverlap } from "../../base44/shared/sheetDetect.ts";
 import { normalizeRow } from "../../base44/shared/importUtils.ts";
 import { getSchema } from "../../base44/shared/entitySchemas.ts";
 import { missingRequired } from "../../base44/shared/bulkInsert.ts";
@@ -38,8 +38,8 @@ const depenses = [
 ];
 
 console.log("===== 1. Detection du type d'entite =====");
-const entiteVentes = detectEntityByHeaders(entetesVentes);
-const entiteDepenses = detectEntityByHeaders(entetesDepenses);
+const entiteVentes = detectEntityByHeaders(entetesVentes) || detectEntityByFieldOverlap(entetesVentes);
+const entiteDepenses = detectEntityByHeaders(entetesDepenses) || detectEntityByFieldOverlap(entetesDepenses);
 console.log(`Ventes.csv   ${JSON.stringify(entetesVentes)} -> ${entiteVentes}`);
 console.log(`Depenses.csv ${JSON.stringify(entetesDepenses)} -> ${entiteDepenses}`);
 
