@@ -1,5 +1,5 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
-import { normalizeRow, isSummaryOrTotalRow } from "../../shared/importUtils.ts";
+import { normalizeRow, isSummaryOrTotalRow, deriveFallbackIdentity } from "../../shared/importUtils.ts";
 import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import {
@@ -56,7 +56,6 @@ function forceTransactionColumns(plan: PlanImport): PlanImport {
     }),
   };
 }
-
 
 /**
  * Plan de lecture d'une feuille : memoire, puis IA, puis regles.
@@ -206,11 +205,12 @@ async function importRows(
     grain = detectGrain(profile, matchedConcepts);
   } catch(e) { console.error("Semantic engine failed", e); }
 
-  rows.forEach((row) => {
+  rows.forEach((row, index) => {
     if (!row || typeof row !== "object" || isSummaryOrTotalRow(row)) return;
     const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
     const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType, enumIssues, unmappedColumns);
     if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) return;
+    deriveFallbackIdentity(entityName, normalized, index);
     // Reject up front rather than letting one row fail its whole batch.
     const missing = missingRequired(normalized, required);
     if (missing.length > 0) {
@@ -393,10 +393,11 @@ export default async function (req: Request) {
                   
                   const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
                   const normalized = normalizeRow(plan.entite, row, "tmp", properties, sourceType, enumIssues);
-                  
+
                   if (Object.keys(normalized).filter(k => k !== "import_id").length === 0) {
                     continue; // Ligne vide ou total filtré : ne pas générer de faux positif en quarantaine
                   }
+                  deriveFallbackIdentity(plan.entite, normalized, i);
                   mappedCount++;
 
                   const errors: string[] = [];
