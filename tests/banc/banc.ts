@@ -19,6 +19,29 @@
 // Usage : voir tests/banc/README.md
 
 import { importer, classeur } from "./outils.ts";
+import { computeKpiBatch } from "../../src/lib/core/kpiEngine.js";
+import { getEntitySemantics } from "../../src/lib/core/entityFieldMap.js";
+import { KPI_REGISTRY } from "../../src/lib/core/kpiRegistry.js";
+
+/**
+ * Tous les KPI du registre, calcules par le vrai moteur (comme useKpiEngine)
+ * sur les donnees importees. Sert a verifier la directive §25.4 : les
+ * Observations, derivees des memes lignes, ne doivent pas changer un KPI.
+ */
+function calculerKpi(tables: Record<string, any[]>, avecObservations: boolean): Record<string, any> {
+  const recs: any[] = [];
+  const sem = new Map();
+  for (const e of ["Transaction", "Cashflow", "Order", "Expense", "Employee", "Payroll", "Customer", "Product", "CampaignDaily"]) {
+    const rs = tables[e];
+    if (!rs) continue;
+    recs.push(...rs.map((r: any) => ({ ...r, _entity: e })));
+    const s = getEntitySemantics(e);
+    if (s) s.forEach((v: any, k: string) => sem.set(`${e}:${k}`, v));
+  }
+  if (avecObservations) recs.push(...(tables.Observation || []));
+  const res = computeKpiBatch(Object.keys(KPI_REGISTRY), recs, sem);
+  return Object.fromEntries([...res].map(([k, v]: any) => [k, v.value == null ? null : Math.round(v.value * 100) / 100]));
+}
 import { CORPUS, CLASSEURS_REELS, type Cas } from "./cas.ts";
 
 declare const require: any;
@@ -128,8 +151,14 @@ async function mesurerReel(chemin: string) {
       if (typeof v === "number") sommes[`${entite}.${champ}`] = Math.round(((sommes[`${entite}.${champ}`] || 0) + v) * 100) / 100;
     }
   }
+  const kpiSans = calculerKpi(tables, false);
+  const kpiAvec = calculerKpi(tables, true);
+  const kpiDivergents = Object.keys(kpiSans).filter((k) => kpiSans[k] !== kpiAvec[k]).map((k) => `${k}: ${kpiSans[k]} -> ${kpiAvec[k]}`);
   return {
     fichier: path.basename(abs),
+    observations: (tables.Observation || []).length,
+    kpi: kpiSans,
+    kpi_divergents: kpiDivergents,
     feuilles: results.map((r) => ({ feuille: r.file_name, entite: r.entity, statut: r.status, lues: r.rows_read, importees: r.rows, quarantaine: r.quarantined || 0 })),
     inventees: inventions(rows).filter((x) => !x.startsWith("SUPPOSEE")).length,
     supposees: inventions(rows).filter((x) => x.startsWith("SUPPOSEE")).length,
@@ -175,6 +204,7 @@ async function mesurerReel(chemin: string) {
 
   for (const r of reels) {
     log(`\n--- ${r.fichier} (inventions : ${r.inventees}, hypotheses : ${r.supposees ?? "?"})`);
+    log(`  observations : ${r.observations} ; KPI changés par les observations : ${r.kpi_divergents.length}${r.kpi_divergents.length ? " — " + r.kpi_divergents.slice(0, 4).join(" ; ") : ""}`);
     for (const f of r.feuilles) log(`  ${String(f.feuille).padEnd(62)} ${String(f.entite).padEnd(16)} ${f.importees}/${f.lues}  quar. ${f.quarantaine}`);
     log("  sommes :", JSON.stringify(r.sommes));
     if (r.registre && Object.keys(r.registre).length) log("  registre :", JSON.stringify(r.registre));

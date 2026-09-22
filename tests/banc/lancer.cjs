@@ -20,6 +20,7 @@ esbuild.buildSync({
   alias: {
     "npm:xlsx@0.18.5": "./node_modules/xlsx",
     "npm:@base44/sdk@0.8.48": "./" + path.join(build, "sdk-stub.cjs").replace(/\\/g, "/"),
+    "@": "./src",
   },
 });
 

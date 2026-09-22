@@ -6,7 +6,7 @@
  * avec un score de confiance, au lieu de faire un simple mapping de nom de colonne.
  */
 
-import { ColumnProfile } from './dataProfiler.ts';
+import type { ColumnProfile } from './dataProfiler.ts';
 import { buildConceptMappingsFromRegistry } from './registry/generateAliases.ts';
 
 export type SemanticMatch = {
@@ -22,16 +22,67 @@ export type SemanticMatch = {
 // puissent plus diverger comme elles l'ont fait pour "Facebook Ads".
 const CONCEPT_MAPPINGS = buildConceptMappingsFromRegistry();
 
-function normalizeString(str: string): string {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+/**
+ * Mots d'un intitule, sans accents ni ponctuation : « Chiffre d'affaires ($) »
+ * -> [chiffre, d, affaires] ; « total_revenue » -> [total, revenue].
+ *
+ * La comparaison se fait mot a mot. Avant, l'intitule etait colle en un seul
+ * bloc (« chiffredaffaires ») mais pas les mots-cles (« chiffre d affaires ») :
+ * aucun mot-cle de plusieurs mots ne pouvait correspondre. Et la recherche
+ * « contient » trouvait « ca » dans « cash_in » ou « categorie » : une
+ * recette de caisse devenait du chiffre d'affaires.
+ */
+function mots(str: string): string[] {
+  return String(str || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+/** La suite de mots `cherche` apparait-elle, d'un seul tenant, dans `dans` ? */
+function contientSuite(dans: string[], cherche: string[]): boolean {
+  if (cherche.length === 0 || cherche.length > dans.length) return false;
+  for (let i = 0; i + cherche.length <= dans.length; i++) {
+    if (cherche.every((m, j) => dans[i + j] === m)) return true;
+  }
+  return false;
 }
 
 /**
- * Tente de relier un profil de colonne  un concept mǸtier connu.
+ * Noms de champs des entites GESCOP -> concept. Les lignes passees au moteur
+ * sont souvent deja rattachees (« total_cost », « spend ») : ces noms-la sont
+ * sans ambiguite. Tenus ici plutot que dans le lexique du registre, qui
+ * alimente aussi les synonymes de l'import (ALIAS_CANONIQUES) : y ajouter
+ * « total_cost » aurait change le rattachement des colonnes « Coût total ».
+ */
+const CONCEPT_PAR_CHAMP: Record<string, string> = {
+  total_revenue: "finance.revenue",
+  total_cost: "finance.cogs", cogs: "finance.cogs",
+  gross_margin: "finance.grossMargin",
+  closing_cash: "finance.cashBalance",
+  spend: "marketing.spend",
+  ctr: "marketing.ctr", cpc: "marketing.cpc", roas: "marketing.roas",
+  customer_id: "customer.id",
+  date: "temporal.date",
+};
+
+/** Mots qui font d'une colonne une QUANTITE, jamais un montant (« Ventes (unités) »). */
+const MARQUEURS_QUANTITE = new Set(["unite", "unites", "unit", "units", "qte", "qty", "quantite", "quantity", "nombre", "nb", "volume", "pieces"]);
+/** Mots qui font d'une colonne un PRIX unitaire, jamais un flux (« Prix_Vente_CAD » n'est pas du chiffre d'affaires). */
+const MARQUEURS_PRIX = new Set(["prix", "price", "tarif", "unitaire", "pu", "msrp"]);
+/** Unites non monetaires : « Solde_Points_Fidelite » est un solde de POINTS, pas de tresorerie. */
+const MARQUEURS_NON_MONETAIRES = new Set(["points", "point", "fidelite", "loyalty", "jours", "days", "heures", "hours", "score", "note", "rang", "taux", "rate", "pct", "pourcentage"]);
+
+/**
+ * Tente de relier un profil de colonne a un concept metier connu.
  */
 export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
-  const normName = normalizeString(profile.columnName);
-  
+  const motsColonne = mots(profile.columnName);
+  const champ = motsColonne.join("_");
+  if (CONCEPT_PAR_CHAMP[champ]) {
+    return { concept: CONCEPT_PAR_CHAMP[champ], confidence: 1.0, method: "champ_entite", requiresValidation: false };
+  }
+  const estUneQuantite = motsColonne.some((m) => MARQUEURS_QUANTITE.has(m));
+  const estUnPrix = motsColonne.some((m) => MARQUEURS_PRIX.has(m));
+  const nonMonetaire = motsColonne.some((m) => MARQUEURS_NON_MONETAIRES.has(m));
+
   let bestMatch: SemanticMatch | null = null;
 
   for (const mapping of CONCEPT_MAPPINGS) {
@@ -41,17 +92,21 @@ export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
       : mapping.type === profile.inferredType;
 
     if (!typeIsCompatible && profile.inferredType !== 'unknown') {
-      continue; // Le type de donnǸe ne correspond pas du tout au concept
+      continue; // Le type de donnee ne correspond pas du tout au concept
     }
+    // Une quantite (« Ventes (unités) ») n'est jamais un montant.
+    if ((estUneQuantite || estUnPrix || nonMonetaire) && mapping.type.includes("currency")) continue;
 
     // 2. Recherche par mots-clǸs (Scoring)
     let score = 0;
     for (const kw of mapping.keywords) {
-      if (normName === kw) {
+      const motsCle = mots(kw);
+      if (motsCle.length === 0) continue;
+      if (motsCle.join(" ") === motsColonne.join(" ")) {
         score = 1.0; // Match exact
         break;
-      } else if (normName.includes(kw)) {
-        score = 0.7; // Match partiel
+      } else if (contientSuite(motsColonne, motsCle)) {
+        score = 0.7; // Match partiel, sur des mots entiers (« CA HT », « total_revenue »)
       }
     }
 

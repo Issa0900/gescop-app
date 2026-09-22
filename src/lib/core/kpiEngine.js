@@ -196,12 +196,26 @@ export function computeKpiBatch(kpiIds, records, fieldSemantics) {
  * This is the ultimate defense against summing stocks.
  */
 function _aggregateRawField(canonicalKey, records, fieldSemantics) {
-  // --- NOUVEAU DATA CORE (PHASE 2) ---
-  // Si le jeu de données contient des Observations, on utilise directement la valeur stockée
-  // sans avoir besoin du vieux mappage de colonnes (fieldSemantics).
+  // Une mesure qu'une entite importee fournit se calcule sur cette entite, avec
+  // ses regles (commandes annulees exclues, recettes et depenses separees,
+  // stocks jamais additionnes, portee par entite). Les Observations sont
+  // DERIVEES de ces memes lignes a l'import : les additionner a la place
+  // remplacait ce calcul par une somme brute — une seule observation de 1 200 $
+  // (revenu attribue d'une campagne) suffisait a remplacer 10 000 $ de
+  // commandes dans le chiffre d'affaires. Elles ne servent donc plus que de
+  // repli, pour une mesure qu'AUCUNE entite ne declare (22 sept 2026).
+  // « Declare », pas « renseigne » : si les commandes n'ont pas de montant, le
+  // chiffre d'affaires est NON MESURE — pas la somme de ce que le rapprochement
+  // par mots-cles a pris pour du revenu (un « Prix_Vente », par exemple).
+  // Une metrique, un moteur.
+  const fourniParUneEntite = [...(fieldSemantics || new Map()).values()].some((fs) =>
+    fs.canonicalKey === canonicalKey
+    || (fs.contextRules || []).some((r) => r.then?.canonicalKey === canonicalKey));
+
+  // --- DATA CORE (PHASE 2) : repli sur les Observations ---
   // Note: les Observations sont mélangées avec d'autres entités dans le tableau `records`
   // (voir useKpiEngine), donc on ne peut pas se fier à records[0] pour les détecter.
-  if (records && records.some(r => r && r.observation_type)) {
+  if (!fourniParUneEntite && records && records.some(r => r && r.observation_type)) {
     const matchingObs = records.filter(r =>
       r.observation_type && (
         r.concept === canonicalKey || r.concept === `finance.${canonicalKey}` || r.concept === `customer.${canonicalKey}`
