@@ -9,7 +9,7 @@ import ProductFilters from "@/components/produits/ProductFilters";
 import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
-import { latestByKey, currentMonthKey } from "@/lib/periods";
+import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
 import { fetchAll } from "@/lib/fetchAll";
 import { validSalesOrders } from "@/lib/metrics";
 import DataErrorState from "@/components/DataErrorState";
@@ -187,11 +187,15 @@ export default function Produits() {
   }));
 
   const stockDist = {};
-  const latestInventory = latestByKey(inventory || [], "product_id", "date");
+  const latestInventory = latestByKey(inventory || [], "product_id", dateReferenceInventaire);
   latestInventory.forEach((i) => {
     const s = i.stock_status || "non_precise";
     stockDist[s] = (stockDist[s] || 0) + 1;
   });
+  // Inventaires sans date reelle : la date d'import n'est qu'une reference
+  // technique, et doit etre presentee comme telle.
+  const sansDateReelle = latestInventory.filter((i) => !i.date && i.reference_date_type === "IMPORT_DATE");
+  const dateImportInventaire = sansDateReelle.map((i) => i.import_date || i.reference_date).filter(Boolean).sort().pop();
   const pieData = Object.entries(stockDist).map(([s, v]) => ({
     name: stockLabels[s] || s,
     value: v,
@@ -319,6 +323,12 @@ export default function Produits() {
               Valeur inventaire total: <span className="font-semibold text-foreground">{Math.round(inventoryValue).toLocaleString("fr-CA")} $</span>
               {inventoryValueEstimated && (
                 <span className="block text-xs">Estimée à partir du stock et du coût d'achat : la colonne « valeur de stock » est absente de votre import.</span>
+              )}
+              {sansDateReelle.length > 0 && (
+                <span className="block text-xs text-amber-700">
+                  Inventaire importé le {dateImportInventaire ? new Date(dateImportInventaire).toLocaleDateString("fr-CA", { timeZone: "UTC" }) : "—"} — date réelle non fournie
+                  ({sansDateReelle.length} produit(s)). Les ventes postérieures à l'inventaire ne peuvent pas en être déduites.
+                </span>
               )}
             </p>
           )}

@@ -9,6 +9,24 @@
       "type": "string",
       "format": "date"
     },
+    "import_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date a laquelle GESCOP a recu ces donnees. Jamais la date de l'inventaire."
+    },
+    "reference_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de reference pour l'affichage operationnel : la date d'inventaire si le fichier la donne, sinon la date d'import (voir reference_date_type)."
+    },
+    "reference_date_type": {
+      "type": "string",
+      "enum": [
+        "INVENTORY_DATE",
+        "IMPORT_DATE"
+      ],
+      "description": "INVENTORY_DATE : date reelle de l'inventaire. IMPORT_DATE : date reelle inconnue, la date d'import sert de reference technique."
+    },
     "product_id": {
       "type": "string"
     },

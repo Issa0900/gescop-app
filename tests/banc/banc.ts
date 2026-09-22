@@ -36,9 +36,11 @@ function inventions(rows: { entite: string; r: any }[]): string[] {
   const out: string[] = [];
   for (const { entite, r } of rows) {
     const brut = String(r.original_data || "");
-    // Un inventaire sans date est un instantane : la date d'import y est une
-    // hypothese assumee (importUtils, crochet Inventory), comptee a part.
-    if (r.date === AUJOURDHUI && !brut.includes(AUJOURDHUI)) out.push(entite === "Inventory" ? "SUPPOSEE Inventory.date" : `${entite}: date du jour inventee`);
+    // Toute date du jour absente du fichier est inventee, inventaire compris
+    // (regle du 22 sept 2026). La date d'import d'un inventaire non date vit
+    // dans reference_date, typee IMPORT_DATE : comptee a part, pas inventee.
+    if (r.date === AUJOURDHUI && !brut.includes(AUJOURDHUI)) out.push(`${entite}: date du jour inventee`);
+    if (r.reference_date_type === "IMPORT_DATE") out.push("SUPPOSEE date de reference = date d'import");
     for (const [k, v] of Object.entries(r)) {
       if (/_id$/.test(k) && typeof v === "string" && /^ORD-/.test(v) && !brut.includes(v)) out.push(`${entite}.${k} = ${v}`);
     }

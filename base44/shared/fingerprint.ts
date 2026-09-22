@@ -1,3 +1,29 @@
+/**
+ * L'empreinte repose-t-elle sur un identifiant metier fourni par le fichier ?
+ * Seule une telle empreinte PROUVE qu'une repetition est un doublon (meme
+ * commande, meme client, meme SKU). Un identifiant technique derive du contenu
+ * (« AUTO-… ») n'en est pas un : deux lignes identiques recoivent le meme, sans
+ * que cela prouve quoi que ce soit.
+ */
+export function empreinteForte(entityName: string, row: any): boolean {
+  if (!row || typeof row !== "object") return false;
+  const reel = (v: any) => v !== undefined && v !== null && String(v).trim() !== "" && !/^AUTO-/.test(String(v));
+  switch (entityName) {
+    case "Order": return reel(row.order_id);
+    case "Customer": return reel(row.customer_id) || reel(row.email);
+    case "Product": return reel(row.product_id) || reel(row.sku);
+    case "Campaign": return reel(row.campaign_id);
+    case "CampaignDaily": return reel(row.campaign_id) && reel(row.date);
+    case "Employee": return reel(row.employee_id);
+    case "Payroll": return reel(row.employee_id) && reel(row.period);
+    case "Supplier": return reel(row.supplier_id);
+    // Regle metier : une seule ligne de tresorerie par date.
+    case "Cashflow": return reel(row.date);
+    case "Expense": return reel(row.expense_id);
+    default: return false;
+  }
+}
+
 export function generateFingerprint(entityName: string, row: any): string {
   if (!row || typeof row !== "object") return "";
 

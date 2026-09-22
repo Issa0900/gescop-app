@@ -2,7 +2,7 @@
 // and metric traceability (formula + source + period + intermediate values).
 // Read-only - it never modifies data, it only reports what the metrics are built on.
 
-import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, latestByKey, meanOf } from "@/lib/periods";
+import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, latestByKey, meanOf, dateReferenceInventaire } from "@/lib/periods";
 import {
   aggregateMarginPct,
   netBurnRate,
@@ -499,7 +499,7 @@ export function buildMetricTraces(d) {
     note: "Les données quotidiennes sont utilisées en priorité car elles seules sont datables.",
   });
 
-  const latestInv = latestByKey(inventory, "product_id", "date");
+  const latestInv = latestByKey(inventory, "product_id", dateReferenceInventaire);
   const dormant = latestInv.filter((i) => i.stock_status === "dormant").length;
   const rupture = latestInv.filter((i) => ["rupture", "proche_rupture"].includes(i.stock_status)).length;
   traces.push({

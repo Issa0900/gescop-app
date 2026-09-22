@@ -26,11 +26,14 @@ test("Seules les lignes corrigeables sont a retraiter ; doublons et totaux ne le
 
 test("La deduplication rend les lignes ecartees elles-memes, et relie chaque ligne gardee a sa source", async () => {
   const table = [];
-  const base44 = { entities: { Transaction: { list: async (_s, l, o) => table.slice(o, o + l) } } };
-  const a = { date: "2026-03-01", amount: 500, type: "income", description: "Vente" };
+  // Doublon PROUVE par un identifiant metier (meme commande, meme produit) :
+  // depuis le 22 sept 2026, des lignes identiques sans identifiant sont
+  // conservees (voir regles_metier.test.js).
+  const base44 = { entities: { Order: { list: async (_s, l, o) => table.slice(o, o + l) } } };
+  const a = { order_id: "C-1", product_id: "P-1", date: "2026-03-01" };
   const b = { ...a };
-  const c = { date: "2026-03-02", amount: 80, type: "expense", description: "Pub" };
-  const res = await deduplicateRows(base44, "Transaction", [a, b, c]);
+  const c = { order_id: "C-2", product_id: "P-1", date: "2026-03-02" };
+  const res = await deduplicateRows(base44, "Order", [a, b, c]);
   assert.equal(res.duplicateCount, 1);
   assert.equal(res.duplicates[0], b, "le doublon rendu est la ligne d'origine, retrouvable par l'appelant");
   assert.equal(res.newRows[0][LIGNE_SOURCE], a);

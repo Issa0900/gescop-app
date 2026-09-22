@@ -66,6 +66,7 @@ function RepartitionLignes({ m, compact = false }) {
   if (m.fallback_values) extras.push(`${m.fallback_values} valeur(s) rangée(s) sous « autre »`);
   if (m.derived_values) extras.push(`${m.derived_values} identifiant(s) technique(s)`);
   if (m.anomalous_values) extras.push(`${m.anomalous_values} valeur(s) inhabituelle(s) à vérifier`);
+  if (m.potential_duplicates) extras.push(`${m.potential_duplicates} doublon(s) potentiel(s) conservé(s), à vérifier`);
   if (m.ambiguous_fields?.length) extras.push(`${m.ambiguous_fields.length} colonne(s) ambiguë(s)`);
   if (m.potential_dimensions?.length) extras.push(`axes d'analyse possibles : ${m.potential_dimensions.slice(0, 3).join(", ")}`);
   if (parts.length === 0 && extras.length === 0) return null;

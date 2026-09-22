@@ -24,6 +24,12 @@ export const ROW_STATUS = {
    * montant negatif, valeur tres eloignee du reste (§8). Entree d'audit seulement.
    */
   ANOMALOUS: "ANOMALOUS",
+  /**
+   * Importee (VALID) mais strictement identique a une autre ligne du meme
+   * fichier, sans identifiant pour trancher : doublon POTENTIEL, conserve et
+   * signale — exclu seulement si une preuve le demontre (regle du 22 sept 2026).
+   */
+  DUPLICATE_EXACT: "DUPLICATE_EXACT",
 } as const;
 export type RowStatus = typeof ROW_STATUS[keyof typeof ROW_STATUS];
 
@@ -41,6 +47,7 @@ export const REASON = {
   RATE_LIMITED: "RATE_LIMITED",
   TECHNICAL_PARSE_ERROR: "TECHNICAL_PARSE_ERROR",
   ANOMALOUS_VALUE: "ANOMALOUS_VALUE",
+  DUPLICATE_EXACT: "DUPLICATE_EXACT",
 } as const;
 export type ReasonCode = typeof REASON[keyof typeof REASON];
 
@@ -58,6 +65,7 @@ export const REASON_LABEL: Record<ReasonCode, string> = {
   RATE_LIMITED: "limite de débit atteinte",
   TECHNICAL_PARSE_ERROR: "fichier illisible",
   ANOMALOUS_VALUE: "valeur inhabituelle",
+  DUPLICATE_EXACT: "doublon potentiel (ligne identique)",
 };
 
 /** Ou en est la recuperation d'une ligne ecartee (§17, §18). */
@@ -112,6 +120,8 @@ export interface ImportMetrics {
   derived_values: number;
   /** Valeurs importees mais signalees : negatives, tres eloignees (§8). */
   anomalous_values: number;
+  /** Lignes identiques a une autre du fichier, conservees et signalees. */
+  potential_duplicates: number;
   reasons: Partial<Record<ReasonCode, number>>;
 }
 
@@ -119,7 +129,7 @@ export function metriquesVides(): ImportMetrics {
   return {
     total_rows: 0, valid_rows: 0, quarantined_rows: 0, duplicate_rows: 0, summary_rows: 0,
     ignored_rows: 0, unknown_rows: 0, recovered_rows: 0, unknown_fields: [],
-    fallback_values: 0, derived_values: 0, anomalous_values: 0, reasons: {},
+    fallback_values: 0, derived_values: 0, anomalous_values: 0, potential_duplicates: 0, reasons: {},
   };
 }
 

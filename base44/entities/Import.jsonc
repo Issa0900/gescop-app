@@ -53,6 +53,10 @@
       },
       "description": "Colonnes non rattachees mais exploitables comme axe d'analyse (canal, region, campagne...)."
     },
+    "potential_duplicates": {
+      "type": "number",
+      "description": "Lignes strictement identiques a une autre du fichier, sans identifiant pour prouver le doublon : conservees et signalees."
+    },
     "quality_score": {
       "type": "number"
     },

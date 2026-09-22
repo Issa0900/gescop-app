@@ -178,11 +178,18 @@ export function meanOf(values) {
  * massively over-counts problems.
  */
 export function latestByKey(items, keyField, dateField = "date") {
+  // dateField peut etre une fonction : un inventaire sans date reelle se
+  // classe alors sur sa date de reference (date d'import), sans quoi un vieil
+  // inventaire date l'emportait toujours sur un inventaire recent non date.
+  const dateDe = typeof dateField === "function" ? dateField : (it) => it[dateField];
   const map = {};
   (items || []).forEach((it) => {
     const k = it[keyField];
     if (!k) return;
-    if (!map[k] || (it[dateField] || "") > (map[k][dateField] || "")) map[k] = it;
+    if (!map[k] || (dateDe(it) || "") > (dateDe(map[k]) || "")) map[k] = it;
   });
   return Object.values(map);
 }
+
+/** Date de reference d'un inventaire : la date reelle, a defaut la date d'import. */
+export const dateReferenceInventaire = (i) => i?.date || i?.reference_date || "";

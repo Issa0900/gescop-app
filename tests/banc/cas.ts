@@ -206,8 +206,10 @@ export const CORPUS: Cas[] = [
         ["2026-03-02", "80", "Dépense", "Pub", "Annonce"],
       ],
     },
-    // La copie est signalee comme doublon : elle compte comme « traitee ».
+    // Sans identifiant : les deux lignes identiques sont conservees et la
+    // repetition signalee comme doublon potentiel (regle du 22 sept 2026).
     donnees: 3,
+    signaler: ["Doublon potentiel détecté"],
   },
   {
     id: "13-multi-feuilles",
@@ -407,7 +409,7 @@ export const CORPUS: Cas[] = [
       ],
     },
     donnees: 3,
-    signaler: ["= stock final (3/3 lignes)"],
+    signaler: ["= stock final (3/3 lignes)", "date réelle inconnue"],
     attendu: { entites: { Inventaire: "Inventory" }, champs: { "Achats": "purchases", "Unités vendues": "units_sold", "Stock clôture": "closing_stock" } },
   },
   {

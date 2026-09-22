@@ -251,6 +251,11 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     const parChamp: Record<string, number> = {};
     trace.derives.forEach(({ field }) => { parChamp[field] = (parChamp[field] || 0) + 1; });
     for (const [champ, n] of Object.entries(parChamp)) {
+      if (champ === "reference_date") {
+        messages.push(`${n} ligne(s) d'inventaire sans date dans le fichier : date réelle inconnue (laissée vide). `
+          + `La date d'import est conservée à part, comme simple référence technique — les calculs qui exigent la date réelle ne l'utilisent pas.`);
+        continue;
+      }
       messages.push(`${champ} absent du fichier pour ${n} ligne(s) : identifiant technique AUTO-… attribué (tiré du contenu de la ligne).`);
     }
   }
@@ -277,7 +282,25 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
   }
 
   // GESCOP Phase 5 SSOT: Deduplication
-  const { newRows, duplicateCount, duplicates } = await deduplicateRows(base44, entityName, toCreate);
+  const { newRows, duplicateCount, duplicates, potentialDuplicates } = await deduplicateRows(base44, entityName, toCreate);
+  // Lignes identiques a une autre du fichier, sans identifiant pour prouver
+  // le doublon : conservees (elles sont dans newRows), signalees pour
+  // verification. Les exclure d'office pouvait diviser des ventes par deux.
+  metrics.potential_duplicates = potentialDuplicates.length;
+  for (const { row, premiere } of potentialDuplicates) {
+    const src = sources.get(row) || { brut: row, ligne: null };
+    const ligneDeRef = sources.get(premiere)?.ligne;
+    issues.push({
+      import_id: importId, file_name: fileLabel, entity_type: entityName, row_number: src.ligne,
+      row_status: ROW_STATUS.DUPLICATE_EXACT, reason_code: REASON.DUPLICATE_EXACT,
+      detail: `strictement identique à ${ligneDeRef ? `la ligne ${ligneDeRef}` : "une autre ligne"} du fichier — conservée, vérification requise avant exclusion`,
+      raw_row: json(src.brut), mapped_row: json(row), recovery_status: RECOVERY.NOT_APPLICABLE,
+    });
+  }
+  if (potentialDuplicates.length > 0) {
+    const lignes = potentialDuplicates.slice(0, 5).map(({ row }) => sources.get(row)?.ligne).filter(Boolean).join(", ");
+    messages.push(`Doublon potentiel détecté — ${potentialDuplicates.length} ligne(s) strictement identique(s) à une autre du fichier${lignes ? ` (ligne(s) ${lignes})` : ""}. Conservée(s) pour préserver les données ; vérification requise avant exclusion.`);
+  }
   for (const d of duplicates) {
     metrics.duplicate_rows++;
     noter(ROW_STATUS.DUPLICATE, REASON.DUPLICATE_RECORD, { ...(sources.get(d) || { brut: d, ligne: null }), mapped: d });
@@ -398,6 +421,7 @@ export function champsImport(t: Awaited<ReturnType<typeof traiterLignes>>) {
     fallback_values: m.fallback_values,
     derived_values: m.derived_values,
     anomalous_values: m.anomalous_values,
+    potential_duplicates: m.potential_duplicates,
     reasons: m.reasons,
     ambiguous_fields: m.ambiguous_fields,
     potential_dimensions: m.potential_dimensions,

@@ -58,6 +58,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       units_sold: N, returns: N, damaged: N, closing_stock: N, inventory_value: N,
       days_in_inventory: N, unit_cost: N, selling_price: N,
       stock_status: E("optimal", "rupture", "surstock", "dormant", "faible", "proche_rupture"),
+      import_date: D, reference_date: D, reference_date_type: E("INVENTORY_DATE", "IMPORT_DATE"),
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["product_id"],

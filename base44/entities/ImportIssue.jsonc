@@ -24,7 +24,8 @@
         "SUMMARY_ROW",
         "IGNORED_ROW",
         "UNKNOWN",
-        "ANOMALOUS"
+        "ANOMALOUS",
+        "DUPLICATE_EXACT"
       ]
     },
     "reason_code": {
@@ -41,7 +42,8 @@
         "STORAGE_REJECTED",
         "RATE_LIMITED",
         "TECHNICAL_PARSE_ERROR",
-        "ANOMALOUS_VALUE"
+        "ANOMALOUS_VALUE",
+        "DUPLICATE_EXACT"
       ]
     },
     "field": {

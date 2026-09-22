@@ -2417,10 +2417,25 @@ export function normalizeRow(
     if (r.cac == null && spend && conversions) r.cac = Math.round((spend / conversions) * 100) / 100;
   }
 
-  // Les inventaires instantanés n'ont souvent pas de colonne date explicite.
-  // Assurer une date du jour par défaut évite le rejet en base de données.
-  if (entityName === "Inventory" && !r.date) {
-    r.date = new Date().toISOString().slice(0, 10);
+  // Date d'inventaire (regle du 22 sept 2026) : la date d'import n'est JAMAIS
+  // presentee comme la date reelle de l'inventaire. Sans date dans le fichier,
+  // `date` reste vide ; la date de reception est gardee a part (import_date) et
+  // peut servir de reference technique, explicitement typee (reference_date_type
+  // = IMPORT_DATE) pour l'affichage operationnel. Les calculs qui exigent la
+  // vraie date (evolution, rotation, ventes posterieures a l'inventaire) ne
+  // l'utilisent pas.
+  if (entityName === "Inventory") {
+    const aujourdhui = new Date().toISOString().slice(0, 10);
+    const dateInventaire = r.date ? parseDate(r.date) : null;
+    r.import_date = aujourdhui;
+    if (dateInventaire) {
+      r.reference_date = dateInventaire;
+      r.reference_date_type = "INVENTORY_DATE";
+    } else {
+      r.reference_date = aujourdhui;
+      r.reference_date_type = "IMPORT_DATE";
+      trace?.derives.push({ field: "reference_date", motif: "date d'inventaire absente du fichier" });
+    }
   }
 
   // Pour les employés avec salaire annuel sans taux horaire, dériver le taux horaire.

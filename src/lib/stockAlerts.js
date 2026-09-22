@@ -1,4 +1,4 @@
-import { latestByKey, currentMonthKey } from "@/lib/periods";
+import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
 import { isValidOrderForStock } from "@/lib/transactionClassifier";
 
 export const DEFAULT_STOCK_THRESHOLD = 10;
@@ -66,7 +66,7 @@ const RUPTURE_STATUSES = ["rupture", "proche_rupture"];
  * what this business considers too low.
  */
 export function computeStockAlerts(products, inventory, settings, orders) {
-  const latestInv = latestByKey(inventory || [], "product_id", "date");
+  const latestInv = latestByKey(inventory || [], "product_id", dateReferenceInventaire);
   const invByProduct = {};
   latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
 

@@ -1,4 +1,4 @@
-import { generateFingerprint } from "./fingerprint.ts";
+import { generateFingerprint, empreinteForte } from "./fingerprint.ts";
 
 /**
  * Sur chaque ligne rendue, la ligne recue en entree (propriete non enumerable,
@@ -7,9 +7,25 @@ import { generateFingerprint } from "./fingerprint.ts";
  */
 export const LIGNE_SOURCE = Symbol.for("gescop.ligneSource");
 
+/**
+ * Deduplication, selon une regle metier explicite (decision du 22 sept 2026) :
+ *
+ * - Un doublon n'est EXCLU que s'il est prouve :
+ *     • par un identifiant metier (meme n° de commande + produit, meme code
+ *       client, meme SKU...) — empreinte « forte » ;
+ *     • ou parce que la ligne a deja ete importee (reimport du meme fichier) :
+ *       la k-ieme occurrence d'une ligne n'est un doublon que si la base en
+ *       contient deja au moins k.
+ * - Deux lignes strictement identiques SANS identifiant dans un meme fichier
+ *   (deux ventes de pain a 4,75 $ le meme jour) peuvent etre deux faits reels :
+ *   elles sont CONSERVEES, et la repetition est signalee comme doublon
+ *   potentiel (`potentialDuplicates`) a verifier. Les exclure d'office divisait
+ *   les ventes par deux sans preuve.
+ */
 export async function deduplicateRows(base44: any, entityName: string, rows: any[]) {
-  if (rows.length === 0) return { newRows: [], duplicateCount: 0, conflicts: 0, newCount: 0, duplicates: [] as any[] };
-  
+  const vide = { newRows: [] as any[], duplicateCount: 0, conflicts: 0, newCount: 0, duplicates: [] as any[], potentialDuplicates: [] as { row: any; premiere: any }[] };
+  if (rows.length === 0) return vide;
+
   // 1. Generate fingerprints
   const withFp = rows.map((r) => {
     const copie = { ...r, fingerprint: generateFingerprint(entityName, r) };
@@ -17,20 +33,26 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
     return copie;
   });
 
-  // 2. Fetch all existing fingerprints for deduplication
+  // 2. Ce qui est deja en base : les cles metier (ensemble) et, pour les lignes
+  //    sans cle metier, le NOMBRE d'occurrences de chaque empreinte.
   // To avoid N^2 queries, we bulk fetch existing fingerprints. Base44 list() caps at 500.
-  const existingFingerprints = new Set<string>();
+  const fortes = new Set<string>();
+  const occurrencesEnBase = new Map<string, number>();
   let page = 0;
   while (true) {
     const batch = await base44.entities[entityName].list("-created_date", 500, page * 500);
     if (!batch || batch.length === 0) break;
     batch.forEach((b: any) => {
-      // L'empreinte enregistree ET celle que le code actuel calculerait : une
-      // ligne importee avant un changement de regle d'empreinte doit toujours
-      // etre reconnue au reimport du meme fichier.
-      if (b.fingerprint) existingFingerprints.add(b.fingerprint);
-      const fp = generateFingerprint(entityName, b);
-      if (fp) existingFingerprints.add(fp);
+      const fp = generateFingerprint(entityName, b) || b.fingerprint;
+      if (empreinteForte(entityName, b)) {
+        // L'empreinte enregistree ET celle que le code actuel calculerait : une
+        // ligne importee avant un changement de regle d'empreinte doit toujours
+        // etre reconnue au reimport du meme fichier.
+        if (b.fingerprint) fortes.add(b.fingerprint);
+        if (fp) fortes.add(fp);
+      } else if (fp) {
+        occurrencesEnBase.set(fp, (occurrencesEnBase.get(fp) || 0) + 1);
+      }
     });
     if (batch.length < 500) break;
     page++;
@@ -41,18 +63,32 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
   // Les lignes ecartees elles-memes, pas seulement leur nombre : chacune doit
   // pouvoir etre retrouvee dans le registre de l'import (ImportIssue).
   const duplicates: any[] = [];
-  let duplicateCount = 0;
+  const potentialDuplicates: { row: any; premiere: any }[] = [];
+  const occurrencesFichier = new Map<string, number>();
+  const premiereOccurrence = new Map<string, any>();
 
   for (const r of withFp) {
-    if (existingFingerprints.has(r.fingerprint)) {
-      duplicateCount++;
-      duplicates.push((r as any)[LIGNE_SOURCE]);
+    const source = (r as any)[LIGNE_SOURCE];
+    if (empreinteForte(entityName, r)) {
+      if (fortes.has(r.fingerprint)) {
+        duplicates.push(source);
+      } else {
+        newRows.push(r);
+        fortes.add(r.fingerprint);
+      }
+      continue;
+    }
+    const k = (occurrencesFichier.get(r.fingerprint) || 0) + 1;
+    occurrencesFichier.set(r.fingerprint, k);
+    if (!premiereOccurrence.has(r.fingerprint)) premiereOccurrence.set(r.fingerprint, source);
+    if (k <= (occurrencesEnBase.get(r.fingerprint) || 0)) {
+      // Deja importee : reimport du meme fichier.
+      duplicates.push(source);
     } else {
       newRows.push(r);
-      // Pre-add to prevent duplicates within the SAME import file
-      existingFingerprints.add(r.fingerprint);
+      if (k > 1) potentialDuplicates.push({ row: source, premiere: premiereOccurrence.get(r.fingerprint) });
     }
   }
 
-  return { newRows, duplicateCount, conflicts: 0, newCount: newRows.length, duplicates };
+  return { newRows, duplicateCount: duplicates.length, conflicts: 0, newCount: newRows.length, duplicates, potentialDuplicates };
 }
