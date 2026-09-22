@@ -35,6 +35,11 @@ export const FIELD_ALIASES: Record<string, string> = {
   "marge": "gross_margin", "marge_pct": "gross_margin", "%_marge": "gross_margin",
   "quantite": "quantity", "quantité": "quantity", "quantite_articles": "quantity", "quantite_commandee": "quantity",
   "date_achat": "date", "date_vente": "date", "date_commande": "date", "date_de_commande": "date", "date de commande": "date",
+  // Horodatages d'exports de caisse / ERP : la partie heure est ignoree par parseDate.
+  "date_heure": "date", "date_et_heure": "date", "date_time": "date", "datetime": "date",
+  "horodatage": "date", "timestamp": "date", "date_de_vente": "date",
+  // Mouvements de stock (Inventory.returns / damaged).
+  "retours": "returns", "pertes": "damaged", "casse": "damaged", "unites_perdues": "damaged",
   "client_id": "customer_id", "produit_id": "product_id",
   "fournisseur_id": "supplier_id", "fournisseur_nom": "supplier_name",
   "employe_id": "employee_id", "employé_id": "employee_id",
@@ -1476,6 +1481,21 @@ export function normalizeKeys(
         out["fulfillment_status"] = v;
         continue;
       }
+      // Un nom complet (« Nom », « Nom Complet ») sur une entite qui stocke
+      // prenom et nom separement : on le garde sous `name`, que normalizeRow
+      // repartit ensuite en first_name / last_name. Le jeter ici rendait cette
+      // repartition impossible — les clients s'importaient sans nom.
+      if (["name", "full_name", "customer_name", "nom_complet"].includes(alias) && schemaFields.includes("first_name") && !schemaFields.includes(alias) && out["name"] === undefined) {
+        out["name"] = v;
+        continue;
+      }
+      // « Qté en stock » se resout en inventory_level (champ de Product) : sur
+      // Inventory, la meme quantite s'appelle closing_stock. Sans ce repli, la
+      // colonne de stock d'une feuille d'inventaire etait ignoree.
+      if (["inventory_level", "inventory_quantity"].includes(alias) && schemaFields.includes("closing_stock") && !schemaFields.includes(alias) && out["closing_stock"] === undefined) {
+        out["closing_stock"] = v;
+        continue;
+      }
       if (alias === "amount" && schemaFields.includes("total") && !schemaFields.includes("amount")) {
         out["total"] = v;
         continue;
@@ -1568,6 +1588,11 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   // qu'un client entier mis en quarantaine pour un mot absent du dictionnaire.
   "occasionnel": ["regulier"], "occasionnels": ["regulier"], "ponctuel": ["regulier"], "irregulier": ["regulier"],
   "service client": ["service_client"], "service clientele": ["service_client"], "service a la clientele": ["service_client"], "customer service": ["service_client"], "support": ["service_client"], "operations": ["logistique", "atelier"],
+  // Departements courants absents de l'enum Employee.department : traduits
+  // sur la VALEUR du departement, jamais devines a partir du role.
+  "comptabilite": ["administration"], "finance": ["administration"], "finances": ["administration"],
+  "ressources humaines": ["administration"], "ressources_humaines": ["administration"],
+  "entrepot": ["logistique"], "expedition": ["logistique"], "sales": ["ventes"],
 
   // Sentiment & Impact
   "positive": ["positif"], "neutral": ["neutre"], "negative": ["negatif"], "very negative": ["tres_negatif"],
@@ -1619,6 +1644,23 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
 
 // Coerce a value to match an enum (case-insensitive, accents, spaces/hyphens, English→French)
 export function coerceEnum(value: any, enumOptions: string[]): any {
+  return coerceEnumDetail(value, enumOptions).value;
+}
+
+/**
+ * coerceEnum, en disant si la valeur a ete reellement reconnue ou seulement
+ * repliee sur « autre » faute de correspondance. Le repli garde la ligne, mais
+ * la valeur d'origine n'est plus lisible dans le champ : l'import doit le
+ * signaler plutot que de presenter « autre » comme ce que disait le fichier.
+ */
+export function coerceEnumDetail(value: any, enumOptions: string[]): { value: any; repli: boolean } {
+  const reconnu = coerceEnumBrut(value, enumOptions, false);
+  if (reconnu !== null || !value || !enumOptions) return { value: reconnu ?? value, repli: false };
+  const resultat = coerceEnumBrut(value, enumOptions, true);
+  return { value: resultat, repli: resultat === "autre" };
+}
+
+function coerceEnumBrut(value: any, enumOptions: string[], replierSurAutre: boolean): any {
   if (!value || !enumOptions) return value;
   const raw = String(value).toLowerCase().trim();
   const normalized = raw.replace(/[\s-]/g, "_");
@@ -1649,10 +1691,13 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
   }
   // Si la valeur spécifique est inconnue mais que l'entité prévoit "autre",
   // replier sur "autre" au lieu de rejeter la ligne de données.
-  if (enumOptions.includes("autre")) {
+  if (replierSurAutre && enumOptions.includes("autre")) {
     return "autre";
   }
-  return value;
+  // Aucune correspondance trouvée : on retourne null plutôt que la valeur brute
+  // (ex: valeurs numériques 0 ou 14.99 dans un champ fulfillment_status) pour
+  // éviter que le backend rejette toute la ligne avec une erreur de validation.
+  return null;
 }
 
 /**
@@ -1669,6 +1714,20 @@ export function isSummaryOrTotalRow(rowOrArray: any): boolean {
     "total general", "total global", "grand total", "somme", "sum", "moyenne",
     "average", "recapitulatif", "synthese", "totales", "totale"
   ];
+  // Libelles sans autre sens possible : seuls en premiere valeur, ils suffisent,
+  // meme quand toutes les colonnes de la ligne sont remplies (ligne TOTAL d'un
+  // tableau de synthese). « Moyenne » ou « Somme » peuvent etre de vraies
+  // valeurs (une taille, un libelle) : pour eux, et pour les formes composees
+  // (« Total Laval »), il faut en plus des cellules laissees vides.
+  const LIBELLES_SURS = new Set([
+    "total", "totaux", "totales", "totale", "sous-total", "sous total", "subtotal", "sub-total",
+    "total general", "total global", "grand total", "recapitulatif",
+  ]);
+  const estTotal = (premiere: string, vides: number, nb: number) => {
+    if (LIBELLES_SURS.has(premiere)) return true;
+    const candidat = SUMMARY_KEYWORDS.some((kw) => premiere === kw || premiere.startsWith(kw + " ") || premiere.endsWith(" " + kw));
+    return candidat && vides >= Math.max(1, Math.floor(nb * 0.2));
+  };
 
   // Cas 1 : Matrice brute (tableau de cellules)
   if (Array.isArray(rowOrArray)) {
@@ -1676,14 +1735,8 @@ export function isSummaryOrTotalRow(rowOrArray: any): boolean {
     if (nonEmpties.length === 0) return false;
 
     const firstVal = stripAccents(String(nonEmpties[0]).toLowerCase().trim());
-    if (SUMMARY_KEYWORDS.some((kw) => firstVal === kw || firstVal.startsWith(kw + " ") || firstVal.endsWith(" " + kw))) {
-      // Une ligne de total contient très souvent des cellules vides là où se trouvent les libellés détaillés
-      const emptyCount = rowOrArray.length - nonEmpties.length;
-      if (emptyCount >= Math.max(1, Math.floor(rowOrArray.length * 0.2))) {
-        return true;
-      }
-    }
-    return false;
+    // Une ligne de total contient très souvent des cellules vides là où se trouvent les libellés détaillés
+    return estTotal(firstVal, rowOrArray.length - nonEmpties.length, rowOrArray.length);
   }
 
   // Cas 2 : Objet mappé
@@ -1699,18 +1752,17 @@ export function isSummaryOrTotalRow(rowOrArray: any): boolean {
       }
     }
 
-    // 2. Vérifier si un champ textuel vaut "TOTAL" / "Sous-total" alors que date ou nom est vide
-    const hasTotalWord = Object.values(rowOrArray).some((v) => {
-      if (typeof v !== "string") return false;
-      const s = stripAccents(v.toLowerCase().trim());
-      return SUMMARY_KEYWORDS.includes(s);
-    });
-
-    if (hasTotalWord) {
-      if (!rowOrArray.date || String(rowOrArray.date).trim() === "" ||
-          !rowOrArray.customer_id || String(rowOrArray.customer_id).trim() === "") {
-        return true;
-      }
+    // 2. Le libelle de total doit etre la PREMIERE valeur renseignee de la
+    //    ligne (la ou un tableur l'ecrit), avec des cellules laissees vides a
+    //    cote. Avant, n'importe quelle cellule valant « Moyenne » ou « Total »
+    //    suffisait des que la date OU le client manquait : une vente de taille
+    //    « Moyenne », dans un fichier sans colonne client, disparaissait sans
+    //    trace comme ligne de total.
+    const valeurs = Object.values(rowOrArray);
+    const renseignees = valeurs.filter((v) => String(v ?? "").trim() !== "");
+    if (renseignees.length > 0 && typeof renseignees[0] === "string") {
+      const premiere = stripAccents(renseignees[0].toLowerCase().trim());
+      if (estTotal(premiere, valeurs.length - renseignees.length, valeurs.length)) return true;
     }
   }
 
@@ -1928,6 +1980,46 @@ export function coerceType(value: any, prop: any): any {
 /** A value that was present in the file but refused by the schema. */
 export type EnumIssue = { field: string; value: string; allowed: string[] };
 
+/**
+ * Ce que la normalisation a interprete au lieu de le lire tel quel.
+ *
+ * Une valeur rangee sous « autre » ou un identifiant technique attribue ne sont
+ * pas des erreurs, mais ce ne sont plus les donnees du fichier : l'import doit
+ * pouvoir le dire au lieu de le faire en silence (directives §6, §22).
+ */
+export type TraceNormalisation = {
+  /** Valeur d'enum inconnue repliee sur « autre ». */
+  replis: { field: string; value: string }[];
+  /** Champ obligatoire absent, complete par un identifiant technique. */
+  derives: { field: string; motif: string }[];
+};
+
+/**
+ * Cle portee par une ligne issue d'appliquerPlan : la ligne telle qu'elle est
+ * dans le fichier, TOUTES colonnes comprises. Un Symbol, pour que ni
+ * Object.entries (mapping) ni JSON.stringify ne la voient ; seul
+ * normalizeRow la lit, pour construire original_data. Sans elle, une colonne
+ * que le plan jugeait sans correspondance disparaissait avant l'ecriture de
+ * original_data, qui promettait pourtant de la conserver.
+ */
+export const LIGNE_BRUTE = Symbol.for("gescop.ligneBrute");
+/** Numero (base 1) de la ligne dans le fichier, porte comme LIGNE_BRUTE. */
+export const NUMERO_LIGNE = Symbol.for("gescop.numeroLigne");
+
+function brutDe(row: Record<string | symbol, any>): Record<string, any> {
+  return (row && (row as any)[LIGNE_BRUTE]) || row;
+}
+
+/** Empreinte courte et stable (FNV-1a) : meme ligne brute, meme identifiant. */
+function empreinteCourte(texte: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < texte.length; i++) {
+    h ^= texte.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36).toUpperCase();
+}
+
 // Entités où un identifiant/nom individuel est exigé par le schéma mais où
 // de nombreux exports réels n'en fournissent aucun (rollup mensuel par
 // canal, par exemple) : plutôt que rejeter 100% des lignes pour une colonne
@@ -1966,7 +2058,42 @@ export function buildCompanyDictionaryIndex(raw: Record<string, string> | null |
 // de ce fichier — les y laisser empechait de les tester sous le test runner
 // Node du repo (npm:xlsx@0.18.5 n'est resolvable que sous Deno). sheetDetect.ts
 // les re-exporte pour ne rien casser chez les appelants existants.
-const HEADER_SIGNATURES: { entity: string; must: string[] }[] = [
+export const NAME_ENTITY_MAP = [
+  { pattern: /campaign.*(daily|jour)|marketing.*(daily|jour)|(daily|jour).*campaign|campagne.*(jour|quotidien)/i, entity: "CampaignDaily" },
+  { pattern: /interaction|service.?client|support|ticket/i, entity: "Interaction" },
+  { pattern: /transaction|ecriture|grand.?livre|releve|bancaire/i, entity: "Transaction" },
+  { pattern: /inventaire|inventory|stock/i, entity: "Inventory" },
+  { pattern: /order|commande|vente|sale/i, entity: "Order" },
+  { pattern: /customer|client|acheteur/i, entity: "Customer" },
+  { pattern: /product|produit|article|catalogue|sku/i, entity: "Product" },
+  { pattern: /supplier|fournisseur|vendor/i, entity: "Supplier" },
+  { pattern: /purchase|achat|approvisionnement/i, entity: "Purchase" },
+  { pattern: /campaign|campagne|publicite|ads|marketing/i, entity: "Campaign" },
+  { pattern: /employee|employe|personnel|effectif|staff|rh/i, entity: "Employee" },
+  { pattern: /payroll|paie|paye|salaire|remuneration/i, entity: "Payroll" },
+  { pattern: /expense|depense|charge|frais|cout/i, entity: "Expense" },
+  { pattern: /cashflow|cash.?flow|tresorerie|caisse|liquidite|flux/i, entity: "Cashflow" },
+  { pattern: /competitor|concurrent|concurrence/i, entity: "Competitor" },
+  { pattern: /signal|radar|veille|actualite/i, entity: "ExternalSignal" },
+  { pattern: /goal|objectif|cible|target/i, entity: "Goal" },
+  { pattern: /event|evenement|journal/i, entity: "Event" },
+];
+
+export function detectEntityByName(name: string): string | null {
+  const lower = stripAccents((name || "").toLowerCase());
+  for (const m of NAME_ENTITY_MAP) {
+    if (m.pattern.test(lower)) return m.entity;
+  }
+  return null;
+}
+
+/** Toutes les entites que le nom evoque, pas seulement la premiere. */
+export function entitesEvoqueesParNom(name: string): string[] {
+  const lower = stripAccents((name || "").toLowerCase());
+  return Array.from(new Set(NAME_ENTITY_MAP.filter((m) => m.pattern.test(lower)).map((m) => m.entity)));
+}
+
+export const HEADER_SIGNATURES: { entity: string; must: string[] }[] = [
   { entity: "CampaignDaily", must: ["campaign_id", "date"] },
   { entity: "Campaign", must: ["campaign_id"] },
   { entity: "Inventory", must: ["product_id", "closing_stock"] },
@@ -2003,6 +2130,11 @@ const HEADER_ALIASES: Record<string, string> = {
   "encaissements": "cash_in", "decaissements": "cash_out",
   "entrees": "cash_in", "sorties": "cash_out",
 };
+
+/** Le champ qu'un intitule de colonne designe pour la detection d'entite (ou l'intitule normalise). */
+export function champDEntete(h: string, companyDictionary?: Record<string, string>): string {
+  return normalizeHeader(h, companyDictionary);
+}
 
 function normalizeHeader(h: string, companyDictionary?: Record<string, string>): string {
   const raw = String(h || "").toLowerCase().trim();
@@ -2169,8 +2301,10 @@ export function normalizeRow(
   enumIssues?: EnumIssue[],
   unmapped?: Set<string>,
   companyDictionary?: Record<string, string>,
+  trace?: TraceNormalisation,
 ): Record<string, any> {
   const schemaProps = properties || ENTITY_SCHEMAS[entityName]?.properties || null;
+  const originalData = JSON.stringify(brutDe(row));
 
   if (isSummaryOrTotalRow(row)) return {};
   const r = normalizeKeys(row, schemaProps, unmapped, companyDictionary);
@@ -2190,9 +2324,18 @@ export function normalizeRow(
   // A single "name"/"nom" column on an entity that stores first + last name would
   // otherwise be dropped entirely, leaving nameless records.
   if (schemaProps?.first_name && r.name && !r.first_name) {
-    const parts = String(r.name).trim().split(/\s+/);
-    r.first_name = parts[0];
-    if (parts.length > 1) r.last_name = parts.slice(1).join(" ");
+    const complet = String(r.name).trim();
+    if (complet.includes(",")) {
+      // « Leblanc, Julie » : la forme « Nom, Prénom » des exports CRM. La
+      // couper aux espaces donnait le prenom « Leblanc, » et le nom « Julie ».
+      const [nom, ...reste] = complet.split(",");
+      r.last_name = nom.trim();
+      if (reste.join(",").trim()) r.first_name = reste.join(",").trim();
+    } else {
+      const parts = complet.split(/\s+/);
+      r.first_name = parts[0];
+      if (parts.length > 1) r.last_name = parts.slice(1).join(" ");
+    }
     delete r.name;
   }
 
@@ -2251,7 +2394,7 @@ export function normalizeRow(
       client: r.client || r.customer_id || "",
       product: r.product || r.product_id || "",
       import_id: importId,
-      original_data: JSON.stringify(row)
+      original_data: originalData,
     };
   }
 
@@ -2293,22 +2436,30 @@ export function normalizeRow(
   if (entityName === "Order") {
     if (!r.order_id) {
       r.order_id = r.transaction_id || r.id_transaction || r.num_cde || r.no_cde || r.num_commande || r.numero_commande || r.order_number || r.cde_no || r.cde_id || r.ref_commande || r.code_commande || r.id;
-      if (!r.order_id && (r.location_id || r.succursale || r.store || r.location)) {
-        const loc = String(r.location_id || r.succursale || r.store || r.location).trim();
-        r.order_id = `ORD-${stripAccents(loc).toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
+      // Aucun numero dans le fichier : identifiant technique tire du contenu
+      // brut de la ligne. L'ancien repli "ORD-<succursale>" donnait le meme
+      // numero a toutes les ventes d'une succursale, et la deduplication n'en
+      // gardait qu'une : les autres disparaissaient comme "doublons". Derive
+      // du contenu, l'identifiant est distinct par ligne et stable d'un
+      // reimport a l'autre (la deduplication entre imports reste correcte).
+      if (!r.order_id) {
+        r.order_id = `AUTO-${empreinteCourte(originalData)}`;
+        trace?.derives.push({ field: "order_id", motif: "aucun numero de commande dans le fichier" });
       }
     }
-    if (!r.date) {
-      r.date = new Date().toISOString().slice(0, 10);
-    }
-    const qty = parseNumber(r.quantity) || 1;
+    // Pas de date inventee : une vente datee du jour de l'import tombait dans
+    // le mois en cours et faussait chaque periode. Sans date, la ligne part en
+    // quarantaine (date est obligatoire) et le rapport le dit.
+    // Pas de quantite inventee non plus : sans quantite lue, le total ne se
+    // deduit pas (l'ancien repli « quantite = 1 » fabriquait un chiffre d'affaires).
+    const qty = parseNumber(r.quantity);
     const price = parseNumber(r.unit_price) || 0;
     const cost = parseNumber(r.unit_cost) || 0;
     if (r.total_revenue == null || r.total_revenue === "") {
-      if (price > 0) r.total_revenue = Math.round(qty * price * 100) / 100;
+      if (qty !== null && price > 0) r.total_revenue = Math.round(qty * price * 100) / 100;
     }
     if (r.total_cost == null || r.total_cost === "") {
-      if (cost > 0) r.total_cost = Math.round(qty * cost * 100) / 100;
+      if (qty !== null && cost > 0) r.total_cost = Math.round(qty * cost * 100) / 100;
     }
     if (r.gross_profit == null || r.gross_profit === "") {
       const totRev = parseNumber(r.total_revenue);
@@ -2324,6 +2475,13 @@ export function normalizeRow(
 
   // --- EXECUTIVE SUMMARY RESCUE HOOKS ---
   if (entityName === "ExecutiveSummary") {
+    // Une synthese sans aucun chiffre n'est pas une synthese : un tableau de
+    // bord dont les formules n'ont pas de valeur enregistree ne livre que les
+    // noms de succursales. En creer des enregistrements (avec un summary_id
+    // fabrique) remplissait les rapports de lignes vides ; la ligne reste
+    // conservee brute dans le registre de l'import.
+    const mesures = Object.entries(schemaProps || {}).filter(([, p]: any) => p?.type === "number").map(([k]) => k);
+    if (mesures.length > 0 && !mesures.some((k) => parseNumber(r[k]) !== null)) return {};
     if (!r.location_id) {
       r.location_id = r.succursale || r.store || r.location || r.ville || r.site || r.id;
     }
@@ -2341,31 +2499,11 @@ export function normalizeRow(
     }
   }
 
-  // --- EMPLOYEE RESCUE HOOKS ---
-  if (entityName === "Employee") {
-    const deptRaw = String(r.department || "").trim();
-    const allowedDepts = ["direction", "ventes", "marketing", "logistique", "administration", "service_client", "atelier"];
-    const deptNorm = stripAccents(deptRaw.toLowerCase());
-    if (deptRaw && !allowedDepts.includes(deptNorm)) {
-      if (!r.location) r.location = deptRaw;
-      const roleStr = stripAccents(String(r.role || "").toLowerCase());
-      if (roleStr.includes("vente") || roleStr.includes("rep") || roleStr.includes("vendeur") || roleStr.includes("gerant") || roleStr.includes("magasin")) {
-        r.department = "ventes";
-      } else if (roleStr.includes("commerce") || roleStr.includes("web") || roleStr.includes("marketing")) {
-        r.department = "marketing";
-      } else if (roleStr.includes("logistique") || roleStr.includes("entrepot") || roleStr.includes("stock") || roleStr.includes("livr")) {
-        r.department = "logistique";
-      } else if (roleStr.includes("direct") || roleStr.includes("dg") || roleStr.includes("admin")) {
-        r.department = "direction";
-      } else if (roleStr.includes("client") || roleStr.includes("support")) {
-        r.department = "service_client";
-      } else if (roleStr.includes("atelier") || roleStr.includes("technicien")) {
-        r.department = "atelier";
-      } else {
-        r.department = "autre";
-      }
-    }
-  }
+  // Employee.department n'est plus devine a partir du role, et la valeur du
+  // fichier n'est plus deplacee dans `location` : « Comptabilite » +
+  // « Directrice financiere » devenait « direction » (sous-chaine "direct"),
+  // et « Comptabilite » un lieu de travail. Le departement passe par
+  // coerceEnum comme tout enum (traductions, puis « autre » signale).
 
   // --- PRODUCT RESCUE HOOKS ---
   if (entityName === "Product") {
@@ -2393,7 +2531,12 @@ export function normalizeRow(
     if (prop) {
       // Field is in schema: validate enum, coerce type
       if (prop.enum) {
-        const coerced = coerceEnum(v, prop.enum);
+        // Sur la valeur du fichier (r), pas sur withEnums ou le repli sur
+        // « autre » a deja eu lieu et ne se distingue plus d'une vraie lecture.
+        const source = r[k] ?? v;
+        const detail = coerceEnumDetail(source, prop.enum);
+        const coerced = detail.value;
+        if (detail.repli && trace) trace.replis.push({ field: k, value: String(source) });
         if (!prop.enum.includes(coerced)) {
           if (prop.enum.includes("autre")) {
             cleaned[k] = "autre";
@@ -2415,6 +2558,6 @@ export function normalizeRow(
     // else: field not in schema, skip
   }
   if (importId) cleaned["import_id"] = importId;
-  if (schemaProps && schemaProps.original_data) cleaned["original_data"] = JSON.stringify(row);
+  if (schemaProps && schemaProps.original_data) cleaned["original_data"] = originalData;
   return cleaned;
 }

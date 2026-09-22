@@ -13,6 +13,7 @@ import {
   Trash2,
   Download,
   ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCompany } from "@/hooks/useCompany";
@@ -45,6 +46,36 @@ const ENTITY_OPTIONS = [
   { value: "Event", label: "Événements" },
   { value: "ExternalSignal", label: "Signaux externes (radar)" },
 ];
+
+/**
+ * Ou sont passees les lignes d'un import (directive §20) : chaque ligne du
+ * fichier est dans exactement une de ces cases, rien n'est « perdu ».
+ */
+function RepartitionLignes({ m, compact = false }) {
+  const parts = [
+    ["valides", m.valid_rows],
+    ["en quarantaine", m.quarantined_rows],
+    ["doublons", m.duplicate_rows],
+    ["totaux exclus", m.summary_rows],
+    ["ignorées", m.ignored_rows],
+    ["conservées brutes", m.unknown_rows],
+    ["récupérées", m.recovered_rows],
+  ].filter(([, n]) => Number(n) > 0);
+  const extras = [];
+  if (m.unknown_fields?.length) extras.push(`${m.unknown_fields.length} colonne(s) non reconnue(s)`);
+  if (m.fallback_values) extras.push(`${m.fallback_values} valeur(s) rangée(s) sous « autre »`);
+  if (m.derived_values) extras.push(`${m.derived_values} identifiant(s) technique(s)`);
+  if (m.anomalous_values) extras.push(`${m.anomalous_values} valeur(s) inhabituelle(s) à vérifier`);
+  if (m.ambiguous_fields?.length) extras.push(`${m.ambiguous_fields.length} colonne(s) ambiguë(s)`);
+  if (m.potential_dimensions?.length) extras.push(`axes d'analyse possibles : ${m.potential_dimensions.slice(0, 3).join(", ")}`);
+  if (parts.length === 0 && extras.length === 0) return null;
+  const texte = [
+    m.total_rows != null && !compact ? `${m.total_rows} lignes` : null,
+    parts.map(([l, n]) => `${n} ${l}`).join(" · "),
+    compact ? null : extras.join(" · "),
+  ].filter(Boolean).join(" — ");
+  return <span className={`block text-xs font-normal ${compact ? "text-muted-foreground" : "text-slate-600"}`}>{texte}</span>;
+}
 
 export default function ImportPage() {
   const { toast } = useToast();
@@ -117,10 +148,69 @@ export default function ImportPage() {
     }
   };
 
+  /**
+   * Les corrections faites sur l'ecran de lecture sont apprises : chaque
+   * colonne rattachee a la main rejoint le dictionnaire de l'entreprise, qui
+   * est consulte en priorite a chaque import et au retraitement. C'est ce que
+   * Parametres > Dictionnaire promettait sans que rien ne l'ecrive.
+   */
+  const apprendreCorrections = async (plans) => {
+    const appris = {};
+    for (const plan of Object.values(plans || {})) {
+      for (const c of plan?.colonnes || []) {
+        if (c.source === "humain" && c.champ) appris[c.colonne] = c.champ;
+      }
+    }
+    if (Object.keys(appris).length === 0) return 0;
+    const companies = await base44.entities.Company.list();
+    const company = companies?.[0];
+    if (!company) return 0;
+    const actuel = company.company_dictionary && !Array.isArray(company.company_dictionary) ? company.company_dictionary : {};
+    const nouveaux = Object.fromEntries(Object.entries(appris).filter(([k, v]) => actuel[k] !== v));
+    if (Object.keys(nouveaux).length === 0) return 0;
+    await base44.entities.Company.update(company.id, { company_dictionary: { ...actuel, ...nouveaux } });
+    return Object.keys(nouveaux).length;
+  };
+
+  /**
+   * Retraitement sans reimport : les lignes conservees au registre sont relues
+   * avec ce que l'application sait maintenant. D'abord une simulation (rien
+   * n'est ecrit), puis confirmation.
+   */
+  const handleRetraiter = async (imp, typeChoisi) => {
+    try {
+      const corps = { import_id: imp.id, entity_type: typeChoisi || undefined };
+      const sim = await base44.functions.invoke("reprocessImport", { ...corps, mode: "simuler" });
+      const simu = sim.data || sim;
+      if (simu.error) { toast({ title: simu.error, variant: "destructive" }); return; }
+      const r = simu.results?.[0] || {};
+      if (r.statut === "type_requis") { toast({ title: r.message }); return; }
+      if (!simu.recovered) {
+        toast({
+          title: "Aucune ligne récupérable pour l'instant",
+          description: `${r.candidates || 0} ligne(s) en attente restent conservées. Complétez le dictionnaire ou choisissez un autre type, puis réessayez.`,
+        });
+        return;
+      }
+      if (!window.confirm(`${simu.recovered} ligne(s) sur ${r.candidates} peuvent être intégrées maintenant${typeChoisi ? ` en tant que ${typeChoisi}` : ""}. Les intégrer ?`)) return;
+      const res = await base44.functions.invoke("reprocessImport", corps);
+      const data = res.data || res;
+      if (data.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      toast({ title: `${data.recovered} ligne(s) récupérée(s) sans réimport` });
+      qc.invalidateQueries();
+    } catch (e) {
+      toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
+    }
+  };
+
   /** Deuxieme temps : l'utilisateur a valide la lecture, on ecrit. */
   const lancerImport = async (plans) => {
     setProcessing(true);
     try {
+      // Les termes appris servent des cet import, et peuvent debloquer des
+      // lignes en attente dans les imports precedents.
+      let appris = 0;
+      try { appris = await apprendreCorrections(plans); } catch { /* l'apprentissage ne bloque jamais l'import */ }
       const res = await base44.functions.invoke("importMultiData", {
         files: fichiersEnvoyes,
         entity_override: manualEntity || null,
@@ -135,9 +225,18 @@ export default function ImportPage() {
       setImportResult(data);
       const totalRows = (data.results || []).reduce((s, r) => s + (r.rows || 0), 0);
       const okCount = (data.results || []).filter((r) => r.status === "complete").length;
+      let recuperees = 0;
+      if (appris > 0) {
+        try {
+          const rep = await base44.functions.invoke("reprocessImport", { tous: true });
+          recuperees = (rep.data || rep).recovered || 0;
+        } catch { /* le retraitement reste disponible depuis l'historique */ }
+      }
       toast({
         title: "Import terminé",
-        description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`,
+        description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`
+          + (appris > 0 ? ` · ${appris} correction(s) apprise(s) dans le dictionnaire` : "")
+          + (recuperees > 0 ? ` · ${recuperees} ligne(s) d'imports précédents récupérée(s)` : ""),
       });
       qc.invalidateQueries();
     } catch (e) {
@@ -168,6 +267,20 @@ export default function ImportPage() {
    */
   const handleDelete = async (imp) => {
     const entityName = imp.entity_type;
+    // Import d'une feuille au type non reconnu : aucune donnee metier, seulement
+    // ses lignes brutes dans le registre. Rien ne peut rester orphelin.
+    if (!entityName && imp.status === "quarantaine") {
+      if (!window.confirm(`Supprimer cet import effacera aussi ses ${imp.rows_quarantined || 0} ligne(s) conservée(s) telles quelles. Continuer ?`)) return;
+      try {
+        await base44.entities.ImportIssue.deleteMany({ import_id: imp.id });
+        await base44.entities.Import.delete(imp.id);
+        qc.invalidateQueries();
+        toast({ title: "Import supprimé · lignes conservées effacées" });
+      } catch (e) {
+        toast({ title: "Erreur: " + e.message, variant: "destructive" });
+      }
+      return;
+    }
     if (!entityName || !base44.entities[entityName]) {
       toast({
         title: "Suppression impossible",
@@ -206,6 +319,8 @@ export default function ImportPage() {
         return;
       }
 
+      // Le registre des lignes ecartees de cet import n'a plus de sens sans lui.
+      await base44.entities.ImportIssue.deleteMany({ import_id: imp.id });
       await base44.entities.Import.delete(imp.id);
       // Les alertes/notifications produites par l'analyse pointaient sur ces
       // lignes : sans ce nettoyage, la cloche continuait d'afficher des alertes
@@ -250,6 +365,7 @@ export default function ImportPage() {
       await base44.entities.ExternalSignal.deleteMany({});
       await base44.entities.Report.deleteMany({});
       await base44.entities.AnalysisRun.deleteMany({});
+      await base44.entities.ImportIssue.deleteMany({});
       await base44.entities.Import.deleteMany({});
       if (company) {
         await base44.entities.Company.update(company.id, { health_score: 0, dimension_scores: {}, last_analysis_date: null });
@@ -377,6 +493,7 @@ export default function ImportPage() {
                   <tr key={i}>
                     <td className="max-w-[200px] px-4 py-2 font-medium">
                       <span className="block truncate" title={r.file_name}>{r.file_name}</span>
+                      {r.metrics && <RepartitionLignes m={r.metrics} />}
                       {(r.message || r.error) && (
                         <span className="mt-0.5 block text-xs font-normal text-amber-700">{r.message || r.error}</span>
                       )}
@@ -391,7 +508,7 @@ export default function ImportPage() {
                       {r.quarantined > 0 && <span className="ml-1 text-xs text-amber-700">+{r.quarantined} rejetées</span>}
                     </td>
                     <td className="px-4 py-2">
-                      <span className={r.status === "complete" ? "text-emerald-600" : r.status === "ignore" ? "text-muted-foreground" : "text-red-600"}>
+                      <span className={r.status === "complete" ? "text-emerald-600" : r.status === "ignore" ? "text-muted-foreground" : r.status === "quarantaine" ? "text-amber-600" : "text-red-600"}>
                         {r.status}
                       </span>
                     </td>
@@ -454,7 +571,11 @@ export default function ImportPage() {
                     <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={imp.file_name}>{imp.file_name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{imp.entity_type || "—"}</td>
                     <td className="px-4 py-3 uppercase text-muted-foreground">{imp.source_type}</td>
-                    <td className="px-4 py-3">{imp.rows_processed || 0}</td>
+                    <td className="px-4 py-3">
+                      {imp.rows_processed || 0}
+                      {imp.total_rows != null && <span className="text-muted-foreground"> / {imp.total_rows}</span>}
+                      {imp.total_rows != null && <RepartitionLignes m={{ ...imp, valid_rows: imp.rows_processed, quarantined_rows: imp.rows_quarantined }} compact />}
+                    </td>
                     <td className="px-4 py-3">
                       {imp.quality_score != null ? `${imp.quality_score}%` : "—"}
                     </td>
@@ -471,6 +592,26 @@ export default function ImportPage() {
                       {new Date(imp.created_date).toLocaleDateString("fr-CA")}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {Number(imp.rows_quarantined || 0) > 0 && (
+                        imp.entity_type ? (
+                          <button
+                            onClick={() => handleRetraiter(imp)}
+                            title="Relire les lignes en attente avec ce que l'application sait maintenant (sans réimporter)"
+                            className="mr-1 inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-sky-50 hover:text-sky-700"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" /> Retraiter
+                          </button>
+                        ) : (
+                          <Select onValueChange={(val) => handleRetraiter(imp, val)}>
+                            <SelectTrigger className="mr-1 inline-flex h-8 w-44 text-xs" title="Choisir le type de ces lignes conservées pour les intégrer">
+                              <SelectValue placeholder="Intégrer comme…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ENTITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        )
+                      )}
                       <button onClick={() => handleDelete(imp)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
                       </button>

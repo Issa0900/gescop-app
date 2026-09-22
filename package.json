@@ -10,7 +10,9 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
-    "deploy": "npx base44 build && npx base44 deploy --yes"
+    "deploy": "npx base44 build && npx base44 deploy --yes",
+    "test": "node --import ./tests/register-npm.mjs --test tests/*.test.js",
+    "test:banc": "node tests/banc/lancer.cjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",

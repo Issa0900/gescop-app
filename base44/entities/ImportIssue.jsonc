@@ -1,0 +1,100 @@
+{
+  "name": "ImportIssue",
+  "type": "object",
+  "description": "Registre des lignes d'un import qui ne sont pas entrees dans les donnees (quarantaine, doublon, total, feuille non reconnue), avec leur contenu brut et un motif precis. Permet de retraiter sans reimporter.",
+  "properties": {
+    "import_id": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "row_number": {
+      "type": "number",
+      "description": "Numero de ligne dans le fichier (1 = premiere ligne)."
+    },
+    "row_status": {
+      "type": "string",
+      "enum": [
+        "QUARANTINED",
+        "DUPLICATE",
+        "SUMMARY_ROW",
+        "IGNORED_ROW",
+        "UNKNOWN",
+        "ANOMALOUS"
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "MISSING_REQUIRED_FIELD",
+        "INVALID_DATE",
+        "INVALID_NUMERIC_VALUE",
+        "INVALID_ENUM_VALUE",
+        "DUPLICATE_RECORD",
+        "SUMMARY_ROW",
+        "IGNORED_BY_PLAN",
+        "UNKNOWN_CONCEPT",
+        "STORAGE_REJECTED",
+        "RATE_LIMITED",
+        "TECHNICAL_PARSE_ERROR",
+        "ANOMALOUS_VALUE"
+      ]
+    },
+    "field": {
+      "type": "string",
+      "description": "Champ en cause, s il y en a un."
+    },
+    "raw_value": {
+      "type": "string",
+      "description": "Valeur du fichier refusee pour ce champ."
+    },
+    "detail": {
+      "type": "string"
+    },
+    "raw_row": {
+      "type": "string",
+      "description": "Ligne du fichier telle quelle (JSON)."
+    },
+    "mapped_row": {
+      "type": "string",
+      "description": "Ligne apres rattachement et normalisation (JSON)."
+    },
+    "recovery_status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "RECOVERED",
+        "CONFIRMED_INVALID",
+        "NOT_APPLICABLE"
+      ],
+      "default": "PENDING"
+    },
+    "recovered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recovered_record_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "import_id",
+    "row_status",
+    "reason_code"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

@@ -141,11 +141,10 @@ function analyzeColumnName(columnName: string): { matches: { key: string, type: 
   // Sort by score
   matches.sort((a, b) => b.score - a.score);
   
-  // Boost score to ensure it passes the 0.40 threshold even with missing context
-  if (matches[0] && matches[0].key !== 'unknown') {
-    matches[0].score = Math.max(matches[0].score, 0.9);
-  }
-
+  // Le score d'un nom reste celui que le nom justifie : il etait releve a 0.9
+  // pour « passer le seuil », ce qui faisait passer un indice faible pour une
+  // preuve forte (directive §5). La validation par les valeurs se fait ensuite
+  // dans preuves.ts.
   return { matches, justifications };
 }
 

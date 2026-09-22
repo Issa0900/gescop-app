@@ -7,15 +7,16 @@
 // correctement (retourne null) mais n'est appele nulle part en production
 // (seules ses metadonnees sont lues par KpiManagementPanel.jsx) : la
 // reference de comportement correct existait, mais pas au bon endroit.
+//
+// 22 sept 2026 : kpiCatalog.ts a ete supprime le 18 sept (moteur mort, cf.
+// AGENTS.md) ; ses assertions « backend » sont retirees. Le moteur de
+// production, kpiRegistry.js, reste verifie ci-dessous a l'identique.
 import { KPI_REGISTRY } from "../../src/lib/core/kpiRegistry.js";
-import { UNIVERSAL_KPI_CATALOG } from "../../base44/shared/core/kpi/kpiCatalog.ts";
 
 let e = 0;
 const t = (b: boolean, msg: string) => { if (!b) e++; console.log(`${b ? "ok  " : "KO  "} ${msg}`); };
 
 // ── Marge brute : CA mesure, COGS jamais importe (colonne absente) ────────
-const backendMargin = UNIVERSAL_KPI_CATALOG.gross_margin_pct.calculate({ revenue: 100000, cogs: null } as any);
-t(backendMargin === null, `backend gross_margin_pct(revenue=100000, cogs absent) = ${backendMargin} (attendu null)`);
 
 const frontendMarginAmount = KPI_REGISTRY.gross_margin_amount.calculate({ total_revenue: 100000 });
 const frontendMarginPct = KPI_REGISTRY.gross_margin_pct.calculate({ total_revenue: 100000, gross_margin_amount: frontendMarginAmount });
@@ -30,15 +31,11 @@ const margeReelle = KPI_REGISTRY.gross_margin_pct.calculate({
 t(margeReelle === 60, `marge reelle (cogs=40000 mesure) = ${margeReelle}% (attendu 60%, le calcul normal ne doit pas casser)`);
 
 // ── Panier moyen : aucune commande valide ──────────────────────────────────
-const backendAov = UNIVERSAL_KPI_CATALOG.average_order_value.calculate({ revenue: 0, orders: 0 } as any);
-t(backendAov === null, `backend average_order_value(revenue=0, orders=0) = ${backendAov} (attendu null)`);
 
 const frontendAov = KPI_REGISTRY.aov.calculate({ total_revenue: 0, _records: [] });
 t(frontendAov === null, `frontend aov(_records=[]) = ${frontendAov} (attendu null, pas 0)`);
 
 // ── CAC : marketing_spend connu, new_customers jamais mesure ──────────────
-const backendCac = UNIVERSAL_KPI_CATALOG.cac.calculate({ marketing_spend: 5000, new_customers: 0 } as any);
-t(backendCac === null, `backend cac(spend=5000, new_customers=0) = ${backendCac} (attendu null)`);
 
 const frontendCac = KPI_REGISTRY.cac.calculate({ marketing_spend: 5000, new_customers: 0 });
 t(frontendCac === null, `frontend cac(spend=5000, new_customers=0) = ${frontendCac} (attendu null)`);

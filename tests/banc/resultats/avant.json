@@ -1,0 +1,658 @@
+{
+  "date": "2026-09-22",
+  "totaux": {
+    "donnees": 82,
+    "importees": 42,
+    "quarantaine": 36,
+    "perdues": 4,
+    "inventees": 6,
+    "brut_manquant": 6,
+    "non_signale": 11,
+    "sans_trace": 40,
+    "incoherent": 0,
+    "mal_interpretees": 16
+  },
+  "mesures": [
+    {
+      "id": "01-parfait",
+      "titre": "Fichier parfaitement structure",
+      "donnees": 4,
+      "importees": 0,
+      "quarantaine": 4,
+      "perdues": 0,
+      "sans_trace": 4,
+      "incoherent": 0,
+      "mal_interpretees": 2,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "SEMANTIQUE « Montant » -> amount : aucune ligne",
+        "SEMANTIQUE « Description » -> description : aucune ligne",
+        "[transactions.xlsx [Transactions]] Transaction echoue: 0/4 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-03-01\",\"total\":\"1200\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente comptoir\"}"
+      ]
+    },
+    {
+      "id": "02-colonnes-inconnues",
+      "titre": "Colonnes au concept inconnu (Code affaire, Ref. interne)",
+      "donnees": 3,
+      "importees": 3,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[commandes.xlsx [Commandes]] Order complete: 3/3 2 colonne(s) non reconnue(s) et ignorée(s) pour Order : Code affaire, Ref. interne. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "03-anglais",
+      "titre": "Fichier anglais",
+      "donnees": 2,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[orders.xlsx [Orders]] Order complete: 2/2 "
+      ]
+    },
+    {
+      "id": "04-multilingue-abreviations",
+      "titre": "Multilingue + abreviations (No cde, Dt, Qté, PU)",
+      "donnees": 2,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[ventes_mixte.xlsx [Feuil1]] Order complete: 2/2 "
+      ]
+    },
+    {
+      "id": "05-colonnes-supplementaires",
+      "titre": "Colonnes supplementaires (Canal, Region, Code campagne, Responsable)",
+      "donnees": 2,
+      "importees": 0,
+      "quarantaine": 2,
+      "perdues": 0,
+      "sans_trace": 2,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[transactions_enrichies.xlsx [Transactions]] Transaction echoue: 0/2 5 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total, channel, region, Code campagne, Responsable. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-05-01\",\"total\":\"200\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente\",\"channel\":\"Web\",\"region\":\"Estrie\",\"Code campagne\":\"AUT26\",\"Responsable\":\"Sophie\"}"
+      ]
+    },
+    {
+      "id": "06-colonnes-manquantes",
+      "titre": "Ventes sans numero de commande (identifiant absent)",
+      "donnees": 4,
+      "importees": 4,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 4,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "Order.order_id = ORD-LAVAL",
+        "Order.order_id = ORD-LAVAL",
+        "Order.order_id = ORD-LAVAL",
+        "Order.order_id = ORD-LEVIS",
+        "[ventes_succursales.xlsx [Ventes]] Order complete: 4/4 "
+      ]
+    },
+    {
+      "id": "07-sans-date",
+      "titre": "Ventes sans aucune date",
+      "donnees": 2,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 2,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "Order: date du jour inventee",
+        "Order: date du jour inventee",
+        "[ventes_sans_date.xlsx [Ventes]] Order complete: 2/2 "
+      ]
+    },
+    {
+      "id": "08-lignes-total",
+      "titre": "Lignes TOTAL et sous-total",
+      "donnees": 3,
+      "importees": 0,
+      "quarantaine": 3,
+      "perdues": 0,
+      "sans_trace": 3,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[releve.xlsx [Transactions]] Transaction echoue: 0/3 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-03-01\",\"total\":\"1000\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente A\"}"
+      ]
+    },
+    {
+      "id": "09-faux-total",
+      "titre": "Valeur « Moyenne » / « Total » qui n'est PAS une ligne de total",
+      "donnees": 3,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 1,
+      "sans_trace": 1,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[commandes_tailles.xlsx [Commandes]] Order complete: 2/2 1 colonne(s) non reconnue(s) et ignorée(s) pour Order : Taille. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "10-valeurs-nulles",
+      "titre": "Montants N/A et vides",
+      "donnees": 4,
+      "importees": 0,
+      "quarantaine": 4,
+      "perdues": 0,
+      "sans_trace": 4,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[transactions_trous.xlsx [Transactions]] Transaction echoue: 0/4 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-03-01\",\"total\":\"100\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"A\"}"
+      ]
+    },
+    {
+      "id": "11-valeurs-negatives",
+      "titre": "Montant negatif (retour)",
+      "donnees": 2,
+      "importees": 0,
+      "quarantaine": 2,
+      "perdues": 0,
+      "sans_trace": 2,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[transactions_retour.xlsx [Transactions]] Transaction echoue: 0/2 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-03-01\",\"total\":\"500\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente\"}"
+      ]
+    },
+    {
+      "id": "12-doublons",
+      "titre": "Ligne dupliquee a l'identique dans le fichier",
+      "donnees": 3,
+      "importees": 0,
+      "quarantaine": 3,
+      "perdues": 0,
+      "sans_trace": 3,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[transactions_doublon.xlsx [Transactions]] Transaction echoue: 0/3 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-03-01\",\"total\":\"500\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente\"}"
+      ]
+    },
+    {
+      "id": "13-multi-feuilles",
+      "titre": "Classeur multi-feuilles (clients + produits + note)",
+      "donnees": 4,
+      "importees": 4,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[classeur.xlsx [Clients]] Customer complete: 2/2 1 colonne(s) non reconnue(s) et ignorée(s) pour Customer : name. Leur contenu brut reste conservé dans original_data si besoin de le récupérer.",
+        "[classeur.xlsx [Produits]] Product complete: 2/2 1 colonne(s) non reconnue(s) et ignorée(s) pour Product : description. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "14-donnees-mixtes",
+      "titre": "Formats mixtes (1 250,50 $, dates JJ/MM)",
+      "donnees": 3,
+      "importees": 0,
+      "quarantaine": 3,
+      "perdues": 0,
+      "sans_trace": 3,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[transactions_formats.xlsx [Transactions]] Transaction echoue: 0/3 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"15/03/2026\",\"total\":\"1 250,50 $\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"A\"}"
+      ]
+    },
+    {
+      "id": "15-valeurs-enum-inconnues",
+      "titre": "Canal jamais rencontre (TikTok Shop) + departement hors liste",
+      "donnees": 3,
+      "importees": 3,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 2,
+      "non_signale": [
+        "Recherche",
+        "TikTok Shop"
+      ],
+      "details": [
+        "[equipe.xlsx [Employes]] Employee complete: 2/2 1 colonne(s) non reconnue(s) et ignorée(s) pour Employee : category. Leur contenu brut reste conservé dans original_data si besoin de le récupérer.",
+        "[equipe.xlsx [Commandes]] Order complete: 1/1 "
+      ]
+    },
+    {
+      "id": "16-colonne-ecartee-par-ia",
+      "titre": "Colonne jugee sans correspondance par l'IA (brut a conserver)",
+      "donnees": 2,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 2,
+      "non_signale": [
+        "Code interne"
+      ],
+      "details": [
+        "[commandes_ia.xlsx [Commandes]] Order complete: 2/2 "
+      ]
+    },
+    {
+      "id": "18-ventes-id-et-nom",
+      "titre": "Ventes avec « ID Client » ET « Client » (extrait du classeur Nordik)",
+      "donnees": 3,
+      "importees": 2,
+      "quarantaine": 1,
+      "perdues": 0,
+      "sans_trace": 1,
+      "incoherent": 0,
+      "mal_interpretees": 6,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "SEMANTIQUE feuille Ventes (1200+) lue comme Customer (attendu Order)",
+        "SEMANTIQUE « ID Transaction » -> order_id : aucune ligne",
+        "SEMANTIQUE « ID Client » -> customer_id : aucune ligne",
+        "SEMANTIQUE « Client » -> customer_name : aucune ligne",
+        "SEMANTIQUE « ID Employé » -> employee_id : aucune ligne",
+        "SEMANTIQUE « Description Produit » -> product_name : aucune ligne",
+        "[ventes_nordik.xlsx [Ventes (1200+)]] Customer complete: 2/3 8 colonne(s) non reconnue(s) et ignorée(s) pour Customer : transaction_id, date, product_id, product_name, quantity, unit_price, employee_id, location_id. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · 1 doublon(s) détecté(s) et ignoré(s)."
+      ]
+    },
+    {
+      "id": "19-stocks-multi-entrepots",
+      "titre": "Meme SKU dans plusieurs entrepots (extrait du classeur de simulation)",
+      "donnees": 4,
+      "importees": 2,
+      "quarantaine": 2,
+      "perdues": 0,
+      "sans_trace": 2,
+      "incoherent": 0,
+      "mal_interpretees": 2,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "SEMANTIQUE « SKU » -> product_id : aucune ligne",
+        "SEMANTIQUE « Quantite_En_Stock » -> closing_stock : aucune ligne",
+        "SUPPOSEE Inventory.date",
+        "SUPPOSEE Inventory.date",
+        "[stocks.xlsx [Stocks_MultiEntrepots]] Inventory complete: 2/4 3 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : ID_Depot, Nom_Depot, inventory_level. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · 2 doublon(s) détecté(s) et ignoré(s)."
+      ]
+    },
+    {
+      "id": "20-deux-valeurs-de-stock",
+      "titre": "Deux colonnes candidates au meme champ, rien pour les departager",
+      "donnees": 2,
+      "importees": 2,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 2,
+      "inventees": 0,
+      "brut_manquant": 2,
+      "non_signale": [
+        "à confirmer"
+      ],
+      "details": [
+        "SEMANTIQUE « Qté en Stock » -> closing_stock : aucune ligne",
+        "SEMANTIQUE « Description » -> product_name : aucune ligne",
+        "SUPPOSEE Inventory.date",
+        "SUPPOSEE Inventory.date",
+        "[valorisation.xlsx [Stocks & Inventaire]] Inventory complete: 2/2 2 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : description, qte_en_stock. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "21-montant-prouve-par-calcul",
+      "titre": "« Montant » (nom ambigu) prouve par Qté × PU",
+      "donnees": 3,
+      "importees": 3,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [
+        "quantité × prix unitaire",
+        "vérifié",
+        "3/3"
+      ],
+      "details": [
+        "[ventes_calcul.xlsx [Ventes]] Order complete: 3/3 "
+      ]
+    },
+    {
+      "id": "22-code-client-par-relation",
+      "titre": "« Réf. acheteur » (inconnu) reconnu : ses codes sont ceux de la feuille Clients",
+      "donnees": 6,
+      "importees": 6,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 1,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [
+        "existent dans les clients"
+      ],
+      "details": [
+        "SEMANTIQUE « Réf. acheteur » -> customer_id : 3 ligne(s) fausse(s), ex. customer_id = undefined",
+        "[classeur_relations.xlsx [Clients]] Customer complete: 3/3 1 colonne(s) non reconnue(s) et ignorée(s) pour Customer : name. Leur contenu brut reste conservé dans original_data si besoin de le récupérer.",
+        "[classeur_relations.xlsx [Ventes]] Order complete: 3/3 1 colonne(s) non reconnue(s) et ignorée(s) pour Order : Réf. acheteur. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "23-valeurs-inhabituelles",
+      "titre": "Montant negatif et valeur extreme : importes, signales",
+      "donnees": 12,
+      "importees": 0,
+      "quarantaine": 12,
+      "perdues": 0,
+      "sans_trace": 12,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [
+        "négative",
+        "fois la médiane"
+      ],
+      "details": [
+        "[releve_anomalies.xlsx [Transactions]] Transaction echoue: 0/12 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : total. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : amount · exemple de ligne rejetée : {\"date\":\"2026-02-01\",\"total\":\"100\",\"type\":\"Revenu\",\"category\":\"Ventes\",\"description\":\"Vente 1\"}"
+      ]
+    },
+    {
+      "id": "24-equation-de-stock",
+      "titre": "Stock initial + achats - ventes = stock final",
+      "donnees": 3,
+      "importees": 3,
+      "quarantaine": 0,
+      "perdues": 0,
+      "sans_trace": 0,
+      "incoherent": 0,
+      "mal_interpretees": 3,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [
+        "= stock final (3/3 lignes)"
+      ],
+      "details": [
+        "SEMANTIQUE « Achats » -> purchases : aucune ligne",
+        "SEMANTIQUE « Unités vendues » -> units_sold : aucune ligne",
+        "SEMANTIQUE « Stock clôture » -> closing_stock : aucune ligne",
+        "SUPPOSEE Inventory.date",
+        "SUPPOSEE Inventory.date",
+        "SUPPOSEE Inventory.date",
+        "[mouvements_stock.xlsx [Inventaire]] Inventory complete: 3/3 2 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : purchase_amount, monthly_sales. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+      ]
+    },
+    {
+      "id": "17-feuille-inconnue",
+      "titre": "Feuille au type jamais rencontre (registre d'immobilisations)",
+      "donnees": 3,
+      "importees": 0,
+      "quarantaine": 0,
+      "perdues": 3,
+      "sans_trace": 3,
+      "incoherent": 0,
+      "mal_interpretees": 0,
+      "inventees": 0,
+      "brut_manquant": 0,
+      "non_signale": [],
+      "details": [
+        "[immobilisations.xlsx [Registre]] ? ignore: 0/3 Type non reconnu — colonnes lues : ID_Immobilisation, Description_Actif, Classe_DPA_Fiscale, Taux_Amortissement_DPA"
+      ]
+    }
+  ],
+  "reels": [
+    {
+      "fichier": "Nordik_PleinAir_Donnees_Complet_2026.xlsx",
+      "feuilles": [
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Sommaire Exécutif]",
+          "entite": null,
+          "statut": "ignore",
+          "lues": 9,
+          "importees": 0,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Ventes (1200+)]",
+          "entite": "Customer",
+          "statut": "complete",
+          "lues": 1200,
+          "importees": 121,
+          "quarantaine": 1079
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Stocks & Inventaire]",
+          "entite": "Inventory",
+          "statut": "complete",
+          "lues": 12,
+          "importees": 12,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Employés & RH]",
+          "entite": "Employee",
+          "statut": "complete",
+          "lues": 10,
+          "importees": 10,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Fournisseurs]",
+          "entite": "Supplier",
+          "statut": "complete",
+          "lues": 7,
+          "importees": 7,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Clients (CRM)]",
+          "entite": "Customer",
+          "statut": "complete",
+          "lues": 150,
+          "importees": 150,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Marketing]",
+          "entite": "Campaign",
+          "statut": "complete",
+          "lues": 6,
+          "importees": 6,
+          "quarantaine": 0
+        }
+      ],
+      "inventees": 0,
+      "supposees": 12,
+      "sommes": {
+        "Inventory.unit_cost": 952.5,
+        "Inventory.selling_price": 2119.99,
+        "Inventory.inventory_value": 117049.82,
+        "Campaign.clicks": 29450
+      },
+      "registre": {},
+      "echantillons": {
+        "Customer": {
+          "customer_id": "Leblanc, Gabriel"
+        },
+        "Inventory": {
+          "product_id": "CAM-T004",
+          "category": "Camping",
+          "unit_cost": 210,
+          "selling_price": 450,
+          "inventory_value": 20250,
+          "date": "2026-09-22"
+        },
+        "Employee": {
+          "employee_id": "EMP-001",
+          "name": "Gagnon",
+          "first_name": "Jean-François",
+          "location": "Lévis"
+        },
+        "Supplier": {
+          "supplier_id": "FOUR-101",
+          "supplier_name": "PleinAir Dist. Inc."
+        },
+        "Campaign": {
+          "campaign_id": "M-901",
+          "campaign_name": "Promo Randonnée d'Automne",
+          "channel": "meta_ads",
+          "clicks": 5200,
+          "status": "terminee"
+        }
+      }
+    },
+    {
+      "fichier": "Entreprise_Simulation_50Ans_Canada_QC.xlsx",
+      "feuilles": [
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Sommaire Exécutif]",
+          "entite": null,
+          "statut": "ignore",
+          "lues": 11,
+          "importees": 0,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Ventes_Transactions]",
+          "entite": "Customer",
+          "statut": "complete",
+          "lues": 143,
+          "importees": 15,
+          "quarantaine": 128
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Clients_CRM]",
+          "entite": "Customer",
+          "statut": "echoue",
+          "lues": 15,
+          "importees": 0,
+          "quarantaine": 15
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Stocks_MultiEntrepots]",
+          "entite": "Supplier",
+          "statut": "echoue",
+          "lues": 50,
+          "importees": 0,
+          "quarantaine": 50
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Employes_RH]",
+          "entite": "Employee",
+          "statut": "complete",
+          "lues": 10,
+          "importees": 10,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Fournisseurs]",
+          "entite": "Supplier",
+          "statut": "complete",
+          "lues": 10,
+          "importees": 10,
+          "quarantaine": 0
+        },
+        {
+          "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Registre_Immobilisations_50Ans]",
+          "entite": null,
+          "statut": "ignore",
+          "lues": 13,
+          "importees": 0,
+          "quarantaine": 0
+        }
+      ],
+      "inventees": 0,
+      "supposees": 0,
+      "sommes": {},
+      "registre": {},
+      "echantillons": {
+        "Customer": {
+          "customer_id": "Caron, Isabelle"
+        },
+        "Employee": {
+          "employee_id": "EMP-001",
+          "name": "Gagnon",
+          "first_name": "Jean-François",
+          "hire_date": "1994-05-12",
+          "location": "Lévis"
+        },
+        "Supplier": {
+          "supplier_id": "FOUR-101",
+          "supplier_name": "PleinAir Dist. Inc."
+        }
+      }
+    }
+  ]
+}

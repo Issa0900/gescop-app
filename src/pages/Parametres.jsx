@@ -177,9 +177,19 @@ export default function Parametres() {
       });
       await refetch();
       setHasSavedOnce(true);
+      // Un terme appris peut debloquer des lignes conservees lors d'imports
+      // precedents : elles sont relues tout de suite, sans reimporter.
+      let recuperees = 0;
+      if (JSON.stringify(form.company_dictionary ?? null) !== JSON.stringify(company.company_dictionary ?? null)) {
+        try {
+          const rep = await base44.functions.invoke("reprocessImport", { tous: true });
+          recuperees = (rep.data || rep).recovered || 0;
+        } catch { /* le retraitement reste disponible depuis la page Import */ }
+      }
       toast({
         title: "Configuration enregistrée",
         description: "Le profil de contexte d'entreprise et les paramètres GESCOP ont été mis à jour avec succès."
+          + (recuperees > 0 ? ` · ${recuperees} ligne(s) d'imports précédents récupérée(s) grâce au dictionnaire.` : "")
       });
     } catch (e) {
       toast({

@@ -38,6 +38,14 @@
     },
     "notes": {
       "type": "string"
+    },
+    "original_data": {
+      "type": "string",
+      "description": "Ligne du fichier source telle quelle (JSON), toutes colonnes comprises. Permet de retrouver une valeur non reconnue ou repliee sans reimporter."
+    },
+    "fingerprint": {
+      "type": "string",
+      "description": "Empreinte metier de la ligne, utilisee pour detecter les doublons entre imports."
     }
   },
   "required": [
@@ -55,4 +63,3 @@
     }
   }
 }
-

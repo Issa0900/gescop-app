@@ -19,13 +19,18 @@
 // la preuve gagne. Voir verifierAvecPreuves().
 
 import { getSchema } from "./entitySchemas.ts";
-import { parseDate, stripAccents, FIELD_ALIASES, cleCanonique, ALIAS_CANONIQUES, isSummaryOrTotalRow, type ConventionDate } from "./importUtils.ts";
+import { parseDate, stripAccents, FIELD_ALIASES, cleCanonique, ALIAS_CANONIQUES, isSummaryOrTotalRow, LIGNE_BRUTE, NUMERO_LIGNE, type ConventionDate } from "./importUtils.ts";
 import { trouverLigneEntetes, detectEntityByHeaders, detectEntityByFieldOverlap } from "./sheetDetect.ts";
 import { recognizeAllColumns } from "./core/contextualRecognition.ts";
 import { classifyDocumentSheet, type SheetClassificationResult } from "./core/documentClassifier.ts";
 import { calculateQualityProfile, type QualityProfile } from "./core/qualityEngine.ts";
 import { evaluateDecision, type DecisionVerdict } from "./core/decisionMatrix.ts";
 import { DOCUMENT_ARCHETYPES, type DocumentArchetype, type GrainLevel } from "./core/ontology/types.ts";
+import {
+  classerEntites, choisirEntite, evaluerColonnes, ajouterPreuve,
+  type CandidatEntite, type EvaluationColonne, type SourceRattachement,
+} from "./core/recognition/preuves.ts";
+import { verifierRelations, type VerificationRelation } from "./core/recognition/relations.ts";
 
 export type Confiance = "haute" | "moyenne" | "faible";
 export type OriginePlan = "ia" | "ia+preuves" | "regles" | "memoire";
@@ -39,6 +44,15 @@ export interface PlanColonne {
   convention_date?: ConventionDate | null;
   /** Correspondance de valeurs, ex. { "D": "expense", "C": "income" }. */
   valeurs?: Record<string, string> | null;
+  /** D'ou vient le rattachement : sert a peser la preuve « nom » (preuves.ts). */
+  source?: SourceRattachement;
+  /**
+   * Colonne volontairement laissee sans champ (concurrence avec une autre
+   * colonne, valeurs contradictoires) : meme un plan par regles ne doit pas la
+   * rendre aux synonymes, qui la rattacheraient au champ qu'on vient de lui
+   * refuser. Sa valeur reste dans original_data.
+   */
+  exclue?: boolean;
 }
 
 export interface PlanImport {
@@ -61,6 +75,81 @@ export interface PlanImport {
   isAggregatedSummary?: boolean;
   qualityProfile?: QualityProfile;
   decision?: DecisionVerdict;
+
+  /** Statut et preuves de chaque colonne (directives §5, §16) — montres a l'utilisateur. */
+  evaluations?: EvaluationColonne[];
+  /** Les meilleurs candidats pour le type de la feuille, avec leurs preuves. */
+  entite_preuves?: CandidatEntite[];
+  /** Second type presque aussi plausible : le choix est a confirmer (§6). */
+  entite_rivale?: string;
+  /** Relations mathematiques verifiees sur les valeurs (§4 niveau 6). */
+  relations?: VerificationRelation[];
+}
+
+/**
+ * Evalue chaque rattachement du plan sur les valeurs du fichier, et applique ce
+ * que les preuves imposent : colonnes en concurrence departagees, rattachement
+ * contredit par les valeurs retire. Un rattachement humain n'est jamais modifie.
+ */
+export function evaluerPlan(plan: PlanImport, matrix: any[][], sourceParDefaut: SourceRattachement): PlanImport {
+  if (!plan.entite) return plan;
+  const entetes = (matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim());
+  const ignorees = new Set(plan.lignes_ignorees);
+  const lignes = matrix.slice(plan.ligne_entetes + 1).filter((_, i) => !ignorees.has(plan.ligne_entetes + 1 + i));
+  const echantillon = lignes.slice(0, 200);
+  const valeursDe = (colonne: string) => {
+    const idx = entetes.indexOf(colonne);
+    return idx < 0 ? [] : echantillon.map((r) => (r || [])[idx]);
+  };
+  const res = evaluerColonnes(
+    plan.entite,
+    plan.colonnes.map((c) => ({ colonne: c.colonne, champ: c.champ, source: c.source || sourceParDefaut })),
+    valeursDe,
+  );
+  const colonnes = plan.colonnes.map((c, i) => {
+    const apres = res.colonnes[i];
+    if (apres.champ === c.champ) return { ...c, source: apres.source };
+    return { ...c, champ: apres.champ, source: apres.source, exclue: apres.champ === null ? true : c.exclue };
+  });
+
+  // Relations mathematiques du metier, verifiees sur les valeurs : une preuve
+  // bien plus forte que le nom. Tenue sur 90 % des lignes : chaque colonne en
+  // jeu gagne en confiance ; contredite sur la plupart des lignes : le doute
+  // est signale (le rattachement n'est pas retire, la relation peut ne pas
+  // s'appliquer a ce fichier — remises, taxes non detaillees...).
+  const indexParChamp = new Map<string, number>();
+  colonnes.forEach((c) => { if (c.champ) { const idx = entetes.indexOf(c.colonne); if (idx >= 0) indexParChamp.set(c.champ, idx); } });
+  const lignesParChamp = echantillon.map((r) => {
+    const o: Record<string, any> = {};
+    for (const [champ, idx] of indexParChamp) o[champ] = (r || [])[idx];
+    return o;
+  });
+  const relations = verifierRelations(new Set(indexParChamp.keys()), lignesParChamp);
+  const corrections = [...res.corrections];
+  const humaines = new Set(colonnes.filter((c) => c.source === "humain").map((c) => c.colonne));
+  for (const rel of relations) {
+    const concernees = res.evaluations.filter((e) => e.champ && rel.champs.includes(e.champ));
+    if (rel.n >= 2 && rel.taux >= 0.9) {
+      for (const e of concernees) {
+        ajouterPreuve(e, { type: "MATHEMATIQUE", detail: `${rel.libelle} vérifié sur ${rel.coherentes}/${rel.n} lignes`, points: 15 }, humaines.has(e.colonne));
+      }
+    } else if (rel.n >= 3 && rel.taux < 0.5) {
+      const resultat = res.evaluations.find((e) => e.champ === rel.champs[rel.champs.length - 1]);
+      if (resultat) {
+        ajouterPreuve(resultat, { type: "CONFLIT", detail: `${rel.libelle} faux sur ${rel.n - rel.coherentes}/${rel.n} lignes`, points: -15 }, humaines.has(resultat.colonne));
+        corrections.push(`« ${resultat.colonne} » : ${rel.libelle} ne se vérifie que sur ${rel.coherentes}/${rel.n} lignes — rattachement à vérifier.`);
+      }
+    }
+  }
+
+  return {
+    ...plan,
+    colonnes,
+    relations,
+    evaluations: res.evaluations,
+    corrections: [...(plan.corrections || []), ...corrections],
+    origine: res.corrections.length > 0 && plan.origine === "ia" ? "ia+preuves" : plan.origine,
+  };
 }
 
 /** Nombre de lignes soumises a l'IA. Assez pour voir la structure ET des cas limites. */
@@ -315,13 +404,14 @@ export async function analyserFichier(
           const secCol = planDeSecours.colonnes.find(c => c.colonne === col.colonne);
           if (secCol && secCol.champ) {
               col.champ = secCol.champ;
+              col.source = secCol.source;
               verifie.corrections.push(`colonne « ${col.colonne} » : rattrapage via memoire/reconnaissance -> ${col.champ}.`);
               verifie.origine = "ia+preuves";
           }
       }
   }
 
-  return { plan: verifie, refus };
+  return { plan: evaluerPlan(verifie, matrix, "ia"), refus };
 }
 
 // ---------------------------------------------------------------------------
@@ -335,11 +425,36 @@ export async function analyserFichier(
  * colonnes laisse a la table de synonymes de normalizeKeys (champ: null ici
  * signifie « le pipeline decidera », pas « colonne ignoree »).
  */
+/**
+ * Le meme concept porte un autre nom selon l'entite : la quantite en stock est
+ * `inventory_level` sur Product mais `closing_stock` sur Inventory, la
+ * description d'un article est le `product_name` d'une ligne de stock. Le plan
+ * doit le savoir, sinon il declare « inconnue » une colonne que l'import lit.
+ */
+const ADAPTATIONS: Record<string, Record<string, string>> = {
+  // Sur une feuille de stock, « Achats » / « Entrées » sont des quantites
+  // entrees et « Unités vendues » / « Sorties » des quantites sorties ; la
+  // relation stock initial + achats − ventes = stock final le verifie ensuite.
+  Inventory: {
+    inventory_level: "closing_stock", inventory_quantity: "closing_stock", description: "product_name",
+    purchase_amount: "purchases", sales_quantity: "units_sold", cash_in: "purchases", cash_out: "units_sold",
+  },
+  Product: { description: "product_name" },
+  Order: { transaction_id: "order_id" },
+};
+function adapterChamp(entite: string, champ: string): string {
+  return ADAPTATIONS[entite]?.[champ] || champ;
+}
+
 export function planParRegles(
   matrix: any[][], 
   nomFichier: string, 
   entiteConnue?: string | null,
-  mappingMemory: any[] = []
+  mappingMemory: any[] = [],
+  // Vocabulaire propre a l'entreprise (Company.company_dictionary, deja indexe) :
+  // prioritaire sur toute reconnaissance generique, et c'est ce qui permet au
+  // retraitement de recuperer des lignes des qu'un terme est appris.
+  companyDictionary?: Record<string, string>,
 ): PlanImport {
   const ligne = matrix.length > 0 ? trouverLigneEntetes(matrix) : 0;
   const entetes = (matrix[ligne] || []).map((h: any) => String(h ?? "").trim()).filter((h: string) => h !== "");
@@ -372,7 +487,13 @@ export function planParRegles(
   });
 
   // 2. Détection de l'entité
-  let entite = entiteConnue || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
+  // Type de la feuille par preuves (preuves.ts) : couverture des colonnes, nom
+  // de la feuille, colonnes cles, champs obligatoires. L'ancienne regle prenait
+  // la PREMIERE signature trouvee — « ID Client » suffisait a faire d'une
+  // feuille de ventes de 18 colonnes une feuille de clients.
+  const classement = classerEntites(entetes, nomFichier, companyDictionary);
+  const choix = entiteConnue ? { entite: null, ambigue: false } : choisirEntite(classement);
+  let entite = entiteConnue || choix.entite || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
   if (!entite && classification.isAggregatedSummary) {
     entite = "ExecutiveSummary";
   }
@@ -394,8 +515,19 @@ export function planParRegles(
   const colonnes = entetes.map((c: string) => {
     const rec = recognizedCols.get(c);
     let champ = null;
+    let source: SourceRattachement | undefined;
     const cleanC = c.toLowerCase().trim();
     const noAccentC = cleanC.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
+
+    // 0. Le dictionnaire de l'entreprise l'emporte : c'est une decision humaine.
+    if (entite && companyDictionary) {
+      const schema = getSchema(entite);
+      const terme = companyDictionary[cleCanonique(c)];
+      const adapte = terme ? adapterChamp(entite, terme) : null;
+      if (schema && adapte && Object.keys(schema.properties).includes(adapte)) {
+        return { colonne: c, champ: adapte, source: "dictionnaire" as SourceRattachement };
+      }
+    }
 
     // Exact schema fields always win over semantic guesses
     if (entite) {
@@ -405,6 +537,7 @@ export function planParRegles(
         if (fields.includes(c)) champ = c;
         else if (fields.includes(cleanC)) champ = cleanC;
         else if (fields.includes(noAccentC)) champ = noAccentC;
+        if (champ) source = "schema";
       }
     }
     
@@ -423,6 +556,7 @@ export function planParRegles(
        if (rec.targetField) {
           champ = rec.targetField;
        }
+       source = "reconnaissance";
     }
     
     // 2. Fallback to schema fields so the UI doesn't show 'Ignorer' for valid columns
@@ -430,8 +564,10 @@ export function planParRegles(
         const schema = getSchema(entite);
         if (schema) {
             const canon = cleCanonique(c);
-            const alias = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
-            if (alias && Object.keys(schema.properties).includes(alias)) champ = alias;
+            const brut = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
+            const alias = brut ? adapterChamp(entite, brut) : brut;
+            const reparti = alias === "name" && schema.properties.first_name && !schema.properties.name;
+            if (alias && (Object.keys(schema.properties).includes(alias) || reparti)) { champ = alias; source = "alias"; }
         }
     }
 
@@ -456,7 +592,37 @@ export function planParRegles(
       else if (normC.includes("vente") || normC.includes("revenue") || normC.includes("ca")) champ = 'total_revenue';
     }
 
-    return { colonne: c, champ };
+    // Un concept reconnu qui n'est pas un champ de l'entite ne doit pas
+    // remplacer l'intitule d'origine : appliquerPlan ecrirait la valeur sous ce
+    // nom, que normalizeKeys ne rattacherait ensuite a rien. « Montant »
+    // devenait ainsi `total` sur Transaction (qui n'a que `amount`), et CHAQUE
+    // transaction partait en quarantaine pour « amount manquant » des que
+    // l'analyse IA etait indisponible. On retente la table de synonymes ; a
+    // defaut, champ null rend la colonne au rattachement par synonymes.
+    if (champ && entite) {
+      const schema = getSchema(entite);
+      // `name` n'est pas un champ des entites qui stockent prenom et nom, mais
+      // l'import sait le repartir (normalizeRow) : c'est un rattachement valide.
+      const champs = schema ? [...Object.keys(schema.properties), ...(schema.properties.first_name && !schema.properties.name ? ["name"] : [])] : [];
+      if (champs.length > 0 && !champs.includes(champ)) {
+        const canon = cleCanonique(c);
+        const alias = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
+        const adapte = alias ? adapterChamp(entite, alias) : alias;
+        champ = adapte && champs.includes(adapte) ? adapte : null;
+        source = champ ? "alias" : undefined;
+      }
+    }
+
+    // Deux signaux independants qui concordent (reconnaissance semantique ET
+    // table de synonymes) valent mieux qu'un seul : la preuve « nom » est
+    // alors celle du synonyme connu.
+    if (champ && source === "reconnaissance" && entite) {
+      const canon = cleCanonique(c);
+      const brut = FIELD_ALIASES[cleanC] || FIELD_ALIASES[cleanC.replace(/[\s-]/g, "_")] || FIELD_ALIASES[noAccentC] || ALIAS_CANONIQUES[canon];
+      if (brut && adapterChamp(entite, brut) === champ) source = "alias";
+    }
+
+    return { colonne: c, champ, source };
   });
 
   // 4. Calcul du profil de qualité et décision
@@ -481,13 +647,14 @@ export function planParRegles(
         ? `Lecture sémantique de ${nomFichier} : reconnaissance de ${colonnes.filter((c) => c.champ).length}/${entetes.length} colonnes pour l'entité ${entite}.`
         : `Lecture automatique de ${nomFichier} : ${classification.explanation}`);
 
-  return {
+  const plan: PlanImport = {
     entite,
     ligne_entetes: ligne,
     lignes_ignorees,
     colonnes,
-    confiance: decision.confidenceScore >= 90 ? "haute" : decision.confidenceScore >= 70 ? "moyenne" : "faible",
-    explication,
+    // Un type de feuille dispute n'est jamais « haute » confiance.
+    confiance: choix.ambigue ? "faible" : decision.confidenceScore >= 90 ? "haute" : decision.confidenceScore >= 70 ? "moyenne" : "faible",
+    explication: choix.ambigue ? `${explication} Type à confirmer : ${choix.rivale} est presque aussi plausible.` : explication,
     origine: "regles",
     corrections: [],
     archetype: classification.archetype,
@@ -495,7 +662,10 @@ export function planParRegles(
     isAggregatedSummary: classification.isAggregatedSummary,
     qualityProfile,
     decision,
+    entite_preuves: classement.slice(0, 3),
+    entite_rivale: choix.rivale,
   };
+  return evaluerPlan(plan, matrix, "alias");
 }
 
 /** Le plan de secours laisse le mapping au pipeline historique. */
@@ -522,7 +692,10 @@ export function planSansRattachement(plan: PlanImport): boolean {
  * motif. Masquer une valeur douteuse serait exactement le defaut qu'on cherche
  * a eviter.
  */
-export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string, any>[] {
+/** Ligne du fichier que la lecture a ecartee, et pourquoi (directive §10 : exclue des faits, conservee dans l'audit). */
+export interface LigneEcartee { ligne: number; motif: "ignoree_par_le_plan" | "ligne_de_total"; apercu: string; brut: Record<string, any> }
+
+export function appliquerPlan(plan: PlanImport, matrix: any[][], journal?: LigneEcartee[]): Record<string, any>[] {
   const entetes = (matrix[plan.ligne_entetes] || []).map((h: any, i: number) => String(h ?? "").trim() || `col_${i + 1}`);
   const ignorees = new Set(plan.lignes_ignorees);
   const rattachement = new Map<number, PlanColonne>();
@@ -541,10 +714,16 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
 
   const rows: Record<string, any>[] = [];
   for (let i = plan.ligne_entetes + 1; i < matrix.length; i += 1) {
-    if (ignorees.has(i)) continue;
     const brute = matrix[i] || [];
     if (brute.every((c: any) => String(c ?? "").trim() === "")) continue;
-    if (isSummaryOrTotalRow(brute)) continue;
+    const apercu = () => brute.filter((c: any) => String(c ?? "").trim() !== "").slice(0, 4).join(" | ").slice(0, 80);
+    // La ligne telle que dans le fichier, toutes colonnes comprises, pour
+    // original_data (cf. LIGNE_BRUTE) : une colonne que le plan ne rattache a
+    // rien sort de la ligne exploitable, pas des donnees conservees.
+    const ligneBrute: Record<string, any> = {};
+    entetes.forEach((entete, idx) => { ligneBrute[entete] = brute[idx] ?? ""; });
+    if (ignorees.has(i)) { journal?.push({ ligne: i + 1, motif: "ignoree_par_le_plan", apercu: apercu(), brut: ligneBrute }); continue; }
+    if (isSummaryOrTotalRow(brute)) { journal?.push({ ligne: i + 1, motif: "ligne_de_total", apercu: apercu(), brut: ligneBrute }); continue; }
 
     const obj: Record<string, any> = {};
     entetes.forEach((entete, idx) => {
@@ -565,7 +744,7 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
 
       if (col && col.champ) {
         obj[col.champ] = valeur;
-      } else if (!col || rattacherParSynonymes) {
+      } else if (!col || (rattacherParSynonymes && !col.exclue)) {
         // Colonne jamais rattachée par le plan (ou plan par règles, qui
         // n'a pas tenté le rattachement) : on conserve l'entête d'origine
         // pour que le dictionnaire d'alias et la normalisation la rattrapent.
@@ -574,8 +753,13 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][]): Record<string,
       // Sinon : l'analyse a explicitement jugé cette colonne sans
       // correspondance (col.champ === null) — on ne la réintroduit pas.
     });
-    if (isSummaryOrTotalRow(obj)) continue;
-    if (Object.keys(obj).length > 0) rows.push(obj);
+    if (isSummaryOrTotalRow(obj)) { journal?.push({ ligne: i + 1, motif: "ligne_de_total", apercu: apercu(), brut: ligneBrute }); continue; }
+    if (Object.keys(obj).length > 0) {
+      Object.defineProperty(obj, LIGNE_BRUTE, { value: ligneBrute, enumerable: false, configurable: true });
+      // configurable : le retraitement y remet le numero de ligne du fichier d'origine.
+      Object.defineProperty(obj, NUMERO_LIGNE, { value: i + 1, enumerable: false, configurable: true });
+      rows.push(obj);
+    }
   }
   return rows;
 }

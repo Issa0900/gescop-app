@@ -1,19 +1,19 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
-import { normalizeRow, isSummaryOrTotalRow, deriveFallbackIdentity, buildCompanyDictionaryIndex } from "../../shared/importUtils.ts";
+import {
+  normalizeRow, normalizeKeys, isSummaryOrTotalRow, deriveFallbackIdentity, buildCompanyDictionaryIndex,
+  LIGNE_BRUTE, NUMERO_LIGNE, type TraceNormalisation,
+} from "../../shared/importUtils.ts";
+import { REASON, motifChampManquant } from "../../shared/importStatus.ts";
 import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import {
-  analyserFichier, appliquerPlan, planParRegles, signatureFichier,
-  construireEchantillon, type PlanImport,
+  analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan,
+  construireEchantillon, type PlanImport, type LigneEcartee,
 } from "../../shared/importPlan.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
-import { normalizeRow as normalizeRowForCore } from "../../shared/normalizationEngine.ts";
-import { profileData } from "../../shared/dataProfiler.ts";
-import { matchConcept } from "../../shared/semanticMatcher.ts";
-import { detectGrain } from "../../shared/grainEngine.ts";
-import { generateObservations } from "../../shared/observationEngine.ts";
-import { deduplicateRows } from "../../shared/deduplication.ts";
+import { traiterLignes, champsImport, conserverFeuilleInconnue } from "../../shared/importRows.ts";
+import { appliquerPreuvesEntreTables, nouveauContexteRelations } from "../../shared/preuvesTables.ts";
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
@@ -80,14 +80,17 @@ async function planPourFeuille(
       { plan_signature: signature, plan_confirmed: true }, "-created_date", 1,
     );
     if (memo && memo.length > 0 && memo[0].read_plan && memo[0].read_plan.colonnes) {
-      const plan: PlanImport = forceTransactionColumns({ ...memo[0].read_plan, origine: "memoire", corrections: [] });
+      const plan: PlanImport = evaluerPlan(
+        forceTransactionColumns({ ...memo[0].read_plan, origine: "memoire", corrections: [] }), matrix, "humain",
+      );
       if (manual) plan.entite = manual;
       return { plan, signature, refus: [] as string[], erreur: undefined as string | undefined };
     }
   } catch { /* la memoire est un confort, jamais un prerequis */ }
 
   // 2. Analyse par l'IA, filet deterministe derriere.
-  const secours = planParRegles(matrix, nomFichier, manual || null);
+  // Le libelle "fichier [feuille]" : le nom de la FEUILLE est une preuve du type (preuves.ts).
+  const secours = planParRegles(matrix, label, manual || null, [], companyDictionary);
   const res = await analyserFichier(
     (args) => base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: args.prompt,
@@ -98,7 +101,9 @@ async function planPourFeuille(
   );
   const entiteParNom = detectEntityByName(label);
   const entetesNormalisees = entetes.map((h) => String(h).trim());
-  if (entiteParNom && entiteCompatible(entiteParNom, entetesNormalisees)) {
+  // Le plan par regles a deja pese le nom de la feuille parmi ses preuves
+  // (preuves.ts) : l'y ecraser remplacerait l'entite sans recalculer ses colonnes.
+  if (res.plan.origine !== "regles" && entiteParNom && entiteCompatible(entiteParNom, entetesNormalisees)) {
     res.plan.entite = entiteParNom;
     if (entiteParNom === "Transaction") {
       // The semantic recognizer can confuse Transaction.category with type.
@@ -124,7 +129,8 @@ async function planPourFeuille(
  */
 function lignesSelonPlan(plan: PlanImport, matrix: any[][], nomFichier: string, entite?: string | null) {
   let rows: Record<string, any>[] = [];
-  try { rows = appliquerPlan(plan, matrix); } catch { rows = []; }
+  let ecartees: LigneEcartee[] = [];
+  try { rows = appliquerPlan(plan, matrix, ecartees); } catch { rows = []; }
   const disponibles = Math.max(matrix.length - plan.ligne_entetes - 1 - plan.lignes_ignorees.length, 0);
   // Une ligne d'en-tetes decalee d'un cran ne rend pas toujours 0 ligne : les
   // intitules pointent alors sur de vraies donnees, qui deviennent des colonnes
@@ -133,17 +139,31 @@ function lignesSelonPlan(plan: PlanImport, matrix: any[][], nomFichier: string, 
   // par le plan n'a ete retrouvee dans la ligne d'en-tetes reelle".
   const entetesReelles = new Set((matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim()));
   const aucuneColonneRattachee = plan.colonnes.length > 0 && plan.colonnes.every((c) => !entetesReelles.has(c.colonne));
-  if ((rows.length > 0 && !aucuneColonneRattachee) || disponibles === 0) return { rows, plan, note: "" };
+  if ((rows.length > 0 && !aucuneColonneRattachee) || disponibles === 0) return { rows, plan, note: "", ecartees };
 
   const secours = planParRegles(matrix, nomFichier, entite || plan.entite);
   let rowsSecours: Record<string, any>[] = [];
-  try { rowsSecours = appliquerPlan(secours, matrix); } catch { rowsSecours = []; }
-  if (rowsSecours.length === 0) return { rows, plan, note: "" };
+  const ecarteesSecours: LigneEcartee[] = [];
+  try { rowsSecours = appliquerPlan(secours, matrix, ecarteesSecours); } catch { rowsSecours = []; }
+  if (rowsSecours.length === 0) return { rows, plan, note: "", ecartees };
   return {
     rows: rowsSecours,
     plan: secours,
+    ecartees: ecarteesSecours,
     note: "Le plan de lecture ne rattachait aucune ligne du fichier ; lecture automatique utilisee a la place.",
   };
+}
+
+/**
+ * Les lignes ecartees de la lecture, dites a l'utilisateur. Une ligne de total
+ * doit sortir des faits (sinon elle double le chiffre d'affaires) mais jamais
+ * en silence : si la detection se trompe, c'est ici qu'on le voit.
+ */
+function noteLignesEcartees(ecartees: LigneEcartee[]): string {
+  if (ecartees.length === 0) return "";
+  const exemples = ecartees.slice(0, 5).map((e) => `ligne ${e.ligne} « ${e.apercu} »`).join(", ");
+  return `${ecartees.length} ligne(s) de total ou ignorée(s) par le plan, exclue(s) des données : ${exemples}`
+    + (ecartees.length > 5 ? "…" : "") + ".";
 }
 
 /** Matrice d'une feuille de classeur, meme forme que celle d'un fichier texte. */
@@ -160,11 +180,8 @@ async function importRows(
   fileUrl = "",
   memoire?: { plan: PlanImport | null; signature: string; confirme: boolean },
   companyDictionary?: Record<string, string>,
+  ecartees: LigneEcartee[] = [],
 ) {
-  const schema = getSchema(entityName);
-  const properties = schema ? schema.properties : null;
-  const required = schema ? schema.required : [];
-
   const importRec = await base44.entities.Import.create({
     source_type: sourceType,
     file_name: fileLabel,
@@ -179,135 +196,22 @@ async function importRows(
     plan_signature: memoire?.signature || undefined,
     plan_confirmed: memoire?.confirme || false,
   });
-
-  const toCreate: Record<string, any>[] = [];
-  const rawObservations = [];
-  let quarantined = 0;
-  const missingFields = new Set<string>();
-  const samples: string[] = [];
-  // Values present in the file but refused by the schema, counted per field and
-  // per value so the report can name them instead of claiming the field is absent.
-  const refusedValues: Record<string, Record<string, number>> = {};
-  const allowedByField: Record<string, string[]> = {};
-  // Colonnes du fichier qui n'ont pu être associées à aucun champ de
-  // l'entité cible — un fichier peut "réussir" son import tout en ayant
-  // silencieusement ignoré une colonne financière que personne n'a vue.
-  const unmappedColumns = new Set<string>();
-
-  // ── NOUVEAU PIPELINE SÉMANTIQUE (Phase 1) ──
-  let profile, matchedConcepts, grain;
-  try {
-    profile = profileData(rows.slice(0, 50));
-    matchedConcepts = {};
-    for (const [col, p] of Object.entries(profile.columns)) {
-      const match = matchConcept(p);
-      if (match) matchedConcepts[col] = match;
-    }
-    grain = detectGrain(profile, matchedConcepts);
-  } catch(e) { console.error("Semantic engine failed", e); }
-
-  rows.forEach((row, index) => {
-    if (!row || typeof row !== "object" || isSummaryOrTotalRow(row)) return;
-    const enumIssues: { field: string; value: string; allowed: string[] }[] = [];
-    const normalized = normalizeRow(entityName, row, importRec.id, properties, sourceType, enumIssues, unmappedColumns, companyDictionary);
-    if (Object.keys(normalized).filter((k) => k !== "import_id").length === 0) return;
-    deriveFallbackIdentity(entityName, normalized, index);
-    // Reject up front rather than letting one row fail its whole batch.
-    const missing = missingRequired(normalized, required);
-    if (missing.length > 0) {
-      missing.forEach((m) => {
-        // Was the field actually absent, or present with a refused value?
-        const refused = enumIssues.find((e) => e.field === m);
-        if (refused) {
-          if (!refusedValues[m]) refusedValues[m] = {};
-          refusedValues[m][refused.value] = (refusedValues[m][refused.value] || 0) + 1;
-          allowedByField[m] = refused.allowed;
-        } else {
-          missingFields.add(m);
-        }
-      });
-      if (samples.length < 2) samples.push(JSON.stringify(row).slice(0, 220));
-      quarantined++;
-      return;
-    }
-    toCreate.push(normalized);
-
-    // Génération de l'Observation
-    if (profile && matchedConcepts && grain) {
-      const normalizedObs = normalizeRowForCore(row, profile.columns);
-      const obsList = generateObservations(normalizedObs, matchedConcepts, fileLabel, grain);
-      rawObservations.push(...obsList);
-    }
+  const t = await traiterLignes(base44, {
+    importId: importRec.id, entityName, rows, sourceType, fileLabel,
+    plan: memoire?.plan || null, companyDictionary, ecartees,
   });
-
-  const messages: string[] = [];
-  if (unmappedColumns.size > 0) {
-    messages.push(
-      `${unmappedColumns.size} colonne(s) non reconnue(s) et ignorée(s) pour ${entityName} : ${Array.from(unmappedColumns).slice(0, 10).join(", ")}` +
-      (unmappedColumns.size > 10 ? "…" : "") +
-      ". Leur contenu brut reste conservé dans original_data si besoin de le récupérer.",
-    );
-  }
-
-  // GESCOP Phase 5 SSOT: Deduplication
-  const { newRows, duplicateCount } = await deduplicateRows(base44, entityName, toCreate);
-  if (duplicateCount > 0) {
-    messages.push(`${duplicateCount} doublon(s) détecté(s) et ignoré(s).`);
-  }
-
-  const { created, quarantined: rejected, errors } = await insertRows(base44, entityName, newRows);
-  quarantined += rejected + duplicateCount;
-
-  // Sauvegarde des Observations (Silencieuse pour ne pas bloquer l'import)
-  if (rawObservations.length > 0) {
-    try {
-      // On sauvegarde par lots de 100
-      for (let i = 0; i < rawObservations.length; i += 100) {
-        await base44.entities.Observation.bulkCreate(rawObservations.slice(i, i + 100));
-      }
-    } catch(e) { console.warn("Failed to save observations", e); }
-  }
-
-  // Refused values first: this is the actionable one, and it used to be
-  // reported as a missing field, which sent users looking for a column that
-  // was right there in their file.
-  for (const [field, counts] of Object.entries(refusedValues)) {
-    const listed = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([val, n]) => `« ${val} » (${n})`)
-      .join(", ");
-    const total = Object.values(counts).reduce((s, n) => s + n, 0);
-    messages.push(
-      `${field} : ${total} ligne(s) rejetée(s) pour cause de valeur non reconnue — ${listed}. `
-      + `Valeurs acceptées : ${(allowedByField[field] || []).join(", ")}. `
-      + `Corrigez cette colonne dans votre fichier, puis réimportez.`,
-    );
-  }
-  if (missingFields.size > 0) {
-    messages.push(`champs obligatoires absents du fichier : ${Array.from(missingFields).join(", ")}`);
-    if (samples.length > 0) messages.push(`exemple de ligne rejetée : ${samples[0]}`);
-  }
-  if (errors.length > 0) messages.push(errors[0]);
-
-  const quality = rows.length > 0 ? Math.round((created / rows.length) * 100) : 0;
-  await base44.entities.Import.update(importRec.id, {
-    status: created > 0 ? "complete" : "echoue",
-    quality_score: quality,
-    rows_processed: created,
-    rows_quarantined: quarantined,
-  });
-
+  await base44.entities.Import.update(importRec.id, champsImport(t));
   return {
     entity: entityName,
-    status: created > 0 ? "complete" : "echoue",
-    rows_read: rows.length,
-    rows: created,
-    quarantined,
-    message: messages.join(" · ") || undefined,
-    // Signals to the caller that the quota is exhausted, so the next sheet
-    // should not be fired straight into the same wall.
-    rateLimited: errors.some((e) => e.includes("limite de débit")),
+    import_id: importRec.id,
+    status: t.status,
+    rows_read: rows.length + ecartees.length,
+    rows: t.created,
+    quarantined: t.quarantined,
+    metrics: t.metrics,
+    corrections_preuves: (memoire?.plan?.corrections || []).slice(0, 10),
+    message: t.message,
+    rateLimited: t.rateLimited,
   };
 }
 
@@ -356,6 +260,9 @@ export default async function (req: Request) {
     }
 
     const results: any[] = [];
+    // Cles connues (base + feuilles deja lues dans cet envoi) pour les preuves
+    // entre tables : une feuille Clients lue avant la feuille Ventes compte.
+    const relations = nouveauContexteRelations();
 
     for (const file of files) {
       const { file_url, file_name } = file;
@@ -386,9 +293,9 @@ export default async function (req: Request) {
             // Le plan valide par l'utilisateur, s'il nous l'a renvoye.
             const planValide = plansFournis[label];
             const analyse = planValide
-              ? { plan: planValide, signature: signatureFichier(matrix[planValide.ligne_entetes] || []), refus: [], erreur: undefined }
+              ? { plan: evaluerPlan(planValide, matrix, "humain"), signature: signatureFichier(matrix[planValide.ligne_entetes] || []), refus: [], erreur: undefined }
               : await planPourFeuille(base44, { matrix, label, nomFichier: file_name, manual: entity_override, companyDictionary });
-            const plan = analyse.plan;
+            const plan = await appliquerPreuvesEntreTables(base44, analyse.plan, matrix, relations);
 
             if (analyseSeule) {
               const lecture = lignesSelonPlan(plan, matrix, file_name);
@@ -415,17 +322,26 @@ export default async function (req: Request) {
                   deriveFallbackIdentity(plan.entite, normalized, i);
                   mappedCount++;
 
+                  // L'apercu doit annoncer ce que l'import fera vraiment : seule une
+                  // ligne a laquelle manque un champ OBLIGATOIRE part en quarantaine.
+                  // Une valeur hors liste sur un champ facultatif est seulement
+                  // retiree de ce champ — la ligne est importee. Les compter en
+                  // quarantaine ici annoncait des rejets qui n'avaient pas lieu.
                   const errors: string[] = [];
                   const missing = missingRequired(normalized, required);
                   if (missing.length > 0) errors.push(`Champs obligatoires manquants: ${missing.join(", ")}`);
-                  if (enumIssues.length > 0) {
-                    enumIssues.forEach(e => errors.push(`Valeur refusée pour ${e.field}: "${e.value}" (acceptées: ${e.allowed.join(", ")})`));
-                  }
+                  enumIssues.filter((e) => missing.includes(e.field)).forEach((e) => errors.push(`Valeur refusée pour ${e.field}: "${e.value}" (acceptées: ${e.allowed.join(", ")})`));
 
                   if (errors.length > 0) {
                     quarantinedCount++;
                     if (quarantine.length < 50) {
-                      quarantine.push({ rowIndex: i + plan.ligne_entetes + 1, original: row, mapped: normalized, errors });
+                      const premier = missing[0];
+                      const motif = motifChampManquant(premier, normalizeKeys(row, properties, undefined, companyDictionary)[premier], properties[premier], enumIssues.find((e) => e.field === premier));
+                      quarantine.push({
+                        rowIndex: (row as any)[NUMERO_LIGNE] ?? i + plan.ligne_entetes + 2,
+                        original: (row as any)[LIGNE_BRUTE] || row, mapped: normalized, errors,
+                        reason_code: motif.reason, field: premier,
+                      });
                     }
                   } else {
                     validCount++;
@@ -466,10 +382,15 @@ export default async function (req: Request) {
               via = parRegles.via as any;
             }
             if (!entity) {
+              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, file_url);
               results.push({
-                file_name: label, entity: null, status: "ignore",
-                rows_read: Math.max(matrix.length - plan.ligne_entetes - 1, 0), rows: 0,
-                message: `Type non reconnu — colonnes lues : ${entetesLues.slice(0, 6).join(", ")}`,
+                file_name: label, entity: null, status: "quarantaine", import_id: conserve.import_id,
+                rows_read: conserve.metrics.total_rows, rows: 0, quarantined: conserve.metrics.unknown_rows,
+                metrics: conserve.metrics,
+                message: `Type non reconnu — colonnes lues : ${entetesLues.slice(0, 6).join(", ")}. `
+                  + `${conserve.conservees} ligne(s) conservée(s) telles quelles dans le registre de l'import : `
+                  + `choisissez le type pour les intégrer, sans réimporter.`
+                  + (conserve.erreur ? ` (${conserve.erreur})` : ""),
               });
               continue;
             }
@@ -477,17 +398,18 @@ export default async function (req: Request) {
             const lecture = lignesSelonPlan(plan, matrix, file_name, entity);
             const res = await importRows(base44, entity, lecture.rows, sourceType, label, file_url, {
               plan: lecture.plan, signature: analyse.signature, confirme: Boolean(planValide) && !lecture.note,
-            }, companyDictionary);
+            }, companyDictionary, lecture.ecartees);
             if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
             results.push({
               file_name: label, detected_via: via,
               plan_origine: lecture.plan.origine, corrections: lecture.plan.corrections,
               ...res,
-              message: [lecture.note, res.message].filter(Boolean).join(" · ") || undefined,
+              lignes_ecartees: lecture.ecartees.length,
+              message: [lecture.note, noteLignesEcartees(lecture.ecartees), res.message].filter(Boolean).join(" · ") || undefined,
             });
           }
         } catch (e: any) {
-          results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, error: e.message });
+          results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, reason_code: REASON.TECHNICAL_PARSE_ERROR, error: e.message });
         }
         continue;
       }

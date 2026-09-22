@@ -1,14 +1,41 @@
 {
   "name": "Import",
   "properties": {
+    "ambiguous_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Colonnes au rattachement dispute ou contredit par leurs valeurs : conservees, non utilisees dans les calculs."
+    },
+    "anomalous_values": {
+      "type": "number",
+      "description": "Valeurs importees mais signalees a verifier : negatives, tres eloignees du reste de la colonne."
+    },
+    "derived_values": {
+      "type": "number",
+      "description": "Valeurs completees par un identifiant technique."
+    },
+    "duplicate_rows": {
+      "type": "number",
+      "description": "Lignes exclues comme doublons."
+    },
     "entity_type": {
       "type": "string"
+    },
+    "fallback_values": {
+      "type": "number",
+      "description": "Valeurs rangees sous autre faute de correspondance."
     },
     "file_name": {
       "type": "string"
     },
     "file_url": {
       "type": "string"
+    },
+    "ignored_rows": {
+      "type": "number",
+      "description": "Lignes ignorees par le plan de lecture."
     },
     "plan_confirmed": {
       "default": false,
@@ -19,12 +46,27 @@
       "description": "Empreinte des intitules de colonnes. Permet de retrouver le plan deja valide pour le meme type d'export le mois suivant.",
       "type": "string"
     },
+    "potential_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Colonnes non rattachees mais exploitables comme axe d'analyse (canal, region, campagne...)."
+    },
     "quality_score": {
       "type": "number"
     },
     "read_plan": {
       "description": "Plan de lecture applique a ce fichier : ligne d'en-tetes, lignes ignorees, rattachement des colonnes, conventions de date, traductions de codes.",
       "type": "object"
+    },
+    "reasons": {
+      "type": "object",
+      "description": "Nombre de lignes ecartees par motif (reason_code)."
+    },
+    "recovered_rows": {
+      "type": "number",
+      "description": "Lignes recuperees depuis le registre (retraitement)."
     },
     "rows_processed": {
       "type": "number"
@@ -51,6 +93,25 @@
         "echoue"
       ],
       "type": "string"
+    },
+    "summary_rows": {
+      "type": "number",
+      "description": "Lignes de total / sous-total exclues des faits."
+    },
+    "total_rows": {
+      "type": "number",
+      "description": "Lignes du fichier examinees (hors en-tetes et lignes vides)."
+    },
+    "unknown_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Colonnes du fichier sans champ correspondant (conservees dans original_data)."
+    },
+    "unknown_rows": {
+      "type": "number",
+      "description": "Lignes conservees brutes faute de type de feuille reconnu."
     }
   },
   "required": [

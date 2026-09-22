@@ -29,6 +29,40 @@ const ORIGINE = {
 
 const IGNOREE = "__ignoree__";
 
+/**
+ * Statut d'une colonne (reconnaissance par preuves) : ce que l'application
+ * sait vraiment de la colonne, et pourquoi — survoler le badge montre les
+ * preuves observees.
+ */
+const STATUT_COLONNE = {
+  CONFIRMED: { libelle: "Confirmée", classe: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  PROBABLE: { libelle: "Probable", classe: "bg-sky-50 text-sky-700 border-sky-200" },
+  AMBIGUOUS: { libelle: "Ambiguë", classe: "bg-amber-50 text-amber-800 border-amber-200" },
+  UNKNOWN: { libelle: "Inconnue", classe: "bg-slate-50 text-slate-600 border-slate-200" },
+};
+
+function BadgeStatut({ evaluation }) {
+  if (!evaluation) return null;
+  const ton = STATUT_COLONNE[evaluation.statut] || STATUT_COLONNE.UNKNOWN;
+  const preuves = (evaluation.preuves || []).map((p) => `${p.points > 0 ? "+" : ""}${p.points} ${p.detail}`).join("\n");
+  const titre = [
+    evaluation.champ ? `Confiance ${evaluation.confiance}/100` : "Non rattachée : valeur conservée telle quelle",
+    preuves,
+  ].filter(Boolean).join("\n");
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Badge variant="outline" className={`text-[10px] ${ton.classe}`} title={titre}>
+        {ton.libelle}{evaluation.champ ? ` · ${evaluation.confiance}` : ""}
+      </Badge>
+      {evaluation.dimension_potentielle && (
+        <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 border-violet-200" title={preuves}>
+          Axe d'analyse possible
+        </Badge>
+      )}
+    </span>
+  );
+}
+
 export default function PlanConfirmation({ analyses, champsParEntite, entityOptions, onConfirmer, onAnnuler, enCours }) {
   // Les plans sont modifiables : c'est l'utilisateur qui a le dernier mot.
   const [plans, setPlans] = useState(() =>
@@ -46,7 +80,12 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
       [fichier]: {
         ...p[fichier],
         colonnes: p[fichier].colonnes.map((c) =>
-          c.colonne === nomColonne ? { ...c, champ: champ === IGNOREE ? null : champ } : c,
+          // Un choix de l'utilisateur est une preuve humaine : il n'est plus
+          // rediscute, et « ne pas rattacher » est respecte meme par un plan
+          // par regles (sinon les synonymes rattachaient la colonne quand meme).
+          c.colonne === nomColonne
+            ? { ...c, champ: champ === IGNOREE ? null : champ, source: "humain", exclue: champ === IGNOREE }
+            : c,
         ),
       },
     }));
@@ -134,7 +173,7 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
                   <label className="text-sm font-semibold text-slate-900 mb-1.5 block" htmlFor={`type-${a.file_name}`}>
                     Type de données
                   </label>
-                  <Select value={plan.entite || ""} onValueChange={(val) => majPlan(a.file_name, { entite: val })}>
+                  <Select value={plan.entite || ""} onValueChange={(val) => majPlan(a.file_name, { entite: val, entite_rivale: undefined })}>
                     <SelectTrigger id={`type-${a.file_name}`} className="bg-white">
                       <SelectValue placeholder="Choisir un type" />
                     </SelectTrigger>
@@ -142,6 +181,11 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
                       {entityOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {plan.entite_rivale && (
+                    <p className="mt-1.5 text-xs text-amber-700">
+                      À confirmer : les colonnes conviennent presque autant au type « {plan.entite_rivale} ».
+                    </p>
+                  )}
                 </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm self-end">
                   <dt className="text-slate-500 font-medium">Lignes à importer</dt>
@@ -229,7 +273,7 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={IGNOREE}>Ignorer cette colonne</SelectItem>
+                            <SelectItem value={IGNOREE}>Ne pas rattacher (valeur conservée)</SelectItem>
                             {champs.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
                           </SelectContent>
                         </Select>
@@ -247,6 +291,7 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
                             </motion.div>
                           )}
                           
+                          {!isManual && <BadgeStatut evaluation={(plan.evaluations || []).find((e) => e.colonne === c.colonne)} />}
                           {c.convention_date && (
                             <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-white">
                               {c.convention_date === "JJ/MM" ? "jour/mois" : "mois/jour"}

@@ -8,34 +8,10 @@
 import * as XLSX from "npm:xlsx@0.18.5";
 import { stripAccents } from "./importUtils.ts";
 
-const NAME_ENTITY_MAP = [
-  { pattern: /campaign.*(daily|jour)|marketing.*(daily|jour)|(daily|jour).*campaign|campagne.*(jour|quotidien)/i, entity: "CampaignDaily" },
-  { pattern: /interaction|service.?client|support|ticket/i, entity: "Interaction" },
-  { pattern: /transaction|ecriture|grand.?livre|releve|bancaire/i, entity: "Transaction" },
-  { pattern: /inventaire|inventory|stock/i, entity: "Inventory" },
-  { pattern: /order|commande|vente|sale/i, entity: "Order" },
-  { pattern: /customer|client|acheteur/i, entity: "Customer" },
-  { pattern: /product|produit|article|catalogue|sku/i, entity: "Product" },
-  { pattern: /supplier|fournisseur|vendor/i, entity: "Supplier" },
-  { pattern: /purchase|achat|approvisionnement/i, entity: "Purchase" },
-  { pattern: /campaign|campagne|publicite|ads|marketing/i, entity: "Campaign" },
-  { pattern: /employee|employe|personnel|effectif|staff|rh/i, entity: "Employee" },
-  { pattern: /payroll|paie|paye|salaire|remuneration/i, entity: "Payroll" },
-  { pattern: /expense|depense|charge|frais|cout/i, entity: "Expense" },
-  { pattern: /cashflow|cash.?flow|tresorerie|caisse|liquidite|flux/i, entity: "Cashflow" },
-  { pattern: /competitor|concurrent|concurrence/i, entity: "Competitor" },
-  { pattern: /signal|radar|veille|actualite/i, entity: "ExternalSignal" },
-  { pattern: /goal|objectif|cible|target/i, entity: "Goal" },
-  { pattern: /event|evenement|journal/i, entity: "Event" },
-];
-
-export function detectEntityByName(name: string): string | null {
-  const lower = stripAccents((name || "").toLowerCase());
-  for (const m of NAME_ENTITY_MAP) {
-    if (m.pattern.test(lower)) return m.entity;
-  }
-  return null;
-}
+// Detection par le nom deplacee vers importUtils.ts (22 sept 2026), comme la
+// detection par en-tetes : le classement des entites par preuves
+// (core/recognition/preuves.ts) en a besoin et doit rester testable sans xlsx.
+export { detectEntityByName, NAME_ENTITY_MAP } from "./importUtils.ts";
 
 // Header signatures: every "must" column has to be present. Ordered from the
 // most specific signature to the least, so CampaignDaily wins over Campaign.

@@ -48,15 +48,22 @@ export async function insertRows(
   base44: any,
   entityName: string,
   rows: Record<string, any>[],
-): Promise<{ created: number; quarantined: number; errors: string[] }> {
+): Promise<{ created: number; quarantined: number; errors: string[]; failed: { row: Record<string, any>; reason: "STORAGE_REJECTED" | "RATE_LIMITED"; error: string }[] }> {
   let created = 0;
   let quarantined = 0;
   const errors: string[] = [];
+  // Chaque ligne non ecrite, avec son motif : le registre de l'import (et le
+  // retraitement) en a besoin, un simple compteur ne permet de rien recuperer.
+  const failed: { row: Record<string, any>; reason: "STORAGE_REJECTED" | "RATE_LIMITED"; error: string }[] = [];
+  const echec = (rows: Record<string, any>[], reason: "STORAGE_REJECTED" | "RATE_LIMITED", error: string) => {
+    quarantined += rows.length;
+    rows.forEach((row) => failed.push({ row, reason, error }));
+  };
   let aborted = false;
 
   const push = async (batch: Record<string, any>[]) => {
     if (batch.length === 0) return;
-    if (aborted) { quarantined += batch.length; return; }
+    if (aborted) { echec(batch, "RATE_LIMITED", "import interrompu par la limite de débit"); return; }
     try {
       await withBackoff(() => base44.entities[entityName].bulkCreate(batch));
       created += batch.length;
@@ -64,7 +71,7 @@ export async function insertRows(
       // Still rate-limited after all retries: stop instead of burning requests.
       if (isRateLimit(e)) {
         aborted = true;
-        quarantined += batch.length;
+        echec(batch, "RATE_LIMITED", "limite de débit atteinte");
         if (errors.length < 5) {
           errors.push(
             "limite de débit atteinte après plusieurs tentatives — aucune ligne de ce fichier n'a été perdue, "
@@ -81,17 +88,18 @@ export async function insertRows(
       }
       // Small batch: isolate the offending rows one by one.
       for (const row of batch) {
-        if (aborted) { quarantined += 1; continue; }
+        if (aborted) { echec([row], "RATE_LIMITED", "import interrompu par la limite de débit"); continue; }
         try {
           await withBackoff(() => base44.entities[entityName].create(row));
           created += 1;
         } catch (err: any) {
-          quarantined += 1;
           if (isRateLimit(err)) {
+            echec([row], "RATE_LIMITED", "limite de débit atteinte");
             aborted = true;
             if (errors.length < 5) errors.push("limite de débit atteinte — réessayez l'import dans une minute");
             continue;
           }
+          echec([row], "STORAGE_REJECTED", String(err?.message || e?.message || "rejet"));
           if (errors.length < 5) errors.push(String(err?.message || e?.message || "rejet"));
           if (errors.length >= 5 && quarantined > MAX_ERRORS) aborted = true;
         }
@@ -108,8 +116,8 @@ export async function insertRows(
   if (aborted) {
     // Rows never attempted after an abort are still unimported.
     const attempted = created + quarantined;
-    if (attempted < rows.length) quarantined += rows.length - attempted;
+    if (attempted < rows.length) echec(rows.slice(attempted), "RATE_LIMITED", "non tentée : import interrompu par la limite de débit");
   }
 
-  return { created, quarantined, errors };
+  return { created, quarantined, errors, failed };
 }

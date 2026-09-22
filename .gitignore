@@ -42,3 +42,8 @@ test-results/
 
 # Local Journal
 memory_journal.md
+
+# Banc de reconnaissance : sorties de compilation et mesures locales
+tests/banc/.build/
+tests/banc/resultats/*
+!tests/banc/resultats/avant.json
