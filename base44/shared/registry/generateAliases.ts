@@ -37,7 +37,7 @@ function canonicalize(s: string): string {
  * ("1 200,00 $"), "decimal" ("1200.50") ou "integer" ("1200") selon le
  * formatage source.
  */
-export function buildConceptMappingsFromRegistry(): { concept: string; type: string[]; keywords: string[] }[] {
+export function buildConceptMappingsFromRegistry(): { concept: string; type: string[]; keywords: string[]; kind: string }[] {
   const dataTypeToProfilerTypes: Record<string, string[]> = {
     CURRENCY: ["currency", "decimal", "integer"],
     PERCENTAGE: ["percentage", "decimal"],
@@ -50,6 +50,10 @@ export function buildConceptMappingsFromRegistry(): { concept: string; type: str
     concept: c.conceptId,
     type: dataTypeToProfilerTypes[c.dataType] || ["string"],
     keywords: c.lexicon.map(normalizeKey),
+    // FLOW / STOCK / RATE... : le matcher refuse un prix ou une quantite pour
+    // un FLUX (« Prix_Vente » n'est pas du chiffre d'affaires), pas pour un
+    // concept qui EST un prix (« Prix unitaire » -> unit_price).
+    kind: c.kind,
   }));
 }
 

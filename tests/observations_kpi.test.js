@@ -21,7 +21,7 @@ test("Mots-cles de plusieurs mots et intitules composes : reconnus", () => {
 });
 
 test("Faux positifs supprimes : un mot contenu dans un autre, une quantite, un prix, des points", () => {
-  assert.equal(concept("cash_in", "decimal"), null, "« ca » n'est pas dans « cash »");
+  assert.equal(concept("cash_in", "decimal"), "treasury.cashIn", "« ca » n'est pas dans « cash » : un encaissement, pas du chiffre d'affaires");
   assert.equal(concept("categorie", "string"), null);
   assert.equal(concept("Ventes (unités)", "integer"), null, "une quantite vendue n'est pas un chiffre d'affaires");
   assert.equal(concept("Prix_Vente_CAD", "decimal"), null, "un prix de vente n'est pas un chiffre d'affaires");
@@ -64,4 +64,38 @@ test("Une mesure qu'aucune entite ne declare reste lisible depuis les observatio
     fieldSemantics: new Map(),
   });
   assert.equal(r.value, 12);
+});
+
+// ── Registre enrichi (22 sept 2026) ─────────────────────────────────────────
+import { CONCEPTS } from "../base44/shared/registry/conceptRegistry.ts";
+import { ENTITY_SCHEMAS } from "../base44/shared/entitySchemas.ts";
+
+const AJOUTS = ["sales.quantity", "sales.unitPrice", "finance.unitCost", "sales.discount", "sales.tax", "finance.grossProfit",
+  "inventory.closingStock", "inventory.openingStock", "inventory.value", "inventory.unitsSold", "inventory.purchases",
+  "treasury.cashIn", "treasury.cashOut", "treasury.netCashFlow", "marketing.clicks", "marketing.impressions",
+  "marketing.conversions", "customer.lifetimeValue", "customer.totalOrders", "hr.hourlyRate", "hr.annualSalary"];
+
+test("Chaque concept ajoute au registre vise un vrai champ d'entite", () => {
+  const champs = new Set(Object.values(ENTITY_SCHEMAS).flatMap((s) => Object.keys(s.properties)));
+  for (const id of AJOUTS) {
+    assert.ok(CONCEPTS[id], `${id} present`);
+    assert.ok(champs.has(CONCEPTS[id].canonicalKey), `${id} -> ${CONCEPTS[id].canonicalKey} est un champ`);
+  }
+});
+
+test("Les champs d'entite sont reconnus, meme ceux dont le nom n'a pas pu entrer dans le lexique", () => {
+  assert.equal(concept("quantity", "integer"), "sales.quantity");
+  assert.equal(concept("unit_price", "decimal"), "sales.unitPrice");
+  assert.equal(concept("closing_stock", "integer"), "inventory.closingStock");
+  assert.equal(concept("hourly_rate", "decimal"), "hr.hourlyRate");
+});
+
+test("Intitules reels reconnus, sans capter les colonnes voisines", () => {
+  assert.equal(concept("Prix Unitaire ($)", "decimal"), "sales.unitPrice", "un prix unitaire EST un prix");
+  assert.equal(concept("Taux horaire", "decimal"), "hr.hourlyRate", "un taux horaire EST un taux");
+  assert.equal(concept("Remise_Ligne", "decimal"), "sales.discount");
+  assert.equal(concept("Salaire_Base_Annuel_CAD", "decimal"), "hr.annualSalary");
+  assert.equal(concept("Quantite_Reservee", "integer"), null, "stock reserve : pas une quantite vendue");
+  assert.equal(concept("Quantite_En_Transit", "integer"), null);
+  assert.equal(concept("Prix_Vente_CAD", "decimal"), null, "toujours pas du chiffre d'affaires");
 });

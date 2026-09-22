@@ -8,6 +8,7 @@
 
 import type { ColumnProfile } from './dataProfiler.ts';
 import { buildConceptMappingsFromRegistry } from './registry/generateAliases.ts';
+import { CONCEPTS } from './registry/conceptRegistry.ts';
 
 export type SemanticMatch = {
   concept: string;         // e.g. "finance.revenue", "temporal.date", "customer.id"
@@ -53,6 +54,10 @@ function contientSuite(dans: string[], cherche: string[]): boolean {
  * « total_cost » aurait change le rattachement des colonnes « Coût total ».
  */
 const CONCEPT_PAR_CHAMP: Record<string, string> = {
+  // Chaque concept du registre sur son propre champ (quantity, unit_price,
+  // closing_stock...) : le champ est toujours reconnu, meme quand son nom
+  // n'a pas pu entrer dans le lexique parce qu'il y designait deja autre chose.
+  ...Object.fromEntries(Object.values(CONCEPTS).map((c) => [c.canonicalKey, c.conceptId])),
   total_revenue: "finance.revenue",
   total_cost: "finance.cogs", cogs: "finance.cogs",
   gross_margin: "finance.grossMargin",
@@ -62,6 +67,14 @@ const CONCEPT_PAR_CHAMP: Record<string, string> = {
   customer_id: "customer.id",
   date: "temporal.date",
 };
+
+/**
+ * Qualificatifs qui ne changent pas le sens d'un mot-cle d'un seul mot :
+ * « CA HT », « Remise (CAD) », « Total Ventes ». Tout autre mot le change
+ * (« Quantite_Reservee » n'est pas une quantite vendue) : un mot-cle d'un seul
+ * mot ne correspond partiellement qu'entoure de ces qualificatifs.
+ */
+const QUALIFICATIFS_NEUTRES = new Set(["ligne", "line", "ht", "ttc", "brut", "brute", "net", "nette", "total", "totale", "cad", "usd", "eur", "dollars", "d", "de", "du", "des", "l", "la", "le", "les", "en"]);
 
 /** Mots qui font d'une colonne une QUANTITE, jamais un montant (« Ventes (unités) »). */
 const MARQUEURS_QUANTITE = new Set(["unite", "unites", "unit", "units", "qte", "qty", "quantite", "quantity", "nombre", "nb", "volume", "pieces"]);
@@ -95,7 +108,10 @@ export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
       continue; // Le type de donnee ne correspond pas du tout au concept
     }
     // Une quantite (« Ventes (unités) ») n'est jamais un montant.
-    if ((estUneQuantite || estUnPrix || nonMonetaire) && mapping.type.includes("currency")) continue;
+    // Seulement pour un montant qui s'additionne ou se cumule (flux, solde) :
+    // un prix unitaire ou un taux horaire SONT des prix ou des taux.
+    const montantCumulable = mapping.type.includes("currency") && (mapping.kind === "FLOW" || mapping.kind === "STOCK");
+    if ((estUneQuantite || estUnPrix || nonMonetaire) && montantCumulable) continue;
 
     // 2. Recherche par mots-clǸs (Scoring)
     let score = 0;
@@ -105,7 +121,8 @@ export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
       if (motsCle.join(" ") === motsColonne.join(" ")) {
         score = 1.0; // Match exact
         break;
-      } else if (contientSuite(motsColonne, motsCle)) {
+      } else if (contientSuite(motsColonne, motsCle)
+        && (motsCle.length > 1 || motsColonne.every((m) => motsCle.includes(m) || QUALIFICATIFS_NEUTRES.has(m)))) {
         score = 0.7; // Match partiel, sur des mots entiers (« CA HT », « total_revenue »)
       }
     }
