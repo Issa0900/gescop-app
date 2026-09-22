@@ -103,6 +103,8 @@ export interface ImportIssueRecord {
   raw_row: string;
   mapped_row?: string;
   recovery_status: RecoveryStatus;
+  /** Doublon potentiel : decision humaine (A_VERIFIER, EXCLU, CONSERVE). */
+  review_status?: "A_VERIFIER" | "EXCLU" | "CONSERVE";
 }
 
 /** Les chiffres d'un import (§20). Invariant : total_rows = somme des statuts. */

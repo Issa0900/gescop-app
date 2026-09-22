@@ -131,7 +131,11 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
   // D'ou vient chaque ligne normalisee : un doublon ou un refus a l'ecriture
   // doit pouvoir etre rattache a sa ligne du fichier.
   const sources = new Map<Record<string, any>, { brut: any; ligne: number | null; issueId?: string }>();
-  const rawObservations = [];
+  // Observations de chaque ligne normalisee : elles ne sont enregistrees que
+  // pour les lignes reellement ecrites (plus pour les doublons exclus ni les
+  // refus a l'ecriture), et reliees a leur ligne (import_id + row_ref) pour
+  // pouvoir etre retirees avec elle.
+  const observationsDe = new Map<Record<string, any>, any[]>();
   const aControler: { valeurs: Record<string, any>; src: { brut: any; ligne: number | null; issueId?: string } }[] = [];
   const missingFields = new Set<string>();
   const samples: string[] = [];
@@ -223,7 +227,7 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     if (profile && matchedConcepts && grain) {
       const normalizedObs = normalizeRowForCore(row, profile.columns);
       const obsList = generateObservations(normalizedObs, matchedConcepts, fileLabel, grain);
-      rawObservations.push(...obsList);
+      observationsDe.set(normalized, obsList);
     }
   });
 
@@ -292,7 +296,7 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     const ligneDeRef = sources.get(premiere)?.ligne;
     issues.push({
       import_id: importId, file_name: fileLabel, entity_type: entityName, row_number: src.ligne,
-      row_status: ROW_STATUS.DUPLICATE_EXACT, reason_code: REASON.DUPLICATE_EXACT,
+      row_status: ROW_STATUS.DUPLICATE_EXACT, reason_code: REASON.DUPLICATE_EXACT, review_status: "A_VERIFIER",
       detail: `strictement identique à ${ligneDeRef ? `la ligne ${ligneDeRef}` : "une autre ligne"} du fichier — conservée, vérification requise avant exclusion`,
       raw_row: json(src.brut), mapped_row: json(row), recovery_status: RECOVERY.NOT_APPLICABLE,
     });
@@ -326,6 +330,12 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
   }
 
   // Sauvegarde des Observations (Silencieuse pour ne pas bloquer l'import)
+  const rawObservations: any[] = [];
+  for (const r of newRows) {
+    const source = (r as any)[LIGNE_SOURCE] || r;
+    if (refusees.has(source)) continue;
+    for (const o of observationsDe.get(source) || []) rawObservations.push({ ...o, import_id: importId, row_ref: r.fingerprint });
+  }
   if (rawObservations.length > 0) {
     try {
       // On sauvegarde par lots de 100

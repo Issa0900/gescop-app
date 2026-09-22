@@ -17,6 +17,7 @@ export function fauxClient(reponseIA?: (feuille: string) => any, depart: Record<
     create: async (r: any) => ajouter(nom, r),
     bulkCreate: async (rs: any[]) => rs.map((r) => ajouter(nom, r)),
     update: async (id: string, patch: any) => Object.assign(table(nom).find((r) => r.id === id) || {}, patch),
+    delete: async (id: string) => { const t = table(nom); const i = t.findIndex((r) => r.id === id); if (i >= 0) t.splice(i, 1); return {}; },
     filter: async (q: any) => table(nom).filter((r) => Object.entries(q).every(([k, v]) => r[k] === v)),
     list: async (_tri?: string, limite = 500, depart = 0) => table(nom).slice(depart, depart + limite),
   });

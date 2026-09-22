@@ -4,7 +4,11 @@
   "properties": {
     "observation_type": {
       "type": "string",
-      "enum": ["quantitative", "qualitative", "external"]
+      "enum": [
+        "quantitative",
+        "qualitative",
+        "external"
+      ]
     },
     "concept": {
       "type": "string"
@@ -30,6 +34,14 @@
     },
     "confidence": {
       "type": "number"
+    },
+    "import_id": {
+      "type": "string",
+      "description": "Import d'origine de la ligne."
+    },
+    "row_ref": {
+      "type": "string",
+      "description": "Empreinte de la ligne d'origine : permet de retirer ses observations avec elle (ex. doublon exclu apres verification)."
     }
   },
   "required": [
@@ -49,4 +61,3 @@
     }
   }
 }
-

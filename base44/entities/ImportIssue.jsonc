@@ -81,6 +81,19 @@
     },
     "recovered_record_id": {
       "type": "string"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "A_VERIFIER",
+        "EXCLU",
+        "CONSERVE"
+      ],
+      "description": "Doublon potentiel : a verifier, exclu apres verification (retire des donnees, conserve ici), ou confirme comme ligne reelle."
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

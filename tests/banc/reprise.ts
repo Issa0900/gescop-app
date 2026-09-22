@@ -7,6 +7,7 @@
 // en mode simulation.
 
 import reprocess from "../../base44/functions/reprocessImport/entry.ts";
+import resolveDuplicate from "../../base44/functions/resolveDuplicate/entry.ts";
 import { importer, classeur, fauxClient } from "./outils.ts";
 
 declare const require: any;
@@ -120,6 +121,57 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+async function decider(base: ReturnType<typeof fauxClient>, issue_id: string, decision: string) {
+  (globalThis as any).__BASE44_STUB = base.client;
+  const res = await (resolveDuplicate as any)(new Request("http://banc/resolveDuplicate", { method: "POST", body: JSON.stringify({ issue_id, decision }) }));
+  return { status: res.status, corps: await res.json() };
+}
+
+async function scenarioDoublons(): Promise<[boolean, string][]> {
+  const base = fauxClient();
+  await importer("caisse.xlsx", classeur({ Caisse: [
+    ["Date", "Montant", "Type", "Description"],
+    ["2026-09-20", "47.50", "Revenu", "Pain x10"],
+    ["2026-09-20", "47.50", "Revenu", "Pain x10"],
+    ["2026-09-20", "47.50", "Revenu", "Pain x10"],
+    ["2026-09-20", "12.00", "Revenu", "Café x4"],
+  ] }), "Transaction", undefined, base);
+  const imp = base.tables.Import[0];
+  const aVerifier = () => (base.tables.ImportIssue || []).filter((i: any) => i.row_status === "DUPLICATE_EXACT" && i.review_status === "A_VERIFIER");
+  const v: [boolean, string][] = [];
+  v.push([compter(base, "Transaction") === 4 && aVerifier().length === 2, `import : 4 ventes gardées, ${aVerifier().length} doublon(s) potentiel(s) à vérifier (attendu 4 / 2)`]);
+  v.push([imp.potential_duplicates === 2, `Import.potential_duplicates = ${imp.potential_duplicates} (attendu 2)`]);
+
+  const [premier, second] = aVerifier();
+  const ex = await decider(base, premier.id, "exclure");
+  const pains = base.tables.Transaction.filter((t: any) => t.description === "Pain x10").length;
+  v.push([ex.status === 200 && pains === 2, `exclure : ${pains} vente(s) « Pain x10 » restantes (attendu 2)`]);
+  v.push([premier.review_status === "EXCLU" && premier.row_status === "DUPLICATE" && Boolean(premier.raw_row), `registre : ligne brute conservée, décision tracée (${premier.review_status})`]);
+  v.push([imp.rows_processed === 3 && imp.duplicate_rows === 1 && imp.potential_duplicates === 1, `Import : ${imp.rows_processed} valides, ${imp.duplicate_rows} doublon, ${imp.potential_duplicates} à vérifier (attendu 3 / 1 / 1)`]);
+
+  const co = await decider(base, second.id, "conserver");
+  v.push([co.status === 200 && compter(base, "Transaction") === 3 && imp.potential_duplicates === 0, `conserver : aucune ligne retirée, plus rien à vérifier (${compter(base, "Transaction")} ventes, ${imp.potential_duplicates} à vérifier)`]);
+
+  const encore = await decider(base, premier.id, "exclure");
+  v.push([encore.status === 409 && compter(base, "Transaction") === 3, `re-exclure une décision déjà prise : refusé (${encore.status}), rien n'est retiré`]);
+
+  // Les observations (moteur KPI) de la copie exclue sortent avec elle. Un
+  // fichier de campagnes en produit (concept finance.revenue sur « revenue »).
+  const camp = fauxClient();
+  await importer("campagnes.xlsx", classeur({ Campagnes: [
+    ["Canal", "Date", "Dépenses", "Revenue"],
+    ["Meta Ads", "2026-09-01", 300, 1200],
+    ["Meta Ads", "2026-09-01", 300, 1200],
+  ] }), "Campaign", undefined, camp);
+  const obs = () => (camp.tables.Observation || []).length;
+  const avantObs = obs();
+  const signal = (camp.tables.ImportIssue || []).find((i: any) => i.row_status === "DUPLICATE_EXACT");
+  const r = signal ? await decider(camp, signal.id, "exclure") : { status: 0, corps: {} };
+  v.push([avantObs > 0 && r.status === 200 && obs() === avantObs / 2 && compter(camp, "Campaign") === 1,
+    `observations KPI : ${avantObs} → ${obs()} après exclusion (celles de la copie retirées), ${compter(camp, "Campaign")} campagne restante`]);
+  return v;
+}
+
 (async () => {
   const etiquette = process.argv[2] || "courant";
   const log = console.log;
@@ -134,6 +186,14 @@ const SCENARIOS: Scenario[] = [
       String(m.doublons_crees).padStart(8), String(m.ecritures_simulation).padStart(10));
     if (process.env.BANC_DETAILS) log("   ", m.detail);
   }
+  // Doublons potentiels : decision humaine apres verification (resolveDuplicate).
+  log(`
+=== Doublons potentiels : exclure / conserver après vérification ===
+`);
+  const verifs = await scenarioDoublons();
+  for (const [ok, libelle] of verifs) log(`${ok ? "ok  " : "KO  "} ${libelle}`);
+  mesures.push({ id: "D1-doublons-a-verifier", verifications: verifs.map(([ok, libelle]) => ({ ok, libelle })) });
+
   const dossier = path.join("tests", "banc", "resultats");
   fs.mkdirSync(dossier, { recursive: true });
   fs.writeFileSync(path.join(dossier, `${etiquette}-reprise.json`), JSON.stringify(mesures, null, 2));

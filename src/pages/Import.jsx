@@ -14,6 +14,7 @@ import {
   Download,
   ArrowRight,
   RotateCcw,
+  Copy,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCompany } from "@/hooks/useCompany";
@@ -22,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import ImportProgress from "@/components/import/ImportProgress";
 import PlanConfirmation from "@/components/import/PlanConfirmation";
+import DoublonsAVerifier from "@/components/import/DoublonsAVerifier";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
@@ -94,6 +96,8 @@ export default function ImportPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [purging, setPurging] = useState(false);
   const [manualEntity, setManualEntity] = useState("");
+  // Import dont on verifie les doublons potentiels (fenetre ouverte), ou null.
+  const [doublonsDe, setDoublonsDe] = useState(null);
   const { company } = useCompany();
 
   const { data: imports, isLoading } = useQuery({
@@ -593,6 +597,15 @@ export default function ImportPage() {
                       {new Date(imp.created_date).toLocaleDateString("fr-CA")}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {Number(imp.potential_duplicates || 0) > 0 && (
+                        <button
+                          onClick={() => setDoublonsDe(imp)}
+                          title="Lignes identiques à une autre du fichier, importées par précaution : exclure ou conserver après vérification"
+                          className="mr-1 inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-amber-700 hover:bg-amber-50"
+                        >
+                          <Copy className="h-3.5 w-3.5" /> Doublons à vérifier ({imp.potential_duplicates})
+                        </button>
+                      )}
                       {Number(imp.rows_quarantined || 0) > 0 && (
                         imp.entity_type ? (
                           <button
@@ -650,6 +663,7 @@ export default function ImportPage() {
           <Link to="/" className="font-medium underline">Aller au tableau de bord →</Link>
         </p>
       </div>
+      <DoublonsAVerifier imp={doublonsDe} onClose={() => setDoublonsDe(null)} />
     </motion.div>
   );
 }
