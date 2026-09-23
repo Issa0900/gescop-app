@@ -1,20 +1,74 @@
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Building2, Sparkles, Trash2, Globe, Wand2, Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/lib/LanguageContext";
 
 export default function CompanyProfilePanel({ form, setForm, onDelete }) {
   const { language } = useLanguage();
   const isEn = language === "en";
-
-  if (!form) return null;
+  const { toast } = useToast();
+  const [enriching, setEnriching] = useState(false);
 
   const handleChange = (field, val) => {
     setForm((f) => ({ ...f, [field]: val }));
   };
+
+  const handleEnrich = async () => {
+    if (!form.website) {
+      toast({ title: "Entrez d'abord l'URL du site web de l'entreprise", variant: "destructive" });
+      return;
+    }
+    setEnriching(true);
+    try {
+      let url = String(form.website).trim();
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      const res = await base44.functions.invoke("enrichFromWebsite", {
+        website_url: url,
+        company_name: form.name,
+      });
+      const data = res.data || res;
+      if (data.error) {
+        toast({ title: data.error, variant: "destructive" });
+      } else {
+        const info = data.company_info || {};
+        const filled = [];
+        setForm((f) => {
+          const next = { ...f };
+          const apply = (key, incoming) => {
+            if (!next[key] && incoming) {
+              next[key] = incoming;
+              filled.push(key);
+            }
+          };
+          apply("name", info.name);
+          apply("sector", info.sector);
+          apply("location", info.location);
+          apply("business_model", info.business_model);
+          apply("products", info.products);
+          apply("services", info.services);
+          apply("clientele", info.clientele);
+          apply("description", info.services || info.products);
+          return next;
+        });
+        toast({
+          title: filled.length
+            ? `✨ ${filled.length} champ(s) remplis automatiquement — vérifiez avant d'enregistrer`
+            : "Aucun champ vide à remplir depuis ce site web",
+        });
+      }
+    } catch (e) {
+      toast({ title: "Erreur IA : " + (e.response?.data?.error || e.message), variant: "destructive" });
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  if (!form) return null;
 
   return (
     <div className="space-y-6">
@@ -157,17 +211,37 @@ export default function CompanyProfilePanel({ form, setForm, onDelete }) {
             />
           </div>
 
-          <div>
-            <Label htmlFor="comp-website">
-              {isEn ? "Official Website" : "Site web officiel"}
-            </Label>
-            <Input
-              id="comp-website"
-              value={form.website || ""}
-              onChange={(e) => handleChange("website", e.target.value)}
-              placeholder="https://nordikpleinair.ca"
-              className="mt-1"
-            />
+          {/* Site web + bouton Auto-remplir IA */}
+          <div className="sm:col-span-2">
+            <Label htmlFor="comp-website">{isEn ? "Official Website" : "Site web officiel"}</Label>
+            <div className="flex gap-2 mt-1">
+              <div className="relative flex-1">
+                <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  id="comp-website"
+                  className="pl-9"
+                  value={form.website || ""}
+                  onChange={(e) => handleChange("website", e.target.value)}
+                  placeholder="https://nordikpleinair.ca"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleEnrich}
+                disabled={enriching}
+                className="shrink-0 gap-2"
+              >
+                {enriching ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Analyse…</>
+                ) : (
+                  <><Wand2 className="h-4 w-4" /> Auto-remplir via IA</>
+                )}
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              L'IA analyse votre site et remplit automatiquement les champs vides. Vérifiez les valeurs avant d'enregistrer.
+            </p>
           </div>
 
           <div>
