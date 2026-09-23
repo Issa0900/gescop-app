@@ -63,3 +63,21 @@ Puis relancer.
 | Valeurs inventées | 6 | 0 |
 | Anomalies non signalées | 11 | 0 |
 | Nordik, feuille Ventes | `Customer`, 121 lignes | `Order`, 1 200/1 200, CA 381 048 $ |
+
+## Banc DEMO (vérité terrain des fichiers réels) — 23 septembre 2026
+
+`npm run test:demo` importe les fichiers du dossier `../DEMO` par le vrai `importMultiData`,
+calcule les KPI **comme la page Indicateurs** (`src/lib/core/kpiDataset.js`, partagé avec
+`useKpiEngine`) et compare chaque chiffre à `verite_demo.ts`, recalculé directement depuis
+les fichiers (hors moteur). `node tests/banc/lancer-demo.cjs <etiquette> "<fichier1>,<fichier2>"`
+filtre ; `COHERENCE=1` affiche aussi les contrôles de la page Audit.
+Référence : `resultats/demo-avant.json` (code du 22 sept) — **29/76 → 76/76 contrôles justes**.
+
+## Banc de robustesse
+
+`npm run test:robustesse` déforme automatiquement 10 fichiers de référence (majuscules,
+snake_case, CamelCase, suffixes de devise, colonnes mélangées + ligne de titre, en-têtes
+traduits en anglais, dates en texte JJ/MM/AAAA, CSV français `;` + virgule décimale) et exige
+**les mêmes chiffres** que la vérité terrain. Une variante qui échoue désigne une règle trop
+spécifique à un fichier : on corrige la règle, jamais le cas. Aujourd'hui **85/85 variantes,
+531/531 contrôles**. `DETAIL=1 VARIANTE="en-tetes anglais"` affiche le rapport d'import.

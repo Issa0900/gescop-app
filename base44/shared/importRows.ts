@@ -95,7 +95,7 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
   const noter = (
     rowStatus: RowStatus, reason: ReasonCode,
     source: { brut: any; ligne: number | null; mapped?: any; issueId?: string },
-    extra: { field?: string; raw_value?: string; detail?: string } = {},
+    extra: { field?: string; raw_value?: string; detail?: string; review_status?: string } = {},
   ) => {
     metrics.reasons[reason] = (metrics.reasons[reason] || 0) + 1;
     const entree: ImportIssueRecord = {
@@ -193,7 +193,7 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     // Reject up front rather than letting one row fail its whole batch.
     const missing = missingRequired(normalized, required);
     if (missing.length > 0) {
-      const brutParChamp = normalizeKeys(row, properties || undefined, undefined, companyDictionary);
+      const brutParChamp = normalizeKeys(row, properties || undefined, undefined, companyDictionary, entityName);
       missing.forEach((m) => {
         // Was the field actually absent, or present with a refused value?
         const refused = enumIssues.find((e) => e.field === m);
@@ -221,7 +221,7 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     sources.set(normalized, src);
     // Valeurs du fichier par champ, pour reperer ensuite les valeurs
     // inhabituelles — avant toute correction (Transaction stocke |montant|).
-    aControler.push({ valeurs: normalizeKeys(row, properties || undefined, undefined, companyDictionary), src });
+    aControler.push({ valeurs: normalizeKeys(row, properties || undefined, undefined, companyDictionary, entityName), src });
 
     // Génération de l'Observation
     if (profile && matchedConcepts && grain) {
@@ -286,7 +286,19 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
   }
 
   // GESCOP Phase 5 SSOT: Deduplication
-  const { newRows, duplicateCount, duplicates, potentialDuplicates } = await deduplicateRows(base44, entityName, toCreate);
+  const { newRows, duplicateCount, duplicates, potentialDuplicates, conflits } = await deduplicateRows(base44, entityName, toCreate);
+  for (const { row, existant } of conflits) {
+    metrics.quarantined_rows++;
+    const src = sources.get(row) || { brut: row, ligne: null };
+    const ligneDeRef = sources.get(existant)?.ligne;
+    noter(ROW_STATUS.QUARANTINED, REASON.CONFLICTING_RECORD, { ...src, mapped: row }, {
+      review_status: "A_VERIFIER",
+      detail: `même identifiant que ${ligneDeRef ? `la ligne ${ligneDeRef}` : "une ligne déjà enregistrée"}, avec des valeurs différentes — première version gardée, celle-ci conservée pour décision`,
+    });
+  }
+  if (conflits.length > 0) {
+    messages.push(`${conflits.length} conflit(s) : même identifiant qu'une ligne déjà retenue mais valeurs différentes. Première version gardée ; les autres sont conservées dans le registre pour décision (ce ne sont pas des doublons).`);
+  }
   // Lignes identiques a une autre du fichier, sans identifiant pour prouver
   // le doublon : conservees (elles sont dans newRows), signalees pour
   // verification. Les exclure d'office pouvait diviser des ventes par deux.

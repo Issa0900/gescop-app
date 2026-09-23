@@ -4,7 +4,7 @@ import {
   LIGNE_BRUTE, NUMERO_LIGNE, type TraceNormalisation,
 } from "../../shared/importUtils.ts";
 import { REASON, motifChampManquant } from "../../shared/importStatus.ts";
-import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes } from "../../shared/sheetDetect.ts";
+import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes, estDictionnaireDeDonnees } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import {
   analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan,
@@ -16,6 +16,7 @@ import { traiterLignes, champsImport, conserverFeuilleInconnue } from "../../sha
 import { appliquerPreuvesEntreTables, nouveauContexteRelations } from "../../shared/preuvesTables.ts";
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { calculerFormulesManquantes } from "../../shared/formules.ts";
 
 /**
  * Resolve the target entity for a sheet/file.
@@ -273,9 +274,19 @@ export default async function (req: Request) {
       if (["xlsx", "xls", "csv", "tsv"].includes(ext)) {
         try {
           const feuilles: { label: string; nomFeuille: string; matrix: any[][] }[] = [];
+          // Dit une fois par fichier : des cellules calculees par GESCOP et non
+          // lues telles quelles, et celles qui restent vides.
+          let noteFormules = "";
           if (["xlsx", "xls"].includes(ext)) {
             const ab = await (await fetch(file_url)).arrayBuffer();
-            const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
+            // sheetStubs : une formule sans resultat enregistre (classeur genere
+            // par script) n'existe sinon pas du tout ; on la calcule ici.
+            const wb = XLSX.read(new Uint8Array(ab), { type: "array", sheetStubs: true });
+            const formules = calculerFormulesManquantes(wb);
+            if (formules.calculees > 0 || formules.laissees > 0) {
+              noteFormules = `${formules.calculees} cellule(s) de formule sans resultat enregistre recalculee(s) par GESCOP`
+                + (formules.laissees > 0 ? ` ; ${formules.laissees} formule(s) non calculable(s) laissee(s) vide(s)` : "") + ".";
+            }
             for (const sheetName of wb.SheetNames) {
               feuilles.push({ label: `${file_name} [${sheetName}]`, nomFeuille: sheetName, matrix: matriceDeFeuille(wb.Sheets[sheetName]) });
             }
@@ -296,6 +307,27 @@ export default async function (req: Request) {
               ? { plan: evaluerPlan(planValide, matrix, "humain"), signature: signatureFichier(matrix[planValide.ligne_entetes] || []), refus: [], erreur: undefined }
               : await planPourFeuille(base44, { matrix, label, nomFichier: file_name, manual: entity_override, companyDictionary });
             const plan = await appliquerPreuvesEntreTables(base44, analyse.plan, matrix, relations);
+
+            // Un dictionnaire de donnees decrit des colonnes : ce ne sont pas
+            // des faits. Conserve tel quel dans le registre, jamais importe
+            // comme des ventes ou des clients.
+            const entetesPlan = (matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim());
+            if (!planValide && estDictionnaireDeDonnees(entetesPlan)) {
+              const definitions = Math.max(matrix.length - plan.ligne_entetes - 1, 0);
+              const message = `Dictionnaire de données détecté (${definitions} définition(s) de colonnes : ${entetesPlan.slice(0, 4).join(", ")}). `
+                + "Il décrit des colonnes, il ne contient pas de données : rien n'est importé comme ventes ou clients.";
+              if (analyseSeule) {
+                results.push({ file_name: label, sheet: nomFeuille, entity: null, status: "analyse", rows_read: definitions, dictionnaire: true, message, plan: { ...plan, entite: null } });
+                continue;
+              }
+              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, file_url);
+              results.push({
+                file_name: label, entity: null, status: "ignore", import_id: conserve.import_id, dictionnaire: true,
+                rows_read: conserve.metrics.total_rows, rows: 0, metrics: conserve.metrics,
+                message: message + " Les définitions restent consultables dans le registre de l'import.",
+              });
+              continue;
+            }
 
             if (analyseSeule) {
               const lecture = lignesSelonPlan(plan, matrix, file_name);
@@ -336,7 +368,7 @@ export default async function (req: Request) {
                     quarantinedCount++;
                     if (quarantine.length < 50) {
                       const premier = missing[0];
-                      const motif = motifChampManquant(premier, normalizeKeys(row, properties, undefined, companyDictionary)[premier], properties[premier], enumIssues.find((e) => e.field === premier));
+                      const motif = motifChampManquant(premier, normalizeKeys(row, properties, undefined, companyDictionary, plan.entite || undefined)[premier], properties[premier], enumIssues.find((e) => e.field === premier));
                       quarantine.push({
                         rowIndex: (row as any)[NUMERO_LIGNE] ?? i + plan.ligne_entetes + 2,
                         original: (row as any)[LIGNE_BRUTE] || row, mapped: normalized, errors,
@@ -400,12 +432,14 @@ export default async function (req: Request) {
               plan: lecture.plan, signature: analyse.signature, confirme: Boolean(planValide) && !lecture.note,
             }, companyDictionary, lecture.ecartees);
             if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
+            const noteFichier = noteFormules;
+            noteFormules = "";
             results.push({
               file_name: label, detected_via: via,
               plan_origine: lecture.plan.origine, corrections: lecture.plan.corrections,
               ...res,
               lignes_ecartees: lecture.ecartees.length,
-              message: [lecture.note, noteLignesEcartees(lecture.ecartees), res.message].filter(Boolean).join(" · ") || undefined,
+              message: [noteFichier, lecture.note, noteLignesEcartees(lecture.ecartees), res.message].filter(Boolean).join(" · ") || undefined,
             });
           }
         } catch (e: any) {

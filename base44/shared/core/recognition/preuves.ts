@@ -14,6 +14,7 @@
 // AMBIGUOUS ou UNKNOWN — mieux vaut « inconnu » qu'une mauvaise interpretation.
 
 import { ENTITY_SCHEMAS } from "../../entitySchemas.ts";
+import { rattacherParLexique } from "../../registry/lexiqueChamps.ts";
 import {
   champDEntete, entitesEvoqueesParNom, parseNumber, parseDate, coerceEnumDetail,
   HEADER_SIGNATURES, stripAccents, cleCanonique, FIELD_ALIASES, ALIAS_CANONIQUES,
@@ -73,12 +74,19 @@ export function classerEntites(
   companyDictionary?: Record<string, string>,
 ): CandidatEntite[] {
   const remplis = entetes.map((h) => String(h ?? "").trim()).filter(Boolean);
-  const champs = remplis.map((h) => champProbable(h, companyDictionary));
-  const presents = new Set(champs);
+  const champsGeneriques = remplis.map((h) => champProbable(h, companyDictionary));
+  const nomOnglet = /\[([^\]]+)\]\s*$/.exec(nomFeuille || "")?.[1] ?? "";
+  const feuilleNommee = stripAccents(nomOnglet.toLowerCase()).replace(/[^a-z]/g, "");
   const evoquees = new Set(entitesEvoqueesParNom(nomFeuille));
   const out: CandidatEntite[] = [];
 
   for (const [entite, schema] of Object.entries(ENTITY_SCHEMAS)) {
+    // Le lexique par mots est propre a chaque entite : une feuille de paie
+    // (« gross_salary », « pay_date », « total_employer_cost ») n'est lisible
+    // comme Payroll qu'avec le vocabulaire de Payroll.
+    const lexique = rattacherParLexique(entite, remplis);
+    const champs = remplis.map((h, i) => lexique.get(h) || champsGeneriques[i]);
+    const presents = new Set(champs);
     const proprietes = new Set(Object.keys(schema.properties).filter((f) => f !== "import_id"));
     const equivalences = EQUIVALENCES_REQUISES[entite] || {};
     const preuves: Preuve[] = [];
@@ -93,6 +101,12 @@ export function classerEntites(
       preuves.push({ type: "CONTEXTE", detail: `${expliquees.length}/${remplis.length} colonnes correspondent à des champs de ${entite}`, points: pointsCouverture });
     }
     if (evoquees.has(entite)) preuves.push({ type: "NOM", detail: `le nom « ${nomFeuille} » évoque ${entite}`, points: 25 });
+    // Une feuille qui porte exactement le nom d'une entite (« CampaignDaily »,
+    // « Payroll », « Purchase ») est un indice plus fort qu'une evocation :
+    // sans lui, « CampaignDaily » evoquait autant Campaign que CampaignDaily.
+    if (feuilleNommee && (feuilleNommee === entite.toLowerCase() || feuilleNommee === entite.toLowerCase() + "s")) {
+      preuves.push({ type: "NOM", detail: `la feuille s'appelle « ${entite} »`, points: 20 });
+    }
     const signature = HEADER_SIGNATURES.find((s) => s.entity === entite && s.must.every((m) => presents.has(m)));
     if (signature) preuves.push({ type: "NOM", detail: `colonnes clés présentes : ${signature.must.join(", ")}`, points: 15 });
     if (manquants.length > 0) {

@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { montantHT } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -70,7 +71,7 @@ export default function RessourcesHumaines() {
     // "CA par employé" / "Poids sur CA" don't count revenue that was reversed.
     validSalesOrders(data.orders).forEach((o) => {
       const month = String(o.date || "").slice(0, 7);
-      const total = Number(o.total);
+      const total = montantHT(o);
       if (month && Number.isFinite(total)) add(o, month, "total_revenue", Math.max(0, total));
     });
     const rows = Object.values(byMonth).sort((a, b) => a.date.localeCompare(b.date));

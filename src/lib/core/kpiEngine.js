@@ -12,6 +12,7 @@ import { buildKpiLineage, buildLineageSource } from "./dataLineage";
 import { computeFieldQuality, isQualitySufficient } from "./dataQualityEngine";
 import { getAggregationMethod } from "./fieldSemantic";
 import { resolveContextualField } from "./entityFieldMap";
+import { commandeHorsCA, montantHT } from "./kpiRecords";
 import { KPI_STATUS, ECONOMIC_ROLES, AGGREGATION_METHODS, TEMPORAL_TYPES } from "./semanticTypes";
 
 /**
@@ -131,8 +132,15 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
 function determineTemporalContext(records) {
   let minDate = null;
   let maxDate = null;
-  
-  for (const r of records) {
+
+  // Les ratios en jours (DSO, DPO, BFR en jours) divisent un solde par le CA
+  // de la periode : la periode est donc celle des VENTES. L'etendue de toutes
+  // les feuilles melangeait des dates d'acquisition client de 2023 avec des
+  // commandes de 2026 (GESCOP.xlsx : 1 391 jours au lieu de 366, DSO x 3,8).
+  const ventes = records.filter((r) => r._entity === "Order" || r._entity === "Transaction");
+  const base = ventes.some((r) => typeof r.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(r.date)) ? ventes : records;
+
+  for (const r of base) {
     const dStr = r.date || r.created_at || r.acquisition_date;
     if (dStr && typeof dStr === 'string' && dStr.match(/^\d{4}-\d{2}-\d{2}/)) {
       const d = new Date(dStr.slice(0, 10));
@@ -368,10 +376,7 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
       if (targetSemantic.source === "Order") {
         // Utilisation d'un helper rudimentaire ici si on ne peut pas l'importer en haut,
         // mais le mieux est de vérifier le status directement.
-        const st = String(r.status || r.payment_status || r.fulfillment_status || "").toLowerCase();
-        if (st.includes("annul") || st.includes("cancel") || st.includes("void") || st.includes("brouillon") || st.includes("draft") || st.includes("rembours")) {
-           return false;
-        }
+        if (commandeHorsCA(r)) return false;
       } else if (targetSemantic.source === "Transaction") {
         const st = String(r.status || "").toLowerCase();
         if (st.includes("attente") || st.includes("pending") || st.includes("annul") || st.includes("draft")) {
@@ -386,7 +391,30 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
   // put the newest row first, so picking array-index -1 silently returned
   // the OLDEST balance instead of the current one).
   let validValues;
-  if (method === AGGREGATION_METHODS.LAST) {
+  // Chiffre d'affaires des commandes : montant HORS TAXES de chaque ligne
+  // (sous-total, sinon total moins taxe, sinon total), pas le premier champ
+  // renseigne pour tout le lot.
+  const caCommandes = canonicalKey === "revenue" && targetSemantic.source === "Order";
+  // Un stock par produit (valeur d'inventaire) : la valeur actuelle est la
+  // SOMME, sur chaque produit (et entrepot), de son dernier releve — pas la
+  // derniere ligne du fichier, qui ne portait qu'un seul produit (Nordik :
+  // 2 250 $ retenus au lieu de 51 495 $).
+  const stockParProduit = method === AGGREGATION_METHODS.LAST && targetSemantic.grain === "product";
+  if (caCommandes) {
+    validValues = filteredRecords.map(montantHT).filter((n) => Number.isFinite(n));
+  } else if (stockParProduit) {
+    const dernier = new Map();
+    for (const r of filteredRecords) {
+      const v = Number(r[targetField]);
+      if (!Number.isFinite(v) || r[targetField] === null || r[targetField] === "") continue;
+      const cle = `${r.product_id ?? r.product_name ?? "?"}|${r.warehouse_id ?? r.location ?? ""}`;
+      const d = r.date || r.reference_date || "";
+      const prec = dernier.get(cle);
+      if (!prec || d >= prec.d) dernier.set(cle, { d, v });
+    }
+    const somme = [...dernier.values()].reduce((a, x) => a + x.v, 0);
+    validValues = dernier.size ? [somme] : [];
+  } else if (method === AGGREGATION_METHODS.LAST) {
     const dated = filteredRecords
       .map(r => ({ date: r.date || r.acquisition_date || r.period || null, value: Number(r[targetField]) }))
       .filter(x => Number.isFinite(x.value));

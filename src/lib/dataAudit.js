@@ -2,6 +2,7 @@
 // and metric traceability (formula + source + period + intermediate values).
 // Read-only - it never modifies data, it only reports what the metrics are built on.
 
+import { avecMontantHT, commandesDistinctes, montantHT } from "./core/kpiRecords";
 import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, latestByKey, meanOf, dateReferenceInventaire } from "@/lib/periods";
 import {
   aggregateMarginPct,
@@ -53,12 +54,13 @@ function sharedMonths(rowsA, dateA, valA, rowsB, dateB, valB) {
 
 /** Level 2 - coherence cross-checks between independent data sources. */
 export function runCoherenceChecks(d) {
-  const { transactions = [], orders = [], customers = [], products = [], inventory = [], cashflow = [], campaigns = [], campaignDaily = [], expenses = [], payroll = [], employees = [] } = d;
+  const { transactions = [], orders = [], customers = [], products = [], inventory = [], cashflow = [], campaigns = [], campaignDaily = [], expenses = [], payroll = [], employees = [], executiveSummaries = [] } = d;
   const out = [];
 
   // --- Revenue: orders vs income transactions, on complete months only ---
-  const ordersRev = sum(orders, (o) => o.total);
-  const revShared = sharedMonths(orders, "date", "total", transactions.filter((t) => t.type === "income"), "date", "amount");
+  const ordersHT = avecMontantHT(orders);
+  const ordersRev = sum(ordersHT, (o) => o._ht);
+  const revShared = sharedMonths(ordersHT, "date", "_ht", transactions.filter((t) => t.type === "income"), "date", "amount");
   if (orders.length === 0 || transactions.length === 0) {
     out.push(check("CA des commandes vs revenus des transactions", "skip", "Une des deux sources est absente."));
   } else if (!revShared) {
@@ -128,19 +130,23 @@ export function runCoherenceChecks(d) {
     ));
   }
 
-  // --- Margin: orders margin vs unit price - cost ---
-  const withMargin = orders.filter((o) => o.gross_margin != null && o.total != null && o.cost != null);
+  // --- Margin: profit des commandes vs CA HT - cout ---
+  // Compare le BENEFICE (en $) au CA hors taxes moins le cout. L'ancienne
+  // version comparait gross_margin — souvent un POURCENTAGE — au total TTC
+  // moins le cout, et signalait en erreur des fichiers parfaitement justes.
+  const coutLigne = (o) => (o.total_cost ?? o.cost);
+  const withMargin = orders.filter((o) => o.gross_profit != null && Number.isFinite(montantHT(o)) && coutLigne(o) != null);
   if (withMargin.length === 0) {
-    out.push(check("Marge des commandes vs total − coût", "skip", "Champs de marge ou de coût absents des commandes."));
+    out.push(check("Bénéfice des commandes vs CA HT − coût", "skip", "Bénéfice ou coût absents des commandes."));
   } else {
     const bad = withMargin.filter((o) => {
-      const expected = num(o.total) - num(o.cost);
-      return Math.abs(expected - num(o.gross_margin)) > Math.max(1, Math.abs(expected) * 0.05);
+      const expected = montantHT(o) - num(coutLigne(o));
+      return Math.abs(expected - num(o.gross_profit)) > Math.max(1, Math.abs(expected) * 0.05);
     });
     out.push(check(
-      "Marge des commandes vs total − coût",
+      "Bénéfice des commandes vs CA HT − coût",
       bad.length === 0 ? "ok" : bad.length / withMargin.length < 0.05 ? "warn" : "error",
-      bad.length === 0 ? `Vérifié sur ${withMargin.length} commandes.` : `${bad.length} commandes sur ${withMargin.length} où la marge importée ne correspond pas à total − coût.`,
+      bad.length === 0 ? `Vérifié sur ${withMargin.length} commandes.` : `${bad.length} commandes sur ${withMargin.length} où le bénéfice importé ne correspond pas au CA hors taxes moins le coût.`,
     ));
   }
 
@@ -192,7 +198,9 @@ export function runCoherenceChecks(d) {
     // les campagnes présentes dans les deux sources, et on refuse la
     // comparaison quand la couverture quotidienne est manifestement partielle.
     const dailyIds = new Set(campaignDaily.map((c) => c.campaign_id).filter(Boolean));
-    const shared = campaigns.filter((c) => dailyIds.has(c.campaign_id));
+    // Seules les campagnes qui donnent leur depense se comparent : une
+    // campagne sans depense (budget seul) n'est pas une depense nulle.
+    const shared = campaigns.filter((c) => dailyIds.has(c.campaign_id) && c.spend != null && c.spend !== "");
     const totSpend = sum(shared, (c) => c.spend);
     const dailySpend = sum(campaignDaily.filter((c) => dailyIds.has(c.campaign_id)), (c) => c.spend);
     const daysPerCampaign = dailyIds.size > 0 ? campaignDaily.length / dailyIds.size : 0;
@@ -221,6 +229,9 @@ export function runCoherenceChecks(d) {
   // --- Customer aggregates vs orders ---
   if (customers.length === 0 || orders.length === 0) {
     out.push(check("Revenu client cumulé vs commandes", "skip", "Clients ou commandes absents."));
+  } else if (!customers.some((c) => c.total_revenue != null && c.total_revenue !== "")) {
+    // Fiches sans cumul de revenu : rien a comparer (0 $ n'est pas un cumul).
+    out.push(check("Revenu client cumulé vs commandes", "skip", "Les fiches clients ne donnent pas de revenu cumulé."));
   } else {
     // Le champ « revenu total » d'une fiche client couvre TOUTE la vie du client,
     // alors que les commandes importées ne couvrent qu'une période : un écart est
@@ -255,6 +266,122 @@ export function runCoherenceChecks(d) {
         `Sorties de caisse : ${fmt$(shared.b)}`,
       ));
     }
+  }
+
+
+  // --- Controles croises entre feuilles (audit du dossier DEMO, 23 sept 2026) ---
+  // Chacun compare deux sources qui decrivent la meme chose. Un ecart n'est
+  // pas corrige : il est montre, car il dit laquelle des deux croire.
+  const ecart = (a, b, tol = 0.01) => Math.abs(num(a) - num(b)) > Math.max(tol, Math.abs(num(b)) * 0.01);
+  const parId = (rows, cle) => new Map((rows || []).filter((r) => r[cle] != null && r[cle] !== "").map((r) => [String(r[cle]), r]));
+
+  // Fiche client vs commandes, client par client.
+  const clientsAvecCumul = customers.filter((c) => c.total_revenue != null && c.total_revenue !== "");
+  if (clientsAvecCumul.length > 0 && orders.length > 0) {
+    const htParClient = new Map();
+    for (const o of avecMontantHT(orders)) if (o.customer_id) htParClient.set(String(o.customer_id), (htParClient.get(String(o.customer_id)) || 0) + o._ht);
+    const compares = clientsAvecCumul.filter((c) => htParClient.has(String(c.customer_id)));
+    const faux = compares.filter((c) => pctGap(num(c.total_revenue), htParClient.get(String(c.customer_id))) > 5);
+    if (compares.length > 0) {
+      out.push(check(
+        "Revenu de chaque fiche client vs ses commandes",
+        faux.length === 0 ? "ok" : "warn",
+        faux.length === 0 ? `${compares.length} clients vérifiés un par un.` : `${faux.length} client(s) sur ${compares.length} dont le revenu de la fiche ne correspond pas à ses commandes importées. Les KPI utilisent les commandes, pas ce cumul.`,
+      ));
+    }
+  }
+
+  // Prix et cout des commandes, cout des stocks, vs catalogue produits.
+  const catalogue = parId(products, "product_id");
+  if (catalogue.size > 0) {
+    const cmdPrix = orders.filter((o) => o.unit_price != null && catalogue.get(String(o.product_id))?.selling_price != null);
+    const prixFaux = cmdPrix.filter((o) => ecart(o.unit_price, catalogue.get(String(o.product_id)).selling_price));
+    if (cmdPrix.length > 0) {
+      out.push(check(
+        "Prix des commandes vs prix du catalogue",
+        prixFaux.length === 0 ? "ok" : "warn",
+        prixFaux.length === 0 ? `${cmdPrix.length} lignes au prix du catalogue.` : `${prixFaux.length} ligne(s) sur ${cmdPrix.length} vendues à un autre prix que le catalogue (remise, prix périmé ou catalogue d'une autre source).`,
+      ));
+    }
+    const stockCout = inventory.filter((i) => i.unit_cost != null && catalogue.get(String(i.product_id))?.purchase_cost != null);
+    const coutFaux = stockCout.filter((i) => ecart(i.unit_cost, catalogue.get(String(i.product_id)).purchase_cost));
+    const stockNom = inventory.filter((i) => i.product_name && catalogue.get(String(i.product_id))?.product_name);
+    const nomFaux = stockNom.filter((i) => String(i.product_name).trim() !== String(catalogue.get(String(i.product_id)).product_name).trim());
+    if (stockCout.length > 0 || stockNom.length > 0) {
+      const bad = coutFaux.length + nomFaux.length;
+      const constats = [
+        stockCout.length > 0 ? `${coutFaux.length} ligne(s) sur ${stockCout.length} à un autre coût que le catalogue` : null,
+        stockNom.length > 0 ? `${nomFaux.length} sur ${stockNom.length} sous un autre nom` : null,
+      ].filter(Boolean).join(", ");
+      out.push(check(
+        "Inventaire vs catalogue produits (coût et nom)",
+        bad === 0 ? "ok" : "warn",
+        bad === 0 ? `Inventaire et catalogue concordent (${constats}).` : `Inventaire : ${constats}. Les deux feuilles ne viennent probablement pas du même système ; la valeur du stock suit l'inventaire.`,
+      ));
+    }
+  }
+
+  // Succursale d'une vente vs succursale du vendeur.
+  const vendeurs = parId(employees, "employee_id");
+  const ventesVendeur = orders.filter((o) => o.location_id && vendeurs.get(String(o.employee_id))?.location);
+  if (ventesVendeur.length > 0) {
+    const horsSuccursale = ventesVendeur.filter((o) => {
+      const lieu = String(vendeurs.get(String(o.employee_id)).location).toLowerCase();
+      const vente = String(o.location_id).toLowerCase();
+      return !/web|ligne|online|internet/.test(vente) && vente !== lieu;
+    });
+    out.push(check(
+      "Succursale des ventes vs succursale du vendeur",
+      horsSuccursale.length === 0 ? "ok" : "warn",
+      horsSuccursale.length === 0 ? `${ventesVendeur.length} ventes cohérentes avec la succursale de leur vendeur.` : `${horsSuccursale.length} vente(s) sur ${ventesVendeur.length} enregistrée(s) dans une autre succursale que celle du vendeur : un rapport par succursale dépend de la colonne choisie.`,
+    ));
+  }
+
+  // Campagnes au-dela de leur budget.
+  const budgetees = campaigns.filter((c) => c.budget != null && c.spend != null && num(c.budget) > 0);
+  if (budgetees.length > 0) {
+    const depassees = budgetees.filter((c) => num(c.spend) > num(c.budget) + 0.01);
+    out.push(check(
+      "Dépense des campagnes vs budget",
+      depassees.length === 0 ? "ok" : "warn",
+      depassees.length === 0 ? `${budgetees.length} campagnes dans leur budget.` : `${depassees.length} campagne(s) sur ${budgetees.length} ont dépassé leur budget.`,
+      `Budget : ${fmt$(sum(depassees, (c) => c.budget))}`,
+      `Dépensé : ${fmt$(sum(depassees, (c) => c.spend))}`,
+    ));
+  }
+
+  // Synthese fournie par le fichier (sommaire executif) vs commandes, par succursale.
+  const syntheses = executiveSummaries.filter((x) => x.location_id && x.total_revenue != null);
+  if (syntheses.length > 0 && orders.length > 0) {
+    const htParLieu = new Map();
+    for (const o of avecMontantHT(orders)) if (o.location_id) htParLieu.set(String(o.location_id).toLowerCase(), (htParLieu.get(String(o.location_id).toLowerCase()) || 0) + o._ht);
+    const comparables = syntheses.filter((x) => htParLieu.has(String(x.location_id).toLowerCase()));
+    const differentes = comparables.filter((x) => pctGap(num(x.total_revenue), htParLieu.get(String(x.location_id).toLowerCase())) > 1);
+    if (comparables.length > 0) {
+      out.push(check(
+        "Synthèse du fichier vs ventes recalculées",
+        differentes.length === 0 ? "ok" : "warn",
+        differentes.length === 0 ? `Les ${comparables.length} lignes de synthèse concordent avec les ventes importées.` : `${differentes.length} ligne(s) de synthèse sur ${comparables.length} ne correspondent pas aux ventes importées : le tableau de bord du fichier et GESCOP ne calculent pas la même chose.`,
+      ));
+    }
+  }
+
+  // Montants de plusieurs pays ou devises additionnes.
+  const devises = new Set();
+  for (const o of orders.slice(0, 5000)) {
+    let brut = null;
+    try { brut = JSON.parse(o.original_data || "null"); } catch { brut = null; }
+    if (!brut) continue;
+    for (const [k, v] of Object.entries(brut)) {
+      if (/(^|[^a-z])(country|pays|currency|devise|monnaie)([^a-z]|$)/i.test(k) && v !== "" && v != null) devises.add(String(v).trim().toUpperCase());
+    }
+  }
+  if (devises.size > 1) {
+    out.push(check(
+      "Devises et pays des ventes",
+      "warn",
+      `Les ventes couvrent ${devises.size} pays ou devises (${[...devises].slice(0, 6).join(", ")}) : leurs montants sont additionnés sans conversion. Les totaux ne sont exacts que si tout est dans la même devise.`,
+    ));
   }
 
   return out;
@@ -443,8 +570,9 @@ export function buildMetricTraces(d) {
     note: "Le burn est NET : une entreprise qui encaisse plus qu'elle ne dépense n'a pas de problème d'autonomie. Comparer le solde aux dépenses brutes déclenchait une alerte critique sur une entreprise rentable. Le solde vient du fichier trésorerie importé, jamais du cumul des marges.",
   });
 
-  const oRevM = monthlyAggComplete(orders, "date", "total");
-  const oCntM = monthlyAggComplete(orders, "date", "total", "count");
+  const commandes = commandesDistinctes(orders);
+  const oRevM = monthlyAggComplete(commandes, "date", "_ht");
+  const oCntM = monthlyAggComplete(commandes, "date", "_ht", "count");
   const orev3 = sumLast(oRevM, 3);
   // Refuses to compare unless BOTH 3-month windows are fully covered: summing
   // 3 months against the single month preceding them showed +200% growth on a

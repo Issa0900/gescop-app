@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "deploy": "npx base44 build && npx base44 deploy --yes",
     "test": "node --import ./tests/register-npm.mjs --test tests/*.test.js",
-    "test:banc": "node tests/banc/lancer.cjs"
+    "test:banc": "node tests/banc/lancer.cjs",
+    "test:demo": "node tests/banc/lancer-demo.cjs",
+    "test:robustesse": "node tests/banc/lancer-demo.cjs robustesse"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",

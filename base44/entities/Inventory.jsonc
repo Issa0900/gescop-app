@@ -77,6 +77,31 @@
         "proche_rupture"
       ]
     },
+    "warehouse_id": {
+      "type": "string"
+    },
+    "warehouse_name": {
+      "type": "string"
+    },
+    "supplier_id": {
+      "type": "string"
+    },
+    "quantity_reserved": {
+      "type": "number"
+    },
+    "quantity_in_transit": {
+      "type": "number"
+    },
+    "quantity_available": {
+      "type": "number"
+    },
+    "reorder_point": {
+      "type": "number"
+    },
+    "sale_value": {
+      "type": "number",
+      "description": "Valeur du stock au prix de vente (inventory_value reste la valeur au cout)."
+    },
     "import_id": {
       "type": "string"
     },

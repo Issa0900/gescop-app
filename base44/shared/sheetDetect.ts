@@ -99,3 +99,19 @@ export function sheetRows(sheet: any): { rows: Record<string, any>[]; headers: s
   }
   return { rows, headers };
 }
+
+/**
+ * Feuille qui DECRIT des colonnes au lieu de contenir des donnees : un
+ * dictionnaire de donnees (« Column_Name / Description / Data_Type »).
+ * L'importer comme des ventes produisait 36 commandes en quarantaine pour
+ * « date manquante » : un faux probleme, et une vraie information perdue.
+ */
+export function estDictionnaireDeDonnees(entetes: string[]): boolean {
+  const mots = entetes.map((h) => String(h ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/([a-z])([A-Z])/g, "$1 $2").split(/[^a-z0-9]+/).filter(Boolean));
+  const nomDeColonne = mots.some((m) => m.some((x) => ["column", "colonne", "champ", "field", "variable", "attribut", "attribute"].includes(x))
+    && (m.length === 1 || m.some((x) => ["name", "nom", "names"].includes(x))));
+  const definition = mots.some((m) => m.some((x) => ["description", "definition", "meaning", "signification", "libelle"].includes(x)));
+  const typeOuExemple = mots.some((m) => m.some((x) => ["type", "example", "exemple", "format", "meaning", "unit", "unite"].includes(x)));
+  return nomDeColonne && definition && typeOuExemple;
+}

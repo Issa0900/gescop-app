@@ -38,8 +38,6 @@ const GAPS_CONNUS: Record<string, string> = {
   "Inventory.days_in_inventory": "idem, aucun KPI actuel n'en depend",
   "Inventory.unit_cost": "taux au niveau ligne, deja couvert par Product.purchase_cost au niveau produit",
   "Inventory.selling_price": "taux au niveau ligne, deja couvert par Product.selling_price au niveau produit",
-  "Employee.annual_salary": "consomme indirectement : le hook de secours d'importUtils.ts le convertit deja en hourly_rate, qui lui est mappe",
-  "Employee.salary": "alias potentiel d'annual_salary, non consomme directement, aucun KPI n'en depend",
   "CampaignDaily.reach": "aucun KPI actuel n'en depend",
   "CampaignDaily.cpc": "le KPI cpc calcule sa propre valeur depuis campaign_budget/campaign_clicks (deja mappes) plutot que de lire une colonne pre-fournie ; aucun KPI n'en depend directement",
   "CampaignDaily.ctr": "calculable depuis clicks/impressions (deja mappes) si un jour necessaire ; aucun KPI n'en depend directement aujourd'hui",

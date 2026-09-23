@@ -40,6 +40,8 @@ export default function KpiManagementPanel() {
   const { data: customers } = useQuery({ queryKey: ["kpimgmt-customers"], queryFn: () => fetchAll(base44.entities.Customer) });
   const { data: cashflow } = useQuery({ queryKey: ["kpimgmt-cashflow"], queryFn: () => fetchAll(base44.entities.Cashflow, "-date") });
   const { data: campaignDaily } = useQuery({ queryKey: ["kpimgmt-campaign-daily"], queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date") });
+  const { data: campaigns } = useQuery({ queryKey: ["kpimgmt-campaigns"], queryFn: () => fetchAll(base44.entities.Campaign) });
+  const { data: inventory } = useQuery({ queryKey: ["kpimgmt-inventory"], queryFn: () => fetchAll(base44.entities.Inventory, "-date") });
   const { data: observations } = useObservations();
 
   const { kpis: engineKpis } = useKpiEngine({
@@ -52,6 +54,8 @@ export default function KpiManagementPanel() {
     employees: employees || [],
     payrolls: payrolls || [],
     campaignDaily: campaignDaily || [],
+    campaigns: campaigns || [],
+    inventory: inventory || [],
   }, ALL_KPI_IDS);
 
   const classified = ALL_KPI_IDS.map((id) => {

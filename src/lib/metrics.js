@@ -8,6 +8,7 @@
 // same data). A dashboard that contradicts its own audit page is worse than no
 // dashboard, so every definition now lives here and every page imports it.
 
+import { montantHT, commandeHorsCA } from "./core/kpiRecords";
 import { sumLast, sumPrev, meanOf, trendPct } from "@/lib/periods";
 import { computeKpi, computeKpiBatch } from "@/lib/core/kpiEngine";
 import { KPI_REGISTRY, getKpiDefinition, getKpisByDomain } from "@/lib/core/kpiRegistry";
@@ -215,7 +216,9 @@ export function isRefundedOrder(o) {
 
 /** Orders that represent real, kept revenue - refunds excluded. */
 export function validSalesOrders(orders) {
-  return (orders || []).filter((o) => !isRefundedOrder(o));
+  // Meme regle que le moteur KPI (kpiRecords.commandeHorsCA) : annulees et
+  // retournees exclues aussi, pas seulement les remboursees.
+  return (orders || []).filter((o) => !isRefundedOrder(o) && !commandeHorsCA(o));
 }
 
 /**
@@ -231,7 +234,7 @@ export function validSalesOrders(orders) {
  */
 export function customerValue(orders, customers, marginPct = null) {
   const ord = validSalesOrders(orders);
-  const totalRevenue = ord.reduce((s, o) => s + (Number(o.total) || Number(o.revenue_amount) || 0), 0);
+  const totalRevenue = ord.reduce((s, o) => s + (Number.isFinite(montantHT(o)) ? montantHT(o) : Number(o.revenue_amount) || 0), 0);
   const buyers = new Set(ord.map((o) => o.customer_id).filter(Boolean)).size;
   const totalCustomers = (customers || []).length;
   // Prefer customers who actually ordered; fall back to the whole base.

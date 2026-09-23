@@ -9,7 +9,7 @@ export function empreinteForte(entityName: string, row: any): boolean {
   if (!row || typeof row !== "object") return false;
   const reel = (v: any) => v !== undefined && v !== null && String(v).trim() !== "" && !/^AUTO-/.test(String(v));
   switch (entityName) {
-    case "Order": return reel(row.order_id);
+    case "Order": return reel(row.order_id) || reel(row.line_id);
     case "Customer": return reel(row.customer_id) || reel(row.email);
     case "Product": return reel(row.product_id) || reel(row.sku);
     case "Campaign": return reel(row.campaign_id);
@@ -28,6 +28,14 @@ export function generateFingerprint(entityName: string, row: any): string {
   if (!row || typeof row !== "object") return "";
 
   // 1. Clés d'affaires spécifiques par entité
+  // Identifiant de LIGNE fourni par le fichier (Transaction_ID, ID_Ligne,
+  // Row ID) : c'est lui qui distingue deux articles d'une meme commande. Sans
+  // lui, deux lignes d'une commande pour le meme produit (quantites ou dates
+  // differentes) partageaient l'empreinte commande + produit, et la seconde
+  // disparaissait comme « doublon » (Sales_transactions : 163 lignes).
+  if (entityName === "Order" && row.line_id !== undefined && row.line_id !== null && String(row.line_id).trim() !== "") {
+    return `Order:ligne:${String(row.line_id).trim()}`;
+  }
   if (entityName === "Order" && row.order_id) {
     return `Order:${String(row.order_id).trim()}:${String(row.product_id || "").trim()}`;
   }

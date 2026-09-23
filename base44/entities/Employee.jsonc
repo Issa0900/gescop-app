@@ -73,6 +73,17 @@
         "essai"
       ]
     },
+    "employer_cost": {
+      "type": "number",
+      "description": "Cout employeur annuel : salaire + charges sociales patronales."
+    },
+    "social_charges": {
+      "type": "number",
+      "description": "Charges sociales patronales annuelles (RRQ, RQAP, CNESST, FSS...)."
+    },
+    "union_status": {
+      "type": "string"
+    },
     "import_id": {
       "type": "string"
     },

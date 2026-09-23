@@ -25,7 +25,8 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       payment_status: E("paye", "en_attente", "echoue", "rembourse"),
       fulfillment_status: E("expedie", "en_preparation", "livre", "annule", "retourne"),
       return_status: E("aucun", "demande", "approuve", "refuse"),
-      region: S, status: S, import_id: S, fingerprint: S, original_data: S,
+      region: S, status: S, tax_federal: N, tax_provincial: N, province: S, line_id: S, employee_name: S,
+      import_id: S, fingerprint: S, original_data: S,
     },
     required: ["order_id", "date"],
   },
@@ -37,7 +38,8 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       total_orders: N, total_revenue: N, average_order_value: N,
       status: E("actif", "inactif", "perdu"),
       segment: E("nouveau", "regulier", "vip", "inactif", "b2b", "haute_valeur", "a_risque"),
-      lifetime_value: N, churn_risk: N, import_id: S, fingerprint: S, original_data: S,
+      lifetime_value: N, churn_risk: N, province: S, loyalty_points: N, credit_limit: N,
+      import_id: S, fingerprint: S, original_data: S,
     },
     required: ["customer_id"],
   },
@@ -59,6 +61,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       days_in_inventory: N, unit_cost: N, selling_price: N,
       stock_status: E("optimal", "rupture", "surstock", "dormant", "faible", "proche_rupture"),
       import_date: D, reference_date: D, reference_date_type: E("INVENTORY_DATE", "IMPORT_DATE"),
+      warehouse_id: S, warehouse_name: S, supplier_id: S, quantity_reserved: N, quantity_in_transit: N, quantity_available: N, reorder_point: N, sale_value: N,
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["product_id"],
@@ -93,6 +96,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       hourly_rate: N, weekly_hours: N,
       full_name: S, name: S, annual_salary: N, salary: N, branch: S, location: S,
       status: E("actif", "depart", "conge", "essai"),
+      employer_cost: N, social_charges: N, union_status: S,
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["employee_id"],
@@ -125,6 +129,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       average_delivery_days: N, purchase_volume: N, quality_score: N,
       reliability_score: N, price_change_last_12_months: N,
       status: E("actif", "inactif", "problematique"),
+      contact_name: S, email: S, city: S, currency: S, esg_score: N,
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["supplier_id", "supplier_name"],
@@ -191,7 +196,8 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
   Transaction: {
     properties: {
       date: D, description: S, amount: N, type: E("income", "expense"), category: S, source: S,
-      currency: S, client: S, product: S, import_id: S, fingerprint: S, original_data: S,
+      currency: S, client: S, product: S, reference_order_id: S,
+      import_id: S, fingerprint: S, original_data: S,
     },
     required: ["date", "amount"],
   },
@@ -202,6 +208,20 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       notes: S, import_id: S, fingerprint: S, original_data: S,
     },
     required: ["location_id"],
+  },
+  Asset: {
+    properties: {
+      asset_id: S, asset_name: S, category: S, acquisition_date: D, cca_class: S, cca_rate: N, acquisition_cost: N, accumulated_depreciation: N, net_book_value: N, notes: S,
+      import_id: S, fingerprint: S, original_data: S,
+    },
+    required: ["asset_id"],
+  },
+  Payment: {
+    properties: {
+      payment_id: S, order_id: S, date: D, status: S, amount: N, method: S,
+      import_id: S, fingerprint: S, original_data: S,
+    },
+    required: ["payment_id"],
   },
 };
 

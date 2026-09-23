@@ -26,8 +26,9 @@ import { classifyDocumentSheet, type SheetClassificationResult } from "./core/do
 import { calculateQualityProfile, type QualityProfile } from "./core/qualityEngine.ts";
 import { evaluateDecision, type DecisionVerdict } from "./core/decisionMatrix.ts";
 import { DOCUMENT_ARCHETYPES, type DocumentArchetype, type GrainLevel } from "./core/ontology/types.ts";
+import { rattacherParLexique } from "./registry/lexiqueChamps.ts";
 import {
-  classerEntites, choisirEntite, evaluerColonnes, ajouterPreuve,
+  classerEntites, choisirEntite, evaluerColonnes, ajouterPreuve, champProbable,
   type CandidatEntite, type EvaluationColonne, type SourceRattachement,
 } from "./core/recognition/preuves.ts";
 import { verifierRelations, type VerificationRelation } from "./core/recognition/relations.ts";
@@ -206,6 +207,44 @@ export function conventionDateProuvee(valeurs: any[]): ConventionDate | null {
 }
 
 /**
+ * Separateur decimal d'une colonne de nombres, prouve par ses valeurs.
+ *
+ * « 22.368 » est illisible seul : 22,368 ou 22 368 ? Decide valeur par valeur,
+ * un point suivi de trois chiffres etait lu comme un separateur de milliers
+ * (Superstore : 3 801 ventes x 1 000, un CA de 519 M$ au lieu de 2,3 M$). La
+ * colonne, elle, tranche : un point suivi de 1, 2 ou 4 chiffres et plus
+ * (« 261.96 », « 957.5775 »), ou une virgule de milliers avant un point
+ * (« 1,234.5 »), prouve que le point est decimal ; l'inverse pour la virgule.
+ * Rend null si la colonne ne prouve rien ou se contredit.
+ */
+export type ConventionNombre = "point" | "virgule";
+
+export function conventionNombreProuvee(valeurs: any[]): ConventionNombre | null {
+  let point = 0;
+  let virgule = 0;
+  for (const v of valeurs) {
+    if (typeof v !== "string") continue;
+    const t = v.trim().replace(/[\s\u00A0\u202F$€£%]/g, "").replace(/^[-+(]+|\)$/g, "");
+    if (!/^[\d.,]+$/.test(t) || !/\d/.test(t)) continue;
+    if (/^\d{1,3}(,\d{3})+\.\d+$/.test(t) || /^\d+\.(\d{1,2}|\d{4,})$/.test(t)) point++;
+    else if (/^\d{1,3}(\.\d{3})+,\d+$/.test(t) || /^\d+,(\d{1,2}|\d{4,})$/.test(t)) virgule++;
+  }
+  if (point > 0 && virgule === 0) return "point";
+  if (virgule > 0 && point === 0) return "virgule";
+  return null;
+}
+
+/** Valeur ambigue (un seul separateur suivi de 3 chiffres) lue selon la convention de sa colonne. */
+function nombreSelonConvention(valeur: any, convention: ConventionNombre): any {
+  if (typeof valeur !== "string") return valeur;
+  const t = valeur.trim();
+  const m = t.match(/^(-?)(\d{1,3})([.,])(\d{3})$/);
+  if (!m) return valeur;
+  const decimal = (m[3] === "." && convention === "point") || (m[3] === "," && convention === "virgule");
+  return decimal ? Number(`${m[1]}${m[2]}.${m[4]}`) : Number(`${m[1]}${m[2]}${m[4]}`);
+}
+
+/**
  * Une ligne est-elle une ligne de totaux ?
  *
  * Signature courante des exports comptables : une premiere cellule textuelle
@@ -255,6 +294,11 @@ export function validerPlan(brut: any, matrix: any[][]): { plan: PlanImport | nu
     : [];
 
   const colonnes: PlanColonne[] = [];
+  // Colonnes que l'IA laisse sans champ : le lexique par mots de l'entite les
+  // rattrape avant les synonymes (meme lecture que le plan par regles).
+  const intitules = (Array.isArray(brut.colonnes) ? brut.colonnes : []).map((c: any) => String(c?.colonne ?? "")).filter(Boolean);
+  const pris = new Set<string>((Array.isArray(brut.colonnes) ? brut.colonnes : []).map((c: any) => c?.champ).filter((x: any) => typeof x === "string" && champsConnus.includes(x)));
+  const lexiqueIA = entite ? rattacherParLexique(entite, intitules, pris) : new Map<string, string>();
   for (const c of Array.isArray(brut.colonnes) ? brut.colonnes : []) {
     if (!c || typeof c.colonne !== "string") continue;
     let champ = typeof c.champ === "string" && c.champ.trim() !== "" ? c.champ.trim() : null;
@@ -266,6 +310,7 @@ export function validerPlan(brut: any, matrix: any[][]): { plan: PlanImport | nu
     
     // Rattrapage : si l'IA n'a pas su rattacher (ou s'est trompee), on cherche 
     // une correspondance exacte ou via dictionnaire.
+    if (!champ && lexiqueIA.has(c.colonne)) champ = lexiqueIA.get(c.colonne)!;
     if (!champ && champsConnus.length > 0) {
       const cleanC = c.colonne.toLowerCase().trim();
       const noAccentC = cleanC.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
@@ -446,6 +491,15 @@ function adapterChamp(entite: string, champ: string): string {
   return ADAPTATIONS[entite]?.[champ] || champ;
 }
 
+/** Entite maitre -> [son identifiant, l'entite qui en est la serie]. */
+const SERIE_DE: Record<string, [string, string]> = {
+  Campaign: ["campaign_id", "CampaignDaily"],
+  Employee: ["employee_id", "Payroll"],
+  Customer: ["customer_id", "Order"],
+  Supplier: ["supplier_id", "Purchase"],
+  Product: ["product_id", "Inventory"],
+};
+
 export function planParRegles(
   matrix: any[][], 
   nomFichier: string, 
@@ -497,6 +551,33 @@ export function planParRegles(
   if (!entite && classification.isAggregatedSummary) {
     entite = "ExecutiveSummary";
   }
+
+  // Grain : une entite « maitre » (une ligne par campagne, par employe, par
+  // client...) dont l'identifiant se repete est en realite une SERIE de cette
+  // entite (une ligne par campagne et par semaine, par employe et par paie,
+  // par client et par commande). La lire comme la liste maitre ne gardait
+  // qu'une ligne par identifiant et rejetait les autres comme doublons (DS03 :
+  // 78 semaines sur 85). Si la serie correspondante peut etre remplie, on
+  // bascule, et on le dit.
+  const correctionsGrain: string[] = [];
+  if (entite && !entiteConnue && SERIE_DE[entite]) {
+    const [idMaitre, serie] = SERIE_DE[entite];
+    const candidatSerie = classement.find((c) => c.entite === serie && c.eligible);
+    const brutEntetes = (matrix[ligne] || []).map((h: any) => String(h ?? "").trim());
+    const lexMaitre = rattacherParLexique(entite, entetes);
+    const colId = brutEntetes.findIndex((h: string) => h && (lexMaitre.get(h) === idMaitre || cleCanonique(h) === idMaitre || champProbable(h, companyDictionary) === idMaitre));
+    if (candidatSerie && colId >= 0) {
+      const valeurs = matrix.slice(ligne + 1, ligne + 2001).map((r) => String((r || [])[colId] ?? "").trim()).filter(Boolean);
+      const distinctes = new Set(valeurs).size;
+      if (valeurs.length >= 4 && distinctes / valeurs.length <= 0.9) {
+        correctionsGrain.push(
+          `type ${entite} remplace par ${serie} : l'identifiant « ${brutEntetes[colId]} » se repete `
+          + `(${distinctes} valeurs distinctes sur ${valeurs.length} lignes), la feuille est une serie et non une liste de ${entite}.`,
+        );
+        entite = serie;
+      }
+    }
+  }
   
   // Use Contextual Recognition (Sprint 2)
   let recognizedCols = new Map();
@@ -511,6 +592,20 @@ export function planParRegles(
   } catch (e) {
     console.warn("Contextual recognition failed, falling back to basic mapping", e);
   }
+
+  // Lexique par mots (registry/lexiqueChamps.ts) : reconnait un champ a sa
+  // combinaison de mots, quelle que soit la forme de l'intitule. Les colonnes
+  // qui portent deja exactement le nom d'un champ le gardent.
+  const champsExacts = new Set<string>();
+  const schemaEntite = entite ? getSchema(entite) : null;
+  if (schemaEntite) {
+    for (const c of entetes) {
+      const k = c.toLowerCase().trim();
+      if (schemaEntite.properties[c]) champsExacts.add(c);
+      else if (schemaEntite.properties[k]) champsExacts.add(k);
+    }
+  }
+  const lexique = entite ? rattacherParLexique(entite, entetes, champsExacts) : new Map<string, string>();
 
   const colonnes = entetes.map((c: string) => {
     const rec = recognizedCols.get(c);
@@ -540,6 +635,7 @@ export function planParRegles(
         if (champ) source = "schema";
       }
     }
+    if (!champ && lexique.has(c)) { champ = lexique.get(c)!; source = "alias"; }
     
     // 1. Semantic contextual recognition (Ontologie Commerciale Universelle)
     if (!champ && rec && rec.confidence >= 0.5 && rec.canonicalKey !== 'unknown') {
@@ -656,7 +752,7 @@ export function planParRegles(
     confiance: choix.ambigue ? "faible" : decision.confidenceScore >= 90 ? "haute" : decision.confidenceScore >= 70 ? "moyenne" : "faible",
     explication: choix.ambigue ? `${explication} Type à confirmer : ${choix.rivale} est presque aussi plausible.` : explication,
     origine: "regles",
-    corrections: [],
+    corrections: correctionsGrain,
     archetype: classification.archetype,
     grain: classification.grain.primaryGrain,
     isAggregatedSummary: classification.isAggregatedSummary,
@@ -712,6 +808,16 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][], journal?: Ligne
   // PLAN, pas l'etat de la colonne.
   const rattacherParSynonymes = planSansRattachement(plan);
 
+  // Conventions prouvees par chaque colonne entiere (dates, separateur
+  // decimal), rattachee ou non : une colonne que les synonymes rattacheront
+  // plus loin doit etre lue comme les autres. Une convention annoncee par le
+  // plan reste prioritaire pour les dates.
+  const donnees = matrix.slice(plan.ligne_entetes + 1).filter((_, k) => !ignorees.has(plan.ligne_entetes + 1 + k));
+  const conventions = entetes.map((_, idx) => {
+    const valeurs = donnees.map((r) => (r || [])[idx]);
+    return { date: rattachement.get(idx)?.convention_date || conventionDateProuvee(valeurs), nombre: conventionNombreProuvee(valeurs) };
+  });
+
   const rows: Record<string, any>[] = [];
   for (let i = plan.ligne_entetes + 1; i < matrix.length; i += 1) {
     const brute = matrix[i] || [];
@@ -735,12 +841,16 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][], journal?: Ligne
         const cle = String(valeur ?? "").trim();
         if (Object.prototype.hasOwnProperty.call(col.valeurs, cle)) valeur = col.valeurs[cle];
       }
-      // Convention de date imposee a toute la colonne. Si la valeur reste
+      // Convention de date imposee a toute la colonne (annoncee par le plan
+      // ou prouvee par ses valeurs : « 11/22/2016 » prouve le MM/JJ de
+      // « 11/8/2016 », qui sinon devenait le 11 aout). Si la valeur reste
       // illisible on garde l'originale : la quarantaine dira pourquoi.
-      if (col?.convention_date) {
-        const d = parseDate(valeur, col.convention_date);
+      const conv = conventions[idx];
+      if (conv.date && typeof valeur === "string" && MOTIF_DATE_COURTE.test(valeur.trim())) {
+        const d = parseDate(valeur, conv.date);
         if (d !== null) valeur = d;
       }
+      if (conv.nombre) valeur = nombreSelonConvention(valeur, conv.nombre);
 
       if (col && col.champ) {
         obj[col.champ] = valeur;

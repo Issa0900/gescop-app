@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes";
+import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA } from "./kpiRecords";
 
 /**
  * Registry of all computed indicators (KPIs and Measures).
@@ -57,7 +58,11 @@ export const KPI_REGISTRY = Object.freeze({
         : deps.transaction_amount != null ? deps.transaction_amount
         : null;
       if (txnRevenue == null && deps.revenue == null) return null;
-      return (txnRevenue || 0) + (deps.revenue || 0);
+      // Une transaction qui encaisse une commande deja importee est le MEME
+      // argent que la commande : la compter aussi doublait le CA (Xplorer
+      // 3 mois : « Vente ORD-20260601-1 » en transaction et en commande).
+      const doublon = deps.revenue != null && txnRevenue != null ? recettesDejaCommandees(deps._records || []) : 0;
+      return Math.max(0, (txnRevenue || 0) - doublon) + (deps.revenue || 0);
     }
   },
 
@@ -83,7 +88,10 @@ export const KPI_REGISTRY = Object.freeze({
     // existed, however small.
     calculate: (deps) => {
       if (deps.expense_amount == null && deps.operating_expense == null) return null;
-      return (deps.expense_amount || 0) + (deps.operating_expense || 0);
+      // Meme regle que le CA : une transaction de depense qui repete une
+      // depense deja importee (meme date, meme montant) n'est comptee qu'une fois.
+      const doublon = deps.expense_amount != null && deps.operating_expense != null ? depensesDejaSaisies(deps._records || []) : 0;
+      return Math.max(0, (deps.expense_amount || 0) - doublon) + (deps.operating_expense || 0);
     }
   },
 
@@ -121,7 +129,9 @@ export const KPI_REGISTRY = Object.freeze({
     // count distinct employees directly from it. If no employee identifier is
     // present, fall back to the semantic aggregation of `employee_id`.
     calculate: (deps) => {
-      const records = deps._records || [];
+      // Effectif : fiches employes et paies seulement. Une commande porte
+      // aussi un employee_id (le vendeur) : la compter gonflait l'effectif.
+      const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Employee" || r._entity === "Payroll");
       const empIds = new Set(
         records
           .map((r) => r.employee_id)
@@ -149,7 +159,7 @@ export const KPI_REGISTRY = Object.freeze({
     // contain an "active" marker. Falls back to the raw employee count when no
     // status information is available at all.
     calculate: (deps) => {
-      const records = deps._records || [];
+      const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Employee" || r._entity === "Payroll");
       const employees = records.filter(
         (r) => r.employee_id !== null && r.employee_id !== undefined && String(r.employee_id).trim() !== ""
       );
@@ -226,9 +236,18 @@ export const KPI_REGISTRY = Object.freeze({
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: false,
     dependencies: ["payroll_total", "employee_count"],
+    // Paie importee : masse salariale / effectif. Sinon, moyenne de la
+    // remuneration annuelle portee par les fiches employes (cout employeur,
+    // a defaut salaire). Ni l'un ni l'autre : non mesurable, jamais 0 $
+    // (Nordik affichait « 0 $ » par employe faute de paie).
     calculate: (deps) => {
-      if (!deps.employee_count || deps.employee_count === 0) return null;
-      return (deps.payroll_total || 0) / deps.employee_count;
+      if (deps.payroll_total != null && deps.employee_count) return deps.payroll_total / deps.employee_count;
+      const fiches = (deps._records || []).filter((r) => r._entity === "Employee");
+      for (const champ of ["employer_cost", "annual_salary", "salary"]) {
+        const v = fiches.map((r) => r[champ]).filter((x) => x !== null && x !== undefined && x !== "" && Number.isFinite(Number(x))).map(Number);
+        if (v.length > 0) return v.reduce((a, b) => a + b, 0) / v.length;
+      }
+      return null;
     },
   },
 
@@ -298,13 +317,24 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RESULT,
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: true,
-    dependencies: ["total_revenue", "total_expense"],
+    dependencies: ["total_revenue", "total_expense", "cogs", "payroll_total"],
     // Same principle as gross_margin_amount: no expense data imported is not
     // the same as zero expenses, and treating it that way used to make net
     // income equal total_revenue -- a business with real costs looking
     // artificially 100% profitable the moment its expense data hadn't
     // arrived yet.
-    calculate: (deps) => (deps.total_revenue != null && deps.total_expense != null) ? deps.total_revenue - deps.total_expense : null,
+    // Resultat = CA HT - cout des ventes - depenses - masse salariale. Il ne
+    // retranchait que les depenses : sur GESCOP.xlsx, 321 104 $ de cout des
+    // marchandises disparaissaient du resultat. Sans aucune charge connue, le
+    // resultat n'est pas le CA : non mesurable.
+    calculate: (deps) => {
+      if (deps.total_revenue == null) return null;
+      // Le cout des ventes seul ne suffit pas : sans aucune charge
+      // d'exploitation (depenses ou paie), CA - cout n'est que la marge brute,
+      // pas un resultat (Nordik : EBITDA affiche = marge brute).
+      if (deps.total_expense == null && deps.payroll_total == null) return null;
+      return deps.total_revenue - (deps.cogs || 0) - (deps.total_expense || 0) - (deps.payroll_total || 0);
+    },
   },
   
   net_margin_pct: {
@@ -334,8 +364,12 @@ export const KPI_REGISTRY = Object.freeze({
     isAdditive: true,
     // Simple version: Net Income + Interest + Taxes + D&A. 
     // If we only have Revenue and Operating Expenses, it's roughly Rev - OpEx.
-    dependencies: ["total_revenue", "total_expense"], // Changed from operating_expense to total_expense for simplicity, or we keep operating_expense if it exists. But operating_expense isn't in semanticTypes. let's use total_expense
-    calculate: (deps) => (deps.total_revenue || 0) - (deps.total_expense || 0),
+    // Sans amortissements ni interets importes, l'EBITDA se confond avec le
+    // resultat (CA - couts - charges). « (CA || 0) - (charges || 0) »
+    // affichait EBITDA = CA des qu'aucune charge n'etait importee (Nordik :
+    // 381 048 $), et 0 $ quand rien ne l'etait.
+    dependencies: ["net_income"],
+    calculate: (deps) => (deps.net_income == null ? null : deps.net_income),
   },
 
   // ── TREASURY & BFR (LEVEL 2/3) ──────────────────────────────────────────
@@ -399,7 +433,11 @@ export const KPI_REGISTRY = Object.freeze({
     // "receivable"/"payable" matched no field - Cashflow.accounts_receivable
     // and .accounts_payable resolve to "accounts_receivable"/"accounts_payable".
     dependencies: ["accounts_receivable", "inventory_value", "accounts_payable"],
-    calculate: (deps) => (deps.accounts_receivable || 0) + (deps.inventory_value || 0) - (deps.accounts_payable || 0),
+    // Sans creances ni dettes, le BFR n'est pas la valeur du stock : non mesurable.
+    calculate: (deps) => {
+      if (deps.accounts_receivable == null && deps.accounts_payable == null) return null;
+      return (deps.accounts_receivable || 0) + (deps.inventory_value || 0) - (deps.accounts_payable || 0);
+    },
   },
   
   bfr_days: {
@@ -413,7 +451,7 @@ export const KPI_REGISTRY = Object.freeze({
     isAdditive: false,
     dependencies: ["bfr", "total_revenue"],
     calculate: (deps) => {
-      if (!deps.total_revenue || deps.total_revenue === 0) return 0;
+      if (deps.bfr == null || !deps.total_revenue) return null;
       // total_revenue here is whatever period the caller's records cover;
       // normalize by that period's length rather than assuming a year.
       const periodDays = deps.period_days || 365;
@@ -434,9 +472,9 @@ export const KPI_REGISTRY = Object.freeze({
     // accounts receivable. Lower is better (customers pay faster).
     dependencies: ["accounts_receivable", "total_revenue"],
     calculate: (deps) => {
-      if (!deps.total_revenue || deps.total_revenue === 0) return null;
+      if (deps.accounts_receivable == null || !deps.total_revenue) return null;
       const periodDays = deps.period_days || 365;
-      return ((deps.accounts_receivable || 0) / deps.total_revenue) * periodDays;
+      return (deps.accounts_receivable / deps.total_revenue) * periodDays;
     },
   },
 
@@ -454,9 +492,9 @@ export const KPI_REGISTRY = Object.freeze({
     // suppliers strain - read it alongside DSO, not alone.
     dependencies: ["accounts_payable", "total_expense"],
     calculate: (deps) => {
-      if (!deps.total_expense || deps.total_expense === 0) return null;
+      if (deps.accounts_payable == null || !deps.total_expense) return null;
       const periodDays = deps.period_days || 365;
-      return ((deps.accounts_payable || 0) / deps.total_expense) * periodDays;
+      return (deps.accounts_payable / deps.total_expense) * periodDays;
     },
   },
 
@@ -542,10 +580,13 @@ export const KPI_REGISTRY = Object.freeze({
     // the merge that introduced it. Found by auditing every KPI dependency
     // against entityFieldMap.js's actual canonicalKeys (same check that
     // caught the total_revenue bug).
-    dependencies: ["campaign_budget", "campaign_clicks"],
+    // Cout reel (depense) ; le budget seulement si la depense n'est pas
+    // fournie. Ni l'un ni l'autre : non mesurable, pas 0 $.
+    dependencies: ["marketing_spend", "campaign_budget", "campaign_clicks"],
     calculate: (deps) => {
-      if (!deps.campaign_clicks) return null;
-      return (deps.campaign_budget || 0) / deps.campaign_clicks;
+      const cout = deps.marketing_spend ?? deps.campaign_budget;
+      if (!deps.campaign_clicks || cout == null) return null;
+      return cout / deps.campaign_clicks;
     },
   },
 
@@ -560,10 +601,11 @@ export const KPI_REGISTRY = Object.freeze({
     isAdditive: false,
     // Same fix as cpc above: "impressions" matches no field: Campaign's own
     // impressions column resolves to "campaign_impressions".
-    dependencies: ["campaign_budget", "campaign_impressions"],
+    dependencies: ["marketing_spend", "campaign_budget", "campaign_impressions"],
     calculate: (deps) => {
-      if (!deps.campaign_impressions) return null;
-      return ((deps.campaign_budget || 0) / deps.campaign_impressions) * 1000;
+      const cout = deps.marketing_spend ?? deps.campaign_budget;
+      if (!deps.campaign_impressions || cout == null) return null;
+      return (cout / deps.campaign_impressions) * 1000;
     },
   },
 
@@ -579,8 +621,10 @@ export const KPI_REGISTRY = Object.freeze({
     dependencies: ["total_revenue"], 
     // GESCOP Phase 3 SSOT : On utilise context._records pour compter proprement les commandes valides
     calculate: (deps) => {
-      const records = deps._records || [];
-      const orderCount = records.filter(r => r.order_id && (!r.status || !["annul", "cancel", "void", "draft"].some(s => String(r.status).toLowerCase().includes(s)))).length;
+      // Commandes DISTINCTES (un fichier a une ligne par article repete le
+      // numero de commande), hors annulees et retournees, comme le CA.
+      const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Order");
+      const orderCount = new Set(records.filter((r) => r.order_id && !commandeHorsCA(r)).map((r) => String(r.order_id))).size;
       if (orderCount === 0 || deps.total_revenue == null) return null;
       return deps.total_revenue / orderCount;
     },

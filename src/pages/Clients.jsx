@@ -1,4 +1,5 @@
 import React from "react";
+import { montantHT } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
@@ -71,7 +72,7 @@ export default function Clients() {
   validSalesOrders(orders).forEach((o) => {
     const cid = o.customer_id;
     if (!cid) return;
-    revByCustomer[cid] = (revByCustomer[cid] || 0) + (Number(o.total) || 0);
+    revByCustomer[cid] = (revByCustomer[cid] || 0) + (Number.isFinite(montantHT(o)) ? montantHT(o) : 0);
     ordersByCustomer[cid] = (ordersByCustomer[cid] || 0) + 1;
   });
   const enriched = customers.map((c) => ({

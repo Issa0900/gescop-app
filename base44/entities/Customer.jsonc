@@ -75,6 +75,15 @@
     "churn_risk": {
       "type": "number"
     },
+    "province": {
+      "type": "string"
+    },
+    "loyalty_points": {
+      "type": "number"
+    },
+    "credit_limit": {
+      "type": "number"
+    },
     "import_id": {
       "type": "string"
     },

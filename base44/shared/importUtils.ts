@@ -1,4 +1,5 @@
 // Shared import normalization utilities — used by importData and importMultiData
+import { rattacherParLexique } from "./registry/lexiqueChamps.ts";
 import { ENTITY_SCHEMAS } from "./entitySchemas.ts";
 
 import { buildFieldAliasesFromRegistry } from "./registry/generateAliases.ts";
@@ -96,7 +97,13 @@ export const FIELD_ALIASES: Record<string, string> = {
  * une apostrophe suffisait a faire perdre une colonne parfaitement lisible.
  */
 export function cleCanonique(k: string): string {
-  return stripAccents(String(k).toLowerCase().trim())
+  // Casse chameau decoupee d'abord : « IdTransaction », « OrderID »,
+  // « PrixUnitaire » donnent id_transaction, order_id, prix_unitaire — sans
+  // quoi aucun synonyme ne reconnaissait un intitule sans separateur.
+  const decoupe = String(k).trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2");
+  return stripAccents(decoupe.toLowerCase())
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 }
@@ -1427,6 +1434,21 @@ const REVENUE_CONCEPT_ALIASES = new Set(["revenue", "net_revenue", "gross_revenu
 // jamais de champ ou atterrir sur cette entite.
 const REVENUE_LANDING_FIELDS = ["revenue", "total_revenue", "amount", "gross_revenue", "net_revenue"];
 
+// Le lexique d'une feuille ne change pas d'une ligne a l'autre : calcule une
+// fois par jeu d'intitules (un fichier de 18 000 lignes en a un seul).
+const CACHE_LEXIQUE = new Map<string, Map<string, string>>();
+function lexiqueDeLigne(entite: string, cles: string[], schemaFields: string[]): Map<string, string> {
+  const cle = entite + "|" + cles.join("|");
+  let m = CACHE_LEXIQUE.get(cle);
+  if (!m) {
+    const exacts = new Set(cles.filter((k) => schemaFields.includes(k)));
+    m = rattacherParLexique(entite, cles, exacts);
+    if (CACHE_LEXIQUE.size > 500) CACHE_LEXIQUE.clear();
+    CACHE_LEXIQUE.set(cle, m);
+  }
+  return m;
+}
+
 export function normalizeKeys(
   row: Record<string, any>,
   properties?: Record<string, any>,
@@ -1442,9 +1464,14 @@ export function normalizeKeys(
   // corrige une fois ne doit plus jamais redemander la meme correction,
   // meme quand ce mot n'existe dans aucune liste generique.
   companyDictionary?: Record<string, string>,
+  // Entite visee : active le lexique par mots de cette entite
+  // (registry/lexiqueChamps.ts), apres le dictionnaire de l'entreprise et
+  // avant les tables generiques de synonymes.
+  entite?: string,
 ): Record<string, any> {
   const out: Record<string, any> = {};
   const schemaFields = properties ? Object.keys(properties) : [];
+  const lexique = entite ? lexiqueDeLigne(entite, Object.keys(row || {}), schemaFields) : null;
   for (const [k, v] of Object.entries(row || {})) {
     const lower = k.toLowerCase().trim();
     const canon = cleCanonique(k);
@@ -1454,6 +1481,7 @@ export function normalizeKeys(
           : null;
     const alias = direct
       || (companyDictionary && companyDictionary[canon])
+      || lexique?.get(k)
       || FIELD_ALIASES[lower]
       || FIELD_ALIASES[lower.replace(/[\s-]/g, "_")]
       || FIELD_ALIASES[canon]
@@ -2077,6 +2105,9 @@ export const NAME_ENTITY_MAP = [
   { pattern: /signal|radar|veille|actualite/i, entity: "ExternalSignal" },
   { pattern: /goal|objectif|cible|target/i, entity: "Goal" },
   { pattern: /event|evenement|journal/i, entity: "Event" },
+  { pattern: /immobilisation|asset|actif|amortissement|dpa|patrimoine/i, entity: "Asset" },
+  { pattern: /payment|paiement|encaissement|reglement/i, entity: "Payment" },
+  { pattern: /sommaire|synthese|resume|tableau.?de.?bord|dashboard|succursale|executive/i, entity: "ExecutiveSummary" },
 ];
 
 export function detectEntityByName(name: string): string | null {
@@ -2307,7 +2338,7 @@ export function normalizeRow(
   const originalData = JSON.stringify(brutDe(row));
 
   if (isSummaryOrTotalRow(row)) return {};
-  const r = normalizeKeys(row, schemaProps, unmapped, companyDictionary);
+  const r = normalizeKeys(row, schemaProps, unmapped, companyDictionary, entityName);
   if (isSummaryOrTotalRow(r)) return {};
 
   // Preserve explicit Transaction headers before aliases or legacy plans can
@@ -2470,8 +2501,28 @@ export function normalizeRow(
     const qty = parseNumber(r.quantity);
     const price = parseNumber(r.unit_price) || 0;
     const cost = parseNumber(r.unit_cost) || 0;
+    // Chiffre d'affaires de la ligne = HORS TAXES, remise deduite : le
+    // sous-total quand le fichier le donne, sinon total moins taxe, sinon
+    // quantite x prix moins la remise. « Quantite x prix » seul ignorait la
+    // remise (GESCOP.xlsx : 585 852 $ au lieu de 575 158 $).
     if (r.total_revenue == null || r.total_revenue === "") {
-      if (qty !== null && price > 0) r.total_revenue = Math.round(qty * price * 100) / 100;
+      const sousTotal = parseNumber(r.subtotal);
+      const total = parseNumber(r.total);
+      const taxe = parseNumber(r.tax);
+      if (sousTotal !== null) r.total_revenue = sousTotal;
+      else if (total !== null) r.total_revenue = Math.round((total - (taxe ?? 0)) * 100) / 100;
+      else if (qty !== null && price > 0) {
+        const brut = qty * price;
+        const remise = parseNumber(r.discount);
+        // Remise : un taux s'il est entre 0 et 1 (0,28), un montant sinon
+        // (100,93 $ sur une ligne de 1 009 $) ; au-dela du montant brut, elle
+        // n'est pas interpretable et n'est pas appliquee.
+        const net = remise === null || remise === 0 ? brut
+          : remise > 0 && remise < 1 ? brut * (1 - remise)
+          : remise >= 1 && remise < brut ? brut - remise
+          : brut;
+        r.total_revenue = Math.round(net * 100) / 100;
+      }
     }
     if (r.total_cost == null || r.total_cost === "") {
       if (qty !== null && cost > 0) r.total_cost = Math.round(qty * cost * 100) / 100;

@@ -10,6 +10,7 @@
 //  3. Every business definition (margin, runway, churn) comes from
 //     src/lib/metrics.js so this file and the audit page cannot disagree.
 
+import { montantHT, commandesDistinctes } from "./core/kpiRecords";
 import {
   monthlyAggComplete,
   lastVal,
@@ -156,11 +157,11 @@ export function computeDomainScores(data) {
   // overstated this score's input by the store's full return rate.
   const salesOrders = validSalesOrders(orders);
   const orderRevMonthly = monthlyAggComplete(
-    salesOrders.map(o => ({ ...o, _computed_rev: Number(o.total) || Number(o.revenue_amount) || Number(o.amount) || 0 })),
+    salesOrders.map(o => ({ ...o, _computed_rev: Number.isFinite(montantHT(o)) ? montantHT(o) : Number(o.revenue_amount) || Number(o.amount) || 0 })),
     "date",
     "_computed_rev"
   );
-  const orderCntMonthly = monthlyAggComplete(salesOrders, "date", "order_id", "count");
+  const orderCntMonthly = monthlyAggComplete(commandesDistinctes(salesOrders), "date", "order_id", "count");
   // 3-month blocks, but only when BOTH blocks are fully covered.
   const rev3 = sumLast(orderRevMonthly, 3);
   const revPrev3 = sumPrev(orderRevMonthly, 3);

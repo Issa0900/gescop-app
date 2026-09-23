@@ -1,0 +1,1744 @@
+{
+ "ok": 29,
+ "total": 76,
+ "resultats": [
+  {
+   "fichier": "Nordik_PleinAir_Donnees_Complet_2026.xlsx",
+   "ms": 2704,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 381047.96,
+     "app": 381047.96,
+     "statut": "UNKNOWN",
+     "ok": true
+    },
+    {
+     "type": "kpi",
+     "id": "gross_margin_pct",
+     "attendu": 55.17,
+     "app": 55.17,
+     "statut": "MEASURED",
+     "ok": true
+    },
+    {
+     "type": "kpi",
+     "id": "ebitda",
+     "attendu": null,
+     "app": 381047.96,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "avg_employee_cost",
+     "attendu": null,
+     "app": 0,
+     "statut": "VALID_ZERO",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "dso",
+     "attendu": null,
+     "app": 0,
+     "statut": "UNKNOWN",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "bfr",
+     "attendu": null,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": true
+    },
+    {
+     "type": "kpi",
+     "id": "cpc",
+     "attendu": 0.79,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 1200,
+     "app": 1200,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Customer",
+     "attendu": 150,
+     "app": 150,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Employee",
+     "attendu": 10,
+     "app": 10,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Supplier",
+     "attendu": 7,
+     "app": 7,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Inventory",
+     "attendu": 12,
+     "app": 12,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Campaign",
+     "attendu": 6,
+     "app": 6,
+     "ok": true
+    }
+   ],
+   "motifs": {
+    "IGNORED_BY_PLAN": 4,
+    "UNKNOWN_CONCEPT": 8
+   },
+   "feuilles": [
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Sommaire Exécutif]",
+     "entite": "ExecutiveSummary",
+     "lues": 9,
+     "importees": 0,
+     "quar": 8
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Ventes (1200+)]",
+     "entite": "Order",
+     "lues": 1201,
+     "importees": 1200,
+     "quar": 0
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Stocks & Inventaire]",
+     "entite": "Inventory",
+     "lues": 13,
+     "importees": 12,
+     "quar": 0
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Employés & RH]",
+     "entite": "Employee",
+     "lues": 10,
+     "importees": 10,
+     "quar": 0
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Fournisseurs]",
+     "entite": "Supplier",
+     "lues": 7,
+     "importees": 7,
+     "quar": 0
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Clients (CRM)]",
+     "entite": "Customer",
+     "lues": 150,
+     "importees": 150,
+     "quar": 0
+    },
+    {
+     "feuille": "Nordik_PleinAir_Donnees_Complet_2026.xlsx [Marketing]",
+     "entite": "Campaign",
+     "lues": 7,
+     "importees": 6,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Customer": 150,
+    "Product": 0,
+    "Inventory": 12,
+    "Employee": 10,
+    "Order": 1200,
+    "Supplier": 7,
+    "Campaign": 6
+   },
+   "kpi": {
+    "total_revenue": 381047.96,
+    "employee_count_raw": 10,
+    "employee_count": 10,
+    "revenue_per_employee": 38104.8,
+    "avg_employee_cost": 0,
+    "gross_margin_amount": 210220.96,
+    "gross_margin_pct": 55.17,
+    "ebitda": 381047.96,
+    "bfr_days": 0,
+    "dso": 0,
+    "aov": 317.54,
+    "purchase_frequency": 8
+   }
+  },
+  {
+   "fichier": "GESCOP.xlsx",
+   "ms": 17983,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 575158.4,
+     "app": 661288.41,
+     "statut": "UNKNOWN",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "gross_margin_amount",
+     "attendu": 254054.75,
+     "app": 340184.76,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "gross_margin_pct",
+     "attendu": 44.17,
+     "app": 51.44,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "aov",
+     "attendu": 1150.32,
+     "app": 1322.58,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "net_income",
+     "attendu": -1332472.79,
+     "app": -925239.13,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "avg_employee_cost",
+     "attendu": 90519.44,
+     "app": 0,
+     "statut": "VALID_ZERO",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "cpc",
+     "attendu": 1.13,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "cpm",
+     "attendu": 44.83,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "roas",
+     "attendu": 3.02,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "dso",
+     "attendu": 27.78,
+     "app": 92.09,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Customer",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Product",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Inventory",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Employee",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Expense",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Cashflow",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Supplier",
+     "attendu": 500,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Purchase",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Campaign",
+     "attendu": 500,
+     "app": 500,
+     "ok": true
+    }
+   ],
+   "motifs": {
+    "MISSING_REQUIRED_FIELD": 500
+   },
+   "feuilles": [
+    {
+     "feuille": "GESCOP.xlsx [Commandes_Ventes]",
+     "entite": "Order",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Clients]",
+     "entite": "Customer",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Produits]",
+     "entite": "Product",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Inventaire_Stocks]",
+     "entite": "Inventory",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Employes]",
+     "entite": "Employee",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Depenses]",
+     "entite": "Expense",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Tresorerie]",
+     "entite": "Cashflow",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Fournisseurs]",
+     "entite": "Supplier",
+     "lues": 500,
+     "importees": 0,
+     "quar": 500
+    },
+    {
+     "feuille": "GESCOP.xlsx [Achats_Fournisseurs]",
+     "entite": "Purchase",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP.xlsx [Marketing]",
+     "entite": "Campaign",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Customer": 500,
+    "Product": 500,
+    "Inventory": 500,
+    "Employee": 500,
+    "Order": 500,
+    "Supplier": 0,
+    "Expense": 500,
+    "Cashflow": 500,
+    "Purchase": 500,
+    "Campaign": 500
+   },
+   "kpi": {
+    "total_revenue": 661288.41,
+    "total_expense": 1586527.54,
+    "employee_count_raw": 500,
+    "employee_count": 500,
+    "revenue_per_employee": 1322.58,
+    "avg_employee_cost": 0,
+    "gross_margin_amount": 340184.76,
+    "gross_margin_pct": 51.44,
+    "net_income": -925239.13,
+    "net_margin_pct": -139.91,
+    "ebitda": -925239.13,
+    "net_burn_rate": 1051574.5,
+    "bfr": -26890.32,
+    "bfr_days": -56.56,
+    "dso": 92.09,
+    "dpo": 61.96,
+    "aov": 1322.58,
+    "purchase_frequency": 1.53
+   }
+  },
+  {
+   "fichier": "Entreprise_Simulation_50Ans_Canada_QC.xlsx",
+   "ms": 4336,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 159638.58,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "gross_margin_pct",
+     "attendu": 50.24,
+     "app": null,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "avg_employee_cost",
+     "attendu": 76970.93,
+     "app": 0,
+     "statut": "VALID_ZERO",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "ebitda",
+     "attendu": null,
+     "app": 0,
+     "statut": "VALID_ZERO",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 143,
+     "app": 143,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Customer",
+     "attendu": 15,
+     "app": 15,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Inventory",
+     "attendu": 50,
+     "app": 50,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Employee",
+     "attendu": 10,
+     "app": 10,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Supplier",
+     "attendu": 10,
+     "app": 10,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Asset",
+     "attendu": 13,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "MISSING_REQUIRED_FIELD": 1,
+    "UNKNOWN_CONCEPT": 23,
+    "IGNORED_BY_PLAN": 3
+   },
+   "feuilles": [
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Sommaire Exécutif]",
+     "entite": "ExecutiveSummary",
+     "lues": 11,
+     "importees": 0,
+     "quar": 11
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Ventes_Transactions]",
+     "entite": "Order",
+     "lues": 144,
+     "importees": 143,
+     "quar": 0
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Clients_CRM]",
+     "entite": "Customer",
+     "lues": 15,
+     "importees": 15,
+     "quar": 0
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Stocks_MultiEntrepots]",
+     "entite": "Inventory",
+     "lues": 51,
+     "importees": 50,
+     "quar": 0
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Employes_RH]",
+     "entite": "Employee",
+     "lues": 11,
+     "importees": 10,
+     "quar": 0
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Fournisseurs]",
+     "entite": "Supplier",
+     "lues": 10,
+     "importees": 10,
+     "quar": 0
+    },
+    {
+     "feuille": "Entreprise_Simulation_50Ans_Canada_QC.xlsx [Registre_Immobilisations_50Ans]",
+     "entite": null,
+     "lues": 13,
+     "importees": 0,
+     "quar": 13
+    }
+   ],
+   "lignes": {
+    "Customer": 15,
+    "Product": 0,
+    "Inventory": 50,
+    "Employee": 10,
+    "Order": 143,
+    "Supplier": 10
+   },
+   "kpi": {
+    "employee_count_raw": 10,
+    "employee_count": 10,
+    "avg_employee_cost": 0,
+    "ebitda": 0,
+    "bfr_days": 0,
+    "purchase_frequency": 9.53
+   }
+  },
+  {
+   "fichier": "Sample - Superstore.csv",
+   "ms": 30433,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 2297200.86,
+     "app": 519002439.42,
+     "statut": "UNKNOWN",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 9994,
+     "app": 9986,
+     "ok": false
+    },
+    {
+     "type": "sans",
+     "id": "DUPLICATE_RECORD",
+     "attendu": 0,
+     "app": 8,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "ANOMALOUS_VALUE": 3337,
+    "DUPLICATE_RECORD": 8
+   },
+   "feuilles": [
+    {
+     "feuille": "Sample - Superstore.csv",
+     "entite": "Order",
+     "lues": 9994,
+     "importees": 9986,
+     "quar": 8
+    }
+   ],
+   "lignes": {
+    "Customer": 0,
+    "Product": 0,
+    "Inventory": 0,
+    "Employee": 0,
+    "Order": 9986
+   },
+   "kpi": {
+    "total_revenue": 519002439.42,
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 519002439.42,
+    "bfr_days": 0,
+    "dso": 0,
+    "aov": 51973.01,
+    "purchase_frequency": 12.59
+   }
+  },
+  {
+   "fichier": "Sales_transactions_2022_2025.csv",
+   "ms": 143566,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 7128771.28,
+     "app": 8173008.96,
+     "statut": "UNKNOWN",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 18000,
+     "app": 17837,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "ANOMALOUS_VALUE": 285,
+    "DUPLICATE_RECORD": 208
+   },
+   "feuilles": [
+    {
+     "feuille": "Sales_transactions_2022_2025.csv",
+     "entite": "Order",
+     "lues": 18045,
+     "importees": 17837,
+     "quar": 208
+    }
+   ],
+   "lignes": {
+    "Customer": 0,
+    "Product": 0,
+    "Inventory": 0,
+    "Employee": 0,
+    "Order": 17837
+   },
+   "kpi": {
+    "total_revenue": 8173008.96,
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "gross_margin_amount": 1631134.81,
+    "gross_margin_pct": 19.96,
+    "ebitda": 8173008.96,
+    "bfr_days": 0,
+    "dso": 0,
+    "aov": 458.21,
+    "purchase_frequency": 3.66
+   }
+  },
+  {
+   "fichier": "E-Commerce Sales Analytics.csv",
+   "ms": 8410,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 5109775.74,
+     "app": 5109775.74,
+     "statut": "UNKNOWN",
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 5000,
+     "app": 5000,
+     "ok": true
+    }
+   ],
+   "motifs": {},
+   "feuilles": [
+    {
+     "feuille": "E-Commerce Sales Analytics.csv",
+     "entite": "Order",
+     "lues": 5000,
+     "importees": 5000,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Customer": 0,
+    "Product": 0,
+    "Inventory": 0,
+    "Employee": 0,
+    "Order": 5000
+   },
+   "kpi": {
+    "total_revenue": 5109775.74,
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 5109775.74,
+    "bfr_days": 0,
+    "dso": 0,
+    "aov": 1021.96,
+    "purchase_frequency": 5.06
+   }
+  },
+  {
+   "fichier": "DS02_commandes_ecommerce_6mois.xlsx",
+   "ms": 10265,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 1301611.4,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 4659,
+     "app": 4659,
+     "ok": true
+    }
+   ],
+   "motifs": {},
+   "feuilles": [
+    {
+     "feuille": "DS02_commandes_ecommerce_6mois.xlsx [Sheet1]",
+     "entite": "Order",
+     "lues": 4659,
+     "importees": 4659,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Customer": 0,
+    "Product": 0,
+    "Inventory": 0,
+    "Employee": 0,
+    "Order": 4659
+   },
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0,
+    "purchase_frequency": 5.19
+   }
+  },
+  {
+   "fichier": "DS03_marketing_6mois.xlsx",
+   "ms": 262,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "marketing_spend",
+     "attendu": 83595.1,
+     "app": null,
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "roas",
+     "attendu": 4.68,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "cpc",
+     "attendu": 0.92,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "CampaignDaily",
+     "attendu": 85,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "sans",
+     "id": "DUPLICATE_RECORD",
+     "attendu": 0,
+     "app": 78,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "DUPLICATE_RECORD": 78
+   },
+   "feuilles": [
+    {
+     "feuille": "DS03_marketing_6mois.xlsx [Sheet1]",
+     "entite": "Campaign",
+     "lues": 85,
+     "importees": 7,
+     "quar": 78
+    }
+   ],
+   "lignes": {
+    "Campaign": 7
+   },
+   "kpi": {
+    "total_revenue": 36448.7,
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 36448.7,
+    "bfr_days": 0,
+    "dso": 0
+   }
+  },
+  {
+   "fichier": "DS01_succursales_6mois.xlsx",
+   "ms": 154,
+   "controles": [
+    {
+     "type": "lignes",
+     "id": "ExecutiveSummary",
+     "attendu": 60,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "MISSING_REQUIRED_FIELD": 60
+   },
+   "feuilles": [
+    {
+     "feuille": "DS01_succursales_6mois.xlsx [Sheet1]",
+     "entite": "Order",
+     "lues": 60,
+     "importees": 0,
+     "quar": 60
+    }
+   ],
+   "lignes": {},
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0
+   }
+  },
+  {
+   "fichier": "clean_final_data.csv",
+   "ms": 75092,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 3162844,
+     "app": 6928130,
+     "statut": "UNKNOWN",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 49222,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "ANOMALOUS_VALUE": 137,
+    "DUPLICATE_RECORD": 39402
+   },
+   "feuilles": [
+    {
+     "feuille": "clean_final_data.csv",
+     "entite": "Customer",
+     "lues": 49222,
+     "importees": 9820,
+     "quar": 39402
+    }
+   ],
+   "lignes": {
+    "Customer": 9820
+   },
+   "kpi": {
+    "total_revenue": 6928130,
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 6928130,
+    "bfr_days": 0,
+    "dso": 0
+   }
+  },
+  {
+   "fichier": "orders.csv",
+   "ms": 16228,
+   "controles": [
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 50120,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "DUPLICATE_RECORD": 40180
+   },
+   "feuilles": [
+    {
+     "feuille": "orders.csv",
+     "entite": "Customer",
+     "lues": 50120,
+     "importees": 9940,
+     "quar": 40180
+    }
+   ],
+   "lignes": {
+    "Customer": 9940
+   },
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0
+   }
+  },
+  {
+   "fichier": "payments.csv",
+   "ms": 447,
+   "controles": [
+    {
+     "type": "lignes",
+     "id": "Payment",
+     "attendu": 5000,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "UNKNOWN_CONCEPT": 5000
+   },
+   "feuilles": [
+    {
+     "feuille": "payments.csv",
+     "entite": null,
+     "lues": 5000,
+     "importees": 0,
+     "quar": 5000
+    }
+   ],
+   "lignes": {},
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0
+   }
+  },
+  {
+   "fichier": "customers.csv",
+   "ms": 8689,
+   "controles": [
+    {
+     "type": "lignes",
+     "id": "Customer",
+     "attendu": 10000,
+     "app": 10000,
+     "ok": true
+    }
+   ],
+   "motifs": {},
+   "feuilles": [
+    {
+     "feuille": "customers.csv",
+     "entite": "Customer",
+     "lues": 10000,
+     "importees": 10000,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Customer": 10000
+   },
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0
+   }
+  },
+  {
+   "fichier": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx",
+   "ms": 4363,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 65488.24,
+     "app": 130976.48,
+     "statut": "MEASURED",
+     "ok": false
+    },
+    {
+     "type": "kpi",
+     "id": "total_expense",
+     "attendu": 15750,
+     "app": 31500,
+     "statut": "MEASURED",
+     "ok": false
+    }
+   ],
+   "motifs": {},
+   "feuilles": [
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Transactions]",
+     "entite": "Transaction",
+     "lues": 267,
+     "importees": 267,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Cashflow]",
+     "entite": "Cashflow",
+     "lues": 103,
+     "importees": 103,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Expenses]",
+     "entite": "Expense",
+     "lues": 15,
+     "importees": 15,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Products]",
+     "entite": "Product",
+     "lues": 4,
+     "importees": 4,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Inventory]",
+     "entite": "Inventory",
+     "lues": 412,
+     "importees": 412,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Suppliers]",
+     "entite": "Supplier",
+     "lues": 2,
+     "importees": 2,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Purchase]",
+     "entite": "Purchase",
+     "lues": 7,
+     "importees": 7,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Customers]",
+     "entite": "Customer",
+     "lues": 24,
+     "importees": 24,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Orders]",
+     "entite": "Order",
+     "lues": 252,
+     "importees": 252,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Interaction]",
+     "entite": "Interaction",
+     "lues": 13,
+     "importees": 13,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Employees]",
+     "entite": "Employee",
+     "lues": 2,
+     "importees": 2,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Payroll]",
+     "entite": "Payroll",
+     "lues": 6,
+     "importees": 6,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Campaigns]",
+     "entite": "Campaign",
+     "lues": 2,
+     "importees": 2,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [CampaignDaily]",
+     "entite": "CampaignDaily",
+     "lues": 206,
+     "importees": 206,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Competitors]",
+     "entite": "Competitor",
+     "lues": 2,
+     "importees": 2,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [ExternalSignal]",
+     "entite": "ExternalSignal",
+     "lues": 3,
+     "importees": 3,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Goal]",
+     "entite": "Goal",
+     "lues": 2,
+     "importees": 2,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx [Event]",
+     "entite": "Event",
+     "lues": 3,
+     "importees": 3,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Transaction": 267,
+    "Cashflow": 103,
+    "Expense": 15,
+    "Inventory": 412,
+    "Supplier": 2,
+    "Product": 4,
+    "Purchase": 7,
+    "Customer": 24,
+    "Employee": 2,
+    "Order": 252,
+    "Interaction": 13,
+    "Payroll": 6,
+    "Campaign": 2,
+    "CampaignDaily": 206,
+    "Competitor": 2,
+    "ExternalSignal": 3,
+    "Goal": 2,
+    "Event": 3
+   },
+   "kpi": {
+    "total_revenue": 130976.48,
+    "total_expense": 31500,
+    "payroll_total": 24024,
+    "employee_count_raw": 2,
+    "employee_count": 2,
+    "rh_expense_ratio": 18.34,
+    "revenue_per_employee": 65488.24,
+    "avg_employee_cost": 12012,
+    "overtime_ratio": 2.1,
+    "net_income": 99476.48,
+    "net_margin_pct": 75.95,
+    "ebitda": 99476.48,
+    "net_burn_rate": 49738.24,
+    "bfr": -240,
+    "bfr_days": -0.54,
+    "dso": 8,
+    "dpo": 35.54,
+    "roas": 3.25,
+    "marketing_roi": 224.64,
+    "cpc": 0,
+    "cpm": 0,
+    "aov": 519.75,
+    "purchase_frequency": 10.5,
+    "active_customers": 24,
+    "churn_rate": 0,
+    "arpu": 5457.35
+   }
+  },
+  {
+   "fichier": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx",
+   "ms": 13287,
+   "controles": [
+    {
+     "type": "motif",
+     "id": "CONFLICTING_RECORD",
+     "attendu": ">= 2000",
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "DUPLICATE_RECORD": 2027
+   },
+   "feuilles": [
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Feuil1]",
+     "entite": null,
+     "lues": 0,
+     "importees": 0,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Transactions (2)]",
+     "entite": "Transaction",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Cashflow (2)]",
+     "entite": "Cashflow",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Expenses (2)]",
+     "entite": "Expense",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Products (2)]",
+     "entite": "Product",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Inventory (2)]",
+     "entite": "Inventory",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Suppliers (2)]",
+     "entite": "Supplier",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Purchase (2)]",
+     "entite": "Purchase",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Customers (2)]",
+     "entite": "Customer",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Orders (2)]",
+     "entite": "Order",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Transactions]",
+     "entite": "Transaction",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Cashflow]",
+     "entite": "Cashflow",
+     "lues": 500,
+     "importees": 0,
+     "quar": 500
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Expenses]",
+     "entite": "Expense",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Products]",
+     "entite": "Product",
+     "lues": 500,
+     "importees": 0,
+     "quar": 500
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Inventory]",
+     "entite": "Inventory",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Suppliers]",
+     "entite": "Supplier",
+     "lues": 500,
+     "importees": 0,
+     "quar": 500
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Purchase]",
+     "entite": "Purchase",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Customers]",
+     "entite": "Customer",
+     "lues": 500,
+     "importees": 0,
+     "quar": 500
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Orders]",
+     "entite": "Order",
+     "lues": 500,
+     "importees": 498,
+     "quar": 2
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Interaction]",
+     "entite": "Interaction",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Employees]",
+     "entite": "Employee",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Payroll]",
+     "entite": "Payroll",
+     "lues": 500,
+     "importees": 477,
+     "quar": 23
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Campaigns]",
+     "entite": "Campaign",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [CampaignDaily]",
+     "entite": "CampaignDaily",
+     "lues": 500,
+     "importees": 498,
+     "quar": 2
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Competitors]",
+     "entite": "Competitor",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [ExternalSignal]",
+     "entite": "ExternalSignal",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Goal]",
+     "entite": "Goal",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Event]",
+     "entite": "Event",
+     "lues": 500,
+     "importees": 500,
+     "quar": 0
+    },
+    {
+     "feuille": "GESCOP_Donnees_Test_Xplorer_Succes.xlsx [Feuil2]",
+     "entite": null,
+     "lues": 0,
+     "importees": 0,
+     "quar": 0
+    }
+   ],
+   "lignes": {
+    "Transaction": 1000,
+    "Cashflow": 500,
+    "Expense": 1000,
+    "Inventory": 1000,
+    "Supplier": 500,
+    "Product": 500,
+    "Purchase": 1000,
+    "Customer": 500,
+    "Employee": 500,
+    "Order": 998,
+    "Interaction": 500,
+    "Payroll": 477,
+    "Campaign": 500,
+    "CampaignDaily": 498,
+    "Competitor": 500,
+    "ExternalSignal": 500,
+    "Goal": 500,
+    "Event": 500
+   },
+   "kpi": {
+    "total_revenue": 3644412.8,
+    "total_expense": 1756298.35,
+    "payroll_total": 2514085.07,
+    "employee_count_raw": 500,
+    "employee_count": 500,
+    "rh_expense_ratio": 68.98,
+    "revenue_per_employee": 7288.83,
+    "avg_employee_cost": 5028.17,
+    "overtime_ratio": 9.31,
+    "net_income": 1888114.45,
+    "net_margin_pct": 51.81,
+    "ebitda": 1888114.45,
+    "net_burn_rate": 158082.54,
+    "bfr": -2041.65,
+    "bfr_days": -0.28,
+    "dso": 0.42,
+    "dpo": 1.44,
+    "roas": 11.9,
+    "marketing_roi": 1090.5,
+    "cpc": 0,
+    "cpm": 0,
+    "aov": 3651.72,
+    "purchase_frequency": 2.34,
+    "active_customers": 247,
+    "churn_rate": 50.6,
+    "arpu": 14754.71,
+    "ltv": 29159.5
+   }
+  },
+  {
+   "fichier": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx",
+   "ms": 3341,
+   "controles": [
+    {
+     "type": "kpi",
+     "id": "total_revenue",
+     "attendu": 634988.12,
+     "app": null,
+     "statut": "NOT_MEASURED",
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 427,
+     "app": 427,
+     "ok": true
+    },
+    {
+     "type": "lignes",
+     "id": "Transaction",
+     "attendu": 480,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Expense",
+     "attendu": 288,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Payroll",
+     "attendu": 320,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Purchase",
+     "attendu": 109,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "CampaignDaily",
+     "attendu": 420,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Cashflow",
+     "attendu": 33,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "type": "lignes",
+     "id": "Asset",
+     "attendu": 12,
+     "app": 0,
+     "ok": false
+    }
+   ],
+   "motifs": {
+    "MISSING_REQUIRED_FIELD": 813,
+    "DUPLICATE_RECORD": 849
+   },
+   "feuilles": [
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Order]",
+     "entite": "Order",
+     "lues": 427,
+     "importees": 427,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Customer]",
+     "entite": "Customer",
+     "lues": 80,
+     "importees": 80,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Transaction]",
+     "entite": "Transaction",
+     "lues": 480,
+     "importees": 0,
+     "quar": 480
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Product]",
+     "entite": "Product",
+     "lues": 15,
+     "importees": 15,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Inventory]",
+     "entite": "Inventory",
+     "lues": 39,
+     "importees": 39,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Employee]",
+     "entite": "Employee",
+     "lues": 10,
+     "importees": 10,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Asset]",
+     "entite": "ExecutiveSummary",
+     "lues": 12,
+     "importees": 0,
+     "quar": 12
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Supplier]",
+     "entite": "Supplier",
+     "lues": 8,
+     "importees": 8,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Purchase]",
+     "entite": "Product",
+     "lues": 109,
+     "importees": 0,
+     "quar": 109
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Cashflow]",
+     "entite": "Cashflow",
+     "lues": 33,
+     "importees": 0,
+     "quar": 33
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Expense]",
+     "entite": "Expense",
+     "lues": 288,
+     "importees": 0,
+     "quar": 288
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Payroll]",
+     "entite": "Employee",
+     "lues": 320,
+     "importees": 0,
+     "quar": 320
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [Campaign]",
+     "entite": "Campaign",
+     "lues": 11,
+     "importees": 11,
+     "quar": 0
+    },
+    {
+     "feuille": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx [CampaignDaily]",
+     "entite": "Campaign",
+     "lues": 420,
+     "importees": 0,
+     "quar": 420
+    }
+   ],
+   "lignes": {
+    "Customer": 80,
+    "Product": 15,
+    "Inventory": 39,
+    "Employee": 10,
+    "Order": 427,
+    "Supplier": 8,
+    "Campaign": 11
+   },
+   "kpi": {
+    "employee_count_raw": 10,
+    "employee_count": 10,
+    "avg_employee_cost": 0,
+    "ebitda": 0,
+    "bfr_days": 0,
+    "purchase_frequency": 5.41,
+    "active_customers": 73,
+    "churn_rate": 8.75,
+    "arpu": 0,
+    "ltv": 0
+   }
+  },
+  {
+   "fichier": "sales_data_dictionary.csv",
+   "ms": 46,
+   "controles": [
+    {
+     "type": "lignes",
+     "id": "Order",
+     "attendu": 0,
+     "app": 0,
+     "ok": true
+    }
+   ],
+   "motifs": {
+    "MISSING_REQUIRED_FIELD": 36
+   },
+   "feuilles": [
+    {
+     "feuille": "sales_data_dictionary.csv",
+     "entite": "Order",
+     "lues": 36,
+     "importees": 0,
+     "quar": 36
+    }
+   ],
+   "lignes": {},
+   "kpi": {
+    "employee_count_raw": 0,
+    "employee_count": 0,
+    "ebitda": 0,
+    "bfr_days": 0
+   }
+  }
+ ]
+}

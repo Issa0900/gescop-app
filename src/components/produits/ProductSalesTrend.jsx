@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { montantHT } from "@/lib/core/kpiRecords";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -42,7 +43,7 @@ export default function ProductSalesTrend({ orders }) {
       if (!m || m === cm) return;
       if (!map[m]) map[m] = { month: m, quantite: 0, revenu: 0, commandes: 0 };
       map[m].quantite += Number(o.quantity) || 0;
-      map[m].revenu += Number(o.total) || 0;
+      map[m].revenu += Number.isFinite(montantHT(o)) ? montantHT(o) : 0;
       map[m].commandes += 1;
     });
     return Object.values(map)

@@ -35,6 +35,10 @@
     "product": {
       "type": "string"
     },
+    "reference_order_id": {
+      "type": "string",
+      "description": "Commande encaissee par cette transaction : evite de compter deux fois la meme vente."
+    },
     "import_id": {
       "type": "string"
     },

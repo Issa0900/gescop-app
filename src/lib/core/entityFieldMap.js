@@ -35,10 +35,18 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     product_id:         { canonicalKey: "order_product_id", semanticType: "identifier", grain: GRAIN_TYPES.ORDER },
     quantity:           { canonicalKey: "sales_quantity", semanticType: "sales_quantity", grain: GRAIN_TYPES.ORDER },
     unit_price:         { canonicalKey: "order_unit_price", semanticType: "unit_price", grain: GRAIN_TYPES.ORDER },
-    subtotal:           { canonicalKey: "order_subtotal", semanticType: "revenue", grain: GRAIN_TYPES.ORDER },
     discount:           { canonicalKey: "order_discount", semanticType: "discount", grain: GRAIN_TYPES.ORDER },
     tax:                { canonicalKey: "order_tax", semanticType: "tax", grain: GRAIN_TYPES.ORDER },
     shipping:           { canonicalKey: "order_shipping", semanticType: "cost", grain: GRAIN_TYPES.ORDER },
+    // Chiffre d'affaires = HORS TAXES. Plusieurs champs portent "revenue" ;
+    // kpiEngine retient le PREMIER declare qui a des donnees : le sous-total
+    // (HT, remise deduite) passe donc avant le total, qui est TTC des qu'un
+    // fichier fournit aussi les taxes (GESCOP.xlsx : Total = Sous-total + TPS
+    // + TVQ ; additionner le Total comptait 86 130 $ de taxes comme ventes).
+    // Le total ne sert que si le fichier n'a pas de sous-total ; s'il porte
+    // aussi une taxe, les lignes sont ramenees au HT (total - taxe) par
+    // kpiEngine (voir montantHT).
+    subtotal:           { canonicalKey: "revenue", semanticType: "revenue", grain: GRAIN_TYPES.ORDER },
     total:              { canonicalKey: "revenue", semanticType: "revenue", grain: GRAIN_TYPES.ORDER },
     // importUtils.ts aliases headers like "Montant Total"/"Total Spent" to the
     // raw field total_revenue (a real, separate Order schema property, not a
@@ -54,6 +62,8 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     payment_status:     { canonicalKey: "payment_status", semanticType: "status", grain: GRAIN_TYPES.ORDER },
     fulfillment_status: { canonicalKey: "fulfillment_status", semanticType: "status", grain: GRAIN_TYPES.ORDER },
     return_status:      { canonicalKey: "return_status", semanticType: "status", grain: GRAIN_TYPES.ORDER },
+    tax_federal:        { canonicalKey: "order_tax_federal", semanticType: "tax", grain: GRAIN_TYPES.ORDER },
+    tax_provincial:     { canonicalKey: "order_tax_provincial", semanticType: "tax", grain: GRAIN_TYPES.ORDER },
   },
 
   // ── TRANSACTIONS ───────────────────────────────────────────────────────
@@ -113,6 +123,13 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     closing_stock:   { canonicalKey: "stock_closing", semanticType: "inventory_quantity", grain: GRAIN_TYPES.PRODUCT },
     inventory_value: { canonicalKey: "inventory_value", semanticType: "inventory_value", grain: GRAIN_TYPES.PRODUCT },
     stock_status:    { canonicalKey: "stock_status", semanticType: "status", grain: GRAIN_TYPES.PRODUCT },
+    quantity_reserved:   { canonicalKey: "stock_reserved", semanticType: "inventory_quantity", grain: GRAIN_TYPES.PRODUCT },
+    quantity_in_transit: { canonicalKey: "stock_in_transit", semanticType: "inventory_quantity", grain: GRAIN_TYPES.PRODUCT },
+    quantity_available:  { canonicalKey: "stock_available", semanticType: "inventory_quantity", grain: GRAIN_TYPES.PRODUCT },
+    reorder_point:       { canonicalKey: "stock_reorder_point", semanticType: "inventory_quantity", grain: GRAIN_TYPES.PRODUCT },
+    // Valeur au prix de vente : distincte de inventory_value (au cout), qui
+    // seule entre dans le BFR.
+    sale_value:          { canonicalKey: "inventory_sale_value", semanticType: "inventory_value", grain: GRAIN_TYPES.PRODUCT },
   },
 
   // ── CUSTOMERS ──────────────────────────────────────────────────────────
@@ -127,6 +144,8 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     lifetime_value: { canonicalKey: "ltv", semanticType: "revenue", grain: GRAIN_TYPES.CUSTOMER },
     churn_risk:     { canonicalKey: "churn_risk", semanticType: "score", grain: GRAIN_TYPES.CUSTOMER },
     segment:        { canonicalKey: "customer_segment", semanticType: "category", grain: GRAIN_TYPES.CUSTOMER },
+    loyalty_points: { canonicalKey: "customer_loyalty_points", semanticType: "count", grain: GRAIN_TYPES.CUSTOMER },
+    credit_limit:   { canonicalKey: "customer_credit_limit", semanticType: "budget", grain: GRAIN_TYPES.CUSTOMER },
   },
 
   // ── PRODUCTS ───────────────────────────────────────────────────────────
@@ -182,6 +201,13 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     hourly_rate:     { canonicalKey: "employee_hourly_rate", semanticType: "hourly_rate", grain: GRAIN_TYPES.EMPLOYEE },
     weekly_hours:    { canonicalKey: "employee_weekly_hours", semanticType: "hours_worked", grain: GRAIN_TYPES.EMPLOYEE },
     status:          { canonicalKey: "employee_status", semanticType: "status", grain: GRAIN_TYPES.EMPLOYEE },
+    // Remuneration annuelle de la fiche employe : sert au cout moyen par
+    // employe quand aucune paie (Payroll) n'est importee. Le cout employeur
+    // (salaire + charges sociales) passe avant le salaire seul.
+    employer_cost:   { canonicalKey: "employee_annual_cost", semanticType: "payroll_cost", grain: GRAIN_TYPES.EMPLOYEE },
+    annual_salary:   { canonicalKey: "employee_annual_salary", semanticType: "payroll_cost", grain: GRAIN_TYPES.EMPLOYEE },
+    salary:          { canonicalKey: "employee_annual_salary", semanticType: "payroll_cost", grain: GRAIN_TYPES.EMPLOYEE },
+    social_charges:  { canonicalKey: "employee_social_charges", semanticType: "payroll_cost", grain: GRAIN_TYPES.EMPLOYEE },
   },
 
   // ── PAYROLL ────────────────────────────────────────────────────────────
@@ -205,6 +231,7 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     average_delivery_days:{ canonicalKey: "supplier_delivery_days", semanticType: "duration", grain: GRAIN_TYPES.SUPPLIER },
     quality_score:        { canonicalKey: "supplier_quality", semanticType: "score", grain: GRAIN_TYPES.SUPPLIER },
     reliability_score:    { canonicalKey: "supplier_reliability", semanticType: "score", grain: GRAIN_TYPES.SUPPLIER },
+    esg_score:            { canonicalKey: "supplier_esg", semanticType: "score", grain: GRAIN_TYPES.SUPPLIER },
     status:               { canonicalKey: "supplier_status", semanticType: "status", grain: GRAIN_TYPES.SUPPLIER },
   },
 
@@ -218,6 +245,25 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     unit_cost:   { canonicalKey: "purchase_unit_cost", semanticType: "purchase_cost", grain: GRAIN_TYPES.PURCHASE },
     total_cost:  { canonicalKey: "purchase_total_cost", semanticType: "cost", grain: GRAIN_TYPES.PURCHASE },
     status:      { canonicalKey: "purchase_status", semanticType: "status", grain: GRAIN_TYPES.PURCHASE },
+  },
+
+  // ── IMMOBILISATIONS ────────────────────────────────────────────────────
+  Asset: {
+    asset_id:                 { canonicalKey: "asset_id", semanticType: "identifier", grain: GRAIN_TYPES.PRODUCT },
+    acquisition_date:         { canonicalKey: "asset_acquisition_date", semanticType: "date", grain: GRAIN_TYPES.PRODUCT },
+    cca_rate:                 { canonicalKey: "asset_cca_rate", semanticType: "percentage", grain: GRAIN_TYPES.PRODUCT },
+    acquisition_cost:         { canonicalKey: "asset_acquisition_cost", semanticType: "cost", grain: GRAIN_TYPES.PRODUCT },
+    accumulated_depreciation: { canonicalKey: "asset_accumulated_depreciation", semanticType: "cost", grain: GRAIN_TYPES.PRODUCT },
+    net_book_value:           { canonicalKey: "asset_net_book_value", semanticType: "cost", grain: GRAIN_TYPES.PRODUCT },
+  },
+
+  // ── PAIEMENTS ──────────────────────────────────────────────────────────
+  Payment: {
+    payment_id: { canonicalKey: "payment_id", semanticType: "identifier", grain: GRAIN_TYPES.TRANSACTION },
+    order_id:   { canonicalKey: "payment_order_id", semanticType: "identifier", grain: GRAIN_TYPES.TRANSACTION },
+    date:       { canonicalKey: "payment_date", semanticType: "date", grain: GRAIN_TYPES.TRANSACTION },
+    status:     { canonicalKey: "payment_status_value", semanticType: "status", grain: GRAIN_TYPES.TRANSACTION },
+    amount:     { canonicalKey: "payment_amount", semanticType: "cash_inflow", grain: GRAIN_TYPES.TRANSACTION },
   },
 
   // ── INTERACTIONS ───────────────────────────────────────────────────────

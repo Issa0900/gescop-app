@@ -48,6 +48,8 @@ export const REASON = {
   TECHNICAL_PARSE_ERROR: "TECHNICAL_PARSE_ERROR",
   ANOMALOUS_VALUE: "ANOMALOUS_VALUE",
   DUPLICATE_EXACT: "DUPLICATE_EXACT",
+  /** Meme identifiant metier qu'une ligne deja retenue, avec d'autres valeurs. */
+  CONFLICTING_RECORD: "CONFLICTING_RECORD",
 } as const;
 export type ReasonCode = typeof REASON[keyof typeof REASON];
 
@@ -66,6 +68,7 @@ export const REASON_LABEL: Record<ReasonCode, string> = {
   TECHNICAL_PARSE_ERROR: "fichier illisible",
   ANOMALOUS_VALUE: "valeur inhabituelle",
   DUPLICATE_EXACT: "doublon potentiel (ligne identique)",
+  CONFLICTING_RECORD: "conflit : même identifiant, valeurs différentes",
 };
 
 /** Ou en est la recuperation d'une ligne ecartee (§17, §18). */

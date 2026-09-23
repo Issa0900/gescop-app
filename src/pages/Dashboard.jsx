@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { commandesDistinctes } from "@/lib/core/kpiRecords";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -207,8 +208,9 @@ export default function Dashboard() {
     let latestCash = latestCashBalance(cashflow) || 0;
     
     // Fallback temporaire pour les statistiques non couvertes
-    const orderCount = fOrders.length;
-    const orderRevenue = fOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const commandesPeriode = commandesDistinctes(validSalesOrders(fOrders));
+    const orderCount = commandesPeriode.length;
+    const orderRevenue = commandesPeriode.reduce((s, o) => s + o._ht, 0);
 
     // Full monthly data (ALL records, not period-filtered) for charts and trends
     const financialMonthly = financialMonthlySeries(transactions || [], expenseRecords || []);
@@ -238,10 +240,10 @@ export default function Dashboard() {
     
     // Refunded orders' money went back to the customer - excluded so a
     // refund-heavy month doesn't inflate the basket-size trend shown here.
-    const aovOrders = validSalesOrders(orders);
+    const aovOrders = commandesDistinctes(validSalesOrders(orders));
     const aovRevMode = validateChartAggregation(METRIC_TYPES.FLOW, "sum", "Order Revenue");
-    const aovRevMonthly = monthlyAggComplete(aovOrders, "date", "total", aovRevMode.toLowerCase());
-    const aovCntMonthly = monthlyAggComplete(aovOrders, "date", "total", "count");
+    const aovRevMonthly = monthlyAggComplete(aovOrders, "date", "_ht", aovRevMode.toLowerCase());
+    const aovCntMonthly = monthlyAggComplete(aovOrders, "date", "_ht", "count");
     const aovMonthly = aovRevMonthly.map((m) => {
       const cnt = aovCntMonthly.find((c) => c.month === m.month);
       return { month: m.month, val: cnt && cnt.val > 0 ? m.val / cnt.val : 0 };

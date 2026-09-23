@@ -23,6 +23,7 @@ const sources = {
   employees: () => fetchAll(base44.entities.Employee),
   campaigns: () => fetchAll(base44.entities.Campaign),
   campaignDaily: () => fetchAll(base44.entities.CampaignDaily, "-date"),
+  executiveSummaries: () => fetchAll(base44.entities.ExecutiveSummary),
   // Needed by the reconciliation check: it compares the import journal against
   // the rows actually stored, so any entity that can be imported has to be read
   // here or a silent loss on it goes unnoticed.

@@ -128,6 +128,25 @@
     "status": {
       "type": "string"
     },
+    "tax_federal": {
+      "type": "number",
+      "description": "Taxe federale (TPS) de la ligne."
+    },
+    "tax_provincial": {
+      "type": "number",
+      "description": "Taxe provinciale (TVQ, TVH ou TVP) de la ligne."
+    },
+    "province": {
+      "type": "string",
+      "description": "Province de livraison ou du client (taxes applicables)."
+    },
+    "line_id": {
+      "type": "string",
+      "description": "Identifiant de la ligne dans le fichier source (Transaction_ID, ID_Ligne, Row ID) : distingue deux articles d'une meme commande."
+    },
+    "employee_name": {
+      "type": "string"
+    },
     "import_id": {
       "type": "string"
     },

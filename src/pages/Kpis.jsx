@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { commandesDistinctes, noteBaseCA } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
@@ -193,6 +194,8 @@ export default function Kpis() {
     employees: employees || [],
     payrolls: payrolls || [],
     campaignDaily: campaignDaily || [],
+    campaigns: campaigns || [],
+    inventory: inventory || [],
   }, ["customer_sentiment_score", ...ADDABLE_KPI_IDS]);
 
   // "+ Ajouter un indicateur" catalog: computed live regardless of whether
@@ -210,6 +213,9 @@ export default function Kpis() {
         : def?.dataType === "currency" ? "$"
         : def?.dataType === "percentage" ? "%"
         : "";
+      // Statut du moteur : un KPI calcule avec une partie seulement de ses
+      // sources (UNKNOWN) est affiche, mais signale comme partiel.
+      const note = result?.status === "UNKNOWN" ? "Partiel : une partie des données nécessaires n'est pas importée" : null;
       return {
         id,
         domain,
@@ -217,6 +223,7 @@ export default function Kpis() {
         value: available ? Math.round(value * 10) / 10 : null,
         unit,
         available,
+        note,
       };
     });
   }, [engineKpis]);
@@ -299,16 +306,20 @@ export default function Kpis() {
       // point). Revenue figures below use only the orders whose money stayed
       // with the business: a refunded order's total was already reversed and
       // must not be counted as revenue.
-      const salesOrders = validSalesOrders(orders);
-      const orderRevMonthly = monthlyAggComplete(salesOrders, "date", "total");
-      const orderCntMonthly = monthlyAggComplete(salesOrders, "date", "total", "count");
+      // Montants HORS TAXES, une ligne par commande (kpiRecords) : le total
+      // est TTC des qu'un fichier fournit les taxes, et un fichier d'une ligne
+      // par article comptait chaque article comme une commande.
+      const salesOrders = commandesDistinctes(validSalesOrders(orders));
+      const orderRevMonthly = monthlyAggComplete(salesOrders, "date", "_ht");
+      const orderCntMonthly = monthlyAggComplete(salesOrders, "date", "_ht", "count");
       const currOrders = lastVal(orderCntMonthly);
       const prevOrders = prevVal(orderCntMonthly);
       const currOrderRev = lastVal(orderRevMonthly);
       const prevOrderRev = prevVal(orderRevMonthly);
       const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
       const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
-      const totalOrderRev = salesOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const totalOrderRev = salesOrders.reduce((s, o) => s + o._ht, 0);
+      const noteCA = noteBaseCA(orders);
       const returns = orders.filter(isRefundedOrder);
       // 0 % only means "no returns" when at least one column could have
       // reported one. If all three are absent from the import, the rate is
@@ -320,7 +331,7 @@ export default function Kpis() {
       const rev3 = sumLast(orderRevMonthly, 3);
       const revPrev3 = sumPrev(orderRevMonthly, 3);
 
-      result.push({ name: "Panier moyen (mois)", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$" });
+      result.push({ name: "Panier moyen (mois)", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$", note: noteCA });
       result.push({ name: "Commandes (mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
       // No previous window is computed for the return rate, so no arrow:
       // a trend must come from a change over time, never from the level.
@@ -328,9 +339,9 @@ export default function Kpis() {
         result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
       }
       if (rev3 !== null) {
-        result.push({ name: "CA commandes (3 mois)", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$" });
+        result.push({ name: "CA commandes (3 mois)", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$", note: noteCA });
       }
-      result.push({ name: "CA commandes (total)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$" });
+      result.push({ name: "CA commandes (total)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$", note: noteCA });
     }
 
     // === MARKETING === (only if campaigns exist)
@@ -474,7 +485,7 @@ export default function Kpis() {
     // instead of showing a stale or fake value.
     const addedExtras = addableCatalog.filter(
       (k) => (prefs.added || []).includes(k.id) && k.available
-    ).map((k) => ({ name: k.name, domain: k.domain, value: k.value, previous: null, trend: "stable", unit: k.unit }));
+    ).map((k) => ({ name: k.name, domain: k.domain, value: k.value, previous: null, trend: "stable", unit: k.unit, note: k.note }));
     return [...computedKpis, ...addedExtras, ...llmExtras];
   }, [computedKpis, kpisLLM, addableCatalog, prefs.added]);
 
@@ -507,9 +518,9 @@ export default function Kpis() {
       ],
       "date", "_amount"
     );
-    const trendOrders = validSalesOrders(orders);
-    const orderRevMonthly = monthlyAggComplete(trendOrders, "date", "total");
-    const orderCntMonthly = monthlyAggComplete(trendOrders, "date", "total", "count");
+    const trendOrders = commandesDistinctes(validSalesOrders(orders));
+    const orderRevMonthly = monthlyAggComplete(trendOrders, "date", "_ht");
+    const orderCntMonthly = monthlyAggComplete(trendOrders, "date", "_ht", "count");
 
     const months = new Set([
       ...revMonthly.map((m) => m.month),

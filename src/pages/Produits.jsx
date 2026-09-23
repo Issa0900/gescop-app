@@ -1,4 +1,5 @@
 import { formatPct } from "@/lib/utils";
+import { montantHT } from "@/lib/core/kpiRecords";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -166,7 +167,7 @@ export default function Produits() {
     const pid = o.product_id;
     if (!pid) return;
     const qty = Number(o.quantity) || 0;
-    const rev = Number(o.total) || 0;
+    const rev = Number.isFinite(montantHT(o)) ? montantHT(o) : 0;
     totalSalesByProduct[pid] = (totalSalesByProduct[pid] || 0) + qty;
     totalRevByProduct[pid] = (totalRevByProduct[pid] || 0) + rev;
     if (windowMonths.size > 0 && !windowMonths.has(m)) return;

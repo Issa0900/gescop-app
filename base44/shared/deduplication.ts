@@ -22,8 +22,24 @@ export const LIGNE_SOURCE = Symbol.for("gescop.ligneSource");
  *   potentiel (`potentialDuplicates`) a verifier. Les exclure d'office divisait
  *   les ventes par deux sans preuve.
  */
+/**
+ * Contenu metier d'une ligne, pour distinguer un doublon (meme identifiant,
+ * memes valeurs) d'un CONFLIT (meme identifiant, valeurs differentes).
+ */
+const TECHNIQUES = new Set(["import_id", "fingerprint", "original_data", "id", "created_date", "updated_date", "created_by_id", "created_by", "import_date", "reference_date", "reference_date_type"]);
+export function contenuMetier(r: any): string {
+  const out: Record<string, any> = {};
+  for (const k of Object.keys(r || {}).sort()) {
+    if (TECHNIQUES.has(k) || k.startsWith("_")) continue;
+    const v = r[k];
+    if (v === undefined || v === null || v === "" || /^AUTO-/.test(String(v))) continue;
+    out[k] = typeof v === "number" ? Math.round(v * 100) / 100 : String(v).trim();
+  }
+  return JSON.stringify(out);
+}
+
 export async function deduplicateRows(base44: any, entityName: string, rows: any[]) {
-  const vide = { newRows: [] as any[], duplicateCount: 0, conflicts: 0, newCount: 0, duplicates: [] as any[], potentialDuplicates: [] as { row: any; premiere: any }[] };
+  const vide = { newRows: [] as any[], duplicateCount: 0, conflicts: 0, newCount: 0, duplicates: [] as any[], potentialDuplicates: [] as { row: any; premiere: any }[], conflits: [] as { row: any; existant: any }[] };
   if (rows.length === 0) return vide;
 
   // 1. Generate fingerprints
@@ -37,6 +53,9 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
   //    sans cle metier, le NOMBRE d'occurrences de chaque empreinte.
   // To avoid N^2 queries, we bulk fetch existing fingerprints. Base44 list() caps at 500.
   const fortes = new Set<string>();
+  // Contenu de la ligne deja retenue pour chaque identifiant : un identifiant
+  // repete avec d'autres valeurs n'est pas un doublon mais un conflit.
+  const contenuParCle = new Map<string, { contenu: string; ligne: any }>();
   const occurrencesEnBase = new Map<string, number>();
   let page = 0;
   while (true) {
@@ -50,6 +69,9 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
         // etre reconnue au reimport du meme fichier.
         if (b.fingerprint) fortes.add(b.fingerprint);
         if (fp) fortes.add(fp);
+        const c = { contenu: contenuMetier(b), ligne: b };
+        if (b.fingerprint && !contenuParCle.has(b.fingerprint)) contenuParCle.set(b.fingerprint, c);
+        if (fp && !contenuParCle.has(fp)) contenuParCle.set(fp, c);
       } else if (fp) {
         occurrencesEnBase.set(fp, (occurrencesEnBase.get(fp) || 0) + 1);
       }
@@ -63,6 +85,11 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
   // Les lignes ecartees elles-memes, pas seulement leur nombre : chacune doit
   // pouvoir etre retrouvee dans le registre de l'import (ImportIssue).
   const duplicates: any[] = [];
+  // Meme identifiant metier, valeurs differentes : ni importee (la premiere
+  // version reste), ni jetee comme doublon — conservee dans le registre comme
+  // conflit a trancher (Xplorer_Succes : deux jeux de 500 produits, clients,
+  // fournisseurs, tresorerie sous les memes identifiants).
+  const conflits: { row: any; existant: any }[] = [];
   const potentialDuplicates: { row: any; premiere: any }[] = [];
   const occurrencesFichier = new Map<string, number>();
   const premiereOccurrence = new Map<string, any>();
@@ -71,10 +98,13 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
     const source = (r as any)[LIGNE_SOURCE];
     if (empreinteForte(entityName, r)) {
       if (fortes.has(r.fingerprint)) {
-        duplicates.push(source);
+        const deja = contenuParCle.get(r.fingerprint);
+        if (deja && deja.contenu !== contenuMetier(r)) conflits.push({ row: source, existant: deja.ligne });
+        else duplicates.push(source);
       } else {
         newRows.push(r);
         fortes.add(r.fingerprint);
+        contenuParCle.set(r.fingerprint, { contenu: contenuMetier(r), ligne: source });
       }
       continue;
     }
@@ -90,5 +120,5 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
     }
   }
 
-  return { newRows, duplicateCount: duplicates.length, conflicts: 0, newCount: newRows.length, duplicates, potentialDuplicates };
+  return { newRows, duplicateCount: duplicates.length, conflicts: conflits.length, newCount: newRows.length, duplicates, potentialDuplicates, conflits };
 }

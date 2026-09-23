@@ -2,6 +2,7 @@
 // business right now instead of only what the last AI analysis happened to save.
 // Same period rules as the scores: recent windows, complete months only.
 
+import { montantHT, avecMontantHT } from "./core/kpiRecords";
 import {
   monthlyAggComplete,
   trendPct,
@@ -106,7 +107,7 @@ export function computeLiveAlerts(data) {
   }
 
   // --- Ventes ---
-  const ordRev = monthlyAggComplete(orders || [], "date", "total");
+  const ordRev = monthlyAggComplete(avecMontantHT(validSalesOrders(orders || [])), "date", "_ht");
   if (hasWindow(ordRev, 3)) {
     const rev3 = sumLast(ordRev, 3);
     const revPrev3 = sumPrev(ordRev, 3);
@@ -230,14 +231,14 @@ export function computeLiveAlerts(data) {
     const revenueByProduct = {};
     salesOrders.forEach(o => {
       const pid = o.product_id;
-      if (pid) revenueByProduct[pid] = (revenueByProduct[pid] || 0) + (Number(o.total) || 0);
+      if (pid) revenueByProduct[pid] = (revenueByProduct[pid] || 0) + (Number.isFinite(montantHT(o)) ? montantHT(o) : 0);
     });
     // Trier les produits en rupture par leur revenu historique
     const rupturesWithRev = ruptures.map(r => ({ ...r, rev: revenueByProduct[r.product_id] || 0 }));
     rupturesWithRev.sort((a, b) => b.rev - a.rev);
 
     // Si le produit en rupture générait des revenus significatifs (> 5% du revenu total ou juste un top 5 absolu)
-    const totalOrderRev = salesOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalOrderRev = salesOrders.reduce((sum, o) => sum + (Number.isFinite(montantHT(o)) ? montantHT(o) : 0), 0);
     if (totalOrderRev > 0 && rupturesWithRev[0].rev > (totalOrderRev * 0.02)) {
       out.push(
         alert(

@@ -329,7 +329,7 @@ export const CORPUS: Cas[] = [
   },
   {
     id: "20-deux-valeurs-de-stock",
-    titre: "Deux colonnes candidates au meme champ, rien pour les departager",
+    titre: "Valeur au cout et valeur de vente : chacune dans son champ (inventory_value / sale_value)",
     fichier: "valorisation.xlsx",
     feuilles: {
       "Stocks & Inventaire": [
@@ -340,8 +340,10 @@ export const CORPUS: Cas[] = [
     },
     donnees: 2,
     colonnes_brutes: ["Valeur Stock Vente ($)"],
-    signaler: ["à confirmer"],
-    attendu: { entites: { "Stocks & Inventaire": "Inventory" }, champs: { "Qté en Stock": "closing_stock", Description: "product_name" } },
+    attendu: {
+      entites: { "Stocks & Inventaire": "Inventory" },
+      champs: { "Qté en Stock": "closing_stock", Description: "product_name", "Valeur Stock Coût ($)": "inventory_value", "Valeur Stock Vente ($)": "sale_value" },
+    },
   },
   {
     id: "21-montant-prouve-par-calcul",
@@ -361,7 +363,9 @@ export const CORPUS: Cas[] = [
   },
   {
     id: "22-code-client-par-relation",
-    titre: "« Réf. acheteur » (inconnu) reconnu : ses codes sont ceux de la feuille Clients",
+    // Intitule sans aucun indice lexical (« Réf. acheteur » est desormais reconnu
+    // par le lexique) : seule la relation avec la feuille Clients peut le rattacher.
+    titre: "« Réf. partenaire » (inconnu) reconnu : ses codes sont ceux de la feuille Clients",
     fichier: "classeur_relations.xlsx",
     feuilles: {
       Clients: [
@@ -371,14 +375,14 @@ export const CORPUS: Cas[] = [
         ["C-883", "Côté, Marc", "Québec"],
       ],
       Ventes: [
-        ["No commande", "Date", "Réf. acheteur", "Montant Total ($)"],
+        ["No commande", "Date", "Réf. partenaire", "Montant Total ($)"],
         ["R-1", "2026-06-01", "C-881", 90],
         ["R-2", "2026-06-02", "C-883", 450],
         ["R-3", "2026-06-02", "C-881", 45],
       ],
     },
     donnees: 6,
-    attendu: { entites: { Clients: "Customer", Ventes: "Order" }, champs: { "Réf. acheteur": "customer_id" } },
+    attendu: { entites: { Clients: "Customer", Ventes: "Order" }, champs: { "Réf. partenaire": "customer_id" } },
     signaler: ["existent dans les clients"],
   },
   {
@@ -414,7 +418,7 @@ export const CORPUS: Cas[] = [
   },
   {
     id: "17-feuille-inconnue",
-    titre: "Feuille au type jamais rencontre (registre d'immobilisations)",
+    titre: "Registre d'immobilisations : entite Asset (inconnue avant le 23 sept 2026)",
     fichier: "immobilisations.xlsx",
     feuilles: {
       Registre: [
@@ -425,6 +429,7 @@ export const CORPUS: Cas[] = [
       ],
     },
     donnees: 3,
+    attendu: { entites: { Registre: "Asset" }, champs: { ID_Immobilisation: "asset_id", Taux_Amortissement_DPA: "cca_rate" } },
   },
 ];
 

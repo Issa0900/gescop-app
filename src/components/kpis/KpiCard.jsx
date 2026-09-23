@@ -29,6 +29,9 @@ export default function KpiCard({ kpi, domainColor }) {
         {kpi.value != null ? (numeric ? kpi.value.toLocaleString("fr-CA") : String(kpi.value)) : "-"}
         <span className="ml-1 text-sm font-normal text-muted-foreground">{kpi.unit || ""}</span>
       </p>
+      {/* Base et limites du chiffre (hors taxes, partiel...) : un chiffre juste
+          mais mal compris reste une mauvaise decision. */}
+      {kpi.note && <p className="mt-1 text-xs text-muted-foreground">{kpi.note}</p>}
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
         {pointDelta != null ? (
           <span className={pointDelta >= 0 ? "text-emerald-600" : "text-red-600"}>
