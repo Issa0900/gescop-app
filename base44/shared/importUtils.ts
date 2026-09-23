@@ -2225,8 +2225,10 @@ export type ConventionDate = "JJ/MM" | "MM/JJ";
 export function parseDate(value: any, convention?: ConventionDate | null): string | null {
   if (value === null || value === undefined || value === "") return null;
   if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString().slice(0, 10);
-  if (typeof value === "number" || /^\d{5}(\.\d+)?$/.test(String(value).trim())) {
-    const serial = Number(value);
+  // Numero de serie Excel, aussi avec la virgule decimale d'un CSV francais
+  // (« 40513,351389 » = 1er dec. 2010 08:26).
+  if (typeof value === "number" || /^\d{5}([.,]\d+)?$/.test(String(value).trim())) {
+    const serial = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
     if (serial > 20000 && serial < 60000) {
       const ms = Math.round((serial - 25569) * 86400 * 1000);
       return new Date(ms).toISOString().slice(0, 10);
@@ -2928,7 +2930,10 @@ export function normalizeRow(
       const taxe = parseNumber(r.tax);
       if (sousTotal !== null) r.total_revenue = sousTotal;
       else if (total !== null) r.total_revenue = Math.round((total - (taxe ?? 0)) * 100) / 100;
-      else if (qty !== null && price > 0) {
+      // Un prix FOURNI egal a 0 (article offert, echantillon) donne une ligne a
+      // 0, pas un montant inconnu : sinon le CA entier passait « partiel »
+      // (UCI Online Retail : 2 515 lignes a prix 0). Prix absent = inconnu.
+      else if (qty !== null && parseNumber(r.unit_price) !== null) {
         const brut = qty * price;
         const remise = parseNumber(r.discount);
         // Remise : un taux s'il est entre 0 et 1 (0,28), un montant sinon

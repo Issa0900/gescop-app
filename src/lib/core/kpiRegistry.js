@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes.js";
-import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA } from "./kpiRecords.js";
+import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA, estVente, montantAvoirs, montantHT } from "./kpiRecords.js";
 
 /**
  * Registry of all computed indicators (KPIs and Measures).
@@ -40,6 +40,8 @@ export const KPI_REGISTRY = Object.freeze({
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: true,
     dependencies: ["revenue", "income_amount", "transaction_amount"],
+    // Chaque dependance est une source possible du CA, pas une piece requise.
+    sourcesAlternatives: true,
     // income_amount and transaction_amount are ALTERNATIVE readings of the
     // same Transaction rows (income-only vs. every row regardless of type):
     // never additive between each other, summing them would double-count.
@@ -137,6 +139,9 @@ export const KPI_REGISTRY = Object.freeze({
           .map((r) => r.employee_id)
           .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
       );
+      // Aucune fiche employe ni paie importee : effectif NON MESURE, pas « 0
+      // employe » (un fichier de ventes seul affichait un effectif nul).
+      if (empIds.size === 0) return null;
       return empIds.size;
     },
   },
@@ -163,7 +168,7 @@ export const KPI_REGISTRY = Object.freeze({
       const employees = records.filter(
         (r) => r.employee_id !== null && r.employee_id !== undefined && String(r.employee_id).trim() !== ""
       );
-      if (employees.length === 0) return deps.employee_count_raw || 0;
+      if (employees.length === 0) return deps.employee_count_raw ?? null;
 
       const hasStatus = employees.some((r) => r.status !== null && r.status !== undefined && String(r.status).trim() !== "");
       if (!hasStatus) return deps.employee_count_raw || 0;
@@ -626,7 +631,8 @@ export const KPI_REGISTRY = Object.freeze({
     calculate: (deps) => {
       const records = deps._records || [];
       const commandes = records.filter((r) => (r._entity === undefined || r._entity === "Order") && r.order_id);
-      if (commandes.length > 0) return new Set(commandes.filter((r) => !commandeHorsCA(r)).map((r) => String(r.order_id))).size;
+      // Les avoirs (factures de retour a montant negatif) ne sont pas des commandes.
+      if (commandes.length > 0) return new Set(commandes.filter(estVente).map((r) => String(r.order_id))).size;
       const syntheses = records.filter((r) => r._entity === "ExecutiveSummary" && r.total_orders != null && Number.isFinite(Number(r.total_orders)));
       if (syntheses.length === 0) return null;
       return syntheses.reduce((s, r) => s + Number(r.total_orders), 0);
@@ -650,9 +656,64 @@ export const KPI_REGISTRY = Object.freeze({
       // Commandes DISTINCTES (un fichier a une ligne par article repete le
       // numero de commande), hors annulees et retournees, comme le CA.
       const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Order");
-      const orderCount = new Set(records.filter((r) => r.order_id && !commandeHorsCA(r)).map((r) => String(r.order_id))).size;
+      const orderCount = new Set(records.filter((r) => r.order_id && estVente(r)).map((r) => String(r.order_id))).size;
       if (orderCount === 0 || deps.total_revenue == null) return null;
-      return deps.total_revenue / orderCount;
+      // Panier = ce que la commande a rapporte AU MOMENT de la vente : les
+      // avoirs (retours posterieurs) sont rajoutes au CA net, sinon un retour
+      // sur une autre facture diminuait le panier de toutes les commandes.
+      return (deps.total_revenue + montantAvoirs(records)) / orderCount;
+    },
+  },
+
+  gross_sales: {
+    id: "gross_sales",
+    name: { fr: "Ventes brutes (avant avoirs)", en: "Gross Sales" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.VENTES,
+    semanticType: "revenue",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: [],
+    // Somme HT des lignes de vente (ni avoir, ni annulee, ni hors devise).
+    calculate: (deps) => {
+      const ventes = (deps._records || []).filter(estVente);
+      if (ventes.length === 0) return null;
+      let s = 0, n = 0;
+      for (const r of ventes) { const m = montantHT(r); if (Number.isFinite(m)) { s += m; n++; } }
+      return n ? s : null;
+    },
+  },
+
+  returns_amount: {
+    id: "returns_amount",
+    name: { fr: "Avoirs et retours", en: "Returns & Credit Notes" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.VENTES,
+    semanticType: "revenue",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: [],
+    // Montant (positif) des lignes a quantite ou montant negatif. 0 mesure
+    // seulement si des commandes existent ; sans commandes, non mesure.
+    calculate: (deps) => {
+      const cmd = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Order");
+      if (cmd.length === 0) return null;
+      return montantAvoirs(cmd);
+    },
+  },
+
+  return_rate: {
+    id: "return_rate",
+    name: { fr: "Taux de retour (en valeur)", en: "Return Rate (value)" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.VENTES,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["gross_sales", "returns_amount"],
+    calculate: (deps) => {
+      if (!deps.gross_sales || deps.returns_amount == null) return null;
+      return (deps.returns_amount / deps.gross_sales) * 100;
     },
   },
 
@@ -669,14 +730,16 @@ export const KPI_REGISTRY = Object.freeze({
     // Orders per buyer - deliberately independent of Customer.status (which
     // is often unfilled): counts who actually bought, from Order rows only.
     calculate: (deps) => {
+      // COMMANDES distinctes par acheteur, pas lignes : un fichier a une ligne
+      // par article donnait ~20 « achats » par facture (UCI Online Retail).
       const orders = (deps._records || []).filter(
-        (r) => (r._entity === undefined || r._entity === "Order") &&
-          r.customer_id && (!r.status || !["annul", "cancel", "void", "draft"].some((s) => String(r.status).toLowerCase().includes(s)))
+        (r) => estVente(r) && r.customer_id != null && String(r.customer_id).trim() !== ""
       );
       if (orders.length === 0) return null;
-      const buyers = new Set(orders.map((o) => o.customer_id)).size;
+      const buyers = new Set(orders.map((o) => String(o.customer_id).trim())).size;
       if (buyers === 0) return null;
-      return orders.length / buyers;
+      const commandes = new Set(orders.map((o) => (o.order_id != null ? `c:${o.order_id}` : `l:${o.id ?? Math.random()}`))).size;
+      return commandes / buyers;
     },
   },
 

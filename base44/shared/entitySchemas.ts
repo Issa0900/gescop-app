@@ -25,7 +25,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       payment_status: E("paye", "en_attente", "echoue", "rembourse"),
       fulfillment_status: E("expedie", "en_preparation", "livre", "annule", "retourne"),
       return_status: E("aucun", "demande", "approuve", "refuse"),
-      region: S, status: S, currency: S, province: S, tax_federal: N, tax_provincial: N, line_id: S,
+      region: S, country: S, status: S, currency: S, province: S, tax_federal: N, tax_provincial: N, line_id: S,
       // Champs client repetes sur chaque ligne (exports « a plat ») : declares dans Order.jsonc.
       city: S, order_value: N, segment: S, customer_segment: S, age: N, signup_date: D,
       import_id: S, fingerprint: S, original_data: S,
@@ -34,7 +34,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
   },
   Customer: {
     properties: {
-      customer_id: S, full_name: S, name: S, first_name: S, last_name: S, email: S, city: S, region: S, province: S,
+      customer_id: S, full_name: S, name: S, first_name: S, last_name: S, email: S, city: S, region: S, country: S, province: S,
       customer_type: E("particulier", "entreprise", "b2b"),
       acquisition_date: D, first_purchase_date: D, last_purchase_date: D,
       total_orders: N, total_revenue: N, average_order_value: N,

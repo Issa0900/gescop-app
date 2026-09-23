@@ -129,7 +129,7 @@ export function validateKpiForDisplay(kpiLineage, qualityThreshold = 60) {
   const warnings = [...(kpiLineage.warnings || [])];
   let cssClass = "kpi-safe";
 
-  if (kpiLineage.qualityScore < qualityThreshold) {
+  if (Number.isFinite(kpiLineage.qualityScore) && kpiLineage.qualityScore < qualityThreshold) {
     warnings.push(`Qualité des données faible (${kpiLineage.qualityScore}/100)`);
     cssClass = "kpi-warning";
   }

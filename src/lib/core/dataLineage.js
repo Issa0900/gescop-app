@@ -32,7 +32,7 @@ import { KPI_STATUS } from "./semanticTypes";
  * @property {string} formula        - Human-readable formula
  * @property {string} formulaCode    - Code-level formula reference
  * @property {string} period         - Period description
- * @property {number} qualityScore   - Aggregated quality score
+ * @property {number|null} qualityScore   - Aggregated quality score (null : non mesuree)
  * @property {string} status         - KPI_STATUS value
  * @property {string} evidenceTag    - FAIT | CALCUL | INFÉRENCE | HYPOTHÈSE
  * @property {string[]} warnings     - Any warnings about data quality or methodology
@@ -87,7 +87,10 @@ export function buildKpiLineage({
   const qualityScore =
     qualityScores.length > 0
       ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length)
-      : 0;
+      // KPI calcule directement sur les lignes (sans source agregee) : sa
+      // qualite n'est pas mesuree ici — pas « 0 % », qui s'affichait comme un
+      // avertissement sur le nombre de commandes, le panier moyen...
+      : null;
 
   // Determine evidence tag. A KPI value is always the result of
   // kpiDef.calculate() - never raw untouched data - so "FAIT" never applies
@@ -102,7 +105,7 @@ export function buildKpiLineage({
 
   // Warnings
   const warnings = [];
-  if (qualityScore < 60) {
+  if (qualityScore !== null && qualityScore < 60) {
     warnings.push(`Qualité des données sources faible (${qualityScore}%).`);
   }
   if (sources.some((s) => s.recordCount === 0)) {
@@ -152,23 +155,28 @@ export function buildLineageSource({
   dateField = "date",
   qualityScore = 100,
 }) {
-  const dates = records
-    .map((r) => r[dateField])
-    .filter(Boolean)
-    .map((d) => new Date(d))
-    .filter((d) => !isNaN(d.getTime()))
-    .sort((a, b) => a.getTime() - b.getTime());
+  // Premiere et derniere date en UN parcours : trier des centaines de milliers
+  // d'objets Date a chaque KPI prenait ~490 s pour 150 000 lignes d'articles
+  // (UCI Online Retail) — la page Indicateurs ne repondait plus.
+  let min = Infinity;
+  let max = -Infinity;
+  for (const r of records) {
+    const d = r?.[dateField];
+    if (!d) continue;
+    const t = d instanceof Date ? d.getTime() : Date.parse(d);
+    if (Number.isNaN(t)) continue;
+    if (t < min) min = t;
+    if (t > max) max = t;
+  }
+  const iso = (t) => new Date(t).toISOString().slice(0, 10);
 
   return {
     entity,
     field,
     canonicalKey,
     recordCount: records.length,
-    periodStart: dates.length > 0 ? dates[0].toISOString().slice(0, 10) : null,
-    periodEnd:
-      dates.length > 0
-        ? dates[dates.length - 1].toISOString().slice(0, 10)
-        : null,
+    periodStart: Number.isFinite(min) ? iso(min) : null,
+    periodEnd: Number.isFinite(max) ? iso(max) : null,
     qualityScore,
   };
 }

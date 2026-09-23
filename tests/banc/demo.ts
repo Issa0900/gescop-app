@@ -11,6 +11,7 @@ import { computeKpiBatch } from "../../src/lib/core/kpiEngine.js";
 import { buildKpiDataset, ENTITES_KPI } from "../../src/lib/core/kpiDataset.js";
 import { KPI_REGISTRY } from "../../src/lib/core/kpiRegistry.js";
 import { VERITE_DEMO } from "./verite_demo.ts";
+import { VERITE_UCI } from "./verite_uci.ts";
 import { runCoherenceChecks } from "../../src/lib/dataAudit.js";
 
 declare const require: any;
@@ -47,7 +48,12 @@ function proche(app: number | null, attendu: number | null) {
   console.warn = () => {}; console.error = () => {};
   const resultats: any[] = [];
   let ok = 0, total = 0;
-  for (const v of VERITE_DEMO) {
+  // « uci » : jeux publics UCI Online Retail (../DEMO/UCI) ; UCI_COMPLET=1 ajoute
+  // les deux fichiers complets (540 000 et 1 million de lignes).
+  const corpus = etiquette.startsWith("uci")
+    ? VERITE_UCI.filter((v) => !v.lent || process.env.UCI_COMPLET)
+    : VERITE_DEMO;
+  for (const v of corpus) {
     if (filtre && !filtre.split(",").some((f: string) => v.fichier.includes(f))) continue;
     const chemin = path.join(DEMO, v.fichier);
     if (!fs.existsSync(chemin)) { log(`(absent) ${v.fichier}`); continue; }
@@ -77,7 +83,7 @@ function proche(app: number | null, attendu: number | null) {
     }).filter((c: any) => c.status !== "skip").map((c: any) => ({ label: c.label, status: c.status, detail: c.detail }));
     ok += controles.filter((c) => c.ok).length; total += controles.length;
     resultats.push({
-      fichier: v.fichier, ms: Date.now() - t0, erreur, controles, motifs, coherence,
+      fichier: v.fichier, ms: Date.now() - t0, memoire_mo: Math.round(process.memoryUsage().rss / 1e6), erreur, controles, motifs, coherence,
       feuilles: results.map((r: any) => ({ feuille: r.file_name, entite: r.entity, lues: r.rows_read, importees: r.rows, quar: r.quarantined || 0 })),
       lignes: Object.fromEntries(Object.entries(tables).filter(([n]) => !TECH.has(n)).map(([n, rs]) => [n, rs.length])),
       kpi: Object.fromEntries(Object.entries(kpi).filter(([, x]) => x.v !== null).map(([k, x]) => [k, x.v])),
@@ -88,7 +94,7 @@ function proche(app: number | null, attendu: number | null) {
   log(`\n=== Banc DEMO — ${etiquette} ===`);
   for (const r of resultats) {
     const n = r.controles.filter((c: any) => c.ok).length;
-    log(`\n${n === r.controles.length ? "OK " : "KO "} ${r.fichier}  (${n}/${r.controles.length}, ${Math.round(r.ms / 100) / 10} s)`);
+    log(`\n${n === r.controles.length ? "OK " : "KO "} ${r.fichier}  (${n}/${r.controles.length}, ${Math.round(r.ms / 100) / 10} s, ${r.memoire_mo} Mo)`);
     if (process.env.COHERENCE) for (const c of r.coherence) log(`   [audit ${c.status}] ${c.label} — ${c.detail}`);
     for (const c of r.controles) {
       log(`   ${c.ok ? "✓" : "✗"} ${(c.type + " " + c.id).padEnd(34)} app ${String(c.app).padStart(14)}   attendu ${String(c.attendu).padStart(14)}${c.statut ? "  [" + c.statut + "]" : ""}`);
@@ -99,8 +105,8 @@ function proche(app: number | null, attendu: number | null) {
   const dossier = path.join("tests", "banc", "resultats");
   fs.mkdirSync(dossier, { recursive: true });
   fs.writeFileSync(path.join(dossier, `${etiquette}.json`), JSON.stringify({ ok, total, resultats }, null, 1));
-  const ref = path.join(dossier, "demo-avant.json");
-  if (etiquette !== "demo-avant" && fs.existsSync(ref)) {
+  const ref = path.join(dossier, etiquette.startsWith("uci") ? "uci-avant.json" : "demo-avant.json");
+  if (etiquette !== "demo-avant" && etiquette !== "uci-avant" && fs.existsSync(ref)) {
     const avant = JSON.parse(fs.readFileSync(ref, "utf8"));
     log(`\n=== Comparaison avec demo-avant : ${avant.ok}/${avant.total} -> ${ok}/${total} ===`);
     for (const r of resultats) {

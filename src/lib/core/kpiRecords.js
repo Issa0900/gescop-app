@@ -16,6 +16,9 @@ export function commandeHorsCA(r) {
   const st = [r.status, r.payment_status, r.fulfillment_status]
     .map((x) => String(x || "").toLowerCase()).join(" ");
   if (STATUTS_HORS_CA.some((m) => st.includes(m))) return true;
+  // Prix unitaire negatif : ecriture d'ajustement (creance irrecouvrable,
+  // correction comptable), pas une vente ni un retour d'article.
+  if (Number(r.unit_price) < 0) return true;
   // return_status est un indicateur (« Yes »/« No », « Retourné »...), pas un statut
   // de commande : « Not returned » ne doit pas exclure la ligne.
   const ret = String(r.return_status || "").trim().toLowerCase();
@@ -37,6 +40,42 @@ export function montantHT(r) {
   if (tot !== null && Number.isFinite(tot)) return tax !== null && Number.isFinite(tax) ? tot - tax : tot;
   const tr = num(r.total_revenue);
   return tr !== null ? tr : NaN;
+}
+
+/**
+ * Ligne d'AVOIR (note de credit, retour, annulation d'une facture) : quantite
+ * ou montant negatif. Elle reduit le chiffre d'affaires net, mais n'est ni une
+ * commande ni un panier (UCI Online Retail : 3 836 factures « C… » a quantites
+ * negatives comptees comme commandes).
+ */
+export function estAvoir(r) {
+  if (Number(r.quantity) < 0) return true;
+  const m = montantHT(r);
+  return Number.isFinite(m) && m < 0;
+}
+
+/**
+ * Lignes de commande qui comptent comme VENTES : ni hors CA, ni avoir, ni de
+ * montant nul. Une ligne a 0 (article « damaged », « found », « check » sans
+ * prix) est un mouvement de stock, pas une commande : UCI Online Retail en
+ * comptait 766 « factures » a 0, qui gonflaient le nombre de commandes et
+ * baissaient le panier moyen. Montant non calculable : la ligne compte.
+ */
+export const estVente = (r) => {
+  if ((r._entity !== undefined && r._entity !== "Order") || commandeHorsCA(r) || estAvoir(r)) return false;
+  const m = montantHT(r);
+  return !(Number.isFinite(m) && m === 0);
+};
+
+/** Somme (positive) des avoirs des commandes, hors lignes exclues du CA. */
+export function montantAvoirs(records) {
+  let s = 0;
+  for (const r of records) {
+    if ((r._entity !== undefined && r._entity !== "Order") || commandeHorsCA(r) || !estAvoir(r)) continue;
+    const m = montantHT(r);
+    if (Number.isFinite(m)) s += Math.abs(m);
+  }
+  return s;
 }
 
 const TYPES_RECETTE = ["income", "entree", "credit", "revenu", "encaissement", "vente", "cash-in", "cash_in"];

@@ -123,9 +123,15 @@ test("Devises : devise de la ligne lue ou deduite du pays", async () => {
   const { codeDevise, deviseDeLigne } = await import("../base44/shared/devises.ts");
   assert.equal(codeDevise("usd"), "USD");
   assert.equal(codeDevise("€"), "EUR");
-  assert.equal(deviseDeLigne({ Country: "United Kingdom", City: "London" }), "GBP");
+  // Le pays ne donne la devise que s'il situe la VENTE (magasin, succursale).
+  assert.equal(deviseDeLigne({ Country: "United Kingdom", Store_Name: "London Central" }), "GBP");
+  assert.equal(deviseDeLigne({ "Pays du magasin": "France", City: "Paris" }), "EUR");
   assert.equal(deviseDeLigne({ Devise: "EUR", Pays: "Canada" }), "EUR");
   assert.equal(deviseDeLigne({ City: "Paris" }), null);
+  // Pays du client seul (UCI Online Retail : un detaillant britannique facture
+  // en livres ses clients de 38 pays) : aucune devise deduite.
+  assert.equal(deviseDeLigne({ Country: "France", City: "Paris" }), null);
+  assert.equal(deviseDeLigne({ "Customer Country": "France", Store_Name: "London Central" }), null);
 });
 
 test("Devises : converties avec le taux fourni, exclues sans taux (KPI partiel), jamais additionnees brutes", async () => {

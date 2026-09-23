@@ -83,3 +83,18 @@ traduits en anglais, dates en texte JJ/MM/AAAA, CSV français `;` + virgule déc
 **les mêmes chiffres** que la vérité terrain. Une variante qui échoue désigne une règle trop
 spécifique à un fichier : on corrige la règle, jamais le cas. Aujourd'hui **85/85 variantes,
 531/531 contrôles**. `DETAIL=1 VARIANTE="en-tetes anglais"` affiche le rapport d'import.
+
+## Banc UCI Online Retail (jeux publics) — 23 septembre 2026
+
+`npm run test:uci` importe les jeux publics **UCI Online Retail** (dataset 352) et **Online
+Retail II** (dataset 502, CC BY 4.0), rangés dans `../DEMO/UCI`, et compare les KPI à
+`verite_uci.ts` (recalculée avec pandas, hors moteur). Par défaut seul l'échantillon d'une
+semaine (16 985 lignes) tourne ; `UCI_COMPLET=1` ajoute les fichiers complets (541 909 et
+1 067 371 lignes) : c'est aussi le test de charge. L'échantillon est dans le banc de robustesse
+(10 variantes, dont « en-têtes français » et en-têtes collés `INVOICENO`).
+
+Ce que ces fichiers ont révélé (avant → après) : grain « ligne d'article » lu comme des conflits
+(757/16 985 lignes importées → 16 985), CA négatif (−9 665 £ → 280 766,48 £), devise déduite
+du pays du client (ventes en livres exclues comme « EUR »), avoirs comptés comme commandes,
+fréquence d'achat en lignes, lignes à prix 0 rendant le CA « partiel », faux « 0 employé »,
+calcul des KPI quadratique (≈ 490 s pour 150 000 lignes → quelques secondes).

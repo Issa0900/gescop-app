@@ -38,6 +38,8 @@ export function contenuMetier(r: any): string {
   return JSON.stringify(out);
 }
 
+const reel = (v: any) => v !== undefined && v !== null && String(v).trim() !== "" && !/^AUTO-/.test(String(v));
+
 export async function deduplicateRows(base44: any, entityName: string, rows: any[]) {
   const vide = { newRows: [] as any[], duplicateCount: 0, conflicts: 0, newCount: 0, duplicates: [] as any[], potentialDuplicates: [] as { row: any; premiere: any }[], conflits: [] as { row: any; existant: any }[] };
   if (rows.length === 0) return vide;
@@ -57,6 +59,36 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
   // repete avec d'autres valeurs n'est pas un doublon mais un conflit.
   const contenuParCle = new Map<string, { contenu: string; ligne: any }>();
   const occurrencesEnBase = new Map<string, number>();
+  // Grain LIGNE (commande + produit, sans identifiant de ligne) : un meme
+  // numero de commande porte plusieurs lignes. Il y a CONFLIT seulement si
+  // l'en-tete de la commande (jour, client) differe ; sinon c'est une autre
+  // ligne de la meme facture, pas une contradiction.
+  const enteteParCommande = new Map<string, { entete: string; ligne: any }>();
+  const lignesArticle = entityName === "Order";
+  const entete = (r: any) => `${String(r.date || "").slice(0, 10)}|${String(r.customer_id ?? "").trim()}`;
+  const estLigneArticle = (r: any) => lignesArticle && reel(r?.order_id) && reel(r?.product_id) && !reel(r?.line_id);
+  const noterEntete = (r: any, ligne: any) => {
+    if (!estLigneArticle(r)) return;
+    const cle = String(r.order_id).trim();
+    if (!enteteParCommande.has(cle)) enteteParCommande.set(cle, { entete: entete(r), ligne });
+  };
+  // Commande + produit identifie-t-il une ligne ? C'est le FICHIER qui le dit :
+  // si aucun couple n'y porte deux lignes differentes, le couple est une cle,
+  // et sa repetition a l'identique est un doublon prouve (exclu). Si le
+  // fichier montre le meme article deux fois avec d'autres valeurs (UCI Online
+  // Retail : 5 199 couples), le couple n'identifie rien : une repetition a
+  // l'identique est conservee et signalee (regle du 22 sept 2026).
+  const cleArticle = (r: any) => `${String(r.order_id).trim()}|${String(r.product_id).trim()}`;
+  const contenusParArticle = new Map<string, string>();
+  let cleArticleProuvee = true;
+  for (const r of rows) {
+    if (!estLigneArticle(r)) continue;
+    const c = contenuMetier(r), k = cleArticle(r), vu = contenusParArticle.get(k);
+    if (vu === undefined) contenusParArticle.set(k, c);
+    else if (vu !== c) { cleArticleProuvee = false; break; }
+  }
+  contenusParArticle.clear();
+  const articlesConnus = new Map<string, { contenu: string; ligne: any }>();
   let page = 0;
   while (true) {
     const batch = await base44.entities[entityName].list("-created_date", 500, page * 500);
@@ -74,6 +106,8 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
         if (fp && !contenuParCle.has(fp)) contenuParCle.set(fp, c);
       } else if (fp) {
         occurrencesEnBase.set(fp, (occurrencesEnBase.get(fp) || 0) + 1);
+        noterEntete(b, b);
+        if (estLigneArticle(b) && !articlesConnus.has(cleArticle(b))) articlesConnus.set(cleArticle(b), { contenu: contenuMetier(b), ligne: b });
       }
     });
     if (batch.length < 500) break;
@@ -107,6 +141,22 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
         contenuParCle.set(r.fingerprint, { contenu: contenuMetier(r), ligne: source });
       }
       continue;
+    }
+    if (estLigneArticle(r)) {
+      const connu = enteteParCommande.get(String(r.order_id).trim());
+      if (connu && connu.entete !== entete(r)) { conflits.push({ row: source, existant: connu.ligne }); continue; }
+      noterEntete(r, source);
+      if (cleArticleProuvee) {
+        const deja = articlesConnus.get(cleArticle(r));
+        if (deja) {
+          if (deja.contenu !== contenuMetier(r)) conflits.push({ row: source, existant: deja.ligne });
+          else duplicates.push(source);
+        } else {
+          articlesConnus.set(cleArticle(r), { contenu: contenuMetier(r), ligne: source });
+          newRows.push(r);
+        }
+        continue;
+      }
     }
     const k = (occurrencesFichier.get(r.fingerprint) || 0) + 1;
     occurrencesFichier.set(r.fingerprint, k);

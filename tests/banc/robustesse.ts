@@ -16,6 +16,7 @@ import { calculerFormulesManquantes } from "../../base44/shared/formules.ts";
 import { computeKpiBatch } from "../../src/lib/core/kpiEngine.js";
 import { buildKpiDataset, ENTITES_KPI } from "../../src/lib/core/kpiDataset.js";
 import { VERITE_DEMO } from "./verite_demo.ts";
+import { VERITE_UCI } from "./verite_uci.ts";
 
 declare const require: any;
 declare const process: any;
@@ -46,6 +47,15 @@ const FR_EN: Record<string, string> = {
   sociales: "social", employeur: "employer", semaine: "week", periode: "period", ventes_totales: "total_sales",
 };
 const traduire = (h: string) => mots(h).map((m) => FR_EN[m.toLowerCase()] ?? m).join(" ");
+// Sens inverse (EN -> FR) pour les exports anglais (UCI Online Retail) ; casse
+// chameau decoupee d'abord (« InvoiceNo » -> « facture No »).
+const EN_FR: Record<string, string> = {
+  // Premiere traduction francaise de chaque mot anglais (« total » -> « total », pas « totales »).
+  ...Object.fromEntries(Object.entries(FR_EN).reverse().map(([fr, en]) => [en, fr])),
+  invoice: "facture", no: "no", code: "code", description: "designation", country: "pays", customer: "client",
+  unit: "unitaire", price: "prix", quantity: "quantite", date: "date", id: "id", stock: "stock",
+};
+const traduireFr = (h: string) => mots(String(h).replace(/([a-z0-9])([A-Z])/g, "$1 $2")).map((m) => EN_FR[m.toLowerCase()] ?? m).join(" ");
 
 const estDateISO = (v: any) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
 const estSerieDate = (h: string, v: any) => typeof v === "number" && v > 30000 && v < 60000 && /date|jour|day|periode|semaine|embauche|livraison/i.test(sansAccents(h));
@@ -104,6 +114,7 @@ const VARIANTES: Record<string, (f: Feuilles) => Feuilles> = {
     return out;
   },
   "en-tetes anglais": (f) => surEntetes(f, traduire),
+  "en-tetes francais": (f) => surEntetes(f, traduireFr),
   "dates en texte JJ/MM/AAAA": (f) => surValeurs(f, (h, v) => (estDateISO(v) || estSerieDate(h, v) ? versJJMM(v) : v)),
 };
 
@@ -144,7 +155,7 @@ const FICHIERS = [
   "Nordik_PleinAir_Donnees_Complet_2026.xlsx", "GESCOP.xlsx", "Entreprise_Simulation_50Ans_Canada_QC.xlsx",
   "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx", "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx",
   "DS01_succursales_6mois.xlsx", "DS02_commandes_ecommerce_6mois.xlsx", "DS03_marketing_6mois.xlsx",
-  "E-Commerce Sales Analytics.csv", "Sample - Superstore.csv",
+  "E-Commerce Sales Analytics.csv", "Sample - Superstore.csv", "UCI/OR1_echantillon_dec2010.xlsx",
 ];
 
 (async () => {
@@ -155,15 +166,16 @@ const FICHIERS = [
   const bilan: { fichier: string; variante: string; ok: number; total: number; echecs: string[] }[] = [];
   for (const nom of FICHIERS) {
     if (filtre && !filtre.split(",").some((f: string) => nom.includes(f))) continue;
-    const v = VERITE_DEMO.find((x) => x.fichier === nom);
+    const v = [...VERITE_DEMO, ...VERITE_UCI].find((x) => x.fichier === nom);
     if (!v) continue;
     const { feuilles, csv } = lireFichier(path.join(DEMO, nom));
     const variantes: [string, ArrayBuffer, string][] = Object.entries(VARIANTES).map(([n, t]) => {
       const f = t(feuilles);
-      return [n, csv ? csvFrancaisOuAnglais(f) : classeur(f), csv ? nom : nom.replace(/\.csv$/i, ".xlsx")];
+      const base = path.basename(nom);
+      return [n, csv ? csvFrancaisOuAnglais(f) : classeur(f), csv ? base : base.replace(/\.csv$/i, ".xlsx")];
     });
     if (Object.keys(feuilles).length === 1) {
-      variantes.push(["CSV francais ; et virgule decimale", csvFrancais(Object.values(feuilles)[0]), nom.replace(/\.(xlsx|csv)$/i, "") + ".csv"]);
+      variantes.push(["CSV francais ; et virgule decimale", csvFrancais(Object.values(feuilles)[0]), path.basename(nom).replace(/\.(xlsx|csv)$/i, "") + ".csv"]);
     }
     for (const [variante, contenu, nomFichier] of variantes) {
       const { tables, results } = await importer(nomFichier, contenu);

@@ -50,7 +50,7 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
 
       // Merge sources and quality
       lineageSources.push(...depResult.sources);
-      lowestQuality = Math.min(lowestQuality, depResult.qualityScore);
+      if (Number.isFinite(depResult.qualityScore)) lowestQuality = Math.min(lowestQuality, depResult.qualityScore);
 
       // Propagate status
       if (depResult.status === KPI_STATUS.NOT_MEASURED) {
@@ -69,7 +69,10 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
   // while transaction_amount had the real, available total).
   if (kpiDef.dependencies.length > 0 && unavailableDeps === kpiDef.dependencies.length) {
     status = KPI_STATUS.NOT_MEASURED;
-  } else if (unavailableDeps > 0 && status === KPI_STATUS.MEASURED) {
+  } else if (unavailableDeps > 0 && status === KPI_STATUS.MEASURED && !kpiDef.sourcesAlternatives) {
+    // Des sources ALTERNATIVES (commandes OU transactions) : l'absence de l'une
+    // ne rend pas le chiffre partiel — une entreprise sans releve bancaire
+    // importe voyait tout son CA « partiellement estime ».
     status = KPI_STATUS.UNKNOWN;
   }
 
@@ -94,6 +97,9 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
         value = null;
       } else if (value === 0 && status === KPI_STATUS.MEASURED) {
         status = KPI_STATUS.VALID_ZERO;
+      } else if (value === null && status === KPI_STATUS.MEASURED) {
+        // La formule dit « non mesurable » : le statut doit le dire aussi.
+        status = KPI_STATUS.NOT_MEASURED;
       }
     } catch (e) {
       status = KPI_STATUS.INVALID;

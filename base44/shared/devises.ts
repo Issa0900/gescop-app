@@ -40,20 +40,34 @@ export function deviseDePays(v: any): string | null {
   return PAYS[t] ?? null;
 }
 
+// Mots d'une colonne qui situe la VENTE (magasin, succursale...) et non le client.
+const POINT_DE_VENTE = /(store|magasin|succursale|boutique|branch|agence|outlet|shop|point.?de.?vente|pos)/;
+const PAYS_DU_CLIENT = /(client|customer|acheteur|buyer|livraison|shipping|ship|delivery|billing|facturation|destination)/;
+
 /**
- * Devise d'une ligne brute du fichier : colonne devise d'abord, sinon colonne
- * pays. Une colonne « ville » ou « region » ne suffit pas (Paris, Texas...).
+ * Devise d'une ligne brute du fichier : colonne devise d'abord, sinon le pays
+ * du POINT DE VENTE. Le pays du client ne dit rien de la devise : un
+ * detaillant britannique facture en livres ses clients francais ou japonais
+ * (UCI Online Retail : 38 pays, un seul prix par article, en livres). Le pays
+ * ne sert donc que si la ligne situe la vente (colonne magasin, succursale...)
+ * ou si l'intitule le dit (« Pays du magasin »), jamais s'il designe le client
+ * ou la livraison. Une colonne « ville » ou « region » ne suffit pas.
  */
 export function deviseDeLigne(brut: Record<string, any> | null | undefined): string | null {
   if (!brut) return null;
   let parPays: string | null = null;
+  let paysDeVente = false;
+  let pointDeVente = false;
   for (const [k, v] of Object.entries(brut)) {
-    const cle = sansAccents(String(k)).toLowerCase();
+    const cle = sansAccents(String(k)).replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
     if (/(^|[^a-z])(devise|currency|monnaie)([^a-z]|$)/.test(cle)) {
       const c = codeDevise(v);
       if (c) return c;
     }
-    if (!parPays && /(^|[^a-z])(pays|country)([^a-z]|$)/.test(cle)) parPays = deviseDePays(v);
+    const estPays = /(^|[^a-z])(pays|country)([^a-z]|$)/.test(cle);
+    if (estPays && PAYS_DU_CLIENT.test(cle)) continue;
+    if (estPays && !parPays) { parPays = deviseDePays(v); paysDeVente = POINT_DE_VENTE.test(cle); }
+    else if (!estPays && POINT_DE_VENTE.test(cle) && v !== null && v !== undefined && String(v).trim() !== "") pointDeVente = true;
   }
-  return parPays;
+  return parPays && (paysDeVente || pointDeVente) ? parPays : null;
 }

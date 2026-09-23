@@ -14,7 +14,8 @@
     "test": "node --import ./tests/register-npm.mjs --test tests/*.test.js",
     "test:banc": "node tests/banc/lancer.cjs",
     "test:demo": "node tests/banc/lancer-demo.cjs",
-    "test:robustesse": "node tests/banc/lancer-demo.cjs robustesse"
+    "test:robustesse": "node tests/banc/lancer-demo.cjs robustesse",
+    "test:uci": "node tests/banc/lancer-demo.cjs uci"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",

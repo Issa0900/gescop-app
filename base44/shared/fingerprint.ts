@@ -9,7 +9,12 @@ export function empreinteForte(entityName: string, row: any): boolean {
   if (!row || typeof row !== "object") return false;
   const reel = (v: any) => v !== undefined && v !== null && String(v).trim() !== "" && !/^AUTO-/.test(String(v));
   switch (entityName) {
-    case "Order": return reel(row.order_id) || reel(row.line_id);
+    // Une ligne d'article SANS identifiant de ligne (facture + produit) n'est
+    // pas identifiee : le meme article peut figurer deux fois sur une facture
+    // (UCI Online Retail : 5 199 couples facture + produit a plusieurs lignes).
+    // Seul le numero de commande d'un fichier au grain COMMANDE (pas de colonne
+    // produit) prouve un doublon.
+    case "Order": return reel(row.line_id) || (reel(row.order_id) && !reel(row.product_id));
     case "Customer": return reel(row.customer_id) || reel(row.email);
     case "Product": return reel(row.product_id) || reel(row.sku);
     case "Campaign": return reel(row.campaign_id);
@@ -36,8 +41,14 @@ export function generateFingerprint(entityName: string, row: any): string {
   if (entityName === "Order" && row.line_id !== undefined && row.line_id !== null && String(row.line_id).trim() !== "") {
     return `Order:ligne:${String(row.line_id).trim()}`;
   }
+  // Ligne d'article sans identifiant de ligne : commande + produit + contenu
+  // (ligne brute si disponible). Deux lignes differentes d'une meme facture ne
+  // se confondent plus ; la meme ligne reimportee retrouve la meme empreinte.
+  if (entityName === "Order" && row.order_id && row.product_id) {
+    return `Order:${String(row.order_id).trim()}:${String(row.product_id).trim()}~${empreinteCourte(contenuLigne(row))}`;
+  }
   if (entityName === "Order" && row.order_id) {
-    return `Order:${String(row.order_id).trim()}:${String(row.product_id || "").trim()}`;
+    return `Order:${String(row.order_id).trim()}:`;
   }
   if (entityName === "Customer" && (row.customer_id || row.email)) {
     return `Customer:${String(row.customer_id || row.email).trim().toLowerCase()}`;
@@ -90,6 +101,20 @@ export function generateFingerprint(entityName: string, row: any): string {
   }
   const brut = typeof row.original_data === "string" && row.original_data ? `#${empreinteCourte(row.original_data)}` : "";
   return `${entityName}:${JSON.stringify(cleaned)}${brut}`;
+}
+
+const TECHNIQUES_LIGNE = new Set(["import_id", "fingerprint", "original_data", "id", "created_date", "updated_date", "created_by_id", "created_by", "import_date", "reference_date", "reference_date_type"]);
+/** Contenu d'une ligne : sa ligne brute, sinon ses champs metier. */
+function contenuLigne(row: any): string {
+  if (typeof row.original_data === "string" && row.original_data) return row.original_data;
+  const out: Record<string, any> = {};
+  for (const k of Object.keys(row).sort()) {
+    if (TECHNIQUES_LIGNE.has(k) || k.startsWith("_")) continue;
+    const v = row[k];
+    if (v === undefined || v === null || v === "") continue;
+    out[k] = typeof v === "number" ? Math.round(v * 100) / 100 : String(v).trim();
+  }
+  return JSON.stringify(out);
 }
 
 /** Empreinte courte et stable (FNV-1a 32 bits). */

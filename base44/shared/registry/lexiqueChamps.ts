@@ -29,16 +29,58 @@ const UNITES = new Set(["cad", "usd", "eur", "euro", "euros", "dollar", "dollars
 // Mots terminés par « s » qui ne sont pas des pluriels.
 const INVARIABLES = new Set(["status", "sous", "vers", "dans", "pays", "prix", "mois", "poids", "process", "business", "address", "ads", "gross", "plus", "fois", "cours", "hors", "taux", "roas", "sms", "bus"]);
 
-/** Mots d'un intitule : casse chameau decoupee, accents et unites retires, singulier. */
+const singulier = (m: string) => {
+  const s = m.length > 3 && m.endsWith("s") && !INVARIABLES.has(m) ? m.slice(0, -1) : m;
+  return s.length > 4 && s.endsWith("x") && /eaux$/.test(s) ? s.slice(0, -1) : s;
+};
+
+/** Mots d'un intitule : casse chameau decoupee, mots colles separes, accents et unites retires, singulier. */
 export function motsDe(entete: string): string[] {
   const brut = String(entete ?? "")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
   return stripAccents(brut.toLowerCase())
     .split(/[^a-z0-9]+/)
+    .flatMap(decoller)
     .filter((m) => m && !MOTS_VIDES.has(m) && !UNITES.has(m))
-    .map((m) => (m.length > 3 && m.endsWith("s") && !INVARIABLES.has(m) ? m.slice(0, -1) : m))
-    .map((m) => (m.length > 4 && m.endsWith("x") && /eaux$/.test(m) ? m.slice(0, -1) : m));
+    .map(singulier);
+}
+
+// Mots colles sans separateur ni casse (« INVOICENO », « unitprice »,
+// « CUSTOMERID », « codeclient ») : exports d'ERP en majuscules, colonnes
+// renommees en minuscules. Decoupes en mots du VOCABULAIRE DU LEXIQUE lui-meme
+// (tous les mots de ses regles et des noms de champs), jamais par une liste
+// propre a un fichier. Un mot deja connu n'est jamais decoupe ; morceaux de
+// 3 lettres au moins, sauf quelques abreviations sures (id, no, nb, ht, pu).
+const COURTS_SURS = new Set(["id", "no", "nb", "ht", "pu"]);
+let VOCABULAIRE: Set<string> | null = null;
+function vocabulaire(): Set<string> {
+  if (VOCABULAIRE) return VOCABULAIRE;
+  const v = new Set<string>();
+  GENEREES ||= reglesGenerees();
+  for (const r of [...REGLES, ...GENEREES]) for (const g of r.groupes) for (const m of g) v.add(m);
+  for (const sch of Object.values(ENTITY_SCHEMAS_POUR_LEXIQUE())) for (const f of Object.keys(sch.properties)) for (const m of f.split("_")) if (m.length >= 3) v.add(m);
+  for (const m of [...v]) if (m.length < 3 && !COURTS_SURS.has(m)) v.delete(m);
+  return (VOCABULAIRE = v);
+}
+function decoller(mot: string): string[] {
+  if (mot.length < 5 || /\d/.test(mot)) return [mot];
+  const v = vocabulaire();
+  if (v.has(mot) || v.has(singulier(mot))) return [mot];
+  // Decoupage en un minimum de mots connus (programmation dynamique).
+  const n = mot.length;
+  const meilleur: (string[] | null)[] = Array(n + 1).fill(null);
+  meilleur[0] = [];
+  for (let i = 1; i <= n; i++) {
+    for (let j = Math.max(0, i - 20); j < i; j++) {
+      if (!meilleur[j]) continue;
+      const morceau = mot.slice(j, i);
+      if (!(v.has(morceau) || v.has(singulier(morceau)))) continue;
+      const essai = [...meilleur[j]!, morceau];
+      if (!meilleur[i] || essai.length < meilleur[i]!.length) meilleur[i] = essai;
+    }
+  }
+  return meilleur[n] && meilleur[n]!.length > 1 ? meilleur[n]! : [mot];
 }
 
 interface Regle {
@@ -102,6 +144,13 @@ export const REGLES: Regle[] = [
   R("total_orders", ["ExecutiveSummary"], [["commande", "order", "transaction", "vente"], ["nombre", "nb", "count", "total"]], ["montant", "amount"]),
   R("customer_id", ["Order", "Payment", "Transaction"], [["client", "customer", "acheteur", "buyer"], ID]),
   R("product_id", ["Order", "Inventory", "Purchase"], [["produit", "product", "article", "item", "sku"], ID]),
+  // Sur une ligne de vente ou d'achat, le code de stock, de piece ou de modele
+  // designe l'article vendu (« StockCode », « Part Number », « Code modele ») ;
+  // les codes normalises (SKU, EAN, UPC, GTIN, ASIN...) aussi, seuls.
+  R("product_id", ["Order", "Purchase"], [["stock", "part", "piece", "modele", "model", "style", "catalogue", "catalog"], ID], ["quantite", "quantity", "qty", "qte", "niveau", "level", "disponible", "reserve", "client", "customer", "fournisseur", "supplier"]),
+  R("product_id", ["Order", "Inventory", "Purchase"], [["sku", "ugs", "ean", "upc", "gtin", "asin", "isbn", "barcode", "codebarre", "mpn"]], ["quantite", "quantity", "qty", "qte"]),
+  // Pays de la vente ou du client (« Country », « Pays », « Pays_client »).
+  R("country", ["Order", "Customer"], [["pays", "country", "nation"]], ["code", "id", "devise", "currency", "origine", "origin"]),
   R("quantity", ["Order", "Purchase"], [["quantite", "quantity", "qty", "qte", "unite"]], ["stock", "reserve", "transit", "disponible"]),
 
   // ── Produits ────────────────────────────────────────────────────────────
@@ -247,6 +296,13 @@ export const REGLES: Regle[] = [
   R("amount", ["Payment"], [MONTANT]),
   R("method", ["Payment"], [["mode", "methode", "method", "moyen"]]),
 ];
+
+// Libelle d'une ligne (« Designation », « Libelle », « Memo ») : sa description,
+// sur toute entite qui en a une. Sans elle, une transaction « Vente ORD-12 »
+// n'etait plus rapprochee de sa commande et le CA etait compte deux fois.
+for (const [ent, sch] of Object.entries(ENTITY_SCHEMAS_POUR_LEXIQUE())) {
+  if (sch.properties.description) REGLES.push(R("description", [ent], [["description", "designation", "libelle", "intitule", "memo", "narration", "detail"]], ["produit", "product", "article", "item", "date", "id", "code", "montant", "amount"]));
+}
 
 // ── Regles generees : identifiants et noms de TOUTES les entites ───────────
 // Un champ « xxx_id » se reconnait partout a {nom de xxx} + {id, code, no...},
