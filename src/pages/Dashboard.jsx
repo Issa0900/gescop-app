@@ -13,7 +13,6 @@ import { Sparkles, RefreshCw, ArrowRight, Check, Loader2, Upload, Bell, Clipboar
 import { Link, useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-import { useKpiEngine } from "@/lib/useKpiEngine";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { latestCashBalance, validSalesOrders } from "@/lib/metrics";
 import { validateChartAggregation, METRIC_TYPES } from "@/components/ChartValidation";
@@ -34,9 +33,13 @@ import TimeFilter from "@/components/dashboard/TimeFilter";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { instantaneKpi } from "@/lib/core/instantane";
-import { COULEURS } from "@/lib/graphiques";
+import { COULEURS, moisLisible } from "@/lib/graphiques";
+import { preparerPeriodes, moisComplets, decalerMois, kpisSurFenetre } from "@/lib/core/kpiPeriodes";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
 import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
+
+const MOIS_PAR_PERIODE = { month: 1, quarter: 3, year: 12 };
+const IDS_DASH = ["total_revenue", "total_expense", "net_income", "net_margin_pct", "aov", "active_customers", "customer_sentiment_score"];
 
 const analysisSteps = [
   "Vérification des données", "Calcul des tendances", "Détection des anomalies",
@@ -79,7 +82,7 @@ export default function Dashboard() {
   // Memes donnees que tous les ecrans (useDonneesKpi) : la marge affichee ici
   // retranche la paie comme sur la page KPI et Finance.
   const { data: donnees } = useDonneesKpi();
-  const { transactions, orders, customers, cashflow, expenses: expenseRecords, executiveSummary, payrolls, products, inventory, campaigns, campaignDaily } = donnees;
+  const { transactions, orders, customers, cashflow, expenses: expenseRecords } = donnees;
   const { data: anomalies } = useQuery({
     queryKey: ["anomalies"],
     queryFn: async () => { const l = await base44.entities.Anomaly.list("-created_date", 20); return l || []; },
@@ -106,14 +109,23 @@ export default function Dashboard() {
   });
   const [period, setPeriod] = useState("month");
 
-  const periodDays = { day: 1, month: 30, quarter: 90, year: 365 };
-  const cutoffDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - periodDays[period]);
-    return d.toISOString().slice(0, 10);
-  }, [period]);
-
-  const inPeriod = (dateStr) => !dateStr || dateStr >= cutoffDate;
+  // Periode = fenetre de MOIS COMPLETS du moteur (kpiPeriodes). L'ancien
+  // filtre (aujourd'hui - 30 jours) prenait toute la paie du mois en cours et
+  // 23 jours de ventes : -2 716 % de marge en haut de l'ecran, -508 % plus bas.
+  const prepDash = useMemo(() => preparerPeriodes({ ...donnees, observations: observations || [] }), [donnees, observations]);
+  const fenetre = useMemo(() => {
+    const mois = moisComplets(prepDash);
+    if (!mois.length) return null;
+    const fin = mois[mois.length - 1];
+    return { debut: decalerMois(fin, -((MOIS_PAR_PERIODE[period] || 1) - 1)), fin };
+  }, [prepDash, period]);
+  const libellePeriode = !fenetre ? "" : fenetre.debut === fenetre.fin
+    ? moisLisible(fenetre.fin)
+    : `${moisLisible(fenetre.debut)} – ${moisLisible(fenetre.fin)}`;
+  const dansFenetre = (dateStr) => {
+    const m = String(dateStr || "").slice(0, 7);
+    return !!fenetre && m >= fenetre.debut && m <= fenetre.fin;
+  };
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -140,27 +152,11 @@ export default function Dashboard() {
   };
 
   // GESCOP Phase 4 SSOT : Centralisation
-  const fTxn = useMemo(() => (transactions || []).filter((t) => inPeriod(t.date)), [transactions, cutoffDate]);
-  const fOrders = useMemo(() => (orders || []).filter((o) => inPeriod(o.date)), [orders, cutoffDate]);
-  const fExpenses = useMemo(() => (expenseRecords || []).filter((e) => inPeriod(e.date)), [expenseRecords, cutoffDate]);
-  const fPayrolls = useMemo(() => (payrolls || []).filter((p) => inPeriod(p.period || p.date)), [payrolls, cutoffDate]);
-  const fCustomers = useMemo(() => (customers || []).filter((c) => inPeriod(c.acquisition_date)), [customers, cutoffDate]);
-  const fObservations = useMemo(() => (observations || []).filter((o) => inPeriod(o.date)), [observations, cutoffDate]);
-
-  const { kpis: engineKpis } = useKpiEngine({
-    transactions: fTxn,
-    orders: fOrders,
-    expenses: fExpenses,
-    payrolls: fPayrolls,
-    executiveSummary: executiveSummary || [],
-    customers: fCustomers,
-    observations: fObservations,
-    cashflow: cashflow || [],
-    campaigns: campaigns || [],
-    campaignDaily: campaignDaily || [],
-    inventory: inventory || [],
-    products: products || [],
-  }, ["total_revenue", "total_expense", "net_income", "net_margin_pct", "aov", "active_customers", "customer_sentiment_score"]);
+  const fOrders = useMemo(() => (orders || []).filter((o) => dansFenetre(o.date)), [orders, fenetre]);
+  const engineKpis = useMemo(
+    () => (fenetre ? kpisSurFenetre(prepDash, IDS_DASH, fenetre.debut, fenetre.fin) : new Map()),
+    [prepDash, fenetre],
+  );
 
   // === COMPUTATIONS (Hybride : Ancien + Nouveau) ===
   const computed = useMemo(() => {
@@ -279,7 +275,7 @@ export default function Dashboard() {
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
       revProbability, cashRisk,
     };
-  }, [donnees, engineKpis, period, cutoffDate]);
+  }, [donnees, engineKpis, period, fOrders]);
 
   const alertesLive = useMemo(() => computeLiveAlerts({ ...donnees, company }), [donnees, company]);
 
@@ -454,7 +450,7 @@ export default function Dashboard() {
           className="flex flex-wrap items-center justify-between gap-3"
         >
           <p className="text-sm font-medium text-muted-foreground">
-            Tendances des {period === "day" ? "dernières 24 heures" : period === "month" ? "30 derniers jours" : period === "quarter" ? "90 derniers jours" : "12 derniers mois"}
+            {libellePeriode ? `Période : ${libellePeriode}` : "Aucun mois complet importé"}
           </p>
           <TimeFilter period={period} onChange={setPeriod} />
         </motion.div>
