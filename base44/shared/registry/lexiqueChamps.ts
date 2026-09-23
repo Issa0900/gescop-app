@@ -72,10 +72,15 @@ export const REGLES: Regle[] = [
   R("order_id", ["Order"], [["transaction", "vente", "sale", "ticket", "recu", "receipt"], ID], ["ligne", "line", "client", "customer", "produit", "product"], undefined, COMMANDE),
   R("line_id", ["Order"], [["ligne", "line", "row"], ID], ["client", "customer", "produit", "product", "commande", "order"]),
   R("date", ["Order"], [COMMANDE, DATE]),
+  // Horodatage d'achat (« order_purchase_timestamp ») : la date de la commande, jamais celle de livraison.
+  R("date", ["Order"], [COMMANDE, ["timestamp", "datetime", "horodatage"]], ["livraison", "delivery", "delivered", "shipping", "expedition", "approved", "approbation", "estimated", "estime", "carrier"]),
+  R("shipping", ["Order"], [["livraison", "shipping", "freight", "fret", "port", "transport"]], ["date", "statut", "status", "mode", "methode", "method", "id", "adresse", "address", "ville", "city", "delai", "delay"]),
   R("subtotal", ["Order"], [["ht", "subtotal", "hors", "soustotal", "net"]], ["prix", "price", "unitaire", "unit", "marge", "margin", "profit", "benefice", "ttc", "quantite", "quantity", "qte"]),
   R("subtotal", ["Order"], [["sous"], ["total"]], ["ttc"]),
   R("total", ["Order"], [["ttc", "tvac", "taxe_incluse", "gross"]], ["taxe", "tax", "tps", "tvq", "cout", "cost", "unitaire", "unit", "prix", "price"]),
   R("total", ["Order"], [VENTE, MONTANT], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel"]),
+  // « Sales » seul sur une ligne de vente : son montant.
+  R("total", ["Order"], [["vente", "sale", "ventes"]], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel", "date", "id", "rep", "representant", "person", "quantite", "quantity", "qty", "nombre", "count", "taxe", "tax", "region", "type", "statut", "status"]),
   R("total_cost", ["Order", "ExecutiveSummary"], [COUT, ["total", ...MONTANT, "marchandise", "produit", "product", "vendu", "sold"]], ["unitaire", "unit", "clic", "click"]),
   R("total_cost", ["Order"], [["cogs", "cmv", "cogs"]]),
   R("unit_cost", ["Order"], [COUT, ["unitaire", "unit", "moyen", "pondere", "pmp"]], ["total"]),
@@ -92,7 +97,6 @@ export const REGLES: Regle[] = [
   R("province", ["Order", "Customer"], [["province", "state"]], ["id", "code"]),
   R("channel", ["Order"], [["canal", "channel", "circuit"]]),
   R("currency", ["Order"], [["devise", "currency", "monnaie"]], ["taux", "rate"]),
-  R("currency", ["Order"], [["devise", "currency", "monnaie"]], ["taux", "rate"]),
   R("location_id", ["Order", "ExecutiveSummary"], [["succursale", "magasin", "store", "boutique", "agence", "branch", "location", "site", "point"]], ["id", "code", "no", "num", "vente", "sale"]),
   R("total_revenue", ["ExecutiveSummary"], [VENTE, ["total", "totale", ...MONTANT, "brut", "net"]], ["cout", "cost"]),
   R("total_orders", ["ExecutiveSummary"], [["commande", "order", "transaction", "vente"], ["nombre", "nb", "count", "total"]], ["montant", "amount"]),
@@ -103,6 +107,8 @@ export const REGLES: Regle[] = [
   // ── Produits ────────────────────────────────────────────────────────────
   R("purchase_cost", ["Product"], [COUT, ["achat", "purchase", "revient", "unitaire", "unit", "fournisseur"]], ["total"]),
   R("selling_price", ["Product"], [["prix", "price", "tarif"], ["vente", "sale", "selling", "public", "detail", "retail"]]),
+  // Le prix unitaire d'une fiche produit est son prix de vente (le cout d'achat porte « cout »/« achat »).
+  R("selling_price", ["Product"], [["prix", "price", "tarif", "pu"], ["unitaire", "unit"]], ["cout", "cost", "achat", "purchase", "fournisseur", "supplier"]),
   R("gross_margin", ["Product"], [["marge", "margin"]]),
   R("launch_date", ["Product"], [["lancement", "launch", "sortie", "creation"]]),
   R("subcategory", ["Product"], [["sous", "sub"], ["categorie", "category", "famille"]]),
@@ -132,8 +138,8 @@ export const REGLES: Regle[] = [
   // ── Employes et paie ────────────────────────────────────────────────────
   R("hire_date", ["Employee"], [["embauche", "hire", "hiring", "entree", "arrivee", "start"]]),
   R("weekly_hours", ["Employee"], [["heure", "hour", "hr"], ["hebdo", "hebdomadaire", "semaine", "weekly", "week"]]),
-  R("employer_cost", ["Employee"], [COUT, ["employeur", "employer", "global", "complet", "total"]], ["charge", "cotisation"]),
-  R("social_charges", ["Employee"], [["charge", "cotisation", "contribution"], ["sociale", "social", "patronale", "employeur", "employer", "total"]]),
+  R("total_employer_cost", ["Employee"], [COUT, ["employeur", "employer", "global", "complet", "total"]], ["charge", "cotisation"]),
+  R("total_social_charges", ["Employee"], [["charge", "cotisation", "contribution"], ["sociale", "social", "patronale", "employeur", "employer", "total"]]),
   R("annual_salary", ["Employee"], [["salaire", "salary", "remuneration", "paie"], ["annuel", "annual", "base", "brut", "yearly"]]),
   R("annual_salary", ["Employee"], [["salaire", "salary"]], ["taux", "rate", "horaire", "hourly", "net", "mensuel", "monthly"]),
   R("hourly_rate", ["Employee"], [["taux", "rate", "salaire"], ["horaire", "hourly", "heure"]]),
@@ -160,7 +166,7 @@ export const REGLES: Regle[] = [
   R("contact_name", ["Supplier"], [["contact"]], ["email", "courriel", "mail", "telephone", "phone"]),
   R("email", ["Supplier"], [["email", "courriel", "mail"]]),
   R("city", ["Supplier"], [["ville", "city"]]),
-  R("currency", ["Supplier"], [["devise", "currency", "monnaie"]]),
+  R("purchase_currency", ["Supplier"], [["devise", "currency", "monnaie"]]),
   R("price_change_last_12_months", ["Supplier"], [["evolution", "variation", "change"], ["prix", "price"]]),
   R("purchase_id", ["Purchase"], [["achat", "purchase", "bon", "po"], ID], ["fournisseur", "supplier", "produit", "product"]),
   R("date", ["Purchase"], [DATE, ["achat", "purchase", "commande", "order"]]),
@@ -177,8 +183,8 @@ export const REGLES: Regle[] = [
   // ── Stocks ──────────────────────────────────────────────────────────────
   R("warehouse_id", ["Inventory"], [["entrepot", "depot", "warehouse", "site"], ID]),
   R("warehouse_name", ["Inventory"], [["entrepot", "depot", "warehouse"], ["nom", "name", "libelle"]]),
-  R("quantity_reserved", ["Inventory"], [["reserve", "reservee", "reserved", "allocated"]]),
-  R("quantity_in_transit", ["Inventory"], [["transit"]]),
+  R("reserved_qty", ["Inventory"], [["reserve", "reservee", "reserved", "allocated"]]),
+  R("in_transit_qty", ["Inventory"], [["transit"]]),
   R("quantity_available", ["Inventory"], [["disponible", "available", "dispo"]]),
   R("reorder_point", ["Inventory"], [["seuil", "reorder", "point", "alerte"], ["reappro", "reapprovisionnement", "commande", "reorder", "alerte", "point", "minimum"]], ["quantite", "quantity", "optimale", "eoq"]),
   R("sale_value", ["Inventory"], [["valeur", "value"], ["vente", "sale", "retail", "selling"]]),
@@ -225,15 +231,14 @@ export const REGLES: Regle[] = [
 
   // ── Immobilisations ─────────────────────────────────────────────────────
   R("asset_id", ["Asset"], [["immobilisation", "asset", "actif", "equipement"], ID]),
-  R("asset_name", ["Asset"], [["description", "nom", "name", "libelle", "designation"]], ID),
-  R("category", ["Asset"], [["categorie", "category", "type"]], ["classe", "class"]),
+  R("description", ["Asset"], [["description", "nom", "name", "libelle", "designation"]], ID),
   R("acquisition_date", ["Asset"], [["acquisition", "achat", "mise", "purchase"], DATE]),
-  R("cca_class", ["Asset"], [["classe", "class", "cca", "dpa"]], ["taux", "rate"]),
-  R("cca_rate", ["Asset"], [["taux", "rate"]]),
-  R("acquisition_cost", ["Asset"], [COUT, ["acquisition", "initial", "origine", "achat", "historique"]]),
+  R("dpa_class", ["Asset"], [["classe", "class", "cca", "dpa"]], ["taux", "rate"]),
+  R("dpa_rate", ["Asset"], [["taux", "rate"]]),
+  R("initial_cost", ["Asset"], [COUT, ["acquisition", "initial", "origine", "achat", "historique"]]),
   R("accumulated_depreciation", ["Asset"], [["amortissement", "depreciation", "amortization"]], ["taux", "rate"]),
   R("net_book_value", ["Asset"], [["valeur", "value"], ["nette", "net", "comptable", "book"]]),
-  R("notes", ["Asset"], [["commentaire", "comment", "note", "remarque", "observation"]]),
+  R("historical_comment", ["Asset"], [["commentaire", "comment", "note", "remarque", "observation"]]),
 
   // ── Paiements ───────────────────────────────────────────────────────────
   R("payment_id", ["Payment"], [["paiement", "payment", "reglement", "encaissement"], ID]),
@@ -281,6 +286,15 @@ function reglesGenerees(): Regle[] {
     const autres = Object.entries(NOMS_OBJETS).filter(([k]) => k !== m[1]).flatMap(([, v]) => v).filter((x) => !NOMS_OBJETS[m[1]].includes(x));
     if (m[2] === "id") out.push(R(f, [...entites], [NOMS_OBJETS[m[1]], ID], [...NOMS_LIBELLE, "date", "montant", "amount"]));
     else out.push(R(f, [...entites], [NOMS_LIBELLE, NOMS_OBJETS[m[1]]], [...ID.filter((x) => x !== "n"), ...autres]));
+  }
+  // Un « nom » seul designe le nom de l'objet de la feuille (« name » sur Produits
+  // = product_name), quand l'entite n'a pas elle-meme de champ « name ».
+  for (const [ent, sch] of Object.entries(ENTITY_SCHEMAS_POUR_LEXIQUE())) {
+    const cle = ent.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase());
+    const champ = `${cle}_name`;
+    if (!sch.properties[champ] || sch.properties.name || !NOMS_OBJETS[cle]) continue;
+    const autres = Object.entries(NOMS_OBJETS).filter(([k]) => k !== cle).flatMap(([, v]) => v);
+    out.push(R(champ, [ent], [NOMS_LIBELLE], [...ID.filter((x) => x !== "n"), ...autres, "date"]));
   }
   return out;
 }

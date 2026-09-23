@@ -59,7 +59,7 @@ export async function importer(
   (globalThis as any).fetch = async () => new Response(contenu);
   const req = new Request("http://banc/importMultiData", {
     method: "POST",
-    body: JSON.stringify({ files: [{ file_url: "mem://" + nomFichier, file_name: nomFichier }], entity_override: typeManuel }),
+    body: JSON.stringify({ files: [{ file_url: "https://banc.invalid/" + encodeURI(nomFichier), file_name: nomFichier }], entity_override: typeManuel }),
   });
   const res = await (handler as any)(req);
   const corps = await res.json();

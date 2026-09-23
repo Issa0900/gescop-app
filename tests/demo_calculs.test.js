@@ -88,7 +88,7 @@ test("CPC et CPM sur la depense reelle, le budget seulement en repli", () => {
 });
 
 test("Cout moyen par employe depuis les fiches quand aucune paie n'est importee", () => {
-  const employees = [{ employee_id: "E1", employer_cost: 90000, annual_salary: 80000 }, { employee_id: "E2", employer_cost: 110000 }];
+  const employees = [{ employee_id: "E1", total_employer_cost: 90000, annual_salary: 80000 }, { employee_id: "E2", total_employer_cost: 110000 }];
   assert.equal(kpi({ employees }, ["avg_employee_cost"]).avg_employee_cost, 100000);
 });
 

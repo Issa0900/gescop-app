@@ -42,7 +42,6 @@ const GAPS_CONNUS: Record<string, string> = {
   "CampaignDaily.cpc": "le KPI cpc calcule sa propre valeur depuis campaign_budget/campaign_clicks (deja mappes) plutot que de lire une colonne pre-fournie ; aucun KPI n'en depend directement",
   "CampaignDaily.ctr": "calculable depuis clicks/impressions (deja mappes) si un jour necessaire ; aucun KPI n'en depend directement aujourd'hui",
   "CampaignDaily.conversion_rate": "idem, calculable depuis conversions/clicks deja mappes",
-  "Supplier.purchase_volume": "aucun KPI actuel n'en depend",
   "Supplier.price_change_last_12_months": "aucun KPI actuel n'en depend",
   "Purchase.delay_days": "aucun KPI actuel n'en depend",
   "Interaction.satisfaction_score": "aucun KPI actuel n'en depend",
@@ -52,13 +51,27 @@ const GAPS_CONNUS: Record<string, string> = {
   "Goal.target": "lu directement par la page Objectifs, pas via le moteur KPI",
   "Goal.current": "idem",
   "ExternalSignal.relevance_score": "lu directement par la logique de filtrage du radar (filterSignals), pas via le moteur KPI",
-  // ExecutiveSummary : toute l'entite est du code mort (jamais branchee a
-  // aucune page ni fonction) -- deja documente dans AUDIT-LOG.md.
-  "ExecutiveSummary.total_revenue": "entite ExecutiveSummary entierement non utilisee dans l'app (code mort documente)",
-  "ExecutiveSummary.total_cost": "idem",
-  "ExecutiveSummary.gross_profit": "idem",
-  "ExecutiveSummary.gross_margin": "idem",
-  "ExecutiveSummary.total_orders": "idem",
+  // ExecutiveSummary est lue depuis la fusion (repli du CA/COGS quand aucune
+  // commande n'est importee) : total_revenue/total_cost/gross_profit/total_orders sont mappes.
+  "ExecutiveSummary.gross_margin": "pourcentage deja recalcule par le moteur (gross_margin_pct)",
+  "ExecutiveSummary.gross_margin_rate": "idem, taux",
+  "Order.price": "prix unitaire (taux par unite), comme unit_price -- le montant de la ligne est lu via total/subtotal",
+  "Order.order_value": "doublon du montant de la ligne (total) dans les exports a plat ; le lire en plus doublerait le CA",
+  "Order.age": "attribut du client repete sur la ligne, pas une mesure",
+  "Employee.commission_rate": "taux, aucun KPI actuel n'en depend",
+  "Employee.seniority_years": "anciennete, attribut descriptif",
+  "Employee.cpp_employer": "detail de total_social_charges (deja mappe) ; le lire en plus doublerait les charges",
+  "Employee.qpip_employer": "idem",
+  "Employee.cnesst": "idem",
+  "Employee.fss_qc": "idem",
+  "Employee.group_insurance": "idem",
+  "Employee.rrsp_employer": "idem",
+  "Inventory.selling_inventory_value": "valeur du stock au prix de vente ; la valeur comptable (inventory_value, au cout) est celle du BFR",
+  "Inventory.valeur_stock_vente": "idem (nom francais du meme champ)",
+  "Inventory.reorder_qty_eoq": "quantite de reapprovisionnement conseillee, pas une mesure",
+  "Campaign.cpc": "taux deja recalcule par le moteur (spend / clicks)",
+  "Campaign.cout_clic": "idem",
+  "Campaign.cost_per_click": "idem",
 };
 
 console.log("== chaque champ numerique est mappe, ou son absence est documentee ==");
@@ -69,7 +82,8 @@ for (const [entity, schema] of Object.entries(ENTITY_SCHEMAS) as any[]) {
     if (BUILTIN.has(field) || def?.type !== "number") continue;
     numericFields++;
     const key = `${entity}.${field}`;
-    const ok = mapped.has(field) || key in GAPS_CONNUS;
+    // custom_number_1..5 : champs libres que l'entreprise nomme elle-meme ; aucun sens fixe a mapper.
+    const ok = mapped.has(field) || key in GAPS_CONNUS || /^custom_number_\d+$/.test(field);
     t(ok, `${key} : mappe, ou absence documentee dans GAPS_CONNUS`);
   }
 }

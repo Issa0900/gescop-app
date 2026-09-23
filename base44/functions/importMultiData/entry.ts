@@ -6,6 +6,7 @@ import {
 import { REASON, motifChampManquant } from "../../shared/importStatus.ts";
 import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes, estDictionnaireDeDonnees } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
+import { fetchExternalFile } from "../../shared/safeFetch.ts";
 import {
   analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan,
   construireEchantillon, type PlanImport, type LigneEcartee,
@@ -77,6 +78,7 @@ async function planPourFeuille(
   const signature = signatureFichier(entetes);
 
   // 1. Deja vu et valide par un humain.
+  // 1. Deja vu et valide par un humain (match exact de la signature).
   try {
     const memo = await base44.entities.Import.filter(
       { plan_signature: signature, plan_confirmed: true }, "-created_date", 1,
@@ -90,9 +92,18 @@ async function planPourFeuille(
     }
   } catch { /* la memoire est un confort, jamais un prerequis */ }
 
+  // 1.5. Apprentissage croisé (mémoire globale pour rattraper les colonnes uniques)
+  let mappingMemory: any[] = [];
+  try {
+    const allMemo = await base44.entities.Import.filter(
+      { plan_confirmed: true }, "-created_date", 50,
+    );
+    mappingMemory = allMemo.map((m: any) => m.read_plan).filter(Boolean);
+  } catch {}
+
   // 2. Analyse par l'IA, filet deterministe derriere.
   // Le libelle "fichier [feuille]" : le nom de la FEUILLE est une preuve du type (preuves.ts).
-  const secours = planParRegles(matrix, label, manual || null, [], companyDictionary);
+  const secours = planParRegles(matrix, label, manual || null, mappingMemory, companyDictionary);
   const res = await analyserFichier(
     (args) => base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: args.prompt,
@@ -281,7 +292,7 @@ export default async function (req: Request) {
           // lues telles quelles, et celles qui restent vides.
           let noteFormules = "";
           if (["xlsx", "xls"].includes(ext)) {
-            const ab = await (await fetch(file_url)).arrayBuffer();
+            const ab = await (await fetchExternalFile(file_url)).arrayBuffer();
             // sheetStubs : une formule sans resultat enregistre (classeur genere
             // par script) n'existe sinon pas du tout ; on la calcule ici.
             const wb = XLSX.read(new Uint8Array(ab), { type: "array", sheetStubs: true });

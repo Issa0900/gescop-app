@@ -48,7 +48,25 @@
     "closing_stock": {
       "type": "number"
     },
+    "qte_en_stock": {
+      "type": "number"
+    },
+    "inventory_level": {
+      "type": "number"
+    },
+    "available_qty": {
+      "type": "number"
+    },
+    "quantite_disponible": {
+      "type": "number"
+    },
     "inventory_value": {
+      "type": "number"
+    },
+    "selling_inventory_value": {
+      "type": "number"
+    },
+    "valeur_stock_vente": {
       "type": "number"
     },
     "days_in_inventory": {
@@ -83,19 +101,31 @@
     "warehouse_name": {
       "type": "string"
     },
-    "supplier_id": {
-      "type": "string"
-    },
-    "quantity_reserved": {
+    "reserved_qty": {
       "type": "number"
     },
-    "quantity_in_transit": {
+    "in_transit_qty": {
       "type": "number"
     },
-    "quantity_available": {
+    "reorder_qty_eoq": {
       "type": "number"
     },
     "reorder_point": {
+      "type": "number"
+    },
+    "origin_country": {
+      "type": "string"
+    },
+    "customs_code": {
+      "type": "string"
+    },
+    "supplier_id": {
+      "type": "string"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "quantity_available": {
       "type": "number"
     },
     "sale_value": {

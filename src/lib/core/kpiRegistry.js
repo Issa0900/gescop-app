@@ -10,8 +10,8 @@
 // The KPI Engine will resolve dependencies and execute the formulas.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes";
-import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA } from "./kpiRecords";
+import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes.js";
+import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA } from "./kpiRecords.js";
 
 /**
  * Registry of all computed indicators (KPIs and Measures).
@@ -243,7 +243,7 @@ export const KPI_REGISTRY = Object.freeze({
     calculate: (deps) => {
       if (deps.payroll_total != null && deps.employee_count) return deps.payroll_total / deps.employee_count;
       const fiches = (deps._records || []).filter((r) => r._entity === "Employee");
-      for (const champ of ["employer_cost", "annual_salary", "salary"]) {
+      for (const champ of ["total_employer_cost", "annual_salary", "salary"]) {
         const v = fiches.map((r) => r[champ]).filter((x) => x !== null && x !== undefined && x !== "" && Number.isFinite(Number(x))).map(Number);
         if (v.length > 0) return v.reduce((a, b) => a + b, 0) / v.length;
       }
@@ -538,10 +538,11 @@ export const KPI_REGISTRY = Object.freeze({
     // (whole-company revenue) would also be the wrong numerator for ROAS
     // even if "budget" did resolve: ROAS is revenue attributed to the ad
     // spend, not every dollar the business made.
-    dependencies: ["campaign_revenue", "marketing_spend"],
+    dependencies: ["campaign_revenue", "marketing_spend", "campaign_budget"],
     calculate: (deps) => {
-      if (!deps.marketing_spend || deps.campaign_revenue == null) return null;
-      return deps.campaign_revenue / deps.marketing_spend;
+      const spend = deps.marketing_spend || deps.campaign_budget;
+      if (!spend || deps.campaign_revenue == null) return null;
+      return deps.campaign_revenue / spend;
     },
   },
 
@@ -554,12 +555,11 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RATIO,
     dataType: DATA_TYPES.PERCENTAGE,
     isAdditive: false,
-    // Same correction as roas above: campaign_revenue/marketing_spend are
-    // the real canonical keys for this figure, not total_revenue/budget.
-    dependencies: ["campaign_revenue", "marketing_spend"],
+    dependencies: ["campaign_revenue", "marketing_spend", "campaign_budget"],
     calculate: (deps) => {
-      if (!deps.marketing_spend || deps.campaign_revenue == null) return null;
-      return ((deps.campaign_revenue - deps.marketing_spend) / deps.marketing_spend) * 100;
+      const spend = deps.marketing_spend || deps.campaign_budget;
+      if (!spend || deps.campaign_revenue == null) return null;
+      return ((deps.campaign_revenue - spend) / spend) * 100;
     },
   },
 
@@ -609,6 +609,30 @@ export const KPI_REGISTRY = Object.freeze({
     },
   },
 
+  order_count: {
+    id: "order_count",
+    name: { fr: "Nombre de commandes", en: "Order Count" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.VENTES,
+    semanticType: "count",
+    economicRole: ECONOMIC_ROLES.FLOW,
+    dataType: DATA_TYPES.NUMBER,
+    isAdditive: true,
+    dependencies: [],
+    // Commandes DISTINCTES hors annulees, retournees et hors devise (memes
+    // regles que le CA). Sans aucune commande importee, le nombre declare par
+    // la synthese du fichier (total_orders) sert de repli — jamais additionne
+    // aux commandes.
+    calculate: (deps) => {
+      const records = deps._records || [];
+      const commandes = records.filter((r) => (r._entity === undefined || r._entity === "Order") && r.order_id);
+      if (commandes.length > 0) return new Set(commandes.filter((r) => !commandeHorsCA(r)).map((r) => String(r.order_id))).size;
+      const syntheses = records.filter((r) => r._entity === "ExecutiveSummary" && r.total_orders != null && Number.isFinite(Number(r.total_orders)));
+      if (syntheses.length === 0) return null;
+      return syntheses.reduce((s, r) => s + Number(r.total_orders), 0);
+    },
+  },
+
   aov: {
     id: "aov",
     name: { fr: "Panier Moyen (AOV)", en: "Average Order Value" },
@@ -618,8 +642,10 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RATIO,
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: false,
-    dependencies: ["total_revenue"], 
-    // GESCOP Phase 3 SSOT : On utilise context._records pour compter proprement les commandes valides
+    dependencies: ["revenue", "total_revenue", "order_count"],
+    // GESCOP Pureté Mathématique SSOT :
+    // Priorité absolue aux revenus de commandes (deps.revenue) pour ne jamais
+    // laisser les transactions bancaires de trésorerie fausser le panier moyen.
     calculate: (deps) => {
       // Commandes DISTINCTES (un fichier a une ligne par article repete le
       // numero de commande), hors annulees et retournees, comme le CA.
@@ -793,6 +819,360 @@ export const KPI_REGISTRY = Object.freeze({
 
       const net = (positiveCount - negativeCount) / qualObs.length;
       return Math.max(0, Math.min(10, 5 + net * 5));
+    },
+  },
+
+  // ── TAX & COMPLIANCE ─────────────────────────────────────────────────────
+
+  tps_payable: {
+    id: "tps_payable",
+    name: { fr: "TPS à verser", en: "GST Payable" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.FINANCE,
+    semanticType: "liability",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: ["order_tax_federal"],
+    calculate: (deps) => deps.order_tax_federal != null ? deps.order_tax_federal : null,
+  },
+  
+  tvq_payable: {
+    id: "tvq_payable",
+    name: { fr: "TVQ à verser", en: "QST Payable" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.FINANCE,
+    semanticType: "liability",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: ["order_tax_provincial"],
+    calculate: (deps) => deps.order_tax_provincial != null ? deps.order_tax_provincial : null,
+  },
+
+  // ── INVENTORY & SUPPLY CHAIN ──────────────────────────────────────────────
+
+  inventory_value_total: {
+    id: "inventory_value_total",
+    name: { fr: "Valeur du stock", en: "Inventory Value" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "inventory_value",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: false,
+    dependencies: ["inventory_value"],
+    calculate: (deps) => deps.inventory_value != null ? deps.inventory_value : null,
+  },
+
+  stock_turnover_rate: {
+    id: "stock_turnover_rate",
+    name: { fr: "Rotation des stocks", en: "Stock Turnover" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.NUMBER,
+    isAdditive: false,
+    dependencies: ["cogs", "inventory_value_total"],
+    calculate: (deps) => {
+      if (!deps.inventory_value_total || deps.cogs == null) return null;
+      return deps.cogs / deps.inventory_value_total;
+    },
+  },
+
+  dio: {
+    id: "dio",
+    name: { fr: "Jours de stock (DIO)", en: "Days Inventory Outstanding" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "duration",
+    dataType: DATA_TYPES.NUMBER,
+    isAdditive: false,
+    dependencies: ["stock_turnover_rate"],
+    calculate: (deps) => {
+      if (!deps.stock_turnover_rate) return null;
+      const periodDays = deps.period_days || 365;
+      return periodDays / deps.stock_turnover_rate;
+    },
+  },
+
+  critical_sku_rate: {
+    id: "critical_sku_rate",
+    name: { fr: "% SKU Critiques (Rupture/Proche)", en: "Critical SKU %" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Inventory");
+      if (records.length === 0) return null;
+      const critical = records.filter(r => {
+        const s = String(r.stock_status || "").toLowerCase();
+        return s === "rupture" || s === "proche_rupture" || s === "faible";
+      }).length;
+      return (critical / records.length) * 100;
+    },
+  },
+
+  // ── HUMAN RESOURCES (ADVANCED) ───────────────────────────────────────────
+
+  employer_cost_total: {
+    id: "employer_cost_total",
+    name: { fr: "Coût employeur global", en: "Total Employer Cost" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.RH,
+    semanticType: "expense",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: ["employee_employer_cost"],
+    calculate: (deps) => deps.employee_employer_cost != null ? deps.employee_employer_cost : null,
+  },
+
+  employer_charge_rate: {
+    id: "employer_charge_rate",
+    name: { fr: "Taux de charges patronales", en: "Employer Charge Rate" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.RH,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["employer_cost_total", "payroll_total"],
+    calculate: (deps) => {
+      if (!deps.payroll_total || deps.employer_cost_total == null) return null;
+      const charges = deps.employer_cost_total - deps.payroll_total;
+      return (charges / deps.payroll_total) * 100;
+    },
+  },
+
+  avg_seniority: {
+    id: "avg_seniority",
+    name: { fr: "Ancienneté moyenne (années)", en: "Average Seniority" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.RH,
+    semanticType: "duration",
+    dataType: DATA_TYPES.NUMBER,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Employee" && r.seniority_years != null);
+      if (records.length === 0) return null;
+      const total = records.reduce((sum, r) => sum + Number(r.seniority_years), 0);
+      return total / records.length;
+    },
+  },
+
+  // ── ASSETS / IMMOBILISATIONS ─────────────────────────────────────────────
+
+  net_book_value_total: {
+    id: "net_book_value_total",
+    name: { fr: "Valeur Nette Comptable totale", en: "Total Net Book Value" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.FINANCE,
+    semanticType: "asset_value",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: false,
+    dependencies: ["asset_net_book_value"],
+    calculate: (deps) => deps.asset_net_book_value != null ? deps.asset_net_book_value : null,
+  },
+
+  asset_depreciation_rate: {
+    id: "asset_depreciation_rate",
+    name: { fr: "Taux de vétusté", en: "Asset Depreciation Rate" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.FINANCE,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Asset" && r.initial_cost != null && r.accumulated_depreciation != null);
+      if (records.length === 0) return null;
+      const initial = records.reduce((s, r) => s + Number(r.initial_cost), 0);
+      const accum = records.reduce((s, r) => s + Number(r.accumulated_depreciation), 0);
+      if (initial === 0) return null;
+      return (accum / initial) * 100;
+    },
+  },
+
+  dpa_annual_total: {
+    id: "dpa_annual_total",
+    name: { fr: "DPA Annuelle Estimée", en: "Estimated Annual DPA" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.FINANCE,
+    semanticType: "expense",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Asset" && r.net_book_value != null && r.dpa_rate != null);
+      if (records.length === 0) return null;
+      return records.reduce((sum, r) => sum + (Number(r.net_book_value) * Number(r.dpa_rate)), 0);
+    },
+  },
+  
+  // ── SALES / DISCOUNTS ────────────────────────────────────────────────────
+  
+  discount_rate: {
+    id: "discount_rate",
+    name: { fr: "Taux d'érosion remises", en: "Discount Rate" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.VENTES,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["order_discount", "total_revenue"],
+    calculate: (deps) => {
+      if (deps.total_revenue == null || deps.total_revenue === 0 || deps.order_discount == null) return null;
+      const gross = deps.total_revenue + deps.order_discount;
+      if (gross === 0) return null;
+      return (deps.order_discount / gross) * 100;
+    },
+  },
+
+  // ── COMPOSITES (LEVEL 3) ─────────────────────────────────────────────────
+
+  loyalty_liability: {
+    id: "loyalty_liability",
+    name: { fr: "Passif Fidélité (estimé)", en: "Loyalty Liability" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.FINANCE,
+    semanticType: "liability",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Customer" && r.loyalty_points != null);
+      if (records.length === 0) return null;
+      const pts = records.reduce((sum, r) => sum + Number(r.loyalty_points), 0);
+      return pts * 0.05; // 0.05$ per point
+    },
+  },
+
+  stock_availability: {
+    id: "stock_availability",
+    name: { fr: "Disponibilité du stock", en: "Stock Availability" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["critical_sku_rate"],
+    calculate: (deps) => {
+      if (deps.critical_sku_rate == null) return null;
+      return 100 - deps.critical_sku_rate;
+    },
+  },
+
+  weighted_esg_score: {
+    id: "weighted_esg_score",
+    name: { fr: "Score ESG moyen", en: "Average ESG Score" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.ACHATS,
+    semanticType: "score",
+    dataType: DATA_TYPES.NUMBER,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Supplier" && r.esg_score != null);
+      if (records.length === 0) return null;
+      const total = records.reduce((s, r) => s + Number(r.esg_score), 0);
+      return total / records.length;
+    },
+  },
+
+  currency_exposure: {
+    id: "currency_exposure",
+    name: { fr: "Exposition devises", en: "Currency Exposure" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.FINANCE,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Purchase" || r._entity === "Transaction");
+      const purchases = records.filter(r => ["expense", "achat"].includes(String(r.type || "").toLowerCase()) || r._entity === "Purchase");
+      if (purchases.length === 0) return null;
+      let foreign = 0;
+      for (const p of purchases) {
+        if (p.currency && String(p.currency).toUpperCase() !== "CAD") foreign++;
+      }
+      return (foreign / purchases.length) * 100;
+    },
+  },
+
+  local_sourcing_ratio_qc: {
+    id: "local_sourcing_ratio_qc",
+    name: { fr: "Approvisionnement Local (QC)", en: "Local Sourcing (QC)" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.ACHATS,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Supplier" && r.supplier_id != null);
+      if (records.length === 0) return null;
+      let qcCount = 0;
+      for (const s of records) {
+        const prov = String(s.province || s.region || s.state || "").toLowerCase();
+        if (prov.includes("qc") || prov.includes("québec") || prov.includes("quebec")) qcCount++;
+      }
+      return (qcCount / records.length) * 100;
+    },
+  },
+
+  sales_productivity: {
+    id: "sales_productivity",
+    name: { fr: "Productivité Vendeur", en: "Sales Productivity" },
+    level: KPI_LEVELS.KPI_STRATEGIQUE,
+    domain: DOMAINS.VENTES,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: false,
+    dependencies: ["total_revenue"],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Employee");
+      const salesReps = records.filter(r => String(r.department || "").toLowerCase().includes("vente") || String(r.role || "").toLowerCase().includes("vente"));
+      if (salesReps.length === 0 || deps.total_revenue == null) return null;
+      return deps.total_revenue / salesReps.length;
+    },
+  },
+
+  unionization_rate: {
+    id: "unionization_rate",
+    name: { fr: "Taux de syndicalisation", en: "Unionization Rate" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.RH,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["employee_count"],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Employee");
+      if (records.length === 0) return null;
+      const unionized = records.filter(r => {
+        const us = String(r.union_status || "").toLowerCase();
+        return us.includes("syndiqué") || us.includes("oui") || us.includes("yes");
+      }).length;
+      return (unionized / records.length) * 100;
+    },
+  },
+
+  credit_utilization_ratio: {
+    id: "credit_utilization_ratio",
+    name: { fr: "Ratio utilisation crédit client", en: "Client Credit Utilization" },
+    level: KPI_LEVELS.KPI,
+    domain: DOMAINS.TRESORERIE,
+    semanticType: "ratio",
+    dataType: DATA_TYPES.PERCENTAGE,
+    isAdditive: false,
+    dependencies: ["accounts_receivable"],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(r => r._entity === "Customer" && r.credit_limit != null);
+      if (records.length === 0 || !deps.accounts_receivable) return null;
+      const totalLimit = records.reduce((s, r) => s + Number(r.credit_limit), 0);
+      if (totalLimit === 0) return null;
+      return (deps.accounts_receivable / totalLimit) * 100;
     },
   },
 

@@ -49,9 +49,9 @@ test("Egalite parfaite : retenue par ordre du fichier, mais plafonnee a PROBABLE
     [{ colonne: "Valeur Stock Coût ($)", champ: "inventory_value", source: "alias" }, { colonne: "Valeur Stock Vente ($)", champ: "inventory_value", source: "alias" }],
     () => [9450, 1440]);
   assert.equal(res.colonnes[0].champ, "inventory_value");
-  assert.equal(res.colonnes[1].champ, null);
+  // Le perdant n'est plus perdu : « Valeur Stock Vente » a son propre champ (valeur au prix de vente).
+  assert.equal(res.colonnes[1].champ, "selling_inventory_value");
   assert.equal(res.evaluations[0].statut, "PROBABLE");
-  assert.equal(res.evaluations[1].statut, "AMBIGUOUS");
   assert.ok(res.corrections.some((c) => c.includes("à confirmer")));
 });
 

@@ -11,6 +11,15 @@
     "country": {
       "type": "string"
     },
+    "city": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
     "category": {
       "type": "string"
     },
@@ -40,16 +49,16 @@
         "problematique"
       ]
     },
-    "contact_name": {
+    "neq_number": {
       "type": "string"
     },
-    "email": {
+    "gst_number": {
       "type": "string"
     },
-    "city": {
+    "qst_number": {
       "type": "string"
     },
-    "currency": {
+    "purchase_currency": {
       "type": "string"
     },
     "esg_score": {

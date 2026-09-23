@@ -31,6 +31,8 @@ const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 const ENTITY_OPTIONS = [
   { value: "Transaction", label: "Transactions (revenus/dépenses)" },
   { value: "Order", label: "Commandes (orders)" },
+  { value: "ExecutiveSummary", label: "Sommaire exécutif" },
+  { value: "Asset", label: "Immobilisations (actifs)" },
   { value: "Customer", label: "Clients (customers)" },
   { value: "Product", label: "Produits (products)" },
   { value: "Inventory", label: "Stocks (inventory)" },
@@ -118,7 +120,7 @@ export default function ImportPage() {
     try {
       const uploadedFiles = [];
       for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
         uploadedFiles.push({ file_url, file_name: file.name });
       }
       setUploading(false);
@@ -208,28 +210,57 @@ export default function ImportPage() {
     }
   };
 
-  /** Deuxieme temps : l'utilisateur a valide la lecture, on ecrit. */
+  /** Deuxieme temps : l'utilisateur a valide la lecture, on ecrit fichier par fichier pour éviter les timeouts */
   const lancerImport = async (plans) => {
     setProcessing(true);
+    const accumulatedResults = [];
+    let totalImported = 0;
     try {
       // Les termes appris servent des cet import, et peuvent debloquer des
       // lignes en attente dans les imports precedents.
       let appris = 0;
       try { appris = await apprendreCorrections(plans); } catch { /* l'apprentissage ne bloque jamais l'import */ }
-      const res = await base44.functions.invoke("importMultiData", {
-        files: fichiersEnvoyes,
-        entity_override: manualEntity || null,
-        plans,
-      });
-      const data = res.data || res;
-      if (data.error) {
-        toast({ title: data.error, variant: "destructive" });
-        return;
+      for (let i = 0; i < fichiersEnvoyes.length; i++) {
+        const file = fichiersEnvoyes[i];
+        const filePlans = {};
+        for (const [key, p] of Object.entries(plans || {})) {
+          if (key === file.file_name || key.startsWith(file.file_name + " [") || key.startsWith(file.file_name)) {
+            filePlans[key] = p;
+          }
+        }
+        let fileDone = false;
+        let attempt = 0;
+        while (!fileDone && attempt < 20) {
+          attempt++;
+          const res = await base44.functions.invoke("importMultiData", {
+            files: [file],
+            entity_override: manualEntity || null,
+            plans: filePlans,
+          });
+          const data = res.data || res;
+          
+          if (data.results) {
+            const result = data.results[0];
+            const fileRows = data.results.reduce((s, r) => s + (r.rows || 0), 0);
+            totalImported += fileRows;
+            
+            if (result && result.rateLimited) {
+               toast({ title: `Reprise automatique en cours...`, description: `Pause de sécurité de 10s pour contourner les limites du serveur. (${fileRows} insérées sur cette passe)` });
+               await new Promise(r => setTimeout(r, 10000)); // Attendre 10s que le quota se libère
+               continue; // On relance : deduplicateRows ignorera instantanément celles déjà insérées !
+            } else {
+               accumulatedResults.push(...data.results);
+               fileDone = true;
+            }
+          } else if (data.error) {
+            accumulatedResults.push({ file_name: file.file_name, status: "echoue", rows: 0, error: data.error });
+            fileDone = true;
+          }
+        }
       }
       setAnalyses(null);
-      setImportResult(data);
-      const totalRows = (data.results || []).reduce((s, r) => s + (r.rows || 0), 0);
-      const okCount = (data.results || []).filter((r) => r.status === "complete").length;
+      setImportResult({ results: accumulatedResults });
+      const okCount = accumulatedResults.filter((r) => r.status === "complete").length;
       let recuperees = 0;
       if (appris > 0) {
         try {
@@ -239,7 +270,7 @@ export default function ImportPage() {
       }
       toast({
         title: "Import terminé",
-        description: `${okCount}/${data.results.length} fichiers traités, ${totalRows} lignes importées`
+        description: `${okCount}/${accumulatedResults.length} fichiers traités, ${totalImported} lignes importées`
           + (appris > 0 ? ` · ${appris} correction(s) apprise(s) dans le dictionnaire` : "")
           + (recuperees > 0 ? ` · ${recuperees} ligne(s) d'imports précédents récupérée(s)` : ""),
       });
@@ -355,6 +386,9 @@ export default function ImportPage() {
       await base44.entities.Payroll.deleteMany({});
       await base44.entities.Expense.deleteMany({});
       await base44.entities.Cashflow.deleteMany({});
+      await base44.entities.Asset.deleteMany({});
+      await base44.entities.ExecutiveSummary.deleteMany({});
+      await base44.entities.Observation.deleteMany({});
       await base44.entities.Interaction.deleteMany({});
       await base44.entities.Competitor.deleteMany({});
       await base44.entities.Goal.deleteMany({});

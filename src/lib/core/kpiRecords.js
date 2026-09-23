@@ -53,20 +53,27 @@ export const estDepense = (r) => { const t = sansAccents(r.type); return TYPES_D
  * Rend la somme de leurs montants.
  */
 export function recettesDejaCommandees(records) {
+  let somme = 0;
+  for (const r of transactionsDejaCommandees(records)) somme += Math.abs(Number(r.amount) || 0);
+  return somme;
+}
+
+/** Les transactions de recette elles-memes (voir recettesDejaCommandees). */
+export function transactionsDejaCommandees(records) {
   const commandes = new Set(
     records.filter((r) => r._entity === "Order" && r.order_id != null)
       .map((r) => String(r.order_id).trim().toLowerCase()).filter((id) => id.length >= 3),
   );
-  if (commandes.size === 0) return 0;
-  let somme = 0;
+  const out = new Set();
+  if (commandes.size === 0) return out;
   for (const r of records) {
     if (r._entity !== "Transaction" || !estRecette(r)) continue;
     const refs = [r.order_id, r.reference, r.reference_order_id]
       .filter((x) => x != null && x !== "").map((x) => String(x).trim().toLowerCase());
     for (const m of String(r.description || "").matchAll(/[A-Za-z0-9][A-Za-z0-9_\-]{2,}/g)) refs.push(m[0].toLowerCase());
-    if (refs.some((x) => commandes.has(x))) somme += Math.abs(Number(r.amount) || 0);
+    if (refs.some((x) => commandes.has(x))) out.add(r);
   }
-  return somme;
+  return out;
 }
 
 /**
@@ -75,21 +82,28 @@ export function recettesDejaCommandees(records) {
  * ne couvre qu'une transaction.
  */
 export function depensesDejaSaisies(records) {
+  let somme = 0;
+  for (const r of transactionsDepensesDejaSaisies(records)) somme += Math.abs(Number(r.amount) || 0);
+  return somme;
+}
+
+/** Les transactions de depense elles-memes (voir depensesDejaSaisies). */
+export function transactionsDepensesDejaSaisies(records) {
   const dispo = new Map();
   for (const r of records) {
     if (r._entity !== "Expense") continue;
     const cle = `${String(r.date || "").slice(0, 10)}|${Math.abs(Number(r.amount) || 0).toFixed(2)}`;
     dispo.set(cle, (dispo.get(cle) || 0) + 1);
   }
-  if (dispo.size === 0) return 0;
-  let somme = 0;
+  const out = new Set();
+  if (dispo.size === 0) return out;
   for (const r of records) {
     if (r._entity !== "Transaction" || !estDepense(r)) continue;
     const m = Math.abs(Number(r.amount) || 0);
     const cle = `${String(r.date || "").slice(0, 10)}|${m.toFixed(2)}`;
-    if ((dispo.get(cle) || 0) > 0) { dispo.set(cle, dispo.get(cle) - 1); somme += m; }
+    if ((dispo.get(cle) || 0) > 0) { dispo.set(cle, dispo.get(cle) - 1); out.add(r); }
   }
-  return somme;
+  return out;
 }
 
 /** Lignes de commande avec leur montant hors taxes (`_ht`), pour les agregations par mois. */

@@ -37,6 +37,9 @@
     "quantity": {
       "type": "number"
     },
+    "price": {
+      "type": "number"
+    },
     "unit_price": {
       "type": "number"
     },
@@ -74,6 +77,9 @@
       "type": "number"
     },
     "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
       "type": "string"
     },
     "department": {
@@ -116,6 +122,15 @@
     "region": {
       "type": "string"
     },
+    "province": {
+      "type": "string"
+    },
+    "tax_federal": {
+      "type": "number"
+    },
+    "tax_provincial": {
+      "type": "number"
+    },
     "location_id": {
       "type": "string"
     },
@@ -128,24 +143,28 @@
     "status": {
       "type": "string"
     },
-    "tax_federal": {
-      "type": "number",
-      "description": "Taxe federale (TPS) de la ligne."
+    "city": {
+      "type": "string"
     },
-    "tax_provincial": {
-      "type": "number",
-      "description": "Taxe provinciale (TVQ, TVH ou TVP) de la ligne."
+    "order_value": {
+      "type": "number"
     },
-    "province": {
+    "segment": {
+      "type": "string"
+    },
+    "customer_segment": {
+      "type": "string"
+    },
+    "age": {
+      "type": "number"
+    },
+    "signup_date": {
       "type": "string",
-      "description": "Province de livraison ou du client (taxes applicables)."
+      "format": "date"
     },
     "line_id": {
       "type": "string",
       "description": "Identifiant de la ligne dans le fichier source (Transaction_ID, ID_Ligne, Row ID) : distingue deux articles d'une meme commande."
-    },
-    "employee_name": {
-      "type": "string"
     },
     "currency": {
       "type": "string",

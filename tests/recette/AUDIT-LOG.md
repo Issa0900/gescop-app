@@ -69,10 +69,42 @@ Convention : chaque ligne = un cas de test réel, exécuté contre le vrai code
 - **`Marketing.jsx` n'est PAS unifié sur `kpiRegistry.js`.** Sa logique locale (ROAS/CAC global + par canal + par campagne, avec repli explicite transactions→campagnes et libellés "non mesurable" déjà corrects) est correcte et déjà bien conçue — aucun bug trouvé en la relisant. `useKpiEngine.js` ne supporte même pas encore les entités Campaign/CampaignDaily (seulement transactions/cashflow/orders/expenses/employees/payrolls/customers/products/observations) : unifier vraiment nécessiterait d'abord ajouter cette entité à `entityFieldMap.js` et `useKpiEngine.js`, un chantier séparé et plus risqué que ce que demandait la correction. Laissé tel quel plutôt que forcer un changement qui casserait potentiellement une page qui fonctionne.
 - **Statut `AVAILABLE` imprécis pour un KPI composite dérivé d'un autre KPI déjà calculé dans le même batch** (ex: `net_income` affiche status `AVAILABLE` même quand `total_expense` était `UNAVAILABLE`) : `computeKpiBatch` ne propage que la VALEUR d'un KPI déjà calculé au KPI suivant, pas son statut. La VALEUR reste correcte (`null` quand approprié, vérifié par tests), seul le champ `status` de la lineage est optimiste. Rien dans l'UI actuelle ne lit ce `status` pour décider quoi que ce soit (seule `value` est consommée) — documenté, pas corrigé, risque de changer ce comportement plus large que nécessaire.
 
+## Fusion avec `main` (2026-09-17) — PR #2, 7 conflits + 3 bugs révélés par la régression complète
+
+`main` avait avancé en parallèle sur une architecture d'import beaucoup plus
+large (registre de concepts `registry/conceptRegistry.ts`, plan de lecture
+IA+preuves `importPlan.ts`, moteur sémantique `dataProfiler.ts`/
+`semanticMatcher.ts`/`observationEngine.ts`, etc.) — 116 fichiers touchés au
+total par la fusion. Les 7 conflits ont été résolus en vérifiant factuellement
+chaque côté (pas de résolution "à l'aveugle") ; le détail des raisons est dans
+le message du commit de fusion (`9e91d8e`). Le point notable : plusieurs
+dépendances de KPI ajoutées par `main` (`cpc`, `cpm`, et les remplacements de
+`gross_margin_amount`/`cac`/`roas`/`marketing_roi`) référençaient des clés
+canoniques qui n'existent pas dans `entityFieldMap.js` (`cost`,
+`purchase_cost`, `budget`, `active_customers`) — vérifié par grep direct, pas
+supposé. Gardé mes versions vérifiées, corrigé les deux KPI en plus.
+
+| 19 | `importPlan.ts` `appliquerPlan()` : une colonne jugée par l'IA sans correspondance (`champ: null`) était quand même réintroduite sous son en-tête d'origine — la variable censée faire la distinction (`rattacherParSynonymes`, plan par règles vs plan IA) était calculée mais jamais utilisée | `tests/import/plan-lecture.ts` (préexistant sur `main`, jamais passé avant la fusion faute de CI) | 1/17 échec | 17/17 | ✅ corrigé |
+| 20 | `importMultiData/entry.ts` `lignesSelonPlan()` : le filet de sécurité "ligne d'en-têtes décalée d'un cran" ne se déclenchait que sur 0 ligne produite, mais un décalage peut produire 1-2 lignes bien formées mais absurdes (de vraies données réinterprétées comme en-têtes) — le filet ne se déclenchait alors jamais | `tests/import/point-entree.ts` (préexistant, jamais passé — voir item 21) | filet inopérant dans ce cas précis | corrigé : se déclenche aussi quand aucune colonne déclarée par le plan ne correspond à la vraie ligne d'en-têtes | ✅ corrigé |
+| 21 | `importPlan.ts` `planParRegles()` : `ReferenceError: cleanC is not defined` — `cleanC`/`noAccentC` déclarées avec `const` dans un bloc `if (schema) { ... }` puis référencées dans un bloc suivant hors de portée | Révélé par le fix de l'item 20 (chemin de repli jamais réellement exercé avant, donc jamais atteint) | crash silencieusement absorbé par le try/catch de l'appelant (0 ligne, aucun message) | plus de crash | ✅ corrigé — présent depuis le clone initial du projet, jamais détecté faute de CI |
+| 22 | `tests/import/point-entree.ts` ne pouvait jamais s'exécuter : le test pose un client Base44 factice sur `globalThis.__BASE44_STUB`, mais `client.ts` `createFixedClientFromRequest()` ne lisait jamais cette variable — appelait toujours le vrai SDK, qui exige les en-têtes HTTP réels (`Base44-App-Id`, etc.) absents en test | — | crash `TypeError` dès la première requête | 9/9 (toutes les suites de `tests/import/` passent, y compris celle-ci pour la première fois) | ✅ corrigé — seam de test ajouté, aucun code de production existant ne lit ce global (jamais actif hors des tests) |
+
+Régression complète après fusion + ces 4 corrections : **9/9 suites `tests/import/` + 13/13 `tests/recette/DS*`, 0 échec**. `npm run build` propre. PR #2 fusionnée dans `main` (commit `63a549e`).
+
+## Données réelles utilisateur (2026-09-17) — deux bugs KPI trouvés sur de vrais fichiers
+
+| 23 | `total_revenue` (Order) écrasé dès qu'une seule ligne Transaction income existait, même minuscule face à un total de commandes des millions de fois plus gros — traitée comme une TROISIÈME alternative au lieu d'être additionnée à la vraie source Transaction | `tests/recette/DS16-revenu-commandes-ecrase-par-transactions.ts`, reproduit avec les vraies données de l'utilisateur (fichier `DS02_commandes_ecommerce_6mois.xlsx`, 4659 commandes, 1 301 611 $) | Dashboard affichait 92 534 $ au lieu de ~1,3 M$ | 4/4 | ✅ corrigé |
+| 24 | Un total de commande dérivé (`quantity * unit_price`, quand la colonne "Montant Total" du fichier est vide) était stocké dans `Order.total_revenue`, un champ jamais mappé dans `entityFieldMap.js` — donc invisible à tout calcul de revenu, alors que `Order.total` (mappé) restait vide. Révèle un bug plus général dans `_aggregateRawField()` : quand deux champs bruts pointent vers le même concept, le moteur prenait toujours le premier déclaré, pas celui qui a vraiment des données dans le lot | `tests/recette/DS17-commande-total-derive-invisible.ts`, reproduit avec les vraies données de l'utilisateur (fichier `Nordik_PleinAir_Donnees_Complet_2026.xlsx`, 1200 lignes de ventes, colonne "Montant Total ($)" vide à 100%, "Prix Unitaire"/"Quantité" remplies à 100%) | Dashboard affichait "CA commandes (total): 0$" malgré "Commandes (mois): 40" (les lignes étaient bien lues) | 3/3 | ✅ corrigé (correctif général dans `kpiEngine.js`, pas spécifique à Order/Nordik) |
+
+Vérifié à cette occasion : le diagnostic initial d'une autre session locale ("bug du symbole $") était **faux** — `parseNumber()` dans `importUtils.ts` gère déjà `$`/`€`/`£` correctement, vérifié directement contre des valeurs du vrai fichier. Cette même session a ensuite appliqué un script de remplacement en masse (`patch_numbers.cjs`, `Number()` → `parseNum()` dans une douzaine de fichiers) pour "corriger" ce faux problème, en heurtant du code déjà cassé d'une session encore antérieure — cause probable de la régression "les modules ne font pas leurs calculs" signalée par l'utilisateur. Le dossier local a été remis à l'état `main` GitHub testé (`git reset --hard origin/main`) plutôt que de débugger ce patch non revu.
+
+**Audit systématique des 9 "rescue hooks" de dérivation dans `importUtils.ts`** contre `entityFieldMap.js`, pour vérifier qu'aucun autre champ dérivé n'est orphelin de la même façon : Cashflow.net_cash_flow, Campaign.roas/cac, Employee.hourly_rate, Product.inventory_level/selling_price/purchase_cost — tous déjà mappés, aucun autre bug de ce type trouvé. Deux champs dérivés restent non mappés mais **sans bug visible** puisque rien ne les consomme : `Order.gross_profit`/`gross_margin` (calculés, stockés, jamais lus par aucun KPI) et toute l'entité `ExecutiveSummary` (jamais branchée nulle part dans l'app, code mort déjà connu). Pas corrigés — corriger du code mort n'est pas vérifiable et n'apporte rien tant que rien ne l'affiche.
+
 ## À faire
 
-- [ ] 21. Tableau de bilan final (§18 du cahier des charges) à régénérer avec les items 17-20 — `tests/recette/BILAN-FINAL.md` date d'avant ces corrections
+- [ ] 21. Tableau de bilan final (§18 du cahier des charges) à régénérer avec les items 17-22 — `tests/recette/BILAN-FINAL.md` date d'avant ces corrections
 - [ ] 22. Pages UI réelles (Dashboard, Kpis, Finance, Tresorerie) — en attente que l'utilisateur soit sur son ordinateur pour tester avec de vraies données
+- [ ] 23. Publier depuis le tableau de bord Base44 pour que l'app déployée reflète `main` (je n'ai pas accès au dashboard)
 
 ## Notes d'architecture à ne pas redécouvrir
 

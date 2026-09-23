@@ -26,6 +26,12 @@ export const ENTITES_KPI = [
   ["campaigns", "Campaign"],
   // Valeur du stock (BFR) : dernier releve de chaque produit.
   ["inventory", "Inventory"],
+  ["suppliers", "Supplier"],
+  ["assets", "Asset"],
+  // Synthese fournie par le fichier : ses mesures ont leurs propres cles
+  // (summary_*, entityFieldMap) — une valeur de CONTROLE, jamais additionnee
+  // au CA ou au cout des commandes.
+  ["executiveSummary", "ExecutiveSummary"],
 ];
 
 /**

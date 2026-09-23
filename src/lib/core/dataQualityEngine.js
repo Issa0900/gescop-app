@@ -9,7 +9,7 @@
 // Consumed by: kpiValidator, displayEngine, dataLineage
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes";
+import { DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUALITY DIMENSIONS
@@ -26,6 +26,36 @@ const QUALITY_WEIGHTS = Object.freeze({
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD QUALITY
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @typedef {Object} FieldQualityScore
+ * @property {string} field
+ * @property {string|null} source
+ * @property {string|null} semanticType
+ * @property {{completeness: number, validity: number, consistency: number, uniqueness: number, freshness: number}} dimensions
+ * @property {number} global
+ * @property {string[]} issues
+ * @property {number} recordCount
+ */
+
+/**
+ * @typedef {Object} DatasetQualityScore
+ * @property {number} global
+ * @property {Object<string, FieldQualityScore>} byField
+ * @property {string[]} issues
+ * @property {number} recordCount
+ */
+
+/**
+ * @typedef {Object} QualityReport
+ * @property {number} global
+ * @property {{label: string, emoji: string}} grade
+ * @property {number} recordCount
+ * @property {Array<{name: string, score: number, issues: string[]}>} criticalFields
+ * @property {string[]} recommendations
+ * @property {string[]} issues
+ * @property {string} summary
+ */
 
 /**
  * Compute the quality score for a single field across a set of records.
@@ -108,6 +138,7 @@ export function computeDatasetQuality(records, fieldSemantics) {
     return { global: 0, byField: {}, issues: [], recordCount: 0 };
   }
 
+  /** @type {Object<string, FieldQualityScore>} */
   const byField = {};
   const allIssues = [];
   let totalScore = 0;

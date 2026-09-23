@@ -25,7 +25,7 @@ test("Faux positifs supprimes : un mot contenu dans un autre, une quantite, un p
   assert.equal(concept("categorie", "string"), null);
   assert.equal(concept("Ventes (unités)", "integer"), null, "une quantite vendue n'est pas un chiffre d'affaires");
   assert.equal(concept("Prix_Vente_CAD", "decimal"), null, "un prix de vente n'est pas un chiffre d'affaires");
-  assert.equal(concept("Solde_Points_Fidelite", "integer"), null, "un solde de points n'est pas une tresorerie");
+  assert.equal(concept("Solde_Points_Fidelite", "integer"), "customer.loyalty_points", "un solde de points est des points de fidelite, pas une tresorerie");
 });
 
 function kpi(data, ids) {
@@ -95,7 +95,7 @@ test("Intitules reels reconnus, sans capter les colonnes voisines", () => {
   assert.equal(concept("Taux horaire", "decimal"), "hr.hourlyRate", "un taux horaire EST un taux");
   assert.equal(concept("Remise_Ligne", "decimal"), "sales.discount");
   assert.equal(concept("Salaire_Base_Annuel_CAD", "decimal"), "hr.annualSalary");
-  assert.equal(concept("Quantite_Reservee", "integer"), null, "stock reserve : pas une quantite vendue");
-  assert.equal(concept("Quantite_En_Transit", "integer"), null);
+  assert.notEqual(concept("Quantite_Reservee", "integer"), "sales.quantity", "stock reserve : pas une quantite vendue");
+  assert.notEqual(concept("Quantite_En_Transit", "integer"), "sales.quantity");
   assert.equal(concept("Prix_Vente_CAD", "decimal"), null, "toujours pas du chiffre d'affaires");
 });

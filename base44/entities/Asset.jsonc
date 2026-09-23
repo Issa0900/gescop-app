@@ -1,28 +1,24 @@
 {
   "name": "Asset",
   "type": "object",
-  "description": "Immobilisation (registre des actifs) : cout, amortissement cumule, valeur nette comptable.",
   "properties": {
     "asset_id": {
       "type": "string"
     },
-    "asset_name": {
-      "type": "string"
-    },
-    "category": {
+    "description": {
       "type": "string"
     },
     "acquisition_date": {
       "type": "string",
       "format": "date"
     },
-    "cca_class": {
+    "dpa_class": {
       "type": "string"
     },
-    "cca_rate": {
+    "dpa_rate": {
       "type": "number"
     },
-    "acquisition_cost": {
+    "initial_cost": {
       "type": "number"
     },
     "accumulated_depreciation": {
@@ -31,19 +27,20 @@
     "net_book_value": {
       "type": "number"
     },
-    "notes": {
+    "location_id": {
+      "type": "string"
+    },
+    "historical_comment": {
       "type": "string"
     },
     "import_id": {
       "type": "string"
     },
-    "original_data": {
-      "type": "string",
-      "description": "Ligne du fichier source telle quelle (JSON), toutes colonnes comprises. Permet de retrouver une valeur non reconnue ou repliee sans reimporter."
-    },
     "fingerprint": {
-      "type": "string",
-      "description": "Empreinte metier de la ligne, utilisee pour detecter les doublons entre imports."
+      "type": "string"
+    },
+    "original_data": {
+      "type": "string"
     }
   },
   "required": [
