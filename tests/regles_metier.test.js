@@ -120,3 +120,8 @@ test("Paie sans identifiant, cle non contredite : meme employe + periode + autre
   const r = await deduplicateRows(base, "Payroll", [{ employee_id: "E1", period: "2026-01", total_cost: 3100 }]);
   assert.equal(r.conflicts, 1);
 });
+
+test("Un conflit reste recuperable : « Retraiter » le relit avec la regle d'identification actuelle", async () => {
+  const { recoveryInitial, REASON, RECOVERY } = await import("../base44/shared/importStatus.ts");
+  assert.equal(recoveryInitial(REASON.CONFLICTING_RECORD), RECOVERY.PENDING);
+});

@@ -78,8 +78,16 @@ async function retraiterImport(base44: any, ecriture: any, imp: any, typeDemande
   if (!entite || !ENTITY_SCHEMAS[entite]) {
     return { import_id: imp.id, file_name: imp.file_name, statut: "type_requis", message: "Choisissez le type de ces données pour les intégrer." };
   }
-  const enAttente = (await toutes(base44, "ImportIssue", { import_id: imp.id, recovery_status: RECOVERY.PENDING }))
-    .slice(0, LIGNES_MAX_PAR_APPEL);
+  // Conflits enregistres avant qu'ils ne deviennent recuperables (statut
+  // NOT_APPLICABLE) et jamais tranches : relus eux aussi, sinon une ligne
+  // ecartee par une ancienne regle d'identification le restait pour toujours.
+  const enAttenteBrut = [
+    ...(await toutes(base44, "ImportIssue", { import_id: imp.id, recovery_status: RECOVERY.PENDING })),
+    ...(await toutes(base44, "ImportIssue", { import_id: imp.id, reason_code: REASON.CONFLICTING_RECORD, recovery_status: RECOVERY.NOT_APPLICABLE }))
+      .filter((i: any) => !i.review_status || i.review_status === "A_VERIFIER"),
+  ];
+  const vus = new Set<string>();
+  const enAttente = enAttenteBrut.filter((i: any) => (vus.has(i.id) ? false : (vus.add(i.id), true))).slice(0, LIGNES_MAX_PAR_APPEL);
   if (enAttente.length === 0) {
     return { import_id: imp.id, file_name: imp.file_name, entity: entite, statut: "rien_a_retraiter", candidates: 0, recovered: 0 };
   }

@@ -86,6 +86,10 @@ export type RecoveryStatus = typeof RECOVERY[keyof typeof RECOVERY];
 const RECUPERABLE: ReasonCode[] = [
   REASON.MISSING_REQUIRED_FIELD, REASON.INVALID_DATE, REASON.INVALID_NUMERIC_VALUE,
   REASON.INVALID_ENUM_VALUE, REASON.UNKNOWN_CONCEPT, REASON.STORAGE_REJECTED, REASON.RATE_LIMITED,
+  // Un conflit depend de la regle d'identification : quand elle progresse
+  // (payroll_id prioritaire, cle composee prouvee par le fichier), la ligne
+  // doit pouvoir etre relue. Encore en conflit -> elle reste en attente.
+  REASON.CONFLICTING_RECORD,
 ];
 
 export function recoveryInitial(reason: ReasonCode): RecoveryStatus {
