@@ -704,11 +704,15 @@ export const KPI_REGISTRY = Object.freeze({
       // numero de commande), hors annulees et retournees, comme le CA.
       const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Order");
       const orderCount = new Set(records.filter((r) => r.order_id && estVente(r)).map((r) => String(r.order_id))).size;
-      if (orderCount === 0 || deps.total_revenue == null) return null;
+      // Numerateur = CA des COMMANDES (deps.revenue), pas le CA total : les
+      // encaissements hors commandes (transactions) ne sont pas des paniers.
+      // Sur un compte avec les deux, le panier passait de 1 089 $ a 1 759 $.
+      const caCommandes = deps.revenue ?? deps.total_revenue;
+      if (orderCount === 0 || caCommandes == null) return null;
       // Panier = ce que la commande a rapporte AU MOMENT de la vente : les
       // avoirs (retours posterieurs) sont rajoutes au CA net, sinon un retour
       // sur une autre facture diminuait le panier de toutes les commandes.
-      return (deps.total_revenue + montantAvoirs(records)) / orderCount;
+      return (caCommandes + montantAvoirs(records)) / orderCount;
     },
   },
 

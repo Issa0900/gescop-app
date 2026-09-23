@@ -8,7 +8,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend, ReferenceLine,
 } from "recharts";
-import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, FENETRE_MOIS } from "@/lib/graphiques";
+import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, pourcent, FENETRE_MOIS } from "@/lib/graphiques";
 import { fetchAll } from "@/lib/fetchAll";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { useKpiEngine } from "@/lib/useKpiEngine";
@@ -75,7 +75,7 @@ export default function Finance() {
         <StatCard label="Chiffre d'affaires" value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
         <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={detailCharges ? `dont ${detailCharges}` : undefined} />
         <StatCard label="Résultat Net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel="CA − charges totales" icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Marge Nette" value={summary.marginPct == null ? "Non mesuré" : `${summary.marginPct.toFixed(1)} %`} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
+        <StatCard label="Marge Nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
