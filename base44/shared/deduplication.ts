@@ -1,4 +1,4 @@
-import { generateFingerprint, empreinteForte } from "./fingerprint.ts";
+import { generateFingerprint, empreinteForte, cleComposee, empreinteCourte } from "./fingerprint.ts";
 
 /**
  * Sur chaque ligne rendue, la ligne recue en entree (propriete non enumerable,
@@ -50,6 +50,30 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
     Object.defineProperty(copie, LIGNE_SOURCE, { value: r, enumerable: false });
     return copie;
   });
+
+  // 1 bis. Cle composee contredite par le fichier (meme employe + periode,
+  //    contenus differents) : ce n'est pas une cle. Les lignes concernees
+  //    passent par la regle SANS identifiant (conservees ; seule une
+  //    repetition a l'identique est signalee), avec une empreinte qui inclut
+  //    leur contenu.
+  const clesContestees = new Set<string>();
+  {
+    const vu = new Map<string, string>();
+    for (const r of withFp) {
+      if (!cleComposee(entityName, r)) continue;
+      const c = contenuMetier(r), v = vu.get(r.fingerprint);
+      if (v === undefined) vu.set(r.fingerprint, c);
+      else if (v !== c) clesContestees.add(r.fingerprint);
+    }
+  }
+  const empreinteContenu = (fp: string, r: any) => `${fp}~${empreinteCourte(contenuMetier(r))}`;
+  const nonProuvees = new Set<any>();
+  for (const r of withFp) {
+    if (clesContestees.has(r.fingerprint)) {
+      r.fingerprint = empreinteContenu(r.fingerprint, r);
+      nonProuvees.add(r);
+    }
+  }
 
   // 2. Ce qui est deja en base : les cles metier (ensemble) et, pour les lignes
   //    sans cle metier, le NOMBRE d'occurrences de chaque empreinte.
@@ -104,6 +128,12 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
         const c = { contenu: contenuMetier(b), ligne: b };
         if (b.fingerprint && !contenuParCle.has(b.fingerprint)) contenuParCle.set(b.fingerprint, c);
         if (fp && !contenuParCle.has(fp)) contenuParCle.set(fp, c);
+        // Une ligne en base a cle composee est aussi reconnue par son contenu :
+        // le reimport d'un fichier ou cette cle est contredite ne double rien.
+        if (fp && cleComposee(entityName, b)) {
+          const fc = empreinteContenu(fp, b);
+          occurrencesEnBase.set(fc, (occurrencesEnBase.get(fc) || 0) + 1);
+        }
       } else if (fp) {
         occurrencesEnBase.set(fp, (occurrencesEnBase.get(fp) || 0) + 1);
         noterEntete(b, b);
@@ -130,7 +160,7 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
 
   for (const r of withFp) {
     const source = (r as any)[LIGNE_SOURCE];
-    if (empreinteForte(entityName, r)) {
+    if (empreinteForte(entityName, r) && !nonProuvees.has(r)) {
       if (fortes.has(r.fingerprint)) {
         const deja = contenuParCle.get(r.fingerprint);
         if (deja && deja.contenu !== contenuMetier(r)) conflits.push({ row: source, existant: deja.ligne });

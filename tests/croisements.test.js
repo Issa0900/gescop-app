@@ -103,3 +103,15 @@ test("Serveur : l'instantane recu est borne et type, puis cite tel quel dans le 
   assert.match(bloc, /Baisse de prix d'un concurrent \(force 80 %\)/);
   assert.deepEqual(lireInstantane(null), { chiffres: [], constats: [] });
 });
+
+test("Paie : cout total inferieur au salaire + heures sup sur une part notable des fiches", () => {
+  const d = coherente();
+  d.payrolls = d.payrolls.map((p, i) => ({ ...p, regular_pay: 350, overtime: i % 2 ? 200 : 0 }));
+  const c = detecterCroisements(d, { aujourdhui: AUJ }).find((x) => x.id === "paie_cout_inferieur_composantes");
+  assert.ok(c);
+  assert.match(c.constat, /36 fiches de paie sur 72 \(50 %\)/);
+  // Fiches coherentes (cout >= verse) : rien a signaler.
+  const ok = coherente();
+  ok.payrolls = ok.payrolls.map((p) => ({ ...p, regular_pay: 300, overtime: 50 }));
+  assert.ok(!ids(ok).includes("paie_cout_inferieur_composantes"));
+});

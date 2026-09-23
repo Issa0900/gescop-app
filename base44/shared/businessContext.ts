@@ -267,7 +267,13 @@ export async function buildBusinessContext(base44) {
     const c = e.category || e.description || "Autre";
     recurringByCat[c] = (recurringByCat[c] || 0) + (Number(e.amount) || 0);
   });
-  const recurringStr = Object.entries(recurringByCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c}: ${round(v)} $/mois`).join("\n");
+  // Moyenne MENSUELLE sur les mois couverts, comme la page Tresorerie : la
+  // somme de toute la periode etait etiquetee « $/mois » (assurance 81 k$ par
+  // mois annoncee a l'IA pour 4 789 $/mois reels sur 17 mois).
+  const moisRecurrents = new Set(recurringExpenses.map((e) => String(e.date || "").slice(0, 7)).filter((m) => /^\d{4}-\d{2}$/.test(m)));
+  const nbMoisRecurrents = Math.max(1, moisRecurrents.size);
+  const recurringStr = Object.entries(recurringByCat).sort((a, b) => b[1] - a[1])
+    .map(([c, v]) => `${c}: ${round(v / nbMoisRecurrents)} $/mois en moyenne (total ${round(v)} $ sur ${nbMoisRecurrents} mois)`).join("\n");
 
   // === TRÉSORERIE ===
   const latestCashflow = cashflow[0];

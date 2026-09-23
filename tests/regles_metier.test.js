@@ -77,3 +77,46 @@ test("Affichage : un inventaire recent non date l'emporte sur un vieil inventair
   assert.equal(latestByKey([vieux, recent], "product_id", dateReferenceInventaire)[0].closing_stock, 4);
   assert.equal(latestByKey([vieux, recent], "product_id", "date")[0].closing_stock, 10, "l'appel historique par nom de champ reste inchange");
 });
+
+// Paie : l'identifiant de ligne prime ; une cle composee (employe + periode)
+// contredite par le fichier n'exclut rien (audit du 23 sept 2026 : 16 fiches
+// sur 500 ecartees a tort comme conflits dans Xplorer_500).
+test("Paie : deux fiches du meme employe le meme mois, payroll_id distincts -> les deux gardees", async () => {
+  const { deduplicateRows } = await import("../base44/shared/deduplication.ts");
+  const base = { entities: { Payroll: { list: async () => [] } } };
+  const rows = [
+    { payroll_id: "PAY-1", employee_id: "E1", period: "2026-01", total_cost: 3000 },
+    { payroll_id: "PAY-2", employee_id: "E1", period: "2026-01", total_cost: 500 },
+  ];
+  const r = await deduplicateRows(base, "Payroll", rows);
+  assert.equal(r.newRows.length, 2);
+  assert.equal(r.conflicts, 0);
+});
+
+test("Paie sans identifiant : employe + periode contredit par le fichier -> gardees, repetition identique signalee", async () => {
+  const { deduplicateRows } = await import("../base44/shared/deduplication.ts");
+  const base = { entities: { Payroll: { list: async () => [] } } };
+  const rows = [
+    { employee_id: "E1", period: "2026-01", total_cost: 3000 },
+    { employee_id: "E1", period: "2026-01", total_cost: 500 },
+    { employee_id: "E1", period: "2026-01", total_cost: 500 },
+  ];
+  const r = await deduplicateRows(base, "Payroll", rows);
+  assert.equal(r.newRows.length, 3);
+  assert.equal(r.conflicts, 0);
+  assert.equal(r.potentialDuplicates.length, 1);
+  // Reimport du meme fichier : rien n'est double.
+  const enBase = r.newRows.map((x) => ({ ...x }));
+  const base2 = { entities: { Payroll: { list: async (_t, _n, debut) => (debut === 0 ? enBase : []) } } };
+  const r2 = await deduplicateRows(base2, "Payroll", rows);
+  assert.equal(r2.newRows.length, 0);
+  assert.equal(r2.duplicateCount, 3);
+});
+
+test("Paie sans identifiant, cle non contredite : meme employe + periode + autres valeurs -> conflit", async () => {
+  const { deduplicateRows } = await import("../base44/shared/deduplication.ts");
+  const enBase = [{ employee_id: "E1", period: "2026-01", total_cost: 3000 }];
+  const base = { entities: { Payroll: { list: async (_t, _n, debut) => (debut === 0 ? enBase : []) } } };
+  const r = await deduplicateRows(base, "Payroll", [{ employee_id: "E1", period: "2026-01", total_cost: 3100 }]);
+  assert.equal(r.conflicts, 1);
+});

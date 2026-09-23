@@ -20,11 +20,31 @@ export function empreinteForte(entityName: string, row: any): boolean {
     case "Campaign": return reel(row.campaign_id);
     case "CampaignDaily": return reel(row.campaign_id) && reel(row.date);
     case "Employee": return reel(row.employee_id);
-    case "Payroll": return reel(row.employee_id) && reel(row.period);
+    // L'identifiant de la fiche de paie (payroll_id) prime ; a defaut,
+    // employe + periode (cle composee, a confirmer par le fichier : voir
+    // cleComposee et deduplication.ts).
+    case "Payroll": return reel(row.payroll_id) || (reel(row.employee_id) && reel(row.period));
     case "Supplier": return reel(row.supplier_id);
     // Regle metier : une seule ligne de tresorerie par date.
     case "Cashflow": return reel(row.date);
     case "Expense": return reel(row.expense_id);
+    default: return false;
+  }
+}
+
+/**
+ * L'empreinte forte repose-t-elle sur une cle COMPOSEE (plusieurs colonnes qui
+ * ne sont pas un identifiant de ligne) ? Une telle cle n'identifie une ligne
+ * que si le fichier ne la contredit pas : si la meme combinaison y porte des
+ * contenus differents, ce n'est pas une cle (deduplication.ts), comme pour
+ * les lignes de commande sans identifiant de ligne.
+ */
+export function cleComposee(entityName: string, row: any): boolean {
+  if (!row || typeof row !== "object") return false;
+  const reel = (v: any) => v !== undefined && v !== null && String(v).trim() !== "" && !/^AUTO-/.test(String(v));
+  switch (entityName) {
+    case "Payroll": return !reel(row.payroll_id) && reel(row.employee_id) && reel(row.period);
+    case "CampaignDaily": return reel(row.campaign_id) && reel(row.date);
     default: return false;
   }
 }
@@ -64,6 +84,13 @@ export function generateFingerprint(entityName: string, row: any): string {
   }
   if (entityName === "Employee" && row.employee_id) {
     return `Employee:${String(row.employee_id).trim()}`;
+  }
+  // Identifiant de LIGNE fourni par le fichier : il prime sur la cle composee.
+  // Deux fiches du meme employe le meme mois (paie + prime, deux versements)
+  // ont deux payroll_id : les confondre en « conflit » ecartait 16 fiches sur
+  // 500 dans Xplorer_500.
+  if (entityName === "Payroll" && row.payroll_id !== undefined && row.payroll_id !== null && String(row.payroll_id).trim() !== "" && !/^AUTO-/.test(String(row.payroll_id))) {
+    return `Payroll:id:${String(row.payroll_id).trim()}`;
   }
   if (entityName === "Payroll" && row.employee_id && row.period) {
     return `Payroll:${String(row.employee_id).trim()}:${String(row.period).trim()}`;
@@ -118,7 +145,7 @@ function contenuLigne(row: any): string {
 }
 
 /** Empreinte courte et stable (FNV-1a 32 bits). */
-function empreinteCourte(texte: string): string {
+export function empreinteCourte(texte: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < texte.length; i++) {
     h ^= texte.charCodeAt(i);

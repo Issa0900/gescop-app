@@ -136,6 +136,28 @@ function detecterCroisementsBrut(data = {}, { aujourdhui = new Date() } = {}) {
     }
   }
 
+  // 5 bis. Fiches de paie dont le cout total est INFERIEUR a la somme de
+  // leurs composantes (salaire + heures supplementaires + prime) : le cout
+  // employeur ne peut pas etre plus petit que ce qui est verse. La masse
+  // salariale est calculee sur le cout total : elle herite de l'incoherence.
+  const avecComposantes = (data.payrolls || []).filter((p) => p && (p.regular_pay != null || p.overtime != null) && p.total_cost != null && p.total_cost !== "");
+  if (avecComposantes.length >= 10) {
+    const verse = (p) => num(p.regular_pay) + num(p.overtime) + num(p.bonus);
+    const incoherentes = avecComposantes.filter((p) => num(p.total_cost) + 0.01 < verse(p));
+    const part = incoherentes.length / avecComposantes.length;
+    if (part >= 0.1) {
+      out.push({
+        id: "paie_cout_inferieur_composantes",
+        niveau: part >= 0.3 ? "important" : "modere",
+        domaines: ["rh", "donnees"],
+        titre: "Le coût total de la paie est inférieur au salaire versé",
+        constat: `Sur ${fmtN(incoherentes.length, 0)} fiches de paie sur ${fmtN(avecComposantes.length, 0)} (${fmtN(part * 100, 0)} %), le coût total est inférieur au salaire + heures supplémentaires + primes. Un coût employeur ne peut pas être plus petit que ce qui est versé : la colonne « coût total » ne mesure pas ce qu'elle annonce, et la masse salariale calculée dessus est fausse.`,
+        action: "Vérifier dans le fichier source ce que contient la colonne « coût total » (net au lieu du brut, montant d'une autre période) avant de piloter la masse salariale.",
+        chiffres: { fiches_incoherentes: incoherentes.length, fiches: avecComposantes.length, part },
+      });
+    }
+  }
+
   // 6. Lignes datees apres aujourd'hui.
   const aujourdhuiISO = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, "0")}-${String(aujourdhui.getDate()).padStart(2, "0")}`;
   const futurs = [];
