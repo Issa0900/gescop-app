@@ -1,37 +1,18 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "@/lib/fake-framer-motion.jsx";
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, LineChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, AreaChart, Area, RadialBarChart, RadialBar, PolarAngleAxis,
-  Legend, Cell,
+  Legend, Cell, ReferenceLine,
 } from "recharts";
 import { TrendingUp, TrendingDown, Wallet, Receipt, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AXE_MOIS, AXE_MONTANT, AXE_POURCENT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE,
+  COULEURS, couleurCategorie, montant, pourcent,
+} from "@/lib/graphiques";
 
-const formatK = (v) => `${(v / 1000).toFixed(0)}k`;
-const formatMoney = (v) => `${Math.round(v).toLocaleString("fr-CA")} $`;
-
-/**
- * @param {Object} props
- * @param {boolean} [props.active]
- * @param {Array<{name?: string, value?: number, color?: string, fill?: string}>} [props.payload]
- * @param {string} [props.label]
- * @param {string} [props.suffix]
- */
-function ChartTooltip({ active, payload, label, suffix = "$" }) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="animate-scale-in rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1 font-semibold text-foreground">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} className="flex items-center gap-1.5" style={{ color: p.color || p.fill }}>
-          <span className="font-medium">{p.name}:</span>
-          <span>{Number(p.value).toLocaleString("fr-CA")}{suffix}</span>
-        </p>
-      ))}
-    </div>
-  );
-}
+const FENETRE = 6;
 
 function SkeletonCard() {
   return (
@@ -44,39 +25,33 @@ function SkeletonCard() {
 
 /**
  * @param {Object} props
- * @param {Object} props.monthlyData
+ * @param {Object} props.monthlyData  revenue / charges / margin / cash : series { month, val }
  * @param {boolean} [props.isLoading]
  * @param {Array<Object>} props.dimensions
  */
 export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
   const [view, setView] = useState("combined");
 
+  // CA et CHARGES TOTALES (cout des ventes + depenses + paie) : la meme base
+  // que la marge nette affichee a cote. Les barres montraient les seules
+  // depenses, et la marge ne se lisait pas a partir d'elles.
   const combinedData = useMemo(() => {
-    const rev = (monthlyData?.revenue || []).slice(-6);
-    const costs = (monthlyData?.costs || []).slice(-6);
-    const margin = (monthlyData?.margin || []).slice(-6);
-    return rev.map((r) => {
-      const c = costs.find((x) => x.month === r.month);
-      const m = margin.find((x) => x.month === r.month);
-      return {
-        month: r.month.slice(5),
-        revenue: Math.round(r.val),
-        expenses: c ? Math.round(c.val) : 0,
-        margin: m ? Math.round(m.val) : 0,
-      };
-    });
-  }, [monthlyData]);
-
-  const cashData = useMemo(() => {
-    return (monthlyData?.cash || []).slice(-6).map((d) => ({
-      month: d.month.slice(5),
-      cash: Math.round(d.val),
+    const rev = (monthlyData?.revenue || []).slice(-FENETRE);
+    const charges = monthlyData?.charges || [];
+    const margin = monthlyData?.margin || [];
+    return rev.map((r) => ({
+      month: r.month,
+      revenue: Math.round(r.val),
+      charges: Math.round(charges.find((x) => x.month === r.month)?.val ?? 0),
+      margin: margin.find((x) => x.month === r.month)?.val ?? null,
     }));
   }, [monthlyData]);
 
+  const cashData = useMemo(() => (monthlyData?.cash || []).slice(-FENETRE).map((d) => ({ month: d.month, cash: Math.round(d.val) })), [monthlyData]);
+
   const radarData = useMemo(() => {
-    const dims = dimensions?.filter((d) => ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"].includes(d.key)) || [];
-    return dims.map((d) => ({ name: d.label, value: d.score || 0, fill: "hsl(var(--chart-1))" }));
+    const dims = dimensions?.filter((d) => ["finance", "ventes", "tresorerie", "clients", "operations", "marketing"].includes(d.key) && d.measured !== false) || [];
+    return dims.map((d, i) => ({ name: d.label, value: d.score || 0, fill: couleurCategorie(i) }));
   }, [dimensions]);
 
   if (isLoading) {
@@ -92,19 +67,21 @@ export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
   const hasCombined = combinedData.length > 0;
   const hasCash = cashData.length > 0;
   const hasRadar = radarData.length > 0;
+  const vide = <div className="flex h-72 items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">Données insuffisantes</div>;
 
   return (
     <div className="space-y-4">
       {/* View toggle */}
       <div className="flex flex-wrap items-center gap-2">
         {[
-          { key: "combined", label: "Revenus vs Dépenses", icon: Receipt },
+          { key: "combined", label: "CA vs charges", icon: Receipt },
           { key: "cash", label: "Trésorerie", icon: Wallet },
           { key: "radar", label: "Scores par domaine", icon: Percent },
         ].map((v) => (
           <button
             key={v.key}
             onClick={() => setView(v.key)}
+            aria-pressed={view === v.key}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200",
               view === v.key
@@ -119,51 +96,40 @@ export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Main chart */}
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
             {view === "combined" && hasCombined && (
-              <motion.div
-                key="combined"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="rounded-2xl border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Revenus & Dépenses</h3>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-chart-1" />Revenus</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-chart-5" />Dépenses</span>
-                  </div>
+              <motion.div key="combined" className="rounded-2xl border border-border bg-card p-6">
+                <div className="mb-4 flex items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Chiffre d'affaires et charges totales</h3>
+                  <span className="text-xs text-muted-foreground">{combinedData.length} derniers mois complets</span>
                 </div>
-                {/* $ et % ne partagent pas d'échelle : un seul axe pour les deux
-                    aplatissait la marge en quasi-ligne droite près de zéro à côté
-                    des barres en milliers de dollars. Deux panneaux, un axe chacun. */}
+                {/* $ et % ne partagent pas d'échelle : deux panneaux, un axe chacun. */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="h-56 sm:col-span-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={combinedData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                        <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={45} tickFormatter={formatK} />
-                        <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
-                        <Bar dataKey="revenue" name="Revenus" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} barSize={18} animationDuration={800} />
-                        <Bar dataKey="expenses" name="Dépenses" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} barSize={18} animationDuration={800} animationBegin={200} />
-                      </ComposedChart>
+                      <BarChart data={combinedData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }} barGap={2}>
+                        <CartesianGrid {...GRILLE} />
+                        <XAxis dataKey="month" {...AXE_MOIS} />
+                        <YAxis {...AXE_MONTANT} />
+                        <Tooltip {...INFOBULLE} formatter={(v, nom) => [montant(v), nom]} />
+                        <Legend {...LEGENDE} />
+                        <Bar dataKey="revenue" name="Chiffre d'affaires" fill={COULEURS.revenus} {...BARRE} />
+                        <Bar dataKey="charges" name="Charges totales" fill={COULEURS.charges} {...BARRE} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                   <div className="h-56">
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">Marge %</p>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">Marge nette</p>
                     <ResponsiveContainer width="100%" height="90%">
-                      <ComposedChart data={combinedData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                        <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={32} tickFormatter={(v) => `${v}%`} />
-                        <Tooltip content={<ChartTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
-                        <Line type="monotone" dataKey="margin" name="Marge %" stroke="hsl(var(--chart-2))" strokeWidth={2.5} dot={{ r: 3 }} animationDuration={1000} />
-                      </ComposedChart>
+                      <LineChart data={combinedData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                        <CartesianGrid {...GRILLE} />
+                        <XAxis dataKey="month" {...AXE_MOIS} />
+                        <YAxis {...AXE_POURCENT} />
+                        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.5} />
+                        <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [pourcent(v, 0), "Marge nette"]} />
+                        <Line dataKey="margin" name="Marge nette" stroke={COULEURS.resultat} {...LIGNE} dot={{ r: 3 }} />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
@@ -171,32 +137,19 @@ export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
             )}
 
             {view === "cash" && hasCash && (
-              <motion.div
-                key="cash"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="rounded-2xl border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex items-center justify-between">
+              <motion.div key="cash" className="rounded-2xl border border-border bg-card p-6">
+                <div className="mb-4 flex items-baseline justify-between">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution de la trésorerie</h3>
-                  <span className="text-xs text-muted-foreground">6 derniers mois</span>
+                  <span className="text-xs text-muted-foreground">Solde de fin de mois · {cashData.length} derniers mois</span>
                 </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={cashData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-                      <defs>
-                        <linearGradient id="cashGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.35} />
-                          <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={45} tickFormatter={formatK} />
-                      <Tooltip content={<ChartTooltip />} cursor={{ stroke: "hsl(var(--border))" }} />
-                      <Area type="monotone" dataKey="cash" name="Trésorerie" stroke="hsl(var(--chart-1))" strokeWidth={2.5} fill="url(#cashGradient)" animationDuration={900} />
+                      <CartesianGrid {...GRILLE} />
+                      <XAxis dataKey="month" {...AXE_MOIS} />
+                      <YAxis {...AXE_MONTANT} />
+                      <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [montant(v), "Trésorerie"]} />
+                      <Area dataKey="cash" name="Trésorerie" stroke={COULEURS.tresorerie} fill={COULEURS.tresorerie} fillOpacity={0.12} {...LIGNE} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -204,27 +157,20 @@ export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
             )}
 
             {view === "radar" && hasRadar && (
-              <motion.div
-                key="radar"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="rounded-2xl border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex items-center justify-between">
+              <motion.div key="radar" className="rounded-2xl border border-border bg-card p-6">
+                <div className="mb-4 flex items-baseline justify-between">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Scores par domaine</h3>
+                  <span className="text-xs text-muted-foreground">sur 100 · domaines mesurés</span>
                 </div>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart data={radarData} innerRadius="20%" outerRadius="100%" startAngle={90} endAngle={-270}>
                       <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                      <RadialBar dataKey="value" background={{ fill: "hsl(var(--muted))" }} cornerRadius={6} animationDuration={900}>
-                        {radarData.map((entry, i) => (
-                          <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />
-                        ))}
+                      <RadialBar dataKey="value" background={{ fill: "hsl(var(--muted))" }} cornerRadius={6}>
+                        {radarData.map((entry, i) => <Cell key={entry.name} fill={couleurCategorie(i)} />)}
                       </RadialBar>
-                      <Legend iconType="circle" layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                      <Tooltip {...INFOBULLE} labelFormatter={() => ""} formatter={(v, _n, p) => [`${v} / 100`, p?.payload?.name]} />
+                      <Legend {...LEGENDE} layout="horizontal" verticalAlign="bottom" align="center" />
                     </RadialBarChart>
                   </ResponsiveContainer>
                 </div>
@@ -232,51 +178,38 @@ export default function KpiOverview({ monthlyData, isLoading, dimensions }) {
             )}
           </AnimatePresence>
 
-          {!hasCombined && view === "combined" && (
-            <div className="flex h-72 items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">Données insuffisantes</div>
-          )}
-          {!hasCash && view === "cash" && (
-            <div className="flex h-72 items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">Données insuffisantes</div>
-          )}
-          {!hasRadar && view === "radar" && (
-            <div className="flex h-72 items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">Données insuffisantes</div>
-          )}
+          {!hasCombined && view === "combined" && vide}
+          {!hasCash && view === "cash" && vide}
+          {!hasRadar && view === "radar" && vide}
         </div>
 
         {/* Side stats */}
         <div className="space-y-4">
           {(() => {
-            const lastRev = combinedData[combinedData.length - 1]?.revenue || 0;
-            const prevRev = combinedData[combinedData.length - 2]?.revenue || 0;
-            const revDelta = prevRev > 0 ? ((lastRev - prevRev) / prevRev) * 100 : 0;
-            const lastCash = cashData[cashData.length - 1]?.cash || 0;
-            const prevCash = cashData[cashData.length - 2]?.cash || 0;
-            const cashDelta = prevCash > 0 ? ((lastCash - prevCash) / prevCash) * 100 : 0;
-            const lastMargin = combinedData[combinedData.length - 1]?.margin || 0;
+            const dernier = combinedData[combinedData.length - 1];
+            const avant = combinedData[combinedData.length - 2];
+            const revDelta = dernier && avant?.revenue > 0 ? ((dernier.revenue - avant.revenue) / avant.revenue) * 100 : null;
+            const lastCash = cashData[cashData.length - 1]?.cash ?? null;
+            const prevCash = cashData[cashData.length - 2]?.cash ?? null;
+            const cashDelta = lastCash !== null && prevCash > 0 ? ((lastCash - prevCash) / prevCash) * 100 : null;
 
             const stats = [
-              { label: "Revenus (mois)", value: formatMoney(lastRev), delta: revDelta, icon: TrendingUp, color: "text-chart-1" },
-              { label: "Trésorerie", value: formatMoney(lastCash), delta: cashDelta, icon: Wallet, color: "text-chart-2" },
-              { label: "Marge brute", value: `${lastMargin}%`, delta: null, icon: Percent, color: "text-chart-3" },
+              { label: "Chiffre d'affaires (mois)", value: dernier ? montant(dernier.revenue) : "—", delta: revDelta, icon: TrendingUp },
+              { label: "Trésorerie", value: lastCash === null ? "—" : montant(lastCash), delta: cashDelta, icon: Wallet },
+              { label: "Marge nette (mois)", value: dernier?.margin == null ? "—" : pourcent(dernier.margin, 0), delta: null, icon: Percent },
             ];
 
-            return stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.35, delay: i * 0.08, ease: "easeOut" }}
-                className="rounded-2xl border border-border bg-card p-5"
-              >
+            return stats.map((s) => (
+              <motion.div key={s.label} className="rounded-2xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</span>
-                  <s.icon className={cn("h-4 w-4", s.color)} />
+                  <s.icon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="mt-2 text-2xl font-bold tracking-tight">{s.value}</p>
                 {s.delta !== null && (
-                  <div className={cn("mt-1 flex items-center gap-1 text-xs font-medium", s.delta >= 0 ? "text-emerald-600" : "text-red-500")}>
+                  <div className={cn("mt-1 flex items-center gap-1 text-xs font-medium", s.delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                     {s.delta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {Math.abs(s.delta).toFixed(1)}% vs mois précédent
+                    {pourcent(Math.abs(s.delta), 1)} vs mois précédent
                   </div>
                 )}
               </motion.div>

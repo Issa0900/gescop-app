@@ -2,13 +2,15 @@ import React, { useState, useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { cn } from "@/lib/utils";
 
-/** @type {Array<{key: string, label: string, format: 'currency'|'percent'|'count'}>} */
+import { AXE_MOIS, AXE, GRILLE, INFOBULLE_LIGNE, LIGNE, COULEURS, montant, montantCourt, pourcent, nombre } from "@/lib/graphiques";
+
+/** @type {Array<{key: string, label: string, format: 'currency'|'percent'|'count', couleur: string}>} */
 const metrics = [
-  { key: "revenue", label: "Chiffre d'affaires", format: "currency" },
-  { key: "margin", label: "Marge", format: "percent" },
-  { key: "cash", label: "Trésorerie", format: "currency" },
-  { key: "clients", label: "Clients", format: "count" },
-  { key: "costs", label: "Coûts", format: "currency" },
+  { key: "revenue", label: "Chiffre d'affaires", format: "currency", couleur: COULEURS.revenus },
+  { key: "margin", label: "Marge nette (%)", format: "percent", couleur: COULEURS.resultat },
+  { key: "cash", label: "Trésorerie", format: "currency", couleur: COULEURS.tresorerie },
+  { key: "clients", label: "Nouveaux clients", format: "count", couleur: COULEURS.volume },
+  { key: "costs", label: "Coûts opérationnels", format: "currency", couleur: COULEURS.charges },
 ];
 
 const periods = [
@@ -17,40 +19,8 @@ const periods = [
   { key: "12m", label: "12 mois", months: 12 },
 ];
 
-const monthLabels = {
-  "01": "jan", "02": "fév", "03": "mar", "04": "avr",
-  "05": "mai", "06": "jun", "07": "jul", "08": "aoû",
-  "09": "sep", "10": "oct", "11": "nov", "12": "déc",
-};
-
-function formatMonth(m) {
-  const [, mm] = (m || "").split("-");
-  return monthLabels[mm] || m;
-}
-
-function formatValue(v, format) {
-  if (v == null) return "-";
-  if (format === "percent") return `${Math.round(v)}%`;
-  if (format === "count") return Math.round(v).toLocaleString("fr-CA");
-  return `${Math.round(v).toLocaleString("fr-CA")} $`;
-}
-
-/**
- * @param {Object} props
- * @param {boolean} [props.active]
- * @param {Array<{name?: string, value?: number, color?: string, fill?: string}>} [props.payload]
- * @param {string} [props.label]
- * @param {'currency'|'percent'|'count'} [props.format]
- */
-function CustomTooltip({ active, payload, label, format }) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="font-medium text-foreground">{label}</p>
-      <p className="mt-1 text-primary">{formatValue(payload[0].value, format)}</p>
-    </div>
-  );
-}
+const formatValue = (v, format) => (format === "percent" ? pourcent(v, 0) : format === "count" ? nombre(v) : montant(v));
+const formatAxe = (format) => (format === "percent" ? (v) => `${v} %` : format === "count" ? nombre : montantCourt);
 
 export default function PerformanceChart({ monthlyData }) {
   const [metric, setMetric] = useState("revenue");
@@ -59,18 +29,11 @@ export default function PerformanceChart({ monthlyData }) {
   const data = useMemo(() => {
     const series = (monthlyData || {})[metric] || [];
     const months = periods.find((p) => p.key === period)?.months || 12;
-    return series.slice(-months).map((d) => ({ ...d, monthLabel: formatMonth(d.month) }));
+    return series.slice(-months);
   }, [monthlyData, metric, period]);
 
-  const activeMetric = metrics.find((m) => m.key === metric);
-  const fmt = activeMetric?.format || "currency";
-
-  const yTickFormatter = (v) => {
-    if (fmt === "percent") return `${v}%`;
-    if (fmt === "count") return v.toLocaleString("fr-CA");
-    return `${(v / 1000).toFixed(0)}k`;
-  };
-
+  const activeMetric = metrics.find((m) => m.key === metric) || metrics[0];
+  const fmt = activeMetric.format;
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution de l'entreprise</h3>
@@ -106,11 +69,11 @@ export default function PerformanceChart({ monthlyData }) {
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} width={50} tickFormatter={yTickFormatter} />
-              <Tooltip content={<CustomTooltip format={fmt} />} />
-              <Line type="monotone" dataKey="val" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} activeDot={{ r: 5 }} />
+              <CartesianGrid {...GRILLE} />
+              <XAxis dataKey="month" {...AXE_MOIS} />
+              <YAxis {...AXE} width={64} tickFormatter={formatAxe(fmt)} />
+              <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [formatValue(v, fmt), activeMetric.label]} />
+              <Line dataKey="val" name={activeMetric.label} stroke={activeMetric.couleur} {...LIGNE} dot={{ r: 3, fill: activeMetric.couleur }} />
             </LineChart>
           </ResponsiveContainer>
         ) : (

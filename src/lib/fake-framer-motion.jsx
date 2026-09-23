@@ -19,6 +19,9 @@ import React from 'react';
  * @property {Object} [viewport]
  */
 
+// Elements de tableau et de SVG : pas d'animation d'entree (mise en page).
+const BALISES_SANS_ANIMATION = new Set(["tr", "td", "th", "tbody", "thead", "table", "svg", "path"]);
+
 const createMotionComponent = (Tag) => {
   return React.forwardRef(
     /**
@@ -26,8 +29,16 @@ const createMotionComponent = (Tag) => {
      * @param {React.Ref<any>} ref
      */
     ({ initial, animate, exit, transition, whileHover, whileTap, layout, layoutId, variants, style, custom, drag, dragConstraints, whileInView, viewport, ...props }, ref) => {
-    // We pass style through, but strip the framer-motion specific props
-    return <Tag ref={ref} style={style} {...props} />;
+    // Les proprietes framer-motion sont retirees ; une entree (initial/animate)
+    // devient un fondu CSS (tailwindcss-animate), coupe par « motion-safe »
+    // quand l'utilisateur demande moins d'animations. Sans cela, toutes les
+    // animations de l'app etaient silencieusement supprimees.
+    const entre = initial && typeof initial === "object" && !BALISES_SANS_ANIMATION.has(Tag);
+    const decale = entre && typeof initial.y === "number" && initial.y !== 0;
+    const classe = entre
+      ? [props.className, "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300", decale ? "motion-safe:slide-in-from-bottom-2" : ""].filter(Boolean).join(" ")
+      : props.className;
+    return <Tag ref={ref} style={style} {...props} className={classe} />;
   });
 };
 

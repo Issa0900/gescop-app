@@ -1,9 +1,7 @@
 import { formatPct, formatCAD, formatNumber } from "@/lib/utils";
-import { fetchOrders } from "@/lib/fetchOrders";
 import { montantHT } from "@/lib/core/kpiRecords";
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import React, { useState, useMemo } from "react";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import DataTable from "@/components/ui/DataTable";
@@ -14,25 +12,22 @@ import StockThresholdSettings from "@/components/produits/StockThresholdSettings
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
 import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
-import { fetchAll } from "@/lib/fetchAll";
 import { validSalesOrders, columnPresent } from "@/lib/metrics";
 import DataErrorState from "@/components/DataErrorState";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { AXE, AXE_MONTANT, GRILLE, INFOBULLE, BARRE, BARRE_H, COULEURS, STATUT, montant, nombre } from "@/lib/graphiques";
 
 // Palette de statut (fixe, jamais réutilisée pour une catégorie) : ces valeurs
 // décrivent un état de santé de stock, pas une identité — good/warning/
 // serious/critical, plus un gris neutre pour "dormant" (ni bon ni mauvais).
 const stockColors = {
-  optimal: "#0ca30c",
-  faible: "#fab219",
-  surstock: "#fab219",
-  proche_rupture: "#ec835a",
-  rupture: "#d03b3b",
-  dormant: "#898781",
+  optimal: STATUT.bon,
+  faible: STATUT.vigilance,
+  surstock: STATUT.vigilance,
+  proche_rupture: STATUT.serieux,
+  rupture: STATUT.critique,
+  dormant: "hsl(var(--muted-foreground))",
 };
 
 const stockLabels = {
@@ -102,41 +97,23 @@ export default function Produits() {
     && (draft.threshold !== savedSettings.threshold
       || draft.useReorderPoint !== savedSettings.useReorderPoint
       || draft.dormantMonths !== savedSettings.dormantMonths);
-  const { data: productsRaw, isLoading: lp, isError: productsError, refetch: refetchProducts } = useQuery({
-    queryKey: ["products"],
-    queryFn: async () => {
-      const rows = await fetchAll(base44.entities.Product);
-      return (Array.isArray(rows) ? rows : []).map((p) => ({
-        ...p,
-        product_id: p.product_id || p.id || p.sku || p.code,
-      }));
-    },
-  });
-  const { data: inventory, isLoading: li, isError: inventoryError, refetch: refetchInventory } = useQuery({
-    queryKey: ["inventory-summary"],
-    queryFn: async () => {
-      const rows = await fetchAll(base44.entities.Inventory, "-date");
-      return (Array.isArray(rows) ? rows : []).map((i) => ({
-        ...i,
-        product_id: i.product_id || i.id_product || i.sku || i.product_code,
-      }));
-    },
-  });
-  const { data: orders, isLoading: lo, isError: ordersError, refetch: refetchOrders } = useQuery({
-    queryKey: ["orders-produits"],
-    queryFn: async () => {
-      const rows = await fetchOrders();
-      return Array.isArray(rows) ? rows : [];
-    },
-  });
+  // Cache partage (useDonneesKpi). Achats lisait la meme cle ["products"] sans
+  // normaliser l'identifiant : selon la page ouverte en premier, les produits
+  // arrivaient avec ou sans product_id.
+  const { data: donnees, isLoading: chargement, isError: erreurDonnees, refetch: recharger } = useDonneesKpi();
+  const productsRaw = useMemo(() => (donnees.products || []).map((p) => ({
+    ...p,
+    product_id: p.product_id || p.id || p.sku || p.code,
+  })), [donnees.products]);
+  const inventory = useMemo(() => (donnees.inventory || []).map((i) => ({
+    ...i,
+    product_id: i.product_id || i.id_product || i.sku || i.product_code,
+  })), [donnees.inventory]);
+  const orders = donnees.orders;
 
-  if (lp || li || lo) return <p className="text-sm text-muted-foreground">Chargement…</p>;
-  if (productsError || inventoryError || ordersError) {
-    return (
-      <DataErrorState
-        onRetry={() => Promise.all([refetchProducts(), refetchInventory(), refetchOrders()])}
-      />
-    );
+  if (chargement) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (erreurDonnees) {
+    return <DataErrorState onRetry={recharger} />;
   }
   const usingInventoryFallback = !(productsRaw && productsRaw.length > 0);
   const products = usingInventoryFallback ? deriveProductsFromInventory(inventory) : productsRaw;
@@ -413,14 +390,15 @@ export default function Produits() {
             {peakMonths.length > 0 ? ` · pics : ${peakMonths.join(", ")}` : ""}
           </p>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={seasonalityData} margin={{ left: 10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-              <Bar dataKey="revenu" radius={[4, 4, 0, 0]}>
+            <BarChart data={seasonalityData} margin={{ left: 0, right: 10 }}>
+              <CartesianGrid {...GRILLE} />
+              <XAxis dataKey="mois" {...AXE} />
+              <YAxis {...AXE_MONTANT} />
+              <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v) => [montant(v), "CA cumulé"]} />
+              {/* Mois de pic (> 115 % de la moyenne) en couleur, les autres en gris. */}
+              <Bar dataKey="revenu" name="CA cumulé" {...BARRE}>
                 {seasonalityData.map((m, i) => (
-                  <Cell key={i} fill={m.revenu > avgMonthlyRevenue * 1.15 ? "#3b82f6" : "#cbd5e1"} />
+                  <Cell key={i} fill={m.revenu > avgMonthlyRevenue * 1.15 ? COULEURS.revenus : "hsl(var(--muted-foreground) / 0.35)"} />
                 ))}
               </Bar>
             </BarChart>
@@ -433,13 +411,14 @@ export default function Produits() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Top 10 produits {windowLabel ? `(${windowLabel})` : "(ventes/mois)"}
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={topBarData} margin={{ left: 10, right: 10, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="ventes" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          {/* Barres horizontales : les noms de produits se lisent sans pencher la tete. */}
+          <ResponsiveContainer width="100%" height={Math.max(200, topBarData.length * 30)}>
+            <BarChart data={topBarData} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <CartesianGrid {...GRILLE} vertical horizontal={false} />
+              <XAxis type="number" {...AXE} tickFormatter={nombre} />
+              <YAxis type="category" dataKey="name" {...AXE} width={140} />
+              <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v) => [nombre(v), "Unités vendues"]} />
+              <Bar dataKey="ventes" name="Unités vendues" fill={COULEURS.volume} {...BARRE_H} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -447,22 +426,22 @@ export default function Produits() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Statut des stocks</h2>
           {pieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={(e) => `${e.name}: ${e.value}`}>
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={stockColors[entry.key] || "#94a3b8"} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+            <ResponsiveContainer width="100%" height={Math.max(160, pieData.length * 44)}>
+              <BarChart data={[...pieData].sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10, right: 56 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="name" {...AXE} width={110} />
+                <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v) => [`${nombre(v)} produits`, "Statut"]} />
+                <Bar dataKey="value" name="Produits" {...BARRE_H} label={{ position: "right", fontSize: 11, fill: "hsl(var(--muted-foreground))", formatter: nombre }}>
+                  {[...pieData].sort((a, b) => b.value - a.value).map((entry) => <Cell key={entry.key} fill={stockColors[entry.key] || "hsl(var(--muted-foreground))"} />)}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <p className="text-sm text-muted-foreground">Aucune donnée d'inventaire</p>
           )}
           {inventoryValue > 0 && (
             <p className="mt-2 text-center text-sm text-muted-foreground">
-              Valeur inventaire total: <span className="font-semibold text-foreground">{Math.round(inventoryValue).toLocaleString("fr-CA")} $</span>
+              Valeur inventaire total: <span className="font-semibold text-foreground">{montant(inventoryValue)}</span>
               {inventoryValueEstimated && (
                 <span className="block text-xs">Estimée à partir du stock et du coût d'achat : la colonne « valeur de stock » est absente de votre import.</span>
               )}

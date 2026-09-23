@@ -32,6 +32,16 @@
     --chart-3: 159 73% 40%;
     --chart-4: 41 100% 46%;
     --chart-5: 337 70% 70%;
+    --chart-6: 120 100% 26%;
+    --chart-7: 248 48% 44%;
+    --chart-8: 0 73% 59%;
+    /* Statuts reserves (bon / vigilance / serieux / critique) : jamais une
+       couleur de serie, toujours avec une icone ou un libelle. */
+    --status-good: 120 86% 34%;
+    --status-warning: 41 96% 54%;
+    --status-serious: 17 80% 64%;
+    --status-critical: 0 62% 52%;
+    --chart-grid: 0 0% 90%;
     --radius: 0.75rem;
     --font-heading: ui-sans-serif, system-ui, sans-serif;
     --font-body: ui-sans-serif, system-ui, sans-serif;
@@ -72,6 +82,10 @@
     --chart-3: 159 73% 36%;
     --chart-4: 40 100% 39%;
     --chart-5: 338 61% 58%;
+    --chart-6: 120 100% 26%;
+    --chart-7: 246 69% 72%;
+    --chart-8: 0 72% 65%;
+    --chart-grid: 0 0% 24%;
     --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 65%;
     --sidebar-primary: 113 70% 42%;

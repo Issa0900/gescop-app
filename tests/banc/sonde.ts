@@ -34,5 +34,7 @@ const fs = require("fs"); const path = require("path");
   for (const [k, l] of res as any) if (l.value != null) out[k] = [Math.round(l.value * 100) / 100, l.status, l.meta?.warnings?.[0] || l.warnings?.[0] || ""];
   log("KPI", JSON.stringify(out, null, 0));
   if (process.env.DUMP) fs.writeFileSync(process.env.DUMP, JSON.stringify({ Order: (tables.Order || []).map((r: any) => { const { original_data, ...x } = r; return x; }), ImportIssue: (tables.ImportIssue || []).slice(0, 3000) }));
+  // Toutes les tables du moteur, pour rejouer les calculs des ecrans hors navigateur.
+  if (process.env.DUMP_TOUT) fs.writeFileSync(process.env.DUMP_TOUT, JSON.stringify(Object.fromEntries(Object.entries(data).map(([cle, rs]) => [cle, (rs as any[]).map((r: any) => { const { original_data, ...x } = r; return x; })]))));
   if (process.env.SORTIE) fs.writeFileSync(process.env.SORTIE, JSON.stringify({ ms, results, motifs, kpi: out, lignes: Object.fromEntries(Object.entries(tables).map(([n, r]) => [n, (r as any[]).length])) }, null, 1));
 })();

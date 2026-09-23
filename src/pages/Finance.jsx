@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
@@ -6,57 +6,34 @@ import EmptyState from "@/components/EmptyState";
 import { DollarSign, PieChart, TrendingUp, TrendingDown } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Legend,
+  BarChart, Bar, Legend, ReferenceLine,
 } from "recharts";
+import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, FENETRE_MOIS } from "@/lib/graphiques";
 import { fetchAll } from "@/lib/fetchAll";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import DataErrorState from "@/components/DataErrorState";
-import { fetchOrders } from "@/lib/fetchOrders";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { noteBaseCA } from "@/lib/core/kpiRecords";
 import PaiementsCard from "@/components/finance/PaiementsCard";
 
+// Chaque carte est un KPI du moteur, et elles s'additionnent : CA - charges
+// totales = resultat net (tests/coherence_kpi.test.js). La page affichait
+// « Depenses totales » (depenses seules) a cote d'un resultat qui retranchait
+// aussi le cout des ventes et la paie : 568 519 - 996 484 affichait -2 222 935.
+const IDS_FINANCE = ["total_revenue", "total_charges", "cogs_total", "total_expense", "payroll_total", "net_income", "net_margin_pct"];
+
+const fmt$ = montant;
+
 export default function Finance() {
-  const { data: transactions, isLoading: ltx, isError, refetch } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
-
-  // Costs can live in expense-typed Transaction rows, in the dedicated
-  // Expense entity, or both - both are fed in so "Dépenses totales" never
-  // reads 0 $ just because a company's costs sit in the other one.
-  const { data: expenses } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
-
-  // GESCOP Phase 4 SSOT — net_income/net_margin_pct (revenu - TOUTES les
-  // dépenses), pas gross_margin_amount (revenu - COGS produit, qui a besoin
-  // de commandes avec un coût, jamais présent sur de simples transactions).
-  // Les deux existent dans kpiRegistry.js pour des questions différentes ;
-  // "Résultat Net" sur cette page a toujours voulu dire la première.
-  // Commandes et paie aussi : sans elles, une entreprise qui n'importe que ses
-  // ventes voyait ici 0 $ de CA alors que le tableau de bord affichait le vrai.
-  const { data: orders, isLoading: lo } = useQuery({ queryKey: ["orders-finance"], queryFn: () => fetchOrders() });
-  const { data: payrolls } = useQuery({ queryKey: ["payrolls-finance"], queryFn: () => fetchAll(base44.entities.Payroll, "-period") });
-  const { data: assets } = useQuery({ queryKey: ["assets-finance"], queryFn: () => fetchAll(base44.entities.Asset) });
+  const { data: donnees, isLoading, isError, refetch } = useDonneesKpi();
+  const { transactions, expenses, orders, assets, executiveSummary } = donnees;
   const { data: payments } = useQuery({ queryKey: ["payments-finance"], queryFn: () => fetchAll(base44.entities.Payment, "-date") });
-  const { data: executiveSummary, isLoading: les } = useQuery({
-    queryKey: ["executive-summary"],
-    queryFn: () => fetchAll(base44.entities.ExecutiveSummary, "-date"),
-  });
 
-  // Le sommaire executif est une valeur de controle : il ne remplace jamais
-  // les ventes dans le CA (ses mesures ont leurs propres cles, entityFieldMap).
-  const { kpis: engineKpis } = useKpiEngine({
-    transactions: transactions || [],
-    expenses: expenses || [],
-    orders: orders || [],
-    payrolls: payrolls || [],
-    executiveSummary: executiveSummary || [],
-  }, ["total_revenue", "total_expense", "net_income", "net_margin_pct"]);
+  const { kpis: engineKpis } = useKpiEngine(donnees, IDS_FINANCE);
+  const monthly = useMemo(() => financialMonthlySeries(donnees), [donnees]);
 
-  if (ltx || lo || les) return <p className="text-sm text-muted-foreground">Chargement...</p>;
+  if (isLoading) return <p className="text-sm text-muted-foreground">Chargement...</p>;
   if (isError) return <DataErrorState onRetry={refetch} />;
   if (!transactions?.length && !expenses?.length && !orders?.length && !executiveSummary?.length && !assets?.length && !payments?.length) {
     return (
@@ -68,70 +45,70 @@ export default function Finance() {
     );
   }
 
+  const v = (id) => { const x = engineKpis.get(id)?.value; return Number.isFinite(x) ? x : null; };
   const summary = {
-    revenue: engineKpis.get("total_revenue")?.value || 0,
-    expense: engineKpis.get("total_expense")?.value || 0,
-    netIncome: engineKpis.get("net_income")?.value ?? null,
-    marginPct: engineKpis.get("net_margin_pct")?.value ?? null,
+    revenue: v("total_revenue"),
+    charges: v("total_charges"),
+    netIncome: v("net_income"),
+    marginPct: v("net_margin_pct"),
   };
-  const monthly = financialMonthlySeries(transactions, expenses, orders, executiveSummary);
-  const chartData = monthly.slice(-12).map((point) => {
-    return {
-      date: point.month,
-      revenus: Math.round(point.income),
-      dépenses: Math.round(point.expense),
-      résultat: Math.round(point.margin),
-      marge: point.income > 0 ? Math.round((point.margin / point.income) * 100) : 0,
-    };
-  });
+  const detailCharges = [
+    ["coût des ventes", v("cogs_total")],
+    ["dépenses", v("total_expense")],
+    ["masse salariale", v("payroll_total")],
+  ].filter(([, x]) => x !== null).map(([nom, x]) => `${nom} ${fmt$(x)}`).join(" · ");
+  const chartData = monthly.slice(-FENETRE_MOIS).map((point) => ({
+    date: point.month,
+    revenus: Math.round(point.income),
+    charges: Math.round(point.expense),
+    résultat: Math.round(point.margin),
+  }));
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
-        <p className="mt-1 text-muted-foreground">Analyse globale de la rentabilité, des revenus et des dépenses.</p>
+        <p className="mt-1 text-muted-foreground">Rentabilité sur toute la période importée : chiffre d'affaires, charges et résultat.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Chiffre d'affaires" value={`${Math.round(summary.revenue).toLocaleString("fr-CA")} $`} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
-        <StatCard label="Dépenses totales" value={`${Math.round(summary.expense).toLocaleString("fr-CA")} $`} icon={TrendingDown} accent="bg-red-50 text-red-600" />
-        <StatCard label="Résultat Net" value={summary.netIncome == null ? "N/A" : `${Math.round(summary.netIncome).toLocaleString("fr-CA")} $`} icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Marge Nette" value={summary.marginPct == null ? "N/A" : `${summary.marginPct.toFixed(1)} %`} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
+        <StatCard label="Chiffre d'affaires" value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
+        <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={detailCharges ? `dont ${detailCharges}` : undefined} />
+        <StatCard label="Résultat Net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel="CA − charges totales" icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Marge Nette" value={summary.marginPct == null ? "Non mesuré" : `${summary.marginPct.toFixed(1)} %`} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Revenus vs Dépenses (Mensuel)</h2>
+        <div className="mb-4 flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Chiffre d'affaires vs charges totales</h2>
+          <span className="text-xs text-muted-foreground">{chartData.length} derniers mois complets</span>
+        </div>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData} margin={{ left: 10, right: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} $`} cursor={{fill: '#f3f4f6'}} />
-            <Legend wrapperStyle={{ fontSize: 12, paddingTop: '10px' }} />
-            {/* Vert forêt / ambre-cuivré plutôt que vert/rouge purs : distinguable
-                en deutéranopie/protanopie, et la légende ci-dessus porte déjà le
-                nom de chaque série (la couleur ne porte jamais seule l'info). */}
-            <Bar dataKey="revenus" fill="#15803d" radius={[4, 4, 0, 0]} name="Revenus" />
-            <Bar dataKey="dépenses" fill="#b45309" radius={[4, 4, 0, 0]} name="Dépenses" />
+          <BarChart data={chartData} margin={{ left: 0, right: 10 }} barGap={2}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="date" {...AXE_MOIS} />
+            <YAxis {...AXE_MONTANT} />
+            <Tooltip {...INFOBULLE} formatter={(v, nom) => [montant(v), nom]} />
+            <Legend {...LEGENDE} />
+            <Bar dataKey="revenus" fill={COULEURS.revenus} {...BARRE} name="Chiffre d'affaires" />
+            <Bar dataKey="charges" fill={COULEURS.charges} {...BARRE} name="Charges totales" />
           </BarChart>
         </ResponsiveContainer>
       </div>
-      
+
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution du Résultat Net</h2>
+        <div className="mb-4 flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution du résultat net</h2>
+          <span className="text-xs text-muted-foreground">CA − charges totales, par mois</span>
+        </div>
         <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={chartData} margin={{ left: 10, right: 10 }}>
-            <defs>
-              <linearGradient id="colorRes" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-            <Area type="monotone" dataKey="résultat" stroke="#3b82f6" strokeWidth={2} fill="url(#colorRes)" name="Résultat Net" />
+          <AreaChart data={chartData} margin={{ left: 0, right: 10 }}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="date" {...AXE_MOIS} />
+            <YAxis {...AXE_MONTANT} />
+            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.5} />
+            <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [montant(v), "Résultat net"]} />
+            <Area dataKey="résultat" stroke={COULEURS.resultat} fill={COULEURS.resultat} fillOpacity={0.12} {...LIGNE} name="Résultat net" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

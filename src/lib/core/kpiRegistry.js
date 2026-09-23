@@ -342,6 +342,53 @@ export const KPI_REGISTRY = Object.freeze({
     },
   },
   
+  // Les trois mesures ci-dessous existent pour qu'un ecran n'ait JAMAIS a
+  // recomposer lui-meme un chiffre du resultat : CA - charges totales =
+  // resultat net, par construction (tests/coherence_kpi.test.js). Finance
+  // affichait « Depenses totales » (depenses seules) a cote d'un resultat net
+  // qui retranchait aussi le cout des ventes et la paie : les trois cartes ne
+  // s'additionnaient pas (568 519 - 996 484 affiche -2 222 935).
+  order_revenue: {
+    id: "order_revenue",
+    name: { fr: "CA commandes (HT)", en: "Order Revenue" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.VENTES,
+    semanticType: "revenue",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: ["revenue"],
+    calculate: (deps) => (deps.revenue == null ? null : deps.revenue),
+  },
+
+  cogs_total: {
+    id: "cogs_total",
+    name: { fr: "Coût des ventes", en: "Cost of Sales" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.FINANCE,
+    semanticType: "expense",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    dependencies: ["cogs"],
+    calculate: (deps) => (deps.cogs == null ? null : deps.cogs),
+  },
+
+  total_charges: {
+    id: "total_charges",
+    name: { fr: "Charges totales", en: "Total Charges" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.FINANCE,
+    semanticType: "expense",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: true,
+    // Exactement ce que net_income retranche, avec la meme condition : sans
+    // depense ni paie, pas de charges d'exploitation connues -> non mesure.
+    dependencies: ["cogs", "total_expense", "payroll_total"],
+    calculate: (deps) => {
+      if (deps.total_expense == null && deps.payroll_total == null) return null;
+      return (deps.cogs || 0) + (deps.total_expense || 0) + (deps.payroll_total || 0);
+    },
+  },
+
   net_margin_pct: {
     id: "net_margin_pct",
     name: { fr: "Marge nette (%)", en: "Net Margin %" },

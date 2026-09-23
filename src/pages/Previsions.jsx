@@ -1,14 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import ForecastCard from "@/components/previsions/ForecastCard";
 import EmptyState from "@/components/EmptyState";
 import { TrendingUp, AlertTriangle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE_LIGNE, LIGNE, COULEURS, montant, FENETRE_MOIS } from "@/lib/graphiques";
 import { cn } from "@/lib/utils";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { monthlyAggComplete } from "@/lib/periods";
 import { useCompany } from "@/hooks/useCompany";
@@ -61,55 +59,26 @@ function forecastAt(f, x) {
 
 const metrics = [
   { key: "ca", label: "Chiffre d'affaires" },
-  { key: "marge", label: "Marge nette" },
+  { key: "marge", label: "Résultat net" },
   { key: "tresorerie", label: "Trésorerie" },
 ];
 
 export default function Previsions() {
   const [metric, setMetric] = useState("ca");
 
-  const { data: transactions, isLoading: loadingTransactions, isError: transactionsError, refetch: refetchTransactions } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
-  const { data: orders, isLoading: loadingOrders } = useQuery({
-    queryKey: ["orders-summary"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
-  });
-  const { data: executiveSummary, isLoading: loadingExecutiveSummary } = useQuery({
-    queryKey: ["executive-summary"],
-    queryFn: () => fetchAll(base44.entities.ExecutiveSummary, "-date"),
-  });
-  const { data: cashflow, isError: cashflowError, refetch: refetchCashflow } = useQuery({
-    queryKey: ["cashflow-summary"],
-    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
-  });
-  const { data: expenses } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : commandes converties
+  // dans la devise de l'entreprise, paie comprise dans les charges.
+  const { data: donnees, isLoading: chargement, isError: erreurDonnees, refetch: recharger } = useDonneesKpi();
+  const { transactions, orders, executiveSummary, cashflow } = donnees;
 
   const hasFinancialData = (transactions && transactions.length > 0) || (orders && orders.length > 0) || (executiveSummary && executiveSummary.length > 0);
 
-  // Phase 7: Fetch live alerts to cross-reference with forecasts
+  // Phase 7: live alerts cross-referenced with forecasts
   const { company } = useCompany();
-  const { data: liveAlerts } = useQuery({
-    queryKey: ["forecast-alerts"],
-    queryFn: async () => {
-      const [customers, rawOrders, campaignDaily, inventory, products] = await Promise.all([
-        fetchAll(base44.entities.Customer, "-created_date"),
-        orders || fetchOrders(),
-        fetchAll(base44.entities.CampaignDaily, "-date"),
-        fetchAll(base44.entities.Inventory, "-date"),
-        fetchAll(base44.entities.Product),
-      ]);
-      return computeLiveAlerts({ transactions, orders: rawOrders, customers, campaignDaily, products, inventory, cashflow, expenses, company, executiveSummary });
-    },
-    enabled: hasFinancialData && !!cashflow
-  });
+  const liveAlerts = useMemo(() => (hasFinancialData ? computeLiveAlerts({ ...donnees, company }) : []), [donnees, company, hasFinancialData]);
 
   const result = useMemo(() => {
-    const monthly = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []).map((point, i) => ({ ...point, x: i }));
+    const monthly = financialMonthlySeries(donnees).map((point, i) => ({ ...point, x: i }));
     if (monthly.length < 3) return null;
 
     const xs = monthly.map((d) => d.x);
@@ -156,7 +125,7 @@ export default function Previsions() {
       cumulativeNow, cashDate, cashHistory, shortfall, incomeFit, marginFit,
       cashFlowFit, usesRealCashFlow,
     };
-  }, [transactions, cashflow, expenses]);
+  }, [donnees, cashflow]);
 
   const chartData = useMemo(() => {
     if (!result) return [];
@@ -166,8 +135,8 @@ export default function Previsions() {
       // Real monthly closing balances when treasury data was imported;
       // otherwise fall back to the cumulative margin.
     const hist = (cashHistory && cashHistory.length > 0)
-        ? cashHistory.slice(-monthly.length).map((c) => { cum = c.value; return { month: c.month.slice(5), value: Math.round(c.value), forecast: null, range: null }; })
-        : monthly.map((d) => { cum += d.margin; return { month: d.month.slice(5), value: Math.round(cum), forecast: null, range: null }; });
+        ? cashHistory.slice(-monthly.length).map((c) => { cum = c.value; return { month: c.month, value: Math.round(c.value), forecast: null, range: null }; })
+        : monthly.map((d) => { cum += d.margin; return { month: d.month, value: Math.round(cum), forecast: null, range: null }; });
       const lastHist = hist[hist.length - 1];
       if (lastHist) {
         lastHist.forecast = lastHist.value;
@@ -189,7 +158,7 @@ export default function Previsions() {
     }
     const f = metric === "ca" ? incomeF : marginF;
     const key = metric === "ca" ? "income" : "margin";
-    const hist = monthly.map((d) => ({ month: d.month.slice(5), value: Math.round(d[key]), forecast: null, range: null }));
+    const hist = monthly.slice(-FENETRE_MOIS).map((d) => ({ month: d.month, value: Math.round(d[key]), forecast: null, range: null }));
     const lastHist = hist[hist.length - 1];
     if (lastHist) {
       lastHist.forecast = lastHist.value;
@@ -200,14 +169,15 @@ export default function Previsions() {
     return [...hist, ...fcst];
   }, [result, metric]);
 
-  if (loadingTransactions || loadingOrders || loadingExecutiveSummary) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
-  if (transactionsError || cashflowError) {
-    return <DataErrorState onRetry={() => Promise.all([refetchTransactions(), refetchCashflow()])} />;
+  if (chargement) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
+  if (erreurDonnees) {
+    return <DataErrorState onRetry={recharger} />;
   }
   if (!hasFinancialData) return <EmptyState icon={Upload} title="Aucune donnée à projeter" description="Importez vos transactions ou vos commandes de ventes pour que GESCOP calcule des prévisions basées sur vos tendances." action={<Link to="/importer" className="text-primary hover:underline">Importer des données →</Link>} />;
   if (!result) return <EmptyState icon={TrendingUp} title="Données insuffisantes" description="Il faut au moins 3 mois de données pour calculer des prévisions fiables." />;
 
-  const fmt = (v) => `${Math.round(v).toLocaleString("fr-CA")} $`;
+  const fmt = montant;
+  const couleurMesure = metric === "ca" ? COULEURS.revenus : metric === "marge" ? COULEURS.resultat : COULEURS.tresorerie;
   const selectedLabel = metrics.find((m) => m.key === metric).label;
 
   // Phase 7: Extract critical cross-domain alerts to warn the user
@@ -226,7 +196,7 @@ export default function Previsions() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ForecastCard label="Chiffre d'affaires" current={fmt(result.currentIncome)} f30={fmt(result.incomeF[0].value)} f90={fmt(result.incomeF[2].value)} />
-        <ForecastCard label="Marge nette" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
+        <ForecastCard label="Résultat net" current={fmt(result.currentMargin)} f30={fmt(result.marginF[0].value)} f90={fmt(result.marginF[2].value)} />
         <ForecastCard label={result.cashDate ? `Trésorerie (solde au ${result.cashDate})` : "Trésorerie projetée"} current={fmt(result.cumulativeNow)} f30={fmt(result.cash30)} f90={fmt(result.cash90)} />
       </div>
 
@@ -234,7 +204,7 @@ export default function Previsions() {
         <span className="font-semibold text-foreground">Fiabilité de ces projections.</span>{" "}
         Tendance linéaire ajustée sur {result.monthly.length} mois complets, sans saisonnalité.
         Qualité d'ajustement : R² de {(result.incomeFit.r2 * 100).toFixed(0)} % sur le chiffre d'affaires
-        et {(result.marginFit.r2 * 100).toFixed(0)} % sur la marge
+        et {(result.marginFit.r2 * 100).toFixed(0)} % sur le résultat net
         {result.incomeFit.r2 < 0.5 || result.marginFit.r2 < 0.5
           ? " - en dessous de 50 %, la tendance explique moins de la moitié des variations : lisez la fourchette, pas le chiffre central."
           : " - la tendance explique l'essentiel des variations observées."}
@@ -279,14 +249,17 @@ export default function Previsions() {
       <div className="rounded-2xl border border-border bg-card p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{selectedLabel}</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v) => (v != null ? `${Math.round(Number(v)).toLocaleString("fr-CA")} $` : "-")} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            <Area dataKey="range" stroke="none" fill="rgba(59, 130, 246, 0.1)" />
-            <Line dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} connectNulls={false} />
-            <Line dataKey="forecast" stroke="rgba(59, 130, 246, 0.6)" strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
+          <ComposedChart data={chartData} margin={{ left: 0, right: 10 }}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="month" {...AXE_MOIS} />
+            <YAxis {...AXE_MONTANT} />
+            {metric !== "ca" && <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.5} />}
+            <Tooltip {...INFOBULLE_LIGNE}
+              formatter={(v, nom) => [Array.isArray(v) ? `${montant(v[0])} à ${montant(v[1])}` : montant(v), nom]} />
+            {/* Bande = intervalle de prediction : elle s'elargit avec l'horizon. */}
+            <Area dataKey="range" name="Fourchette probable" stroke="none" fill={couleurMesure} fillOpacity={0.12} isAnimationActive={false} />
+            <Line dataKey="value" name="Réalisé" stroke={couleurMesure} {...LIGNE} connectNulls={false} />
+            <Line dataKey="forecast" name="Projection" stroke={couleurMesure} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
           </ComposedChart>
         </ResponsiveContainer>
         </div>

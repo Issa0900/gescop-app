@@ -12,7 +12,7 @@ const typeStyles = {
 
 const confidenceColor = (pct) => (pct >= 80 ? "text-emerald-600" : pct >= 60 ? "text-orange-500" : "text-red-600");
 
-export default function InsightCard({ type, typeLabel, fait, analyse, impactLabel, confiance, recommandation, preuves, onCreateAction }) {
+export default function InsightCard({ type, typeLabel, fait, analyse, impactLabel, confiance, deterministe, recommandation, preuves, onCreateAction }) {
   return (
     <div className="flex flex-col rounded-xl border border-border bg-card p-5">
       <div className="mb-3 flex items-center justify-between">
@@ -55,7 +55,12 @@ export default function InsightCard({ type, typeLabel, fait, analyse, impactLabe
       )}
 
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-        {confiance > 0 ? (
+        {deterministe ? (
+          // Une regle calculee sur les donnees n'a pas de « confiance » : elle
+          // est exacte sur ce qui est importe. Le pourcentage reste reserve aux
+          // estimations de l'IA.
+          <span className="text-xs font-medium text-muted-foreground">Calcul exact sur vos données</span>
+        ) : confiance > 0 ? (
           <span className={cn("text-xs font-medium", confidenceColor(confiance))}>Confiance {confiance}%</span>
         ) : (
           <span />

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
+import BandeauTroncature from "@/components/BandeauTroncature";
 import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export default function Layout() {
               'removeChild'") quand l'animation de sortie manipulait encore le
               noeud DOM au moment ou React le retirait pendant un changement de route. */}
           <div key={location.pathname} className="animate-in fade-in duration-200">
+            <BandeauTroncature />
             <Outlet />
           </div>
         </div>

@@ -2,8 +2,10 @@ import React from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-function Sparkline({ data, color = "hsl(var(--primary))" }) {
-  if (!data || data.length < 2) return null;
+function Sparkline({ data: brut, color = "hsl(var(--primary))" }) {
+  // Un mois non mesure n'est pas un zero : il est retire du trace.
+  const data = (brut || []).filter((v) => Number.isFinite(v));
+  if (data.length < 2) return null;
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
@@ -51,23 +53,26 @@ function Sparkline({ data, color = "hsl(var(--primary))" }) {
   );
 }
 
-const trendConfig = {
-  up: { icon: TrendingUp, color: "text-emerald-600" },
-  down: { icon: TrendingDown, color: "text-red-600" },
-  stable: { icon: Minus, color: "text-muted-foreground" },
+const trendIcons = { up: TrendingUp, down: TrendingDown, stable: Minus };
+// La couleur dit si l'evolution est BONNE : des couts en hausse sont en rouge,
+// en baisse en vert (lowerIsBetter), l'inverse pour le chiffre d'affaires.
+const tonTendance = (dir, lowerIsBetter) => {
+  if (dir !== "up" && dir !== "down") return "text-muted-foreground";
+  const bonne = (dir === "up") !== Boolean(lowerIsBetter);
+  return bonne ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
 };
 
 const statusStyles = {
-  good: "text-emerald-600 bg-emerald-50",
-  warning: "text-orange-600 bg-orange-50",
-  critical: "text-red-600 bg-red-50",
-  neutral: "text-blue-600 bg-blue-50",
+  good: "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/15",
+  warning: "text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/15",
+  critical: "text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/15",
+  neutral: "text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/15",
   unmeasured: "text-muted-foreground bg-muted",
 };
 
-export default function KpiCard({ label, value, change, changeDir, sparkline, status, statusLabel, onClick, note }) {
-  const tc = trendConfig[changeDir] || trendConfig.stable;
-  const TIcon = tc.icon;
+export default function KpiCard({ label, value, change, changeDir, sparkline, status, statusLabel, onClick, note, lowerIsBetter }) {
+  const TIcon = trendIcons[changeDir] || Minus;
+  const tc = { color: tonTendance(changeDir, lowerIsBetter) };
   return (
     <div
       onClick={onClick}

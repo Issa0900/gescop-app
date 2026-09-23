@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import InsightCard from "@/components/insights/InsightCard";
@@ -10,7 +9,7 @@ import { Brain, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useCompany } from "@/hooks/useCompany";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
 import { useObservations } from "@/hooks/useObservations";
 
@@ -56,22 +55,9 @@ export default function Insights() {
 
   // Fetch full data for live interconnected alerts
   const { company } = useCompany();
-  const { data: liveData, isLoading: llive } = useQuery({
-    queryKey: ["insights-live-alerts", company?.stock_alert_threshold],
-    queryFn: async () => {
-      const [transactions, customers, orders, campaignDaily, inventory, cashflow, products, expenses] = await Promise.all([
-        fetchAll(base44.entities.Transaction, "-date"),
-        fetchAll(base44.entities.Customer, "-created_date"),
-        fetchOrders(),
-        fetchAll(base44.entities.CampaignDaily, "-date"),
-        fetchAll(base44.entities.Inventory, "-date"),
-        fetchAll(base44.entities.Cashflow, "-date"),
-        fetchAll(base44.entities.Product),
-        fetchAll(base44.entities.Expense),
-      ]);
-      return computeLiveAlerts({ transactions, orders, customers, campaignDaily, products, inventory, cashflow, expenses, company });
-    },
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : paie comprise.
+  const { data: donnees, isLoading: llive } = useDonneesKpi();
+  const liveData = useMemo(() => computeLiveAlerts({ ...donnees, company }), [donnees, company]);
 
   const insights = useMemo(() => {
     const items = [];
@@ -87,12 +73,13 @@ export default function Insights() {
       items.push({
         id: a.id, 
         type: "anomalie", 
-        typeLabel: isCrossDomain ? "Alerte Inter-Domaine (Live)" : "Alerte Live",
+        typeLabel: a.croisement ? "Croisement de sources" : isCrossDomain ? "Alerte Inter-Domaine (Live)" : "Alerte Live",
         fait: `${a.category} : ${a.title}`, 
         analyse: a.message,
         impactLabel: null,
-        confiance: 100, 
-        recommandation: isCrossDomain ? "Vérifiez immédiatement les impacts en chaîne." : null, 
+        confiance: null,
+        deterministe: true,
+        recommandation: a.action || (isCrossDomain ? "Vérifiez immédiatement les impacts en chaîne." : null),
         preuves: getPreuves(a.id),
         source: { severity: a.level, priority: a.level },
       });
@@ -129,7 +116,9 @@ export default function Insights() {
       preuves: getPreuves(r.id),
       source: r,
     }));
-    return items.sort((a, b) => (Math.abs(b.source.financial_impact || 0) + b.confiance / 2) - (Math.abs(a.source.financial_impact || 0) + a.confiance / 2));
+    // Un calcul exact pese comme une certitude dans le classement.
+    const poids = (x) => Math.abs(x.source.financial_impact || 0) + (x.deterministe ? 100 : x.confiance || 0) / 2;
+    return items.sort((a, b) => poids(b) - poids(a));
   }, [anomalies, risks, opportunities, recommendations, liveData, observations]);
 
   const filtered = filter === "tous" ? insights : insights.filter((i) => i.type === filter);

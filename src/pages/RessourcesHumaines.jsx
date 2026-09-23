@@ -1,106 +1,64 @@
 import React, { useMemo } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
-import { montantHT } from "@/lib/core/kpiRecords";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import StatCard from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Users, Banknote, Upload, PieChart, TrendingUp, Building2, UserCircle, Briefcase, Percent } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { AXE, AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE_H, LIGNE, COULEURS, montant, nombre, libelleCode, plierAutres, FENETRE_MOIS } from "@/lib/graphiques";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import DataErrorState from "@/components/DataErrorState";
 import DataTable from "@/components/ui/DataTable";
 import BadgeStatus from "@/components/ui/BadgeStatus";
-import { fetchAll } from "@/lib/fetchAll";
-import { validSalesOrders, columnPresent } from "@/lib/metrics";
+import { columnPresent } from "@/lib/metrics";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { useKpiEngine } from "@/lib/useKpiEngine";
+import { preparerPeriodes, serieMensuelle } from "@/lib/core/kpiPeriodes";
 
 function formatCurrency(val) {
   if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
   return `${Math.round(val).toLocaleString("fr-CA")} $`;
 }
 
+// Masse salariale, effectif, CA par employe et poids sur le CA : les KPI du
+// moteur, avec le MEME chiffre d'affaires que Finance et la page KPI. La page
+// divisait la paie par le seul CA des commandes (poids 559,8 % ici, 315 % pour
+// le moteur) et inventait une paie a partir des taux de commission quand
+// aucune paie n'etait importee.
+const IDS_RH = ["payroll_total", "employee_count", "revenue_per_employee", "rh_expense_ratio", "total_revenue"];
+
 export default function RessourcesHumaines() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["rh-data"],
-    queryFn: async () => {
-      const [employees, payrolls, transactions, orders] = await Promise.all([
-        fetchAll(base44.entities.Employee),
-        fetchAll(base44.entities.Payroll, "-period"),
-        fetchAll(base44.entities.Transaction, "-date"),
-        fetchOrders()
-      ]);
-      const normalizedEmployees = (employees || []).map((employee) => ({
-        ...employee,
-        employee_id: employee.employee_id || employee.id || employee.employee_number || employee.matricule,
-        display_name: `${employee.first_name || ""} ${employee.last_name || ""}`.trim()
-          || employee.full_name
-          || employee.name
-          || employee.employee_id
-          || employee.id
-          || "Inconnu",
-        status: employee.status || "actif",
-      }));
-      const normalizedPayrolls = (payrolls || []).map((payroll) => ({
-        ...payroll,
-        employee_id: payroll.employee_id || payroll.employee_number || payroll.matricule,
-        period: payroll.period || payroll.date || payroll.pay_period,
-        total_cost: Number(payroll.total_cost) || (
-          Number(payroll.regular_pay || 0) +
-          Number(payroll.overtime || 0) +
-          Number(payroll.bonus || 0) +
-          Number(payroll.employer_cost || 0) +
-          Number(payroll.salary || 0)
-        ),
-      }));
-      return { employees: normalizedEmployees, payrolls: normalizedPayrolls, transactions: transactions || [], orders: orders || [] };
-    }
-  });
+  const { data: donnees, isLoading, isError, refetch } = useDonneesKpi();
+  const { kpis } = useKpiEngine(donnees, IDS_RH);
 
+  const data = useMemo(() => ({
+    employees: (donnees.employees || []).map((employee) => ({
+      ...employee,
+      employee_id: employee.employee_id || employee.id || employee.employee_number || employee.matricule,
+      display_name: `${employee.first_name || ""} ${employee.last_name || ""}`.trim()
+        || employee.full_name
+        || employee.name
+        || employee.employee_id
+        || employee.id
+        || "Inconnu",
+      status: employee.status || "actif",
+    })),
+    payrolls: donnees.payrolls || [],
+  }), [donnees]);
+
+  // Serie mensuelle du moteur : masse salariale et CA, memes definitions que
+  // les cartes. Mois futurs exclus (une paie datee de decembre n'est pas
+  // encore versee).
   const { timeSeries, available } = useMemo(() => {
-    if (!data) return { timeSeries: [], available: false };
-    const byMonth = {};
-    const add = (record, month, key, value) => {
-      if (!month || !Number.isFinite(value)) return;
-      byMonth[month] ||= { date: month, payroll_total: 0, total_revenue: 0 };
-      byMonth[month][key] += value;
-    };
-    (data.payrolls || []).forEach((p) => {
-      const month = String(p.period || p.date || "").slice(0, 7);
-      add(p, month, "payroll_total", Math.abs(Number(p.total_cost) || 0));
-    });
-    // Refunded orders' money went back to the customer - excluded so
-    // "CA par employé" / "Poids sur CA" don't count revenue that was reversed.
-    validSalesOrders(data.orders).forEach((o) => {
-      const month = String(o.date || "").slice(0, 7);
-      const total = montantHT(o);
-      if (month && Number.isFinite(total)) add(o, month, "total_revenue", Math.max(0, total));
-    });
-
-    // If payroll rows are missing but we have employee costs and order months,
-    // distribute the payroll evenly across the active months so the chart works.
-    if ((data.payrolls || []).length === 0 && (data.employees || []).length > 0) {
-      const annualPayroll = (data.employees || []).reduce((s, e) => s + (Number(e.total_employer_cost) || Number(e.annual_salary) || Number(e.salary) || 0), 0);
-      const months = Object.keys(byMonth);
-      if (annualPayroll > 0 && months.length > 0) {
-        const monthlyShare = annualPayroll / months.length;
-        months.forEach((m) => {
-          byMonth[m].payroll_total = Math.round(monthlyShare);
-        });
-      }
-    }
-
-    const rows = Object.values(byMonth).sort((a, b) => a.date.localeCompare(b.date));
-    return { timeSeries: rows, available: rows.length > 0 };
-  }, [data]);
+    const serie = serieMensuelle(preparerPeriodes(donnees), ["payroll_total", "total_revenue"])
+      .map((p) => ({ date: p.month, payroll_total: p.payroll_total, total_revenue: p.total_revenue }));
+    return { timeSeries: serie, available: serie.some((p) => p.payroll_total != null) };
+  }, [donnees]);
 
   const { metrics, distribution } = useMemo(() => {
-    if (!data) return { metrics: {}, distribution: [] };
-    
+    const v = (id) => { const x = kpis.get(id)?.value; return Number.isFinite(x) ? x : null; };
     const activeEmployees = data.employees.filter(e => e.status !== "depart");
-    const headcount = activeEmployees.length;
-    
+
     const depts = {};
     activeEmployees.forEach(e => {
       const dept = e.department || "Non assigné";
@@ -108,45 +66,15 @@ export default function RessourcesHumaines() {
     });
     const dist = Object.keys(depts).map(name => ({ name, value: depts[name] })).sort((a,b) => b.value - a.value);
 
-    let totalPayroll = 0;
-    let totalRev = 0;
-    if (timeSeries && timeSeries.length > 0) {
-      timeSeries.forEach(pt => {
-        totalPayroll += (pt.payroll_total || 0);
-        totalRev += (pt.total_revenue || 0);
-      });
+    // Sans paie importee, la remuneration annuelle portee par les fiches
+    // employes est affichee COMME TELLE (libelle distinct), jamais melangee a
+    // une paie versee ni recalculee a partir des commissions.
+    let totalPayroll = v("payroll_total");
+    let payrollSource = totalPayroll === null ? null : "paie";
+    if (totalPayroll === null) {
+      const annuel = data.employees.reduce((s, e) => s + (Number(e.total_employer_cost) || Number(e.annual_salary) || Number(e.salary) || 0), 0);
+      if (annuel > 0) { totalPayroll = annuel; payrollSource = "fiches"; }
     }
-
-    // Fallback: extract salaries from transactions if Payroll entity data is missing
-    if (totalPayroll === 0 && data.transactions && data.transactions.length > 0) {
-      const salaryKeywords = ["salaire", "salaires", "paie", "payroll", "masse salariale", "remuneration"];
-      data.transactions.forEach(t => {
-        const cat = (t.category || "").toLowerCase();
-        const type = (t.type || "").toLowerCase();
-        const desc = (t.description || "").toLowerCase();
-        if (salaryKeywords.some(k => cat.includes(k) || type.includes(k) || desc.includes(k))) {
-          totalPayroll += Math.abs(Number(t.amount) || 0);
-        }
-      });
-    }
-
-    // Fallback: if no Payroll and no transaction salaries, sum employee annual costs/salaries
-    if (totalPayroll === 0 && data.employees && data.employees.length > 0) {
-      data.employees.forEach(e => {
-        const cost = Number(e.total_employer_cost) || Number(e.annual_salary) || Number(e.salary) || 0;
-        totalPayroll += cost;
-      });
-    }
-
-    // Fallback: if totalRev is 0, sum orders
-    if (totalRev === 0 && data.orders && data.orders.length > 0) {
-      validSalesOrders(data.orders).forEach(o => {
-        totalRev += (Number(o.total_revenue) || Number(o.total) || 0);
-      });
-    }
-
-    const revPerEmp = headcount > 0 ? (totalRev / headcount) : 0;
-    const ratio = totalRev > 0 ? (totalPayroll / totalRev) : 0;
 
     // Shown only when at least one employee actually carries a commission
     // rate, so a roster imported without one doesn't get a stat card of "0%".
@@ -155,26 +83,18 @@ export default function RessourcesHumaines() {
       ? withCommission.reduce((s, e) => s + (Number(e.commission_rate) || 0), 0) / withCommission.length
       : null;
 
-    // Fallback: if totalPayroll is still 0 but employees have commission rates and orders exist, compute commissions
-    if (totalPayroll === 0 && withCommission.length > 0 && data.orders && data.orders.length > 0) {
-      const empCommMap = {};
-      withCommission.forEach(e => {
-        empCommMap[e.employee_id] = Number(e.commission_rate) || 0;
-      });
-      data.orders.forEach(o => {
-        const rate = empCommMap[o.employee_id] || (avgCommission || 0);
-        const rev = Number(o.total_revenue) || Number(o.total) || 0;
-        if (rate > 0 && rev > 0) {
-          totalPayroll += rev * rate;
-        }
-      });
-    }
-
     return {
-      metrics: { headcount, totalPayroll, revPerEmp, ratio, totalRev, avgCommission },
-      distribution: dist
+      metrics: {
+        headcount: v("employee_count"),
+        totalPayroll,
+        payrollSource,
+        revPerEmp: v("revenue_per_employee"),
+        ratioPct: v("rh_expense_ratio"),
+        avgCommission,
+      },
+      distribution: dist,
     };
-  }, [data, timeSeries]);
+  }, [data, kpis]);
 
   if (isLoading) {
     return (
@@ -185,7 +105,7 @@ export default function RessourcesHumaines() {
   }
   if (isError) return <DataErrorState onRetry={refetch} />;
 
-  if (!data?.employees?.length && !data?.payrolls?.length && metrics.totalPayroll === 0) {
+  if (!data.employees.length && !data.payrolls.length) {
     return (
       <EmptyState
         icon={Users}
@@ -263,7 +183,7 @@ export default function RessourcesHumaines() {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8 pb-10"
@@ -276,27 +196,28 @@ export default function RessourcesHumaines() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-4">
-        <StatCard 
-          label="Effectifs (actifs)" 
-          value={metrics.headcount} 
-          icon={Users} 
-          accent="bg-blue-100 text-blue-600" 
-        />
-        <StatCard 
-          label="Masse Salariale Cumulée" 
-          value={formatCurrency(metrics.totalPayroll)} 
-          icon={Banknote} 
-          accent="bg-rose-100 text-rose-600" 
-        />
-        <StatCard 
-          label="CA par Employé" 
-          value={formatCurrency(metrics.revPerEmp)} 
-          icon={TrendingUp} 
-          accent="bg-emerald-100 text-emerald-600" 
+        <StatCard
+          label="Effectifs (actifs)"
+          value={metrics.headcount ?? "Non mesuré"} 
+          icon={Users}
+          accent="bg-blue-100 text-blue-600"
         />
         <StatCard
-          label="Poids sur CA"
-          value={`${(metrics.ratio * 100).toFixed(1)}%`}
+          label={metrics.payrollSource === "fiches" ? "Rémunération annuelle (fiches employés)" : "Masse salariale (période importée)"}
+          value={metrics.totalPayroll === null ? "Non mesuré" : formatCurrency(metrics.totalPayroll)}
+          sublabel={metrics.payrollSource === "fiches" ? "Aucune paie importée : somme des salaires annuels déclarés" : undefined}
+          icon={Banknote}
+          accent="bg-rose-100 text-rose-600"
+        />
+        <StatCard
+          label="CA par employé"
+          value={metrics.revPerEmp === null ? "Non mesuré" : formatCurrency(metrics.revPerEmp)} 
+          icon={TrendingUp}
+          accent="bg-emerald-100 text-emerald-600"
+        />
+        <StatCard
+          label="Masse salariale / CA"
+          value={metrics.ratioPct === null ? "Non mesuré" : `${metrics.ratioPct.toFixed(1)} %`}
           icon={PieChart}
           accent="bg-purple-100 text-purple-600"
         />
@@ -314,35 +235,22 @@ export default function RessourcesHumaines() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg">Évolution Masse Salariale vs CA</h3>
-              <p className="text-sm text-muted-foreground">Comparaison temporelle</p>
+              <h3 className="font-semibold text-lg">Masse salariale et chiffre d'affaires</h3>
+              <p className="text-sm text-muted-foreground">Par mois · mois futurs exclus</p>
             </div>
           </div>
           <div className="h-72">
             {available && timeSeries.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={timeSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorPayroll" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#b45309" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#b45309" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#15803d" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#15803d" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#6b7280" }} tickMargin={10} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} tickFormatter={(v) => `${v / 1000}k`} axisLine={false} tickLine={false} />
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
-                    formatter={(value) => formatCurrency(value)}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
-                  <Area type="monotone" dataKey="total_revenue" stroke="#15803d" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" name="Chiffre d'affaires" />
-                  <Area type="monotone" dataKey="payroll_total" stroke="#b45309" strokeWidth={3} fillOpacity={1} fill="url(#colorPayroll)" name="Masse salariale" />
-                </AreaChart>
+                <LineChart data={timeSeries.slice(-FENETRE_MOIS)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid {...GRILLE} />
+                  <XAxis dataKey="date" {...AXE_MOIS} />
+                  <YAxis {...AXE_MONTANT} />
+                  <Tooltip {...INFOBULLE_LIGNE} formatter={(v, nom) => [montant(v), nom]} />
+                  <Legend {...LEGENDE} />
+                  <Line dataKey="total_revenue" name="Chiffre d'affaires" stroke={COULEURS.revenus} {...LIGNE} />
+                  <Line dataKey="payroll_total" name="Masse salariale" stroke={COULEURS.paie} {...LIGNE} />
+                </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
@@ -363,15 +271,12 @@ export default function RessourcesHumaines() {
           <div className="h-72">
             {distribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={distribution} layout="vertical" margin={{ left: 10, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: "#374151", fontWeight: 500 }} width={110} axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
-                  />
-                  <Bar dataKey="value" fill="#2a78d6" radius={[0, 4, 4, 0]} name="Effectif" barSize={24} />
+                <BarChart data={plierAutres(distribution, "value", 8).map((d) => ({ ...d, name: libelleCode(d.name) }))} layout="vertical" margin={{ left: 10, right: 20 }}>
+                  <CartesianGrid {...GRILLE} vertical horizontal={false} />
+                  <XAxis type="number" {...AXE} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" {...AXE} width={120} />
+                  <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v) => [nombre(v), "Employés actifs"]} />
+                  <Bar dataKey="value" fill={COULEURS.effectif} {...BARRE_H} name="Employés actifs" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

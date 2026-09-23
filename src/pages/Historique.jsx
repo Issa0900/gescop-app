@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import { History as HistoryIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AXE, GRILLE, INFOBULLE_LIGNE, LIGNE, COULEURS } from "@/lib/graphiques";
 import { cn } from "@/lib/utils";
 
 const dimLabels = {
@@ -82,12 +83,12 @@ export default function Historique() {
       <div className="rounded-2xl border border-border bg-card p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution du score de santé</h2>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+          <LineChart data={chartData} margin={{ left: 0, right: 10 }}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="date" {...AXE} />
+            <YAxis domain={[0, 100]} {...AXE} width={36} />
+            <Tooltip {...INFOBULLE_LIGNE} labelFormatter={(l) => l} formatter={(v) => [`${v} / 100`, "Score de santé"]} />
+            <Line dataKey="score" name="Score de santé" stroke={COULEURS.resultat} {...LIGNE} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>

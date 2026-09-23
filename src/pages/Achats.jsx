@@ -1,4 +1,5 @@
 import React from "react";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import StatCard from "@/components/StatCard";
@@ -25,16 +26,12 @@ export default function Achats() {
     queryKey: ["suppliers"],
     queryFn: () => fetchAll(base44.entities.Supplier),
   });
-  const { data: inventory, isLoading: li } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: () => fetchAll(base44.entities.Inventory),
-  });
-  const { data: products, isLoading: lpr } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => fetchAll(base44.entities.Product),
-  });
+  // Inventaire et produits : cache partage (useDonneesKpi), memes lignes que
+  // la page Produits.
+  const { data: donnees, isLoading: chargementPartage } = useDonneesKpi();
+  const { inventory, products } = donnees;
 
-  if (lp || ls || li || lpr) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (lp || ls || chargementPartage) return <p className="text-sm text-muted-foreground">Chargement…</p>;
 
   const hasPurchases = purchases && purchases.length > 0;
   const hasSuppliers = suppliers && suppliers.length > 0;

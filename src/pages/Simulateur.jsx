@@ -1,13 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import SliderControl from "@/components/simulateur/SliderControl";
 import EmptyState from "@/components/EmptyState";
 import { Calculator, Upload, TrendingUp, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn, formatPct } from "@/lib/utils";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { isIncome } from "@/lib/transactionClassifier";
 import { useCompany } from "@/hooks/useCompany";
@@ -20,45 +17,19 @@ export default function Simulateur() {
   const [expenseChange, setExpenseChange] = useState(0);
   const [variableShare, setVariableShare] = useState(60);
 
-  const { data: transactions, isLoading: loadingTxn } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
-  const { data: orders, isLoading: loadingOrders } = useQuery({
-    queryKey: ["orders-summary"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
-  });
-  const { data: executiveSummary, isLoading: loadingExecutiveSummary } = useQuery({
-    queryKey: ["executive-summary"],
-    queryFn: () => fetchAll(base44.entities.ExecutiveSummary, "-date"),
-  });
-  const { data: expenses } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : la simulation part
+  // des memes charges (paie comprise) que la page KPI et Finance.
+  const { data: donnees, isLoading: chargement } = useDonneesKpi();
+  const { transactions, orders, executiveSummary } = donnees;
 
   const hasFinancialData = (transactions && transactions.length > 0) || (orders && orders.length > 0) || (executiveSummary && executiveSummary.length > 0);
 
-  // Phase 7: Fetch live alerts to provide contextual recommendations
+  // Phase 7: live alerts for contextual recommendations
   const { company } = useCompany();
-  const { data: liveAlerts } = useQuery({
-    queryKey: ["sim-alerts"],
-    queryFn: async () => {
-      const [customers, rawOrders, campaignDaily, inventory, products, cashflow] = await Promise.all([
-        fetchAll(base44.entities.Customer, "-created_date"),
-        orders || fetchOrders(),
-        fetchAll(base44.entities.CampaignDaily, "-date"),
-        fetchAll(base44.entities.Inventory, "-date"),
-        fetchAll(base44.entities.Product),
-        fetchAll(base44.entities.Cashflow, "-date")
-      ]);
-      return computeLiveAlerts({ transactions, orders: rawOrders, customers, campaignDaily, products, inventory, cashflow, expenses, company, executiveSummary });
-    },
-    enabled: hasFinancialData
-  });
+  const liveAlerts = useMemo(() => (hasFinancialData ? computeLiveAlerts({ ...donnees, company }) : []), [donnees, company, hasFinancialData]);
 
   const current = useMemo(() => {
-    const series = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []);
+    const series = financialMonthlySeries(donnees);
     if (series.length === 0) return null;
     const last = series[series.length - 1];
     const baseMonth = last.month;
@@ -72,7 +43,7 @@ export default function Simulateur() {
     const avgPrice = income / volume;
     
     return { income, expense, margin, volume, avgPrice, baseMonth };
-  }, [transactions, expenses, orders, executiveSummary]);
+  }, [donnees]);
 
   const sim = useMemo(() => {
     if (!current) return null;
@@ -96,7 +67,7 @@ export default function Simulateur() {
     };
   }, [current, priceChange, volumeChange, expenseChange, variableShare]);
 
-  if (loadingTxn || loadingOrders || loadingExecutiveSummary) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
+  if (chargement) return <div className="flex h-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-800" /></div>;
   if (!hasFinancialData) return <EmptyState icon={Upload} title="Aucune donnée à simuler" description="Importez vos transactions ou commandes de ventes pour tester l'impact de vos décisions sur vos résultats." action={<Link to="/importer" className="text-primary hover:underline">Importer des données →</Link>} />;
   if (!current || !sim) return <EmptyState icon={Calculator} title="Données insuffisantes pour simuler" description="Il faut au moins un mois complet de données." action={<Link to="/importer" className="text-primary hover:underline">Vérifier l'import →</Link>} />;
 
@@ -106,10 +77,10 @@ export default function Simulateur() {
     { label: "Prix moyen", actual: fmt(current.avgPrice), sim: fmt(sim.newPrice) },
     { label: "Volume (nb de transactions de vente)", actual: Math.round(current.volume).toLocaleString("fr-CA"), sim: Math.round(sim.newVolume).toLocaleString("fr-CA") },
     { label: "Chiffre d'affaires", actual: fmt(current.income), sim: fmt(sim.newIncome) },
-    { label: "Dépenses", actual: fmt(current.expense), sim: fmt(sim.newExpense) },
+    { label: "Charges totales (coût des ventes, dépenses, paie)", actual: fmt(current.expense), sim: fmt(sim.newExpense) },
     { label: "- dont coûts fixes", actual: fmt(current.expense * (1 - Math.min(100, Math.max(0, variableShare)) / 100)), sim: fmt(sim.fixedCost * (1 + expenseChange / 100)) },
     { label: "- dont coûts variables", actual: fmt(current.expense * (Math.min(100, Math.max(0, variableShare)) / 100)), sim: fmt(sim.variableCost * (1 + expenseChange / 100)) },
-    { label: "Marge nette", actual: fmt(current.margin), sim: fmt(sim.newMargin) },
+    { label: "Résultat net", actual: fmt(current.margin), sim: fmt(sim.newMargin) },
     { label: "Taux de marge", actual: fmtPct(sim.currentMarginPct), sim: fmtPct(sim.newMarginPct) },
   ];
   const positive = sim.profitChange >= 0;

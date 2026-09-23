@@ -1,43 +1,27 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import DataTable from "@/components/ui/DataTable";
 import BadgeStatus from "@/components/ui/BadgeStatus";
 import { formatCAD, formatNumber } from "@/lib/utils";
 import { Megaphone, TrendingUp, UserPlus, DollarSign } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  LineChart, Line,
-} from "recharts";
-import { fetchAll } from "@/lib/fetchAll";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, ReferenceLine } from "recharts";
+import { AXE, AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, libelleCode, FENETRE_MOIS } from "@/lib/graphiques";
 import { columnPresent } from "@/lib/metrics";
 
 const num = (value) => Number(value) || 0;
 
 export default function Marketing() {
-  const { data: campaigns, isLoading: lc } = useQuery({
-    queryKey: ["campaigns-summary"],
-    queryFn: () => fetchAll(base44.entities.Campaign),
-  });
-  const { data: daily, isLoading: ld } = useQuery({
-    queryKey: ["campaign-daily-summary"],
-    queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
-  });
+  // Cache partage (useDonneesKpi) : memes lignes que la page KPI et les
+  // croisements, sans relire les sources a chaque ouverture.
+  const { data: donnees, isLoading: chargement } = useDonneesKpi();
+  const { campaigns, campaignDaily: daily, customers, transactions } = donnees;
   // Ad exports rarely carry a "new customers" column, but the customer file does
   // carry an acquisition date - so the figure is measurable even when it is not
   // attributable to a specific campaign.
-  const { data: customers, isLoading: lcu } = useQuery({
-    queryKey: ["customers-acquisition"],
-    queryFn: () => fetchAll(base44.entities.Customer),
-  });
-  const { data: transactions, isLoading: ltx } = useQuery({
-    queryKey: ["marketing-transactions"],
-    queryFn: () => fetchAll(base44.entities.Transaction),
-  });
 
-  if (lc || ld || lcu || ltx) return <p className="text-sm text-muted-foreground">Chargement…</p>;
+  if (chargement) return <p className="text-sm text-muted-foreground">Chargement…</p>;
   
   let totalSpend = (campaigns || []).reduce((s, c) => s + num(c.spend || c.budget), 0);
   let totalRevenue = (campaigns || []).reduce((s, c) => s + num(c.revenue), 0);
@@ -114,7 +98,7 @@ export default function Marketing() {
     byChannel[ch].clicks += num(c.clicks);
   });
   const channelData = Object.entries(byChannel).map(([ch, v]) => ({
-    canal: ch,
+    canal: libelleCode(ch),
     dépenses: Math.round(v.spend),
     revenus: Math.round(v.revenue),
     roas: v.spend > 0 ? Number((v.revenue / v.spend).toFixed(2)) : 0,
@@ -135,7 +119,7 @@ export default function Marketing() {
     byMonth[m].spend += num(d.spend);
     byMonth[m].revenue += num(d.revenue);
   });
-  const trendData = Object.entries(byMonth).sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-8).map(([m, v]) => ({
+  const trendData = Object.entries(byMonth).sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-FENETRE_MOIS).map(([m, v]) => ({
     mois: m,
     dépenses: Math.round(v.spend),
     revenus: Math.round(v.revenue),
@@ -156,7 +140,7 @@ export default function Marketing() {
 
   const campaignColumns = [
     { key: "campaign_name", header: "Campagne", searchValue: (c) => c.campaign_name || "", sortValue: (c) => c.campaign_name || "", render: (c) => <span className="block max-w-[180px] truncate" title={c.campaign_name}>{c.campaign_name}</span> },
-    { key: "channel", header: "Canal", render: (c) => <span className="uppercase text-muted-foreground">{c.channel}</span> },
+    { key: "channel", header: "Canal", render: (c) => <span className="text-muted-foreground">{libelleCode(c.channel)}</span> },
     { key: "budget", header: "Budget", align: "right", sortValue: (c) => Number(c.budget) || 0, render: (c) => formatCAD(c.budget || 0) },
     { key: "spend", header: "Dépenses", align: "right", sortValue: (c) => c._spend, render: (c) => formatCAD(c._spend) },
     { key: "revenue", header: "Revenus", align: "right", sortValue: (c) => c._revenue, render: (c) => formatCAD(c._revenue) },
@@ -190,8 +174,8 @@ export default function Marketing() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Dépenses totales" value={`${Math.round(totalSpend).toLocaleString()} $`} sublabel={`${campaigns.length} campagnes importées`} icon={DollarSign} />
-        <StatCard label="ROAS global" value={overallRoas} sublabel={`${Math.round(totalRevenue).toLocaleString()} $ revenus`} icon={TrendingUp} accent={totalSpend === 0 ? "bg-muted text-muted-foreground" : Number(overallRoas) >= 2 ? "bg-emerald-50 text-emerald-600" : Number(overallRoas) < 1 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"} />
+        <StatCard label="Dépenses marketing" value={`${Math.round(totalSpend).toLocaleString("fr-CA")} $`} sublabel={`${campaigns.length} campagnes importées`} icon={DollarSign} />
+        <StatCard label="ROAS global (cumul des campagnes)" value={overallRoas} sublabel={`${Math.round(totalRevenue).toLocaleString("fr-CA")} $ de revenus attribués par les plateformes (≠ chiffre d'affaires)`} icon={TrendingUp} accent={totalSpend === 0 ? "bg-muted text-muted-foreground" : Number(overallRoas) >= 2 ? "bg-emerald-50 text-emerald-600" : Number(overallRoas) < 1 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"} />
         <StatCard
           label={cacBasis === "conversions" ? "Coût par conversion" : "CAC global"}
           value={overallCac !== null ? `${overallCac.toLocaleString("fr-CA")} $` : "-"}
@@ -223,35 +207,35 @@ export default function Marketing() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Dépenses vs revenus par canal</h2>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Dépenses vs revenus attribués par canal</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={channelData} margin={{ left: 10, right: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="canal" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            {/* Vert forêt / ambre-cuivré plutôt que vert/orange purs : cohérent
-                avec Finance et distinguable en deutéranopie/protanopie. */}
-            <Bar dataKey="dépenses" fill="#b45309" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="revenus" fill="#15803d" radius={[4, 4, 0, 0]} />
+          <BarChart data={channelData} margin={{ left: 0, right: 10 }} barGap={2}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="canal" {...AXE} />
+            <YAxis {...AXE_MONTANT} />
+            <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v, nom) => [montant(v), nom]} />
+            <Legend {...LEGENDE} />
+            <Bar dataKey="dépenses" name="Dépenses" fill={COULEURS.charges} {...BARRE} />
+            <Bar dataKey="revenus" name="Revenus attribués (plateformes)" fill={COULEURS.revenus} {...BARRE} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tendance ROAS (8 derniers mois)</h2>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tendance du ROAS ({trendData.length} derniers mois)</h2>
         <p className="mb-4 text-xs text-muted-foreground">
           Calculé sur les relevés quotidiens ({daily.length} lignes, {dailyCampaigns} campagnes sur {campaigns.length}) - les campagnes sans date ne peuvent pas être réparties par mois.
         </p>
         {trendData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={trendData} margin={{ left: 10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="roas" stroke="#2a78d6" strokeWidth={2} dot={{ r: 4 }} name="ROAS" />
+            <LineChart data={trendData} margin={{ left: 0, right: 10 }}>
+              <CartesianGrid {...GRILLE} />
+              <XAxis dataKey="mois" {...AXE_MOIS} />
+              <YAxis {...AXE} width={40} tickFormatter={(v) => `${v}×`} />
+              {/* ROAS de 1 : la publicite rapporte ce qu'elle coute. */}
+              <ReferenceLine y={1} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: "rentabilité (1×)", position: "insideTopRight", fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [`${Number(v).toLocaleString("fr-CA", { maximumFractionDigits: 2 })} ×`, "ROAS (revenus attribués ÷ dépenses)"]} />
+              <Line dataKey="roas" stroke={COULEURS.ratio} {...LIGNE} dot={{ r: 3 }} name="ROAS" />
             </LineChart>
           </ResponsiveContainer>
         ) : (

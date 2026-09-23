@@ -1,11 +1,10 @@
-import React from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
+import React, { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import PriorityBadge from "@/components/PriorityBadge";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { useCompany } from "@/hooks/useCompany";
 import { useObservations } from "@/hooks/useObservations";
 import { Bell, Check, Activity, Plus, TrendingDown, Radio } from "lucide-react";
@@ -30,26 +29,9 @@ export default function Alertes() {
 
   const { data: observations } = useObservations();
 
-  const { data: live } = useQuery({
-    queryKey: ["alerts-live", company?.stock_alert_threshold, company?.stock_alert_use_reorder_point],
-    queryFn: async () => {
-      // Read in full: alerts are thresholds on aggregates, so a truncated
-      // source moves the threshold. Cashflow in particular was capped at 100
-      // rows here, which is barely three months of daily balances to judge a
-      // runway on. Destructured by name to keep the order unambiguous.
-      const [transactions, customers, orders, campaignDaily, inventory, cashflow, products, expenses] = await Promise.all([
-        fetchAll(base44.entities.Transaction, "-date"),
-        fetchAll(base44.entities.Customer, "-created_date"),
-        fetchOrders(),
-        fetchAll(base44.entities.CampaignDaily, "-date"),
-        fetchAll(base44.entities.Inventory, "-date"),
-        fetchAll(base44.entities.Cashflow, "-date"),
-        fetchAll(base44.entities.Product),
-        fetchAll(base44.entities.Expense, "-date"),
-      ]);
-      return computeLiveAlerts({ transactions, orders, customers, campaignDaily, products, inventory, cashflow, expenses, company });
-    },
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi), lues en entier.
+  const { data: donnees } = useDonneesKpi();
+  const live = useMemo(() => computeLiveAlerts({ ...donnees, company }), [donnees, company]);
 
   const markRead = async (id) => {
     await base44.entities.Alert.update(id, { status: "lue" });
@@ -166,6 +148,7 @@ export default function Alertes() {
               </div>
               <p className="mt-2 font-medium">{a.title}</p>
               {a.message && <p className="text-sm text-muted-foreground">{a.message}</p>}
+              {a.action && <p className="mt-1 text-sm"><span className="font-medium">À faire : </span>{a.action}</p>}
               {a.live ? (
                 <p className="mt-1 text-xs text-muted-foreground">Calculée à l'instant depuis vos données</p>
               ) : (

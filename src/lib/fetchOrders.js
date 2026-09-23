@@ -6,14 +6,20 @@
 // un seul endroit.
 
 import { base44 } from "@/api/base44Client";
-import { fetchAll } from "./fetchAll";
+import { fetchAllAvecEtat } from "./fetchAll";
 import { normaliserDevises } from "./core/kpiRecords";
 
 export async function fetchOrders(sort = "-date") {
-  const [orders, companies] = await Promise.all([
-    fetchAll(base44.entities.Order, sort),
+  return (await fetchOrdersAvecEtat(sort)).rows;
+}
+
+/** Idem, en disant si la lecture a atteint le plafond de fetchAll. */
+export async function fetchOrdersAvecEtat(sort = "-date") {
+  const [lecture, companies] = await Promise.all([
+    fetchAllAvecEtat(base44.entities.Order, sort),
     base44.entities.Company.list().catch(() => []),
   ]);
   const company = companies?.[0];
-  return normaliserDevises(orders, { base: company?.currency || null, taux: company?.exchange_rates || {} }).rows;
+  const rows = normaliserDevises(lecture.rows, { base: company?.currency || null, taux: company?.exchange_rates || {} }).rows;
+  return { rows, tronque: lecture.tronque, plafond: lecture.plafond };
 }

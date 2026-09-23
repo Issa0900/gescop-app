@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
 import { commandesDistinctes, noteBaseCA } from "@/lib/core/kpiRecords";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,9 +31,11 @@ import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
 import TimeFilter from "@/components/dashboard/TimeFilter";
-import AnalysisEmptyState from "@/components/dashboard/AnalysisEmptyState";
 import { computeDomainScores } from "@/lib/domainScores";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { instantaneKpi } from "@/lib/core/instantane";
+import { COULEURS } from "@/lib/graphiques";
+import { computeLiveAlerts } from "@/lib/liveAlerts";
 import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
 
 const analysisSteps = [
@@ -75,36 +76,10 @@ export default function Dashboard() {
 
   const { data: observations } = useObservations();
 
-  // Every source below is read with fetchAll: a single list() call caps at 500
-  // rows, so passing 500 or 1000 silently truncated the history and left this
-  // page disagreeing with the Audit page, which already read everything.
-  // Truncation also cut the OLDEST month of each window, turning it into a
-  // partial month at the far end of every trend.
-  const { data: transactions } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
-  const { data: orders } = useQuery({
-    queryKey: ["orders-summary"],
-    queryFn: () => fetchOrders(),
-  });
-  const { data: customers } = useQuery({
-    queryKey: ["customers-summary"],
-    queryFn: () => fetchAll(base44.entities.Customer),
-  });
-  const { data: cashflow } = useQuery({
-    queryKey: ["cashflow-summary"],
-    // Shared with the Trésorerie page — same key, same complete history.
-    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
-  });
-  const { data: expenseRecords } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
-  const { data: executiveSummary } = useQuery({
-    queryKey: ["executive-summary"],
-    queryFn: () => fetchAll(base44.entities.ExecutiveSummary, "-date"),
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : la marge affichee ici
+  // retranche la paie comme sur la page KPI et Finance.
+  const { data: donnees } = useDonneesKpi();
+  const { transactions, orders, customers, cashflow, expenses: expenseRecords, executiveSummary, payrolls, products, inventory, campaigns, campaignDaily } = donnees;
   const { data: anomalies } = useQuery({
     queryKey: ["anomalies"],
     queryFn: async () => { const l = await base44.entities.Anomaly.list("-created_date", 20); return l || []; },
@@ -129,22 +104,6 @@ export default function Dashboard() {
     queryKey: ["tasks-dashboard"],
     queryFn: async () => { const l = await base44.entities.Task.list("-created_date", 50); return l || []; },
   });
-  const { data: products } = useQuery({
-    queryKey: ["products-dashboard"],
-    queryFn: () => fetchAll(base44.entities.Product),
-  });
-  const { data: inventory } = useQuery({
-    queryKey: ["inventory-dashboard"],
-    queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
-  });
-  const { data: campaigns } = useQuery({
-    queryKey: ["campaigns-summary"],
-    queryFn: () => fetchAll(base44.entities.Campaign),
-  });
-  const { data: campaignDaily } = useQuery({
-    queryKey: ["campaign-daily-summary"],
-    queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
-  });
   const [period, setPeriod] = useState("month");
 
   const periodDays = { day: 1, month: 30, quarter: 90, year: 365 };
@@ -161,7 +120,9 @@ export default function Dashboard() {
     setProgress(0);
     const interval = setInterval(() => setProgress((p) => Math.min(p + 1, analysisSteps.length - 1)), 2500);
     try {
-      const res = await base44.functions.invoke("analyzeBusiness", {});
+      // L'IA commente les chiffres de l'ecran (moteur + croisements), elle ne
+      // les recalcule pas : voir src/lib/core/instantane.js.
+      const res = await base44.functions.invoke("analyzeBusiness", instantaneKpi(donnees));
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
@@ -182,6 +143,7 @@ export default function Dashboard() {
   const fTxn = useMemo(() => (transactions || []).filter((t) => inPeriod(t.date)), [transactions, cutoffDate]);
   const fOrders = useMemo(() => (orders || []).filter((o) => inPeriod(o.date)), [orders, cutoffDate]);
   const fExpenses = useMemo(() => (expenseRecords || []).filter((e) => inPeriod(e.date)), [expenseRecords, cutoffDate]);
+  const fPayrolls = useMemo(() => (payrolls || []).filter((p) => inPeriod(p.period || p.date)), [payrolls, cutoffDate]);
   const fCustomers = useMemo(() => (customers || []).filter((c) => inPeriod(c.acquisition_date)), [customers, cutoffDate]);
   const fObservations = useMemo(() => (observations || []).filter((o) => inPeriod(o.date)), [observations, cutoffDate]);
 
@@ -189,6 +151,7 @@ export default function Dashboard() {
     transactions: fTxn,
     orders: fOrders,
     expenses: fExpenses,
+    payrolls: fPayrolls,
     executiveSummary: executiveSummary || [],
     customers: fCustomers,
     observations: fObservations,
@@ -202,15 +165,18 @@ export default function Dashboard() {
   // === COMPUTATIONS (Hybride : Ancien + Nouveau) ===
   const computed = useMemo(() => {
     // Consommation officielle de la SSOT (KPI Engine)
-    const totalIncome = engineKpis.get("total_revenue")?.value || 0;
-    const totalExpensesTxn = engineKpis.get("total_expense")?.value || 0;
+    // Une valeur non mesuree reste null (affichee « — », statut « Non mesure ») :
+    // `|| 0` la transformait en 0 $ / 0 % « Critique ».
+    const v = (id) => { const x = engineKpis.get(id)?.value; return Number.isFinite(x) ? x : null; };
+    const totalIncome = v("total_revenue");
+    const totalExpensesTxn = v("total_expense");
     // "Marge nette" = revenus - TOUTES les dépenses (net_income), pas la
     // marge brute (coût des marchandises vendues uniquement).
-    const margin = engineKpis.get("net_income")?.value || 0;
-    const marginPct = engineKpis.get("net_margin_pct")?.value || 0;
-    
-    const aov = engineKpis.get("aov")?.value || 0;
-    const activeCustomers = engineKpis.get("active_customers")?.value || 0;
+    const margin = v("net_income");
+    const marginPct = v("net_margin_pct");
+
+    const aov = v("aov");
+    const activeCustomers = v("active_customers");
     const customerSentiment = engineKpis.get("customer_sentiment_score")?.value ?? null;
     const totalExpenseAmount = totalExpensesTxn;
 
@@ -223,12 +189,12 @@ export default function Dashboard() {
     const orderRevenue = commandesPeriode.reduce((s, o) => s + o._ht, 0);
 
     // Full monthly data (ALL records, not period-filtered) for charts and trends
-    const financialMonthly = financialMonthlySeries(transactions || [], expenseRecords || [], orders || [], executiveSummary || []);
+    const financialMonthly = financialMonthlySeries(donnees);
     const revenueMonthly = financialMonthly.map((pt) => ({ month: pt.month, val: pt.income }));
     const expenseMonthly = financialMonthly.map((pt) => ({ month: pt.month, val: pt.expense }));
     const marginMonthly = financialMonthly.map((pt) => ({
       month: pt.month,
-      val: pt.income > 0 ? (pt.margin / pt.income) * 100 : 0,
+      val: pt.income > 0 && pt.chargesMesurees ? (pt.margin / pt.income) * 100 : null,
     }));
     
     // Cash is a balance, not a flow: the running month's closing balance is valid.
@@ -245,7 +211,9 @@ export default function Dashboard() {
     const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
 
     const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
-    const marginTrend = trendPct(lastVal(marginMonthly), prevVal(marginMonthly));
+    // Une marge bouge en POINTS : +104 % d'une marge de -143 % ne veut rien dire.
+    const mDer = lastVal(marginMonthly), mPrec = prevVal(marginMonthly);
+    const marginTrend = marginMonthly.length > 1 && Number.isFinite(mDer) && Number.isFinite(mPrec) ? mDer - mPrec : null;
     const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
     
     // Refunded orders' money went back to the customer - excluded so a
@@ -262,7 +230,7 @@ export default function Dashboard() {
     const clientTrend = trendPct(lastVal(clientsMonthly), prevVal(clientsMonthly));
     const costTrend = trendPct(lastVal(costsMonthly), prevVal(costsMonthly));
 
-    const monthlyData = { revenue: revenueMonthly, margin: marginMonthly, cash: cashMonthly, clients: clientsMonthly, costs: costsMonthly };
+    const monthlyData = { revenue: revenueMonthly, charges: expenseMonthly, margin: marginMonthly, cash: cashMonthly, clients: clientsMonthly, costs: costsMonthly };
 
     // Forecasts — bounds based on historical variance, not hardcoded %
     const revGrowth = revenueMonthly.length >= 2 ? (lastVal(revenueMonthly) - prevVal(revenueMonthly)) / Math.max(1, prevVal(revenueMonthly)) : 0;
@@ -311,7 +279,9 @@ export default function Dashboard() {
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
       revProbability, cashRisk,
     };
-  }, [transactions, orders, customers, cashflow, expenseRecords, period, cutoffDate]);
+  }, [donnees, engineKpis, period, cutoffDate]);
+
+  const alertesLive = useMemo(() => computeLiveAlerts({ ...donnees, company }), [donnees, company]);
 
   // === INSIGHTS ===
   const insights = useMemo(() => {
@@ -331,13 +301,17 @@ export default function Dashboard() {
       action: null,
       link: "/anomalies",
     }));
-    return [...recs, ...critAnoms].slice(0, 5);
-  }, [recommendations, anomalies]);
+    // Croisements deterministes (core/croisements.js) : visibles meme sans
+    // diagnostic IA, et prioritaires car calcules sur les donnees.
+    const croisements = (alertesLive || [])
+      .filter((a) => a.croisement && (a.level === "critique" || a.level === "important"))
+      .slice(0, 3)
+      .map((a) => ({ type: "anomaly", title: a.title, why: a.message, impact: null, action: a.action, link: "/insights" }));
+    return [...croisements, ...recs, ...critAnoms].slice(0, 6);
+  }, [recommendations, anomalies, alertesLive]);
 
   // === DIMENSIONS ===
-  const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses: expenseRecords, company, executiveSummary,
-  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenseRecords, company, executiveSummary]);
+  const rtScores = useMemo(() => computeDomainScores({ ...donnees, company }), [donnees, company]);
 
   const dimTrendDeltas = useMemo(() => {
     if (!analysisRuns || analysisRuns.length === 0) return {};
@@ -503,13 +477,23 @@ export default function Dashboard() {
 
       {!hasData && <OnboardingHero />}
 
+      {/* Les indicateurs viennent du moteur, pas de l'IA : ils s'affichent des
+          qu'il y a des donnees. L'ecran restait vide (« Pret a faire parler vos
+          donnees ? ») tant que le diagnostic IA n'avait pas tourne, alors que
+          la page KPI montrait deja tout. */}
       {hasData && !hasAnalysis && !analyzing && (
-        <div className="py-6">
-          <AnalysisEmptyState onStart={handleAnalyze} />
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            <span className="font-semibold">Vos indicateurs sont calculés.</span>{" "}
+            Le diagnostic IA ajoute l'explication, les risques, les opportunités et les recommandations.
+          </p>
+          <Button size="sm" onClick={handleAnalyze} className="shrink-0">
+            <Sparkles className="mr-1.5 h-4 w-4" /> Lancer le diagnostic
+          </Button>
         </div>
       )}
 
-      {hasData && hasAnalysis && (
+      {hasData && (
         <div className="space-y-6">
           {/* 1. PRIORITÉS CRITIQUES DU JOUR */}
           <TodayPriorities recommendations={recommendations} anomalies={anomalies} risks={risks} tasks={tasks} />
@@ -530,21 +514,21 @@ export default function Dashboard() {
                 statusLabel={(cashflow?.length || 0) > 0 ? (computed.latestCash > 0 ? "Bon" : "Critique") : "Non mesuré"}
                 onClick={() => navigate("/tresorerie")} />
               <KpiCard label="Chiffre d'affaires"
-                value={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? `${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $` : "—"}
-                change={((transactions?.length || 0) + (orders?.length || 0)) > 0 && computed.monthlyData.revenue.length > 1 ? `${formatPct(Math.abs(computed.revTrend))}` : null}
+                value={computed.totalIncome != null ? `${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $` : "—"}
+                change={computed.totalIncome != null && computed.monthlyData.revenue.length > 1 ? `${formatPct(Math.abs(computed.revTrend))}` : null}
                 changeDir={computed.revTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.revenue)}
-                status={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "good" : "warning") : "unmeasured"}
-                statusLabel={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
+                status={computed.totalIncome != null ? (computed.revTrend >= 0 ? "good" : "warning") : "unmeasured"}
+                statusLabel={computed.totalIncome != null ? (computed.revTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
                 note={(orders?.length || 0) > 0 ? noteBaseCA(orders) : null}
                 onClick={() => navigate("/kpis")} />
               <KpiCard label="Marge nette"
-                value={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? `${formatPct(computed.marginPct)}` : "—"}
-                change={((transactions?.length || 0) + (orders?.length || 0)) > 0 && computed.monthlyData.margin.length > 1 ? `${formatPct(Math.abs(computed.marginTrend))}` : null}
+                value={computed.marginPct != null ? `${formatPct(computed.marginPct)}` : "—"}
+                change={computed.marginPct != null && computed.marginTrend != null ? `${Math.abs(computed.marginTrend).toFixed(1).replace(".", ",")} pt` : null}
                 changeDir={computed.marginTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.margin)}
-                status={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning") : "unmeasured"}
-                statusLabel={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention") : "Non mesuré"}
+                status={computed.marginPct != null ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "good" : computed.marginPct < 10 ? "critical" : "warning") : "unmeasured"}
+                statusLabel={computed.marginPct != null ? (computed.marginPct >= 30 && computed.marginTrend >= 0 ? "Bon" : computed.marginPct < 10 ? "Critique" : "Attention") : "Non mesuré"}
                 onClick={() => navigate("/kpis")} />
             </div>
           </div>
@@ -575,21 +559,21 @@ export default function Dashboard() {
 
             <TabsContent value="operations" className="space-y-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <KpiCard label="Coûts opérationnels"
-                  value={(expenseRecords?.length || 0) > 0 ? `${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $` : "—"}
+                <KpiCard label="Coûts opérationnels" lowerIsBetter
+                  value={computed.totalExpenseAmount != null ? `${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $` : "—"}
                   change={(expenseRecords?.length || 0) > 1 ? `${formatPct(Math.abs(computed.costTrend))}` : null}
                   changeDir={computed.costTrend >= 0 ? "up" : "down"}
                   sparkline={computed.spark(computed.monthlyData.costs)}
-                  status={(expenseRecords?.length || 0) > 0 ? (computed.costTrend > 5 ? "warning" : "neutral") : "unmeasured"}
-                  statusLabel={(expenseRecords?.length || 0) > 0 ? (computed.costTrend > 5 ? "Attention" : "Stable") : "Non mesuré"}
+                  status={computed.totalExpenseAmount != null ? (computed.costTrend > 5 ? "warning" : "neutral") : "unmeasured"}
+                  statusLabel={computed.totalExpenseAmount != null ? (computed.costTrend > 5 ? "Attention" : "Stable") : "Non mesuré"}
                   onClick={() => navigate("/tresorerie")} />
                 <KpiCard label="Clients actifs"
-                  value={(customers?.length || 0) > 0 ? computed.activeCustomers.toLocaleString("fr-CA") : "—"}
+                  value={computed.activeCustomers != null ? computed.activeCustomers.toLocaleString("fr-CA") : "—"}
                   change={(customers?.length || 0) > 1 ? `${formatPct(Math.abs(computed.clientTrend))}` : null}
                   changeDir={computed.clientTrend >= 0 ? "up" : "down"}
                   sparkline={computed.spark(computed.monthlyData.clients)}
-                  status={(customers?.length || 0) > 0 ? (computed.clientTrend >= 0 ? "good" : "warning") : "unmeasured"}
-                  statusLabel={(customers?.length || 0) > 0 ? (computed.clientTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
+                  status={computed.activeCustomers != null ? (computed.clientTrend >= 0 ? "good" : "warning") : "unmeasured"}
+                  statusLabel={computed.activeCustomers != null ? (computed.clientTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
                   onClick={() => navigate("/clients")} />
                 <KpiCard label="Panier moyen"
                   value={(orders?.length || 0) > 0 && computed.aov > 0 ? `${computed.aov.toFixed(2)} $` : "—"}
@@ -672,7 +656,7 @@ export default function Dashboard() {
                 <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Ce qui pourrait arriver</h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <ForecastCard metric="Chiffre d'affaires prévu (30j)" value={`${computed.projectedRevenue.toLocaleString("fr-CA")} $`} probability={computed.revProbability} chartData={computed.forecastRevData} />
-                  <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.cashRisk} chartData={computed.forecastCashData} />
+                  <ForecastCard metric="Trésorerie prévue (30j)" value={`${computed.projectedCash.toLocaleString("fr-CA")} $`} risk={computed.cashRisk} chartData={computed.forecastCashData} couleur={COULEURS.tresorerie} />
                 </div>
               </div>
             </TabsContent>

@@ -27,7 +27,7 @@ import {
   aggregateMarginPct,
   previousMarginPct,
   marginDeltaPoints,
-  netBurnRate,
+  consommationTresorerie,
   runwayMonths,
   fmtRunway,
   latestCashBalance,
@@ -36,6 +36,7 @@ import {
   previousRoasWindow,
   validSalesOrders,
 } from "@/lib/metrics";
+import { memoDonnees, complementEntreprise } from "@/lib/core/memoDonnees";
 
 function clamp(v) {
   const n = Number(v);
@@ -54,7 +55,7 @@ function applyTrend(score, pct, bonus = 8, penalty = 12, threshold = 5) {
   return score;
 }
 
-export function computeDomainScores(data) {
+function computeDomainScoresBrut(data) {
   warnIfDataMissing("computeDomainScores", data, [
     "transactions", "orders", "customers", "campaigns", "campaignDaily",
     "products", "inventory", "cashflow", "expenses", "company",
@@ -63,7 +64,7 @@ export function computeDomainScores(data) {
   const scores = {};
 
   // === FINANCE - aggregated margin over complete months (unifies transactions, orders, expenses, executiveSummary) ===
-  const financialMonthly = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []);
+  const financialMonthly = financialMonthlySeries(data);
   const revMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.income }));
   const expMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.expense }));
 
@@ -108,7 +109,7 @@ export function computeDomainScores(data) {
   const latestCash = latestCashBalance(cashflow);
 
   // A profitable business does not have a runway problem: burn is revenue-net.
-  const burn = netBurnRate(revMonthly, expMonthly, 3);
+  const { burn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: expMonthly }, 3);
   const runway = latestCash === null ? null : runwayMonths(latestCash, burn);
 
   let tresoScore;
@@ -285,3 +286,7 @@ export function computeDomainScores(data) {
 
   return scores;
 }
+
+
+// Meme calcul pour tous les ecrans qui partagent les memes donnees (memoDonnees).
+export const computeDomainScores = memoDonnees(computeDomainScoresBrut, complementEntreprise);

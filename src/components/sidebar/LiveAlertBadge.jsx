@@ -1,9 +1,8 @@
-import React from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { useCompany } from "@/hooks/useCompany";
 
 // Counts only what needs attention now: unread stored alerts plus live
@@ -15,45 +14,10 @@ export default function LiveAlertBadge({ compact }) {
     queryKey: ["alerts-badge"],
     queryFn: async () => (await base44.entities.Alert.list("-created_date", 100)) || [],
   });
-  // These query keys are SHARED with the Dashboard and the Trésorerie page, so
-  // they must fetch exactly the same rows. This component used to read cashflow
-  // with a limit of 100 under the same "cashflow-summary" key: whichever query
-  // mounted first won the cache, and the runway alert could end up computed on
-  // 100 days of cash while the dashboard showed the full history.
-  const { data: transactions } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
-  const { data: orders } = useQuery({
-    queryKey: ["orders-summary"],
-    queryFn: () => fetchOrders(),
-  });
-  const { data: customers } = useQuery({
-    queryKey: ["customers-summary"],
-    queryFn: () => fetchAll(base44.entities.Customer),
-  });
-  const { data: inventory } = useQuery({
-    queryKey: ["inventory-dashboard"],
-    queryFn: () => fetchAll(base44.entities.Inventory, "-date"),
-  });
-  const { data: cashflow } = useQuery({
-    queryKey: ["cashflow-summary"],
-    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
-  });
-  const { data: campaignDaily } = useQuery({
-    queryKey: ["campaign-daily-dashboard"],
-    queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date"),
-  });
-  const { data: products } = useQuery({
-    queryKey: ["products-dashboard"],
-    queryFn: () => fetchAll(base44.entities.Product),
-  });
-  const { data: expenses } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
-
-  const live = computeLiveAlerts({ transactions, orders, customers, campaignDaily, products, inventory, cashflow, expenses, company });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : l'alerte de marge ou
+  // d'autonomie compte ici exactement ce que la page KPI affiche, paie comprise.
+  const { data } = useDonneesKpi();
+  const live = useMemo(() => computeLiveAlerts({ ...data, company }), [data, company]);
   const liveCount = live.filter((a) => a.level === "critique" || a.level === "important").length;
   const unreadStored = (stored || []).filter((a) => a.status !== "lue").length;
   const count = liveCount + unreadStored;

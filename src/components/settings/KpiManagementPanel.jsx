@@ -1,8 +1,5 @@
-import React, { useState } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { fetchAll } from "@/lib/fetchAll";
+import React, { useState, useMemo } from "react";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { useObservations } from "@/hooks/useObservations";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import { KPI_REGISTRY } from "@/lib/core/kpiRegistry";
@@ -33,31 +30,12 @@ function classify(result) {
 export default function KpiManagementPanel() {
   const [activeTab, setActiveTab] = useState("measured");
 
-  const { data: transactions } = useQuery({ queryKey: ["kpimgmt-transactions"], queryFn: () => fetchAll(base44.entities.Transaction, "-date") });
-  const { data: expenses } = useQuery({ queryKey: ["kpimgmt-expenses"], queryFn: () => fetchAll(base44.entities.Expense, "-date") });
-  const { data: employees } = useQuery({ queryKey: ["kpimgmt-employees"], queryFn: () => fetchAll(base44.entities.Employee) });
-  const { data: payrolls } = useQuery({ queryKey: ["kpimgmt-payrolls"], queryFn: () => fetchAll(base44.entities.Payroll, "-period") });
-  const { data: orders } = useQuery({ queryKey: ["kpimgmt-orders"], queryFn: () => fetchOrders() });
-  const { data: customers } = useQuery({ queryKey: ["kpimgmt-customers"], queryFn: () => fetchAll(base44.entities.Customer) });
-  const { data: cashflow } = useQuery({ queryKey: ["kpimgmt-cashflow"], queryFn: () => fetchAll(base44.entities.Cashflow, "-date") });
-  const { data: campaignDaily } = useQuery({ queryKey: ["kpimgmt-campaign-daily"], queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date") });
-  const { data: campaigns } = useQuery({ queryKey: ["kpimgmt-campaigns"], queryFn: () => fetchAll(base44.entities.Campaign) });
-  const { data: inventory } = useQuery({ queryKey: ["kpimgmt-inventory"], queryFn: () => fetchAll(base44.entities.Inventory, "-date") });
+  // Memes donnees que tous les ecrans (useDonneesKpi) : un KPI « mesure »
+  // ici l'est avec les memes sources que sur la page KPI.
+  const { data: donnees } = useDonneesKpi();
   const { data: observations } = useObservations();
-
-  const { kpis: engineKpis } = useKpiEngine({
-    transactions: transactions || [],
-    orders: orders || [],
-    customers: customers || [],
-    observations: observations || [],
-    cashflow: cashflow || [],
-    expenses: expenses || [],
-    employees: employees || [],
-    payrolls: payrolls || [],
-    campaignDaily: campaignDaily || [],
-    campaigns: campaigns || [],
-    inventory: inventory || [],
-  }, ALL_KPI_IDS);
+  const donneesMoteur = useMemo(() => ({ ...donnees, observations: observations || [] }), [donnees, observations]);
+  const { kpis: engineKpis } = useKpiEngine(donneesMoteur, ALL_KPI_IDS);
 
   const classified = ALL_KPI_IDS.map((id) => {
     const def = KPI_REGISTRY[id];

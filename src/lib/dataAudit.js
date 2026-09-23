@@ -7,7 +7,7 @@ import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, late
 import { financialMonthlySeries } from "@/lib/financialData";
 import {
   aggregateMarginPct,
-  netBurnRate,
+  consommationTresorerie,
   runwayMonths,
   fmtRunway,
   latestCashBalance,
@@ -539,7 +539,7 @@ export function buildMetricTraces(d) {
   const { transactions = [], orders = [], customers = [], products = [], inventory = [], cashflow = [], campaignDaily = [], campaigns = [], expenses = [], executiveSummary = [] } = d;
   const traces = [];
 
-  const financialMonthly = financialMonthlySeries(transactions, expenses, orders, executiveSummary);
+  const financialMonthly = financialMonthlySeries(d);
   const revM = financialMonthly.map((p) => ({ month: p.month, val: p.income }));
   const expM = financialMonthly.map((p) => ({ month: p.month, val: p.expense }));
   const rev3 = sumLast(revM, 3);
@@ -549,31 +549,32 @@ export function buildMetricTraces(d) {
   traces.push({
     domain: "Finance",
     metric: "Marge nette (3 mois)",
-    formula: "(revenus − dépenses) ÷ revenus, agrégé sur les 3 derniers mois complets",
-    source: `Finance consolidée (${transactions.length} transactions, ${orders.length} commandes, ${expenses.length} dépenses)`,
+    formula: "(CA − charges totales) ÷ CA, agrégé sur les 3 derniers mois complets ; charges totales = coût des ventes + dépenses + masse salariale (définition du moteur, identique sur toutes les pages)",
+    source: `Finance consolidée (${transactions.length} transactions, ${orders.length} commandes, ${expenses.length} dépenses, ${(d.payrolls || d.payroll || []).length} lignes de paie)`,
     period: revM.length >= 3 ? revM.slice(-3).map((m) => m.month).join(", ") : "-",
     steps: [
-      ["Revenus 3 mois", fmt$(rev3)],
-      ["Dépenses 3 mois", fmt$(exp3)],
+      ["CA 3 mois", fmt$(rev3)],
+      ["Charges totales 3 mois", fmt$(exp3)],
       ["Marge", margin3 !== null ? `${margin3.toFixed(1)} %` : "-"],
     ],
-    note: "Marge agrégée sur le trimestre, et non moyenne des marges mensuelles : un mois à 2 000 $ de revenus ne doit pas peser autant qu'un mois à 100 000 $. Nette et non brute : toutes les dépenses sont déduites, pas seulement le coût des ventes. Le mois en cours est exclu.",
+    note: "Marge agrégée sur le trimestre, et non moyenne des marges mensuelles : un mois à 2 000 $ de revenus ne doit pas peser autant qu'un mois à 100 000 $. Nette et non brute : coût des ventes, dépenses et paie sont déduits. Le mois en cours est exclu.",
   });
 
   const cfSorted = [...cashflow].sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
   const latestCash = latestCashBalance(cashflow);
-  const burn = netBurnRate(revM, expM, 3);
+  const { burn, base: baseBurn } = consommationTresorerie({ cashflow, revSeries: revM, expSeries: expM }, 3);
   const runway = latestCash === null ? null : runwayMonths(latestCash, burn);
   traces.push({
     domain: "Trésorerie",
     metric: "Autonomie (runway)",
-    formula: "solde de clôture le plus récent ÷ consommation NETTE de trésorerie par mois (dépenses − revenus, sur 3 mois)",
+    formula: "solde de clôture le plus récent ÷ consommation NETTE de trésorerie par mois (flux net du relevé de trésorerie sur 3 mois ; à défaut, charges − revenus)",
     source: `Trésorerie - ${cashflow.length} relevés quotidiens`,
     period: cfSorted[0]?.date ? `solde au ${cfSorted[0].date}` : "-",
     steps: [
       ["Solde actuel", fmt$(latestCash)],
-      ["Revenus 3 mois", fmt$(rev3)],
-      ["Dépenses 3 mois", fmt$(exp3)],
+      ["CA 3 mois", fmt$(rev3)],
+      ["Charges totales 3 mois", fmt$(exp3)],
+      ["Base de la consommation", baseBurn === "releve" ? "flux net du relevé de trésorerie" : baseBurn === "resultat" ? "charges − revenus (aucun flux de trésorerie importé)" : "-"],
       ["Burn net / mois", burn === null ? "-" : burn === 0 ? "aucun (autofinancée)" : fmt$(burn)],
       ["Autonomie", fmtRunway(runway)],
     ],

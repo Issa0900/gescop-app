@@ -82,6 +82,56 @@ export function netBurnRate(revSeries, expSeries, n = 3) {
 }
 
 /**
+ * Flux net de TRESORERIE par mois, lu dans le releve importe : net_cash_flow,
+ * sinon entrees - sorties, sinon variation du solde de cloture d'un mois a
+ * l'autre. Mois en cours et mois futurs exclus (non realises).
+ */
+export function fluxTresorerieMensuels(cashflow, aujourdhui = new Date()) {
+  const courant = `${aujourdhui.getFullYear()}-${String(aujourdhui.getMonth() + 1).padStart(2, "0")}`;
+  const lignes = (cashflow || []).filter((c) => /^\d{4}-\d{2}/.test(String(c?.date || ""))).slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const aUnFlux = lignes.some((c) => c.net_cash_flow != null && c.net_cash_flow !== "" || c.cash_in != null || c.cash_out != null);
+  const parMois = new Map();
+  for (const c of lignes) {
+    const m = c.date.slice(0, 7);
+    const p = parMois.get(m) || { month: m, net: 0, solde: null };
+    if (aUnFlux) {
+      const net = c.net_cash_flow != null && c.net_cash_flow !== "" ? num(c.net_cash_flow) : num(c.cash_in) - num(c.cash_out);
+      p.net += net;
+    }
+    if (c.closing_cash != null && c.closing_cash !== "") p.solde = num(c.closing_cash);
+    parMois.set(m, p);
+  }
+  let mois = [...parMois.values()].filter((p) => p.month < courant);
+  if (!aUnFlux) {
+    // Soldes seulement : le flux du mois est la variation du solde de cloture.
+    const avecSolde = mois.filter((p) => p.solde !== null);
+    mois = avecSolde.slice(1).map((p, i) => ({ month: p.month, net: p.solde - avecSolde[i].solde, solde: p.solde }));
+  }
+  return mois;
+}
+
+/**
+ * Consommation mensuelle de tresorerie : UNE regle pour l'autonomie affichee
+ * partout (KPI, audit, alertes, score du domaine). Le solde vient du releve de
+ * tresorerie ; la consommation doit venir du MEME releve. La page KPI divisait
+ * le solde par une perte comptable (charges - revenus) : 6 mois d'autonomie
+ * annonces pour une tresorerie qui augmentait de 8 782 $ par mois. Sans releve
+ * de flux, le resultat comptable sert de repli, et `base` le dit.
+ * @returns {{ burn: number|null, base: "releve"|"resultat"|null }}
+ */
+export function consommationTresorerie({ cashflow, revSeries, expSeries }, n = 3) {
+  const flux = fluxTresorerieMensuels(cashflow);
+  if (flux.length > 0) {
+    const recents = flux.slice(-n);
+    const moyenne = recents.reduce((s, p) => s + p.net, 0) / recents.length;
+    return { burn: moyenne < 0 ? -moyenne : 0, base: "releve" };
+  }
+  const burn = netBurnRate(revSeries, expSeries, n);
+  return { burn, base: burn === null ? null : "resultat" };
+}
+
+/**
  * Months of runway. null = not computable, Infinity = profitable (no burn).
  * Callers must handle Infinity explicitly instead of printing a number.
  */

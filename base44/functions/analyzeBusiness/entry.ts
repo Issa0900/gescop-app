@@ -1,8 +1,9 @@
 // @ts-nocheck
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
-import { analyzeQualitativeObservations } from "../../shared/qualitativeEngine.ts";
+import { analyzeQualitativeObservations, summarizeQualitativeSignals } from "../../shared/qualitativeEngine.ts";
 import { buildContextGraph } from "../../shared/contextEngine.ts";
+import { lireInstantane, blocInstantane } from "../../shared/instantaneIA.ts";
 
 // sec9-11 de l'audit : un domaine sans donnees ne doit jamais compter comme
 // s'il avait une bonne (ou mauvaise) performance. On ne fait plus confiance
@@ -26,6 +27,8 @@ export default async function(req: any) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
+    const body = await req.json().catch(() => ({}));
+    const instantane = lireInstantane(body);
     const ctx = await buildBusinessContext(base44);
     const { company, transactions, context, totals } = ctx;
 
@@ -50,8 +53,13 @@ export default async function(req: any) {
     const prompt = `Tu es GESCOP Analyst, auditeur stratégique, contrôleur de gestion et conseiller exécutif d'élite pour PME québécoises et canadiennes.
 Réalise un audit d'affaires 360°, rigoureux, chiffré et actionnable pour l'entreprise : ${company.name} (${company.industry}).
 
-CONTEXTE BUSINESS :
+${blocInstantane(instantane, summarizeQualitativeSignals(qualSignals), contextGraph)}
+
+CONTEXTE BUSINESS (données détaillées, pour l'analyse) :
 ${context}
+
+0. Les CHIFFRES CALCULÉS PAR GESCOP font foi : ne recalcule jamais une valeur qui y figure, cite-la telle quelle. Si le CONTEXTE BUSINESS donne un autre montant pour le même indicateur, c'est le CHIFFRE CALCULÉ qui compte. Un chiffre « non mesuré » reste non mesuré.
+0 bis. Chaque CONSTAT CROISÉ doit être repris, sans être contredit : comme anomalie s'il révèle une incohérence de données, comme risque s'il révèle un problème d'affaires. Quand un constat met en doute une source (paie, attribution marketing), ne tire pas de conclusion d'affaires de cette source sans le rappeler.
 
 1. Tout nombre que tu écris doit soit apparaître littéralement dans les DONNÉES ci-dessus, soit être le résultat d'un calcul simple (somme, différence, moyenne, ratio, pourcentage de variation) effectué UNIQUEMENT sur des nombres présents ci-dessus.
 2. Dans chaque description, explanation ou analysis qui cite un chiffre, indique entre parenthèses son origine : la valeur source ou le calcul. Exemple : « marge de 38 % (CA 120 000 $ - coûts 74 400 $) / 120 000 $ ».
@@ -99,7 +107,7 @@ Tu as accès aux données de: finance (transactions), ventes (commandes), client
 
 5. Pour chaque risque et opportunité majeur, produis une recommandation structurée et actionnable: title, situation (que se passe-t-il), analysis (pourquoi, avec référence aux données), impact (quel effet possible), action (que faire concrètement), priority (faible/moyenne/elevee/urgente), source_type (risk/opportunity/anomaly), financial_impact (impact financier estimé de l'action en dollars CAD), confidence_pct (0-100).
 
-6. Sélectionne les KPI pertinents, organisés en 4 domaines (finance, ventes, operations, marketing). Inclus des KPI calculés à partir des données: CA total, marge brute %, panier moyen, taux de retour, ROAS, CAC, taux de churn, concentration client, valeur inventaire, taux de plaintes, coût paie mensuel. Pour chaque KPI: name, domain, value, target, previous, trend (up/down/stable), unit.
+6. Ne produis AUCUN KPI : les indicateurs sont calculés par GESCOP (voir CHIFFRES CALCULÉS). Ton rôle est de les expliquer et de les relier, pas de les recalculer.
 
 Toutes les valeurs textuelles (titres, descriptions, explications, analyses, actions, etc.) doivent être rédigées en français.
 
@@ -197,21 +205,6 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
                 source_type: { type: "string" },
                 financial_impact: { type: "number" },
                 confidence_pct: { type: "number" },
-              },
-            },
-          },
-          kpis: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                domain: { type: "string" },
-                value: { type: "number" },
-                target: { type: "number" },
-                previous: { type: "number" },
-                trend: { type: "string" },
-                unit: { type: "string" },
               },
             },
           },
@@ -353,22 +346,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       }
     }
 
-    // Create KPIs
-    if (data.kpis && data.kpis.length) {
-      for (let i = 0; i < data.kpis.length; i += 100) {
-        const batch = data.kpis.slice(i, i + 100).map((k: any) => ({
-          name: k.name,
-          domain: k.domain || "finance",
-          value: k.value || 0,
-          target: k.target || 0,
-          previous: k.previous || 0,
-          trend: k.trend || "stable",
-          unit: k.unit || "",
-          period: new Date().toISOString().slice(0, 7),
-        }));
-        await base44.entities.Kpi.bulkCreate(batch);
-      }
-    }
+    // Les KPI ne viennent plus de l'IA (voir la regle 6 du prompt) : la table
+    // Kpi est videe ci-dessus et reste vide, la page KPI affiche le moteur.
 
     // Create alerts for critical items
     const alerts: any[] = [];
@@ -395,7 +374,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         risks: (data.risks || []).length,
         opportunities: (data.opportunities || []).length,
         recommendations: (data.recommendations || []).length,
-        kpis: (data.kpis || []).length,
+        kpis: 0,
       },
       run_date: new Date().toISOString(),
     });
@@ -408,7 +387,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         risks: (data.risks || []).length,
         opportunities: (data.opportunities || []).length,
         recommendations: (data.recommendations || []).length,
-        kpis: (data.kpis || []).length,
+        kpis: 0,
         alerts: alerts.length,
       },
     });

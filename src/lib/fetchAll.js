@@ -17,11 +17,22 @@ const PAGE = 500;
 const DEFAULT_MAX_PAGES = 20; // 20 * 500 = 10 000 rows
 
 export async function fetchAll(entity, sort = "-created_date", maxPages = DEFAULT_MAX_PAGES) {
-  const out = [];
+  return (await fetchAllAvecEtat(entity, sort, maxPages)).rows;
+}
+
+/**
+ * Meme lecture, en disant si elle a atteint le plafond : au-dela de
+ * maxPages * 500 lignes, tout total calcule sur `rows` ne couvre que les lignes
+ * les plus recentes. Les ecrans l'affichent (BandeauTroncature) au lieu de
+ * presenter un chiffre partiel comme complet.
+ * @returns {Promise<{ rows: any[], tronque: boolean, plafond: number }>}
+ */
+export async function fetchAllAvecEtat(entity, sort = "-created_date", maxPages = DEFAULT_MAX_PAGES) {
+  const rows = [];
   for (let page = 0; page < maxPages; page += 1) {
     const batch = await entity.list(sort, PAGE, page * PAGE);
-    out.push(...(batch || []));
-    if (!batch || batch.length < PAGE) break;
+    for (const r of batch || []) rows.push(r);
+    if (!batch || batch.length < PAGE) return { rows, tronque: false, plafond: maxPages * PAGE };
   }
-  return out;
+  return { rows, tronque: true, plafond: maxPages * PAGE };
 }

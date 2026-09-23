@@ -16,7 +16,7 @@ import {
   aggregateMarginPct,
   previousMarginPct,
   marginDeltaPoints,
-  netBurnRate,
+  consommationTresorerie,
   runwayMonths,
   latestCashBalance,
   churnStats,
@@ -25,12 +25,16 @@ import {
   validSalesOrders,
 } from "@/lib/metrics";
 import { financialMonthlySeries } from "@/lib/financialData";
+import { detecterCroisements } from "@/lib/core/croisements";
+import { memoDonnees, complementEntreprise } from "@/lib/core/memoDonnees";
+
+const NOMS_DOMAINES = { marketing: "Marketing", finance: "Finance", ventes: "Ventes", clients: "Clients", rh: "RH", tresorerie: "Trésorerie", donnees: "Données" };
 
 function alert(level, category, title, message) {
   return { id: `live-${category}-${title}`, level, category, title, message, live: true, status: "non_lue" };
 }
 
-export function computeLiveAlerts(data) {
+function computeLiveAlertsBrut(data) {
   warnIfDataMissing("computeLiveAlerts", data, [
     "transactions", "orders", "customers", "campaignDaily",
     "products", "inventory", "cashflow", "expenses", "company",
@@ -38,7 +42,7 @@ export function computeLiveAlerts(data) {
   const { transactions, orders, customers, campaignDaily, products, inventory, cashflow, expenses, company, executiveSummary } = data;
   const out = [];
 
-  const financialMonthly = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []);
+  const financialMonthly = financialMonthlySeries(data);
   const revMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.income }));
   const expMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.expense }));
 
@@ -47,7 +51,7 @@ export function computeLiveAlerts(data) {
   // aux dépenses BRUTES déclenchait une alerte critique sur une société qui
   // encaissait plus qu'elle ne dépensait.
   const latestCash = latestCashBalance(cashflow);
-  const recentBurn = netBurnRate(revMonthly, expMonthly, 3);
+  const { burn: recentBurn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: expMonthly }, 3);
   if (latestCash !== null && recentBurn !== null && recentBurn > 0) {
     const runway = runwayMonths(latestCash, recentBurn);
     if (runway < 3) {
@@ -260,5 +264,19 @@ export function computeLiveAlerts(data) {
     }
   }
 
+  // Croisements deterministes (core/croisements.js) : deux sources comparees,
+  // chiffres du moteur. Categorie « A & B » comme les alertes croisees ci-dessus.
+  for (const c of detecterCroisements(data)) {
+    out.push({
+      ...alert(c.niveau, c.domaines.map((d) => NOMS_DOMAINES[d] || d).join(" & "), c.titre, c.constat),
+      action: c.action,
+      croisement: c.id,
+    });
+  }
+
   return out;
 }
+
+
+// Meme calcul pour tous les ecrans qui partagent les memes donnees (memoDonnees).
+export const computeLiveAlerts = memoDonnees(computeLiveAlertsBrut, complementEntreprise);

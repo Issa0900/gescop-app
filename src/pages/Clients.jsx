@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { montantHT } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -9,24 +9,20 @@ import DataTable from "@/components/ui/DataTable";
 import BadgeStatus from "@/components/ui/BadgeStatus";
 import { formatCAD, formatNumber, cn } from "@/lib/utils";
 import { Users, UserMinus, Crown, DollarSign } from "lucide-react";
-import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-} from "recharts";
+import { Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { AXE, AXE_MONTANT, GRILLE, INFOBULLE, BARRE_H, COULEURS, couleur, montant, nombre, pourcent, libelleCode } from "@/lib/graphiques";
 import { churnStats, customerValue, columnPresent, validSalesOrders } from "@/lib/metrics";
 import { fetchAll } from "@/lib/fetchAll";
 
 // Palette catégorielle validée CVD (ordre fixe, ne jamais réassigner par sens) —
 // voir la skill dataviz : 8 teintes espacées pour rester distinguables en
 // deutéranopie/protanopie, contrairement à des hex choisis à l'oeil.
-const segmentColors = {
-  nouveau: "#2a78d6",
-  regulier: "#eb6834",
-  vip: "#1baf7a",
-  inactif: "#eda100",
-  b2b: "#e87ba4",
-  haute_valeur: "#008300",
-  a_risque: "#4a3aa7",
+// Couleur d'un segment = son emplacement FIXE dans la palette validee
+// (index.css --chart-N), la meme en clair et en sombre.
+const ORDRE_SEGMENTS = ["nouveau", "regulier", "vip", "inactif", "b2b", "haute_valeur", "a_risque"];
+const couleurSegment = (seg) => {
+  const i = ORDRE_SEGMENTS.indexOf(seg);
+  return i >= 0 ? couleur(i + 1) : "hsl(var(--muted-foreground))";
 };
 
 const segmentLabels = {
@@ -44,18 +40,11 @@ export default function Clients() {
   // le tableau ci-dessous sur ce segment. Recliquer sur la même tuile efface
   // le filtre.
   const [rfmFilter, setRfmFilter] = useState(null);
-  const { data: customers, isLoading } = useQuery({
-    queryKey: ["customers"],
-    // Paginated: a single list() call caps at 500 rows, so reading customers and
-    // orders with one call each truncated the base and made the top-5
-    // concentration and the revenue per client depend on how much history
-    // happened to fit.
-    queryFn: () => fetchAll(base44.entities.Customer),
-  });
-  const { data: orders, isLoading: lo } = useQuery({
-    queryKey: ["orders-clients"],
-    queryFn: () => fetchOrders(),
-  });
+  // Clients et commandes : cache partage (useDonneesKpi), memes lignes que
+  // la page KPI - lues en entier, commandes converties dans la devise.
+  const { data: donnees, isLoading } = useDonneesKpi();
+  const { customers, orders } = donnees;
+  const lo = false;
   // Interaction (contacts client : canal, sentiment, résolution) n'avait
   // aucune page — importée, jamais montrée. Elle vit ici, à côté du client
   // qu'elle concerne.
@@ -132,18 +121,20 @@ export default function Clients() {
   const concentration = totalRevenue > 0 ? Math.round((top5Revenue / totalRevenue) * 100) : 0;
   // Divided by the customers who actually ordered, not by the whole base.
   const value = customerValue(orders, customers);
-  const avgRevenue = value.avgRevenue === null ? 0 : Math.round(value.avgRevenue);
+  const avgRevenue = value.avgRevenue === null ? null : Math.round(value.avgRevenue);
 
   const bySegment = {};
   enriched.forEach((c) => {
     const s = c.segment || "non_precise";
     bySegment[s] = (bySegment[s] || 0) + 1;
   });
+  const totalSegments = Object.values(bySegment).reduce((t, n) => t + n, 0);
   const pieData = Object.entries(bySegment).map(([seg, count]) => ({
-    name: segmentLabels[seg] || seg,
+    name: segmentLabels[seg] || libelleCode(seg),
     value: count,
+    part: totalSegments > 0 ? (count / totalSegments) * 100 : 0,
     key: seg,
-  }));
+  })).sort((a, b) => b.value - a.value);
 
   const topBarData = sorted.slice(0, 10).map((c) => ({
     name: `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.customer_id,
@@ -197,7 +188,7 @@ export default function Clients() {
       sortValue: (c) => segmentLabels[c.segment] || c.segment || "",
       render: (c) => (
         <span className="inline-flex items-center gap-1.5 text-xs">
-          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: segmentColors[c.segment] || "#94a3b8" }} aria-hidden="true" />
+          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: couleurSegment(c.segment) }} aria-hidden="true" />
           {segmentLabels[c.segment] || c.segment || "-"}
         </span>
       ),
@@ -292,33 +283,36 @@ export default function Clients() {
           accent={churn.behaviourRate > 30 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
         />
         <StatCard label="Concentration top 5" value={`${concentration}%`} sublabel="du CA total" icon={Crown} accent={concentration > 40 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
-        <StatCard label="Revenu moyen par client" value={`${avgRevenue.toLocaleString("fr-CA")} $`} sublabel={`${value.buyers} clients ayant commandé`} icon={DollarSign} />
+        <StatCard label="Revenu moyen par client" value={avgRevenue === null ? "Non mesuré" : montant(avgRevenue)} sublabel={`${value.buyers} clients ayant commandé`} icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Répartition par segment</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={(e) => `${e.name}: ${e.value}`}>
-                {pieData.map((entry, i) => (
-                  <Cell key={i} fill={segmentColors[entry.key] || "#94a3b8"} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
+          {/* Barres plutot que camembert : les parts se comparent a l'oeil, et le
+              camembert anime restait vide quand les donnees arrivaient apres
+              l'affichage (constate en production). */}
+          <ResponsiveContainer width="100%" height={Math.max(160, pieData.length * 44)}>
+            <BarChart data={pieData} layout="vertical" margin={{ left: 10, right: 56 }}>
+              <XAxis type="number" hide />
+              <YAxis type="category" dataKey="name" {...AXE} width={110} />
+              <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v, _n, p) => [`${nombre(v)} clients (${pourcent(p?.payload?.part, 0)})`, "Segment"]} />
+              <Bar dataKey="value" name="Clients" {...BARRE_H} label={{ position: "right", fontSize: 11, fill: "hsl(var(--muted-foreground))", formatter: (v) => `${nombre(v)} · ${pourcent(totalSegments ? (v / totalSegments) * 100 : 0, 0)}` }}>
+                {pieData.map((entry) => <Cell key={entry.key} fill={couleurSegment(entry.key)} />)}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Top 10 clients (CA total)</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={topBarData} layout="vertical" margin={{ left: 20, right: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-              <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+            <BarChart data={topBarData} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <CartesianGrid {...GRILLE} vertical horizontal={false} />
+              <XAxis type="number" {...AXE_MONTANT} />
+              <YAxis type="category" dataKey="name" {...AXE} width={110} />
+              <Tooltip {...INFOBULLE} labelFormatter={(l) => l} formatter={(v) => [montant(v), "CA total (HT)"]} />
+              <Bar dataKey="revenue" name="CA total (HT)" fill={COULEURS.revenus} {...BARRE_H} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -1,6 +1,4 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import React, { useMemo } from "react";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import { Wallet, TrendingDown, TrendingUp, RefreshCw } from "lucide-react";
@@ -8,34 +6,25 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend,
 } from "recharts";
-import { fetchAll } from "@/lib/fetchAll";
 import { useKpiEngine } from "@/lib/useKpiEngine";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { preparerPeriodes, serieMensuelle } from "@/lib/core/kpiPeriodes";
+import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, FENETRE_MOIS } from "@/lib/graphiques";
+import { fluxTresorerieMensuels } from "@/lib/metrics";
+
+const IDS_TRESORERIE = ["cash_closing"];
 
 export default function Tresorerie() {
-  const { data: cashflow, isLoading: lcf } = useQuery({
-    queryKey: ["cashflow-summary"],
-    queryFn: () => fetchAll(base44.entities.Cashflow, "-date"),
-  });
-  const { data: expenses, isLoading: lex } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: () => fetchAll(base44.entities.Expense, "-date"),
-  });
-  const { data: payroll, isLoading: lp } = useQuery({
-    queryKey: ["payroll-summary"],
-    queryFn: () => fetchAll(base44.entities.Payroll, "-period"),
-  });
-  const { data: transactions, isLoading: ltx } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: () => fetchAll(base44.entities.Transaction, "-date"),
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi).
+  const { data: donnees, isLoading } = useDonneesKpi();
+  const { cashflow, expenses, payrolls: payroll, transactions } = donnees;
 
   // GESCOP Phase 4 SSOT
-  const { kpis: engineKpis } = useKpiEngine({ cashflow: cashflow || [], transactions: transactions || [] }, ["cash_closing"]);
+  const { kpis: engineKpis } = useKpiEngine(donnees, IDS_TRESORERIE);
+  // Paie par mois : serie du moteur (masse salariale), mois futurs exclus -
+  // une paie datee de decembre n'est pas encore sortie de la tresorerie.
+  const seriePaie = useMemo(() => serieMensuelle(preparerPeriodes(donnees), ["payroll_total"]).filter((p) => p.payroll_total != null), [donnees]);
 
-  // These query keys are shared with the Dashboard, so this page can render
-  // instantly if the user just navigated from there.
-  const isLoading = lcf || lex || lp || ltx;
-  
   if (isLoading) return <p className="text-sm text-muted-foreground">Chargement...</p>;
   if (!cashflow?.length && !expenses?.length && !payroll?.length && !transactions?.length) {
     return (
@@ -48,7 +37,6 @@ export default function Tresorerie() {
   }
 
   const expenseRows = expenses || [];
-  const payrollRows = payroll || [];
 
   // Sorted explicitly rather than trusting the order the API happened to return.
   // Cashflow is imported one row per day. Showing the last 12 rows meant showing
@@ -103,9 +91,14 @@ export default function Tresorerie() {
   // as a MONTHLY figure overstated it by the number of months covered, and a
   // stale assumption about the engine's sign convention flipped it negative on
   // top - a company whose cash grew steadily read as "burning $158k/month".
-  const totalNetCash = monthsCash.reduce((s, m) => s + byMonthCash[m].net, 0);
-  const avgNet = monthsCash.length > 0 ? totalNetCash / monthsCash.length : 0;
-  const chartData = monthsCash.slice(-12).map((m) => ({
+  // Flux net moyen sur les MOIS COMPLETS du releve (meme regle que l'autonomie
+  // de la page KPI) : le mois en cours, partiel, faisait baisser la moyenne.
+  const fluxComplets = fluxTresorerieMensuels(cashflow);
+  const moisFlux = fluxComplets.length > 0 ? fluxComplets.length : monthsCash.length;
+  const avgNet = fluxComplets.length > 0
+    ? fluxComplets.reduce((t, p) => t + p.net, 0) / fluxComplets.length
+    : monthsCash.length > 0 ? monthsCash.reduce((t, m) => t + byMonthCash[m].net, 0) / monthsCash.length : 0;
+  const chartData = monthsCash.slice(-FENETRE_MOIS).map((m) => ({
     mois: m,
     entrées: Math.round(byMonthCash[m].in),
     sorties: Math.round(byMonthCash[m].out),
@@ -115,18 +108,8 @@ export default function Tresorerie() {
 
   // Payroll and recurring expenses span many months in the import: a raw sum
   // presented as a monthly figure inflates it by the number of months covered.
-  const payrollPeriods = new Set(payrollRows.map((p) => p.period || (p.payroll_id || "").slice(0, 7)).filter(Boolean));
-  const totalPayroll = payrollRows.reduce((s, p) => s + (Number(p.total_cost) || 0), 0);
-  const avgMonthlyPayroll = payrollPeriods.size > 0 ? totalPayroll / payrollPeriods.size : 0;
-  const payrollByPeriod = {};
-  payrollRows.forEach((p) => {
-    const per = p.period || (p.payroll_id || "").slice(0, 7);
-    payrollByPeriod[per] = (payrollByPeriod[per] || 0) + (Number(p.total_cost) || 0);
-  });
-  const payrollChart = Object.entries(payrollByPeriod).sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-8).map(([m, v]) => ({
-    mois: m,
-    paie: Math.round(v),
-  }));
+  const avgMonthlyPayroll = seriePaie.length > 0 ? seriePaie.reduce((t, p) => t + p.payroll_total, 0) / seriePaie.length : 0;
+  const payrollChart = seriePaie.slice(-FENETRE_MOIS).map((p) => ({ mois: p.month, paie: Math.round(p.payroll_total) }));
 
   const recurring = expenseRows.filter((e) => e.recurring);
   const recurringByCat = {};
@@ -150,58 +133,54 @@ export default function Tresorerie() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Trésorerie actuelle" value={`${Math.round(currentCash).toLocaleString("fr-CA")} $`} sublabel={`au ${latestRow?.date || "-"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Flux net moyen / mois" value={`${Math.round(avgNet).toLocaleString()} $`} sublabel={`moyenne sur ${monthsCash.length} mois`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Coût paie / mois" value={`${Math.round(avgMonthlyPayroll).toLocaleString()} $`} sublabel={`moyenne sur ${payrollPeriods.size} périodes`} icon={RefreshCw} />
-        <StatCard label="Abonnements/mois" value={`${Math.round(recurringTotal).toLocaleString()} $`} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Trésorerie actuelle" value={montant(currentCash)} sublabel={`au ${latestRow?.date || "-"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Flux net moyen / mois" value={montant(avgNet)} sublabel={`moyenne sur ${moisFlux} mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Coût paie / mois" value={montant(avgMonthlyPayroll)} sublabel={`moyenne sur ${seriePaie.length} mois`} icon={RefreshCw} />
+        <StatCard label="Abonnements/mois" value={montant(recurringTotal)} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Évolution de la trésorerie</h2>
         <p className="mb-4 text-xs text-muted-foreground">Solde de fin de mois · {chartData.length} derniers mois</p>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={chartData} margin={{ left: 10, right: 10 }}>
-            <defs>
-              <linearGradient id="cashGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2a78d6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#2a78d6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="mois" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-            <Area type="monotone" dataKey="solde" stroke="#2a78d6" strokeWidth={2} fill="url(#cashGrad)" name="Solde" />
+          <AreaChart data={chartData} margin={{ left: 0, right: 10 }}>
+            <CartesianGrid {...GRILLE} />
+            <XAxis dataKey="mois" {...AXE_MOIS} />
+            <YAxis {...AXE_MONTANT} />
+            <Tooltip {...INFOBULLE_LIGNE} formatter={(v) => [montant(v), "Solde"]} />
+            <Area dataKey="solde" stroke={COULEURS.tresorerie} fill={COULEURS.tresorerie} fillOpacity={0.12} {...LIGNE} name="Solde" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Entrées vs sorties (par mois)</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Entrées vs sorties</h2>
+          <p className="mb-4 text-xs text-muted-foreground">Par mois · {chartData.length} derniers mois</p>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData.slice(-8)} margin={{ left: 10, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="mois" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="entrées" fill="#15803d" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="sorties" fill="#b45309" radius={[4, 4, 0, 0]} />
+            <BarChart data={chartData} margin={{ left: 0, right: 10 }} barGap={2}>
+              <CartesianGrid {...GRILLE} />
+              <XAxis dataKey="mois" {...AXE_MOIS} />
+              <YAxis {...AXE_MONTANT} />
+              <Tooltip {...INFOBULLE} formatter={(v, nom) => [montant(v), nom]} />
+              <Legend {...LEGENDE} />
+              <Bar dataKey="entrées" name="Entrées" fill={COULEURS.revenus} {...BARRE} />
+              <Bar dataKey="sorties" name="Sorties" fill={COULEURS.charges} {...BARRE} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Coût salarial mensuel</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Coût salarial mensuel</h2>
+          <p className="mb-4 text-xs text-muted-foreground">Masse salariale par mois · mois futurs exclus</p>
           {payrollChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={payrollChart} margin={{ left: 10, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="mois" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => `${v.toLocaleString()} $`} />
-                <Bar dataKey="paie" fill="#4a3aa7" radius={[4, 4, 0, 0]} />
+              <BarChart data={payrollChart} margin={{ left: 0, right: 10 }}>
+                <CartesianGrid {...GRILLE} />
+                <XAxis dataKey="mois" {...AXE_MOIS} />
+                <YAxis {...AXE_MONTANT} />
+                <Tooltip {...INFOBULLE} formatter={(v) => [montant(v), "Masse salariale"]} />
+                <Bar dataKey="paie" name="Masse salariale" fill={COULEURS.paie} {...BARRE} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -218,12 +197,12 @@ export default function Tresorerie() {
             {recurringChart.map((r) => (
               <div key={r.catégorie} className="flex items-center justify-between rounded-lg bg-muted/30 px-4 py-2.5">
                 <span className="text-sm font-medium">{r.catégorie}</span>
-                <span className="text-sm font-semibold">{r.montant.toLocaleString()} $/mois</span>
+                <span className="text-sm font-semibold">{montant(r.montant)}/mois</span>
               </div>
             ))}
             <div className="flex items-center justify-between border-t border-border pt-3">
               <span className="text-sm font-semibold">Total mensuel</span>
-              <span className="text-base font-bold">{Math.round(recurringTotal).toLocaleString()} $/mois</span>
+              <span className="text-base font-bold">{montant(recurringTotal)}/mois</span>
             </div>
           </div>
         </div>

@@ -1,8 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { fetchOrders } from "@/lib/fetchOrders";
-import { commandesDistinctes, noteBaseCA } from "@/lib/core/kpiRecords";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { noteBaseCA } from "@/lib/core/kpiRecords";
 import EmptyState from "@/components/EmptyState";
 import KpiCard from "@/components/kpis/KpiCard";
 import KpiTrendChart from "@/components/kpis/KpiTrendChart";
@@ -13,7 +10,9 @@ import { BarChart3, Download, SlidersHorizontal, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
-import { fetchAll } from "@/lib/fetchAll";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { FENETRE_MOIS } from "@/lib/graphiques";
+import { preparerPeriodes, kpisParFenetre, serieMensuelle } from "@/lib/core/kpiPeriodes";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/lib/AuthContext";
 import { useObservations } from "@/hooks/useObservations";
@@ -22,20 +21,15 @@ import { ADDABLE_KPIS, ADDABLE_KPI_IDS } from "@/lib/addableKpis";
 import { getKpiDefinition } from "@/lib/core/kpiRegistry";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import { getStockAlertSettings, computeStockAlerts } from "@/lib/stockAlerts";
-import { prepareTransactions, financialMonthlySeries } from "@/lib/financialData";
-import { isIncome, isExpense, txAmount } from "@/lib/transactionClassifier";
+import { financialMonthlySeries } from "@/lib/financialData";
 import {
   monthlyAggComplete,
   lastVal,
   prevVal,
   trendDir,
-  sumLast,
-  sumPrev,
 } from "@/lib/periods";
 import {
-  aggregateMarginPct,
-  previousMarginPct,
-  netBurnRate,
+  consommationTresorerie,
   runwayMonths,
   latestCashBalance,
   churnStats,
@@ -44,8 +38,10 @@ import {
   previousRoasWindow,
   anyColumnPresent,
   isRefundedOrder,
-  validSalesOrders,
 } from "@/lib/metrics";
+
+const IDS_FENETRES = ["total_revenue", "total_charges", "net_margin_pct", "order_revenue", "order_count", "aov"];
+const KPI_MOTEUR = ["customer_sentiment_score", "gross_margin_pct", ...ADDABLE_KPI_IDS];
 
 const domainLabels = {
   finance: "Finance",
@@ -87,138 +83,23 @@ export default function Kpis() {
     setPrefs(next);
     saveKpiPreferences(userId, next);
   };
-  const { data: kpisLLM, isLoading } = useQuery({
-    queryKey: ["kpis"],
-    queryFn: async () => {
-      const list = await base44.entities.Kpi.list();
-      return list || [];
-    },
-    staleTime: 0,
-  });
   
   const { data: observations } = useObservations();
 
-  const { data: transactions } = useQuery({
-    queryKey: ["transactions-summary"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Transaction, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  // A company can record its costs as expense-typed Transaction rows, in the
-  // dedicated Expense entity, or both - reading only Transaction made every
-  // Finance/Trésorerie figure here read 0 $ whenever costs lived in Expense.
-  const { data: expenses } = useQuery({
-    queryKey: ["expenses-summary"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Expense, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: executiveSummary } = useQuery({
-    queryKey: ["executive-summary-kpi"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.ExecutiveSummary, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  // Only fetched for the optional "+ Ajouter un indicateur" RH indicators -
-  // no default card on this page needs them.
-  const { data: employees } = useQuery({
-    queryKey: ["employees-summary"],
-    queryFn: async () => (await fetchAll(base44.entities.Employee)) || [],
-    staleTime: 0,
-  });
-  const { data: payrolls } = useQuery({
-    queryKey: ["payrolls-summary"],
-    queryFn: async () => (await fetchAll(base44.entities.Payroll, "-period")) || [],
-    staleTime: 0,
-  });
-  const { data: orders } = useQuery({
-    queryKey: ["orders-kpi"],
-    queryFn: async () => {
-      const list = await fetchOrders();
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: customers } = useQuery({
-    queryKey: ["customers-kpi"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Customer);
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: campaigns } = useQuery({
-    queryKey: ["campaigns-summary"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Campaign);
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: products } = useQuery({
-    queryKey: ["products-kpi"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Product);
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: inventory } = useQuery({
-    queryKey: ["inventory-kpi"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Inventory, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: cashflow } = useQuery({
-    queryKey: ["cashflow-summary"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.Cashflow, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: campaignDaily } = useQuery({
-    queryKey: ["campaign-daily-summary"],
-    queryFn: async () => {
-      const list = await fetchAll(base44.entities.CampaignDaily, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
-  const { data: executiveSummaries } = useQuery({
-    queryKey: ["executive-summaries-kpi"],
-    queryFn: async () => {
-      if (!base44?.entities?.ExecutiveSummary?.list) return [];
-      const list = await fetchAll(base44.entities.ExecutiveSummary, "-date");
-      return list || [];
-    },
-    staleTime: 0,
-  });
+  // Memes donnees que tous les ecrans (useDonneesKpi), paie comprise.
+  const { data: donnees, isLoading } = useDonneesKpi();
+  const { transactions, orders, customers, campaigns, products, inventory, cashflow, campaignDaily, executiveSummary } = donnees;
 
-  const { kpis: engineKpis } = useKpiEngine({
-    transactions: transactions || [],
-    orders: orders || [],
-    executiveSummaries: executiveSummaries || [],
-    customers: customers || [],
-    observations: observations || [],
-    cashflow: cashflow || [],
-    expenses: expenses || [],
-    employees: employees || [],
-    payrolls: payrolls || [],
-    campaigns: campaigns || [],
-    campaignDaily: campaignDaily || [],
-    campaigns: campaigns || [],
-    products: products || [],
-    inventory: inventory || [],
-  }, ["customer_sentiment_score", ...ADDABLE_KPI_IDS]);
+  // Finance et ventes : le MOTEUR sur des fenetres de mois (kpiPeriodes). La
+  // « marge nette (3 mois) » est la marge nette du moteur sur 3 mois, pas une
+  // formule propre a cette page (qui oubliait la paie et le cout des ventes).
+  const periodes = useMemo(() => {
+    const prep = preparerPeriodes(donnees);
+    return { prep, fen: kpisParFenetre(prep, IDS_FENETRES), serie: financialMonthlySeries(donnees) };
+  }, [donnees]);
+
+  const donneesMoteur = useMemo(() => ({ ...donnees, observations: observations || [] }), [donnees, observations]);
+  const { kpis: engineKpis } = useKpiEngine(donneesMoteur, KPI_MOTEUR);
 
   // "+ Ajouter un indicateur" catalog: computed live regardless of whether
   // the user has opted in, so the picker can show which ones actually have
@@ -254,7 +135,6 @@ export default function Kpis() {
     const result = [];
     // Computed in the FINANCE block below and reused by CLIENTS to turn revenue
     // per customer into an actual LTV. Null when there is no margin to apply.
-    let margin3Overall = null;
 
     const sentiment = engineKpis.get("customer_sentiment_score")?.value;
     if (sentiment !== undefined && sentiment !== null) {
@@ -262,23 +142,25 @@ export default function Kpis() {
     }
 
     // === FINANCE === (if transactions, orders or executiveSummary exist)
+    const { fen, serie } = periodes;
+    const V = (fenetre, id) => { const x = fenetre?.get(id)?.value; return Number.isFinite(x) ? x : null; };
+    const pousser = (name, domain, value, previous, unit, extra = {}) => {
+      // Non mesure = pas de carte, jamais une carte a 0.
+      if (value === null) return;
+      const arrondi = (x) => (x === null ? null : unit === "%" ? Math.round(x * 10) / 10 : Math.round(x));
+      result.push({ name, domain, value: arrondi(value), previous: arrondi(previous), trend: previous === null ? "stable" : trendDir(value, previous), unit, ...extra });
+    };
+    // Statut du moteur pour la fenetre affichee : « partiel » quand une partie
+    // des sources manque (badge sur la carte, jamais un chiffre presente complet).
+    const statut = (fenetre, id) => (fenetre?.get(id)?.status === "UNKNOWN" ? { statut: "partiel" } : {});
     const hasFinance = (transactions || []).length > 0 || (orders || []).length > 0 || (executiveSummary || []).length > 0;
     if (hasFinance) {
-      const financialMonthly = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []);
-      const revMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.income }));
-      const expMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.expense }));
-      const currRev = lastVal(revMonthly);
-      const prevRev = prevVal(revMonthly);
-      const currExp = lastVal(expMonthly);
-      const prevExp = prevVal(expMonthly);
-      const currMarginPct = currRev > 0 ? ((currRev - currExp) / currRev) * 100 : 0;
-      const prevMarginPct = prevRev > 0 ? ((prevRev - prevExp) / prevRev) * 100 : 0;
-      const hasHistory3 = revMonthly.length >= 3;
-      const margin3 = hasHistory3
-        ? aggregateMarginPct(revMonthly, expMonthly, 3)
-        : (revMonthly.length > 0 ? aggregateMarginPct(revMonthly, expMonthly, revMonthly.length) : null);
-      const marginPrev3 = hasHistory3 ? previousMarginPct(revMonthly, expMonthly, 3) : null;
-      margin3Overall = margin3;
+      pousser("Chiffre d'affaires (mois)", "finance", V(fen.mois, "total_revenue"), V(fen.moisPrec, "total_revenue"), "$", statut(fen.mois, "total_revenue"));
+      pousser("Charges totales (mois)", "finance", V(fen.mois, "total_charges"), V(fen.moisPrec, "total_charges"), "$",
+        { note: "Coût des ventes + dépenses + masse salariale", lowerIsBetter: true, ...statut(fen.mois, "total_charges") });
+      pousser("Marge nette (mois)", "finance", V(fen.mois, "net_margin_pct"), V(fen.moisPrec, "net_margin_pct"), "%", statut(fen.mois, "net_margin_pct"));
+      if (fen.trim) pousser("Marge nette (3 mois)", "finance", V(fen.trim, "net_margin_pct"), V(fen.trimPrec, "net_margin_pct"), "%", statut(fen.trim, "net_margin_pct"));
+      else pousser("Marge nette (période importée)", "finance", V(fen.total, "net_margin_pct"), null, "%", statut(fen.total, "net_margin_pct"));
 
       // Cash: latest balance, compared on a 7-day average to avoid daily noise.
       const cfSorted = (cashflow || []).slice().sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
@@ -289,22 +171,22 @@ export default function Kpis() {
       // Only compare against a full prior week, never against 2 stray rows.
       const cashPrev7 = cfSorted.length >= 14 ? avgCash(cfSorted.slice(7, 14)) : null;
 
-      result.push({ name: "Revenus encaissés (mois)", domain: "finance", value: Math.round(currRev), previous: Math.round(prevRev), trend: trendDir(currRev, prevRev), unit: "$" });
-      result.push({ name: "Dépenses (mois)", domain: "finance", value: Math.round(currExp), previous: Math.round(prevExp), trend: trendDir(currExp, prevExp), unit: "$" });
-      result.push({ name: "Marge nette (mois)", domain: "finance", value: Math.round(currMarginPct), previous: Math.round(prevMarginPct), trend: trendDir(currMarginPct, prevMarginPct), unit: "%" });
-      if (margin3 !== null) {
-        result.push({ name: hasHistory3 ? "Marge nette (3 mois)" : `Marge nette (${revMonthly.length} mois)`, domain: "finance", value: Math.round(margin3), previous: marginPrev3 !== null ? Math.round(marginPrev3) : null, trend: trendDir(margin3, marginPrev3), unit: "%" });
-      }
       if (latestCash !== null) {
         result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: cashPrev7 !== null ? Math.round(cashPrev7) : null, trend: trendDir(cash7, cashPrev7, 1), unit: "$" });
-        // Runway on NET burn: a profitable business is not 3 months from the wall.
-        const burn = netBurnRate(revMonthly, expMonthly, 3);
+        // Autonomie : solde du releve / consommation mesuree sur le MEME releve
+        // (consommationTresorerie, regle commune a toutes les pages).
+        const { burn, base } = consommationTresorerie({
+          cashflow,
+          revSeries: serie.map((p) => ({ month: p.month, val: p.income })),
+          expSeries: serie.map((p) => ({ month: p.month, val: p.expense })),
+        }, 3);
         const runway = runwayMonths(latestCash, burn);
+        const noteBase = base === "resultat" ? "Estimée sur le résultat (aucun flux de trésorerie importé)" : null;
         if (runway === Infinity) {
-          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: "Autofinancée", previous: null, trend: "stable", unit: "" });
+          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: "Autofinancée", previous: null, trend: "stable", unit: "", note: noteBase });
         } else if (runway !== null && Number.isFinite(runway)) {
           // No previous window is computed for runway, so no arrow is shown.
-          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: "stable", unit: " mois" });
+          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: "stable", unit: " mois", note: noteBase });
         }
       }
     }
@@ -323,39 +205,22 @@ export default function Kpis() {
       // Montants HORS TAXES, une ligne par commande (kpiRecords) : le total
       // est TTC des qu'un fichier fournit les taxes, et un fichier d'une ligne
       // par article comptait chaque article comme une commande.
-      const salesOrders = commandesDistinctes(validSalesOrders(orders));
-      const orderRevMonthly = monthlyAggComplete(salesOrders, "date", "_ht");
-      const orderCntMonthly = monthlyAggComplete(salesOrders, "date", "_ht", "count");
-      const currOrders = lastVal(orderCntMonthly);
-      const prevOrders = prevVal(orderCntMonthly);
-      const currOrderRev = lastVal(orderRevMonthly);
-      const prevOrderRev = prevVal(orderRevMonthly);
-      const currAOV = currOrders > 0 ? currOrderRev / currOrders : 0;
-      const prevAOV = prevOrders > 0 ? prevOrderRev / prevOrders : 0;
-      const totalOrderRev = salesOrders.reduce((s, o) => s + o._ht, 0);
       const noteCA = noteBaseCA(orders);
       const returns = orders.filter(isRefundedOrder);
+      // Taux de retour EN NOMBRE de commandes, lu sur les statuts : different
+      // du taux « en valeur » du moteur (lignes d'avoir), d'ou un nom distinct.
       // 0 % only means "no returns" when at least one column could have
-      // reported one. If all three are absent from the import, the rate is
-      // unknown and the KPI is withheld rather than shown as a clean zero.
+      // reported one; otherwise the KPI is withheld rather than shown as zero.
       const hasReturnSignal = anyColumnPresent(orders, ["return_status", "payment_status", "fulfillment_status"]);
       const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
-      // 3-month blocks: less sensitive to a single outlier month than 1-vs-1.
-      const rev3 = sumLast(orderRevMonthly, 3);
-      const revPrev3 = sumPrev(orderRevMonthly, 3);
-
-      result.push({ name: "Panier moyen (mois)", domain: "ventes", value: Math.round(currAOV), previous: Math.round(prevAOV), trend: trendDir(currAOV, prevAOV), unit: "$", note: noteCA });
-      result.push({ name: "Commandes (mois)", domain: "ventes", value: currOrders, previous: prevOrders, trend: trendDir(currOrders, prevOrders), unit: "" });
-      // No previous window is computed for the return rate, so no arrow:
-      // a trend must come from a change over time, never from the level.
+      pousser("Panier moyen (mois)", "ventes", V(fen.mois, "aov"), V(fen.moisPrec, "aov"), "$", { note: noteCA, ...statut(fen.mois, "aov") });
+      pousser("Commandes (mois)", "ventes", V(fen.mois, "order_count"), V(fen.moisPrec, "order_count"), "", statut(fen.mois, "order_count"));
       if (hasReturnSignal) {
-        result.push({ name: "Taux de retour", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+        result.push({ name: "Taux de retour (en nombre de commandes)", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%", lowerIsBetter: true });
       }
-      if (rev3 !== null) {
-        result.push({ name: "CA commandes (3 mois)", domain: "ventes", value: Math.round(rev3), previous: revPrev3 !== null ? Math.round(revPrev3) : null, trend: trendDir(rev3, revPrev3), unit: "$", note: noteCA });
-      }
-      result.push({ name: "CA commandes (total)", domain: "ventes", value: Math.round(totalOrderRev), previous: null, trend: "stable", unit: "$", note: noteCA });
+      if (fen.trim) pousser("CA commandes (3 mois)", "ventes", V(fen.trim, "order_revenue"), V(fen.trimPrec, "order_revenue"), "$", { note: noteCA, ...statut(fen.trim, "order_revenue") });
+      pousser("CA commandes (total)", "ventes", V(fen.total, "order_revenue"), null, "$", { note: noteCA, ...statut(fen.total, "order_revenue") });
     }
 
     // === MARKETING === (only if campaigns exist)
@@ -442,7 +307,10 @@ export default function Kpis() {
       // Revenue per customer: the numerator covers every buyer, so the
       // denominator must too. Dividing all-customer revenue by ACTIVE customers
       // only was inflating this by 1/(share of active) - 2x at 50% churn.
-      const value = customerValue(orders, customers, margin3Overall);
+      // LTV sur la MARGE BRUTE du moteur (valeur apportee par le client avant
+      // frais fixes), pas sur une marge maison.
+      const margeBrute = engineKpis.get("gross_margin_pct")?.value;
+      const value = customerValue(orders, customers, Number.isFinite(margeBrute) ? margeBrute : null);
 
       // "Clients actifs" / "Clients perdus" both read off the customer status
       // field. When no row has ever carried "actif", "inactif" or "perdu" that
@@ -467,41 +335,26 @@ export default function Kpis() {
       }
       // A real LTV is value, not turnover - only shown when a margin is known.
       if (value.ltv !== null) {
-        result.push({ name: "LTV client (marge)", domain: "clients", value: Math.round(value.ltv), previous: null, trend: "stable", unit: "$" });
+        result.push({ name: "LTV client (marge brute)", domain: "clients", value: Math.round(value.ltv), previous: null, trend: "stable", unit: "$" });
       }
     }
 
     return result;
-  }, [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses, stockSettings.threshold, stockSettings.useReorderPoint, engineKpis]);
+  }, [donnees, periodes, stockSettings.threshold, stockSettings.useReorderPoint, engineKpis]);
 
-  // Merge: computed KPIs first, then LLM-generated ones that aren't duplicated
+  // Les KPI viennent du moteur uniquement. Les cartes ecrites par l'IA
+  // (entite Kpi) affichaient des valeurs qu'elle avait calculees elle-meme, a
+  // cote - et parfois en contradiction - des chiffres du moteur.
   const allKpis = useMemo(() => {
-    const computedNames = new Set(computedKpis.map((k) => k.name.toLowerCase()));
-    // AI-generated cards that name-collide with (or are looser phrasings of)
-    // a card we already compute live - kept out so the same indicator never
-    // shows twice under two slightly different names.
-    const liveMetricNames = new Set([
-      "trésorerie actuelle",
-      "ca commandes (total)",
-      "revenu total (commandes)",
-      "revenu commandes",
-      "panier moyen",
-      "panier moyen (commandes)",
-      "panier moyen (mois)",
-    ]);
-    const llmExtras = (kpisLLM || []).filter((k) => {
-      const name = (k.name || "").toLowerCase();
-      return !computedNames.has(name) && !liveMetricNames.has(name);
-    });
     // Indicators the user opted into via "+ Ajouter un indicateur" - only
     // rendered while they actually have enough data (`available`), so an
     // added card disappears on its own if the data it needs runs out later,
     // instead of showing a stale or fake value.
     const addedExtras = addableCatalog.filter(
       (k) => (prefs.added || []).includes(k.id) && k.available
-    ).map((k) => ({ name: k.name, domain: k.domain, value: k.value, previous: null, trend: "stable", unit: k.unit, note: k.note }));
-    return [...computedKpis, ...addedExtras, ...llmExtras];
-  }, [computedKpis, kpisLLM, addableCatalog, prefs.added]);
+    ).map((k) => ({ name: k.name, domain: k.domain, value: k.value, previous: null, trend: "stable", unit: k.unit, note: k.note, statut: k.note ? "partiel" : undefined }));
+    return [...computedKpis, ...addedExtras];
+  }, [computedKpis, addableCatalog, prefs.added]);
 
   const byDomain = useMemo(() => {
     const groups = {};
@@ -514,34 +367,21 @@ export default function Kpis() {
 
   const orderedByDomain = useMemo(() => orderKpisByPreference(byDomain, prefs), [byDomain, prefs]);
 
-  const rtScores = useMemo(() => computeDomainScores({
-    transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses, company, executiveSummary,
-  }), [transactions, orders, customers, campaigns, campaignDaily, products, inventory, cashflow, expenses, company, executiveSummary]);
+  const rtScores = useMemo(() => computeDomainScores({ ...donnees, company }), [donnees, company]);
 
   // Trend chart data: revenue, AOV, margin % by month.
   // The in-progress month is excluded - a partial month renders as a false cliff.
   const trendData = useMemo(() => {
-    const financialMonthly = financialMonthlySeries(transactions || [], expenses || [], orders || [], executiveSummary || []);
-    // Commandes au HT, une ligne par commande (kpiRecords), comme le CA.
-    const trendOrders = commandesDistinctes(validSalesOrders(orders));
-    const orderRevMonthly = monthlyAggComplete(trendOrders, "date", "_ht");
-    const orderCntMonthly = monthlyAggComplete(trendOrders, "date", "_ht", "count");
-
-    const months = new Set([
-      ...financialMonthly.map((m) => m.month),
-      ...orderRevMonthly.map((m) => m.month),
-    ]);
-    return Array.from(months).sort().slice(-8).map((month) => {
-      const finPoint = financialMonthly.find((m) => m.month === month);
-      const oRev = orderRevMonthly.find((m) => m.month === month)?.val || 0;
-      const rev = (finPoint && finPoint.income > 0) ? finPoint.income : oRev;
-      const exp = finPoint ? finPoint.expense : 0;
-      const oCnt = orderCntMonthly.find((m) => m.month === month)?.val || 0;
-      const aov = oCnt > 0 ? oRev / oCnt : 0;
-      const margin = rev > 0 ? ((rev - exp) / rev) * 100 : 0;
-      return { month, revenue: Math.round(rev), aov: Math.round(aov), margin: Math.round(margin) };
-    });
-  }, [transactions, orders, expenses, executiveSummary]);
+    // Meme serie que Finance et la vue d'ensemble (moteur, mois par mois) :
+    // CA, marge NETTE (charges totales) et panier moyen du moteur.
+    const paniers = new Map(serieMensuelle(periodes.prep, ["aov"]).map((p) => [p.month, p.aov]));
+    return periodes.serie.slice(-FENETRE_MOIS).map((p) => ({
+      month: p.month,
+      revenue: Math.round(p.income),
+      aov: paniers.get(p.month) != null ? Math.round(paniers.get(p.month)) : null,
+      margin: p.income > 0 && p.chargesMesurees ? Math.round((p.margin / p.income) * 100) : null,
+    }));
+  }, [periodes]);
 
   const exportKpis = () => {
     const rows = allKpis.map((k) => ({
