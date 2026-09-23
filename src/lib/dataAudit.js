@@ -377,10 +377,20 @@ export function runCoherenceChecks(d) {
     }
   }
   if (devises.size > 1) {
-    out.push(check(
+    // Les commandes arrivent normalisees (fetchOrders / kpiRecords.normaliserDevises).
+    const exclues = orders.filter((o) => o._devise_exclue);
+    const converties = orders.filter((o) => o._devise_origine).length;
+    const reference = orders.find((o) => o._devise_reference)?._devise_reference;
+    const sansTaux = [...new Set(exclues.map((o) => o.currency))];
+    const normalisees = orders.some((o) => o._devise_reference);
+    if (!normalisees) {
+      out.push(check("Devises et pays des ventes", "warn", `Les ventes couvrent ${devises.size} pays ou devises (${[...devises].slice(0, 6).join(", ")}) : sans conversion, leurs montants ne s'additionnent pas.`));
+    } else out.push(check(
       "Devises et pays des ventes",
-      "warn",
-      `Les ventes couvrent ${devises.size} pays ou devises (${[...devises].slice(0, 6).join(", ")}) : leurs montants sont additionnés sans conversion. Les totaux ne sont exacts que si tout est dans la même devise.`,
+      exclues.length ? "warn" : "ok",
+      exclues.length
+        ? `Ventes en ${devises.size} pays ou devises (${[...devises].slice(0, 6).join(", ")}). ${exclues.length} ligne(s) en ${sansTaux.join(", ")} ne sont pas comptées faute de taux de change : fournissez-les dans Paramètres > Préférences. Les chiffres couvrent les ventes en ${reference || "devise de référence"}${converties ? ` et ${converties} ligne(s) converties` : ""}.`
+        : `Ventes en ${devises.size} pays ou devises, toutes ramenées en ${reference || "devise de référence"}${converties ? ` (${converties} ligne(s) converties avec vos taux)` : ""}.`,
     ));
   }
 

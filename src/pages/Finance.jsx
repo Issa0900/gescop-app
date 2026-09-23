@@ -12,6 +12,10 @@ import { fetchAll } from "@/lib/fetchAll";
 import { financialMonthlySeries } from "@/lib/financialData";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import DataErrorState from "@/components/DataErrorState";
+import { fetchOrders } from "@/lib/fetchOrders";
+import { noteBaseCA } from "@/lib/core/kpiRecords";
+import ImmobilisationsCard from "@/components/finance/ImmobilisationsCard";
+import PaiementsCard from "@/components/finance/PaiementsCard";
 
 export default function Finance() {
   const { data: transactions, isLoading: ltx, isError, refetch } = useQuery({
@@ -32,16 +36,22 @@ export default function Finance() {
   // de commandes avec un coût, jamais présent sur de simples transactions).
   // Les deux existent dans kpiRegistry.js pour des questions différentes ;
   // "Résultat Net" sur cette page a toujours voulu dire la première.
-  const { kpis: engineKpis } = useKpiEngine({ transactions: transactions || [], expenses: expenses || [] }, ["total_revenue", "total_expense", "net_income", "net_margin_pct"]);
+  // Commandes et paie aussi : sans elles, une entreprise qui n'importe que ses
+  // ventes voyait ici 0 $ de CA alors que le tableau de bord affichait le vrai.
+  const { data: orders } = useQuery({ queryKey: ["orders-finance"], queryFn: () => fetchOrders() });
+  const { data: payrolls } = useQuery({ queryKey: ["payrolls-finance"], queryFn: () => fetchAll(base44.entities.Payroll, "-period") });
+  const { data: assets } = useQuery({ queryKey: ["assets-finance"], queryFn: () => fetchAll(base44.entities.Asset) });
+  const { data: payments } = useQuery({ queryKey: ["payments-finance"], queryFn: () => fetchAll(base44.entities.Payment, "-date") });
+  const { kpis: engineKpis } = useKpiEngine({ transactions: transactions || [], expenses: expenses || [], orders: orders || [], payrolls: payrolls || [] }, ["total_revenue", "total_expense", "net_income", "net_margin_pct"]);
 
   if (ltx) return <p className="text-sm text-muted-foreground">Chargement...</p>;
   if (isError) return <DataErrorState onRetry={refetch} />;
-  if (!transactions?.length && !expenses?.length) {
+  if (!transactions?.length && !expenses?.length && !orders?.length && !assets?.length && !payments?.length) {
     return (
       <EmptyState
         icon={DollarSign}
         title="Aucune donnée financière"
-        description="Importez vos transactions ou vos dépenses pour analyser votre santé financière."
+        description="Importez vos ventes, transactions, dépenses ou immobilisations pour analyser votre santé financière."
       />
     );
   }
@@ -78,7 +88,7 @@ export default function Finance() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Chiffre d'affaires" value={`${Math.round(summary.revenue).toLocaleString("fr-CA")} $`} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" />
+        <StatCard label="Chiffre d'affaires" value={`${Math.round(summary.revenue).toLocaleString("fr-CA")} $`} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
         <StatCard label="Dépenses totales" value={`${Math.round(summary.expense).toLocaleString("fr-CA")} $`} icon={TrendingDown} accent="bg-red-50 text-red-600" />
         <StatCard label="Résultat Net" value={summary.netIncome == null ? "N/A" : `${Math.round(summary.netIncome).toLocaleString("fr-CA")} $`} icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
         <StatCard label="Marge Nette" value={summary.marginPct == null ? "N/A" : `${summary.marginPct.toFixed(1)} %`} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
@@ -117,6 +127,9 @@ export default function Finance() {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+
+      <ImmobilisationsCard assets={assets} />
+      <PaiementsCard payments={payments} orders={orders} />
     </div>
   );
 }

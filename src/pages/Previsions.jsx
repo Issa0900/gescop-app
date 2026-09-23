@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import ForecastCard from "@/components/previsions/ForecastCard";
@@ -86,7 +87,7 @@ export default function Previsions() {
     queryFn: async () => {
       const [customers, orders, campaignDaily, inventory, products] = await Promise.all([
         fetchAll(base44.entities.Customer, "-created_date"),
-        fetchAll(base44.entities.Order, "-date"),
+        fetchOrders(),
         fetchAll(base44.entities.CampaignDaily, "-date"),
         fetchAll(base44.entities.Inventory, "-date"),
         fetchAll(base44.entities.Product),

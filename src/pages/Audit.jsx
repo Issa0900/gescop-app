@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ import { ShieldCheck } from "lucide-react";
 // a truncated source produces false incoherences.
 const sources = {
   transactions: () => fetchAll(base44.entities.Transaction, "-date"),
-  orders: () => fetchAll(base44.entities.Order, "-date"),
+  orders: () => fetchOrders(),
   customers: () => fetchAll(base44.entities.Customer),
   products: () => fetchAll(base44.entities.Product),
   inventory: () => fetchAll(base44.entities.Inventory, "-date"),

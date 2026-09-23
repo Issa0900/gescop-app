@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import InsightCard from "@/components/insights/InsightCard";
@@ -61,7 +62,7 @@ export default function Insights() {
       const [transactions, customers, orders, campaignDaily, inventory, cashflow, products, expenses] = await Promise.all([
         fetchAll(base44.entities.Transaction, "-date"),
         fetchAll(base44.entities.Customer, "-created_date"),
-        fetchAll(base44.entities.Order, "-date"),
+        fetchOrders(),
         fetchAll(base44.entities.CampaignDaily, "-date"),
         fetchAll(base44.entities.Inventory, "-date"),
         fetchAll(base44.entities.Cashflow, "-date"),

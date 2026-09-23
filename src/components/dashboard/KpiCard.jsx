@@ -42,7 +42,7 @@ const statusStyles = {
   unmeasured: "text-muted-foreground bg-muted",
 };
 
-export default function KpiCard({ label, value, change, changeDir, sparkline, status, statusLabel, onClick }) {
+export default function KpiCard({ label, value, change, changeDir, sparkline, status, statusLabel, onClick, note }) {
   const tc = trendConfig[changeDir] || trendConfig.stable;
   const TIcon = tc.icon;
   return (
@@ -70,6 +70,8 @@ export default function KpiCard({ label, value, change, changeDir, sparkline, st
           </span>
         )}
       </div>
+      {/* Base et limites du chiffre (hors taxes, devises exclues...). */}
+      {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
       <div className="mt-3">
         <Sparkline data={sparkline} />
       </div>

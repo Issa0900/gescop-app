@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { fetchAll } from "@/lib/fetchAll";
@@ -36,7 +37,7 @@ export default function KpiManagementPanel() {
   const { data: expenses } = useQuery({ queryKey: ["kpimgmt-expenses"], queryFn: () => fetchAll(base44.entities.Expense, "-date") });
   const { data: employees } = useQuery({ queryKey: ["kpimgmt-employees"], queryFn: () => fetchAll(base44.entities.Employee) });
   const { data: payrolls } = useQuery({ queryKey: ["kpimgmt-payrolls"], queryFn: () => fetchAll(base44.entities.Payroll, "-period") });
-  const { data: orders } = useQuery({ queryKey: ["kpimgmt-orders"], queryFn: () => fetchAll(base44.entities.Order, "-date") });
+  const { data: orders } = useQuery({ queryKey: ["kpimgmt-orders"], queryFn: () => fetchOrders() });
   const { data: customers } = useQuery({ queryKey: ["kpimgmt-customers"], queryFn: () => fetchAll(base44.entities.Customer) });
   const { data: cashflow } = useQuery({ queryKey: ["kpimgmt-cashflow"], queryFn: () => fetchAll(base44.entities.Cashflow, "-date") });
   const { data: campaignDaily } = useQuery({ queryKey: ["kpimgmt-campaign-daily"], queryFn: () => fetchAll(base44.entities.CampaignDaily, "-date") });

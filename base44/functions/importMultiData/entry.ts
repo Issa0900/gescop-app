@@ -17,6 +17,7 @@ import { appliquerPreuvesEntreTables, nouveauContexteRelations } from "../../sha
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { calculerFormulesManquantes } from "../../shared/formules.ts";
+import { apprendreDictionnaire } from "../../shared/dictionnaireDonnees.ts";
 
 /**
  * Resolve the target entity for a sheet/file.
@@ -240,8 +241,10 @@ export default async function (req: Request) {
     // Parametres > Dictionnaire — l'apprentissage automatique depuis une
     // correction manuelle sur l'ecran d'import reste a cabler separement.
     let companyDictionary: Record<string, string> = {};
+    let entreprise: any = null;
     try {
       const companies = await base44.entities.Company.list();
+      entreprise = companies?.[0] || null;
       companyDictionary = buildCompanyDictionaryIndex(companies?.[0]?.company_dictionary);
     } catch (e) {
       console.error("Lecture du dictionnaire d'entreprise impossible, poursuite sans", e);
@@ -321,10 +324,30 @@ export default async function (req: Request) {
                 continue;
               }
               const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, file_url);
+              // Apprendre le sens des colonnes que GESCOP ne reconnait pas par
+              // leur nom, d'apres leur description (dictionnaireDonnees.ts).
+              // Jamais de reecriture d'un terme deja defini par l'entreprise.
+              const appris = apprendreDictionnaire(matrix, plan.ligne_entetes, companyDictionary);
+              let noteAppris = "";
+              if (appris.length > 0 && entreprise?.id) {
+                try {
+                  const actuel = entreprise.company_dictionary && !Array.isArray(entreprise.company_dictionary) ? entreprise.company_dictionary : {};
+                  const ajout = Object.fromEntries(appris.filter((a) => !(a.terme in actuel)).map((a) => [a.terme, a.champ]));
+                  if (Object.keys(ajout).length > 0) {
+                    await base44.entities.Company.update(entreprise.id, { company_dictionary: { ...actuel, ...ajout } });
+                    entreprise.company_dictionary = { ...actuel, ...ajout };
+                    Object.assign(companyDictionary, buildCompanyDictionaryIndex(ajout));
+                    noteAppris = ` ${Object.keys(ajout).length} terme(s) appris dans le dictionnaire de l'entreprise : `
+                      + appris.slice(0, 5).map((a) => `${a.terme} → ${a.champ}`).join(", ") + (appris.length > 5 ? "…" : "") + ".";
+                  }
+                } catch (e) {
+                  console.error("Dictionnaire de l'entreprise non mis a jour", e);
+                }
+              }
               results.push({
                 file_name: label, entity: null, status: "ignore", import_id: conserve.import_id, dictionnaire: true,
-                rows_read: conserve.metrics.total_rows, rows: 0, metrics: conserve.metrics,
-                message: message + " Les définitions restent consultables dans le registre de l'import.",
+                rows_read: conserve.metrics.total_rows, rows: 0, metrics: conserve.metrics, termes_appris: appris,
+                message: message + noteAppris + " Les définitions restent consultables dans le registre de l'import.",
               });
               continue;
             }

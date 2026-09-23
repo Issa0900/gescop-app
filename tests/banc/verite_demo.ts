@@ -49,8 +49,12 @@ export const VERITE_DEMO: VeriteDemo[] = [
   },
   {
     fichier: "Sales_transactions_2022_2025.csv",
-    note: "45 vrais doublons (meme Transaction_ID) ; commandes annulees et retournees exclues du CA ; 6 pays.",
-    kpi: { total_revenue: 7128771.28 },
+    // 6 pays, aucun taux de change fourni : seules les ventes dans la devise la
+    // plus frequente (USD) sont additionnees, les autres sont exclues et le CA
+    // est signale partiel. Toutes devises confondues (a ne jamais afficher) :
+    // 7 128 771,28.
+    note: "45 vrais doublons (meme Transaction_ID) ; annulees et retournees exclues ; 6 pays sans taux : USD seulement.",
+    kpi: { total_revenue: 3028483.18 },
     lignes: { Order: 18000 },
   },
   {

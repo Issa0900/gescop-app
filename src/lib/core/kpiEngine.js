@@ -467,7 +467,10 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
     unit: targetSemantic.dataType,
     formula: `Agrégation (${method}) de ${targetField}`,
     sources: [source],
-    status: value === 0 ? KPI_STATUS.VALID_ZERO : KPI_STATUS.MEASURED
+    // Des ventes ecartees faute de taux de change : le chiffre est juste pour
+    // ce qu'il couvre, mais partiel.
+    status: recordsForEntity.some((r) => r._devise_exclue) ? KPI_STATUS.UNKNOWN
+      : value === 0 ? KPI_STATUS.VALID_ZERO : KPI_STATUS.MEASURED
   });
 }
 

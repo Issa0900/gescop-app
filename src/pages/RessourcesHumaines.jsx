@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { montantHT } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -26,7 +27,7 @@ export default function RessourcesHumaines() {
         fetchAll(base44.entities.Employee),
         fetchAll(base44.entities.Payroll, "-period"),
         fetchAll(base44.entities.Transaction, "-date"),
-        fetchAll(base44.entities.Order, "-date")
+        fetchOrders()
       ]);
       const normalizedEmployees = (employees || []).map((employee) => ({
         ...employee,

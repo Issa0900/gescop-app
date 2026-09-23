@@ -1,4 +1,5 @@
 import { formatPct } from "@/lib/utils";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { montantHT } from "@/lib/core/kpiRecords";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -89,7 +90,7 @@ export default function Produits() {
   const { data: orders, isLoading: lo, isError: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: ["orders-produits"],
     queryFn: async () => {
-      const rows = await fetchAll(base44.entities.Order, "-date");
+      const rows = await fetchOrders();
       return Array.isArray(rows) ? rows : [];
     },
   });

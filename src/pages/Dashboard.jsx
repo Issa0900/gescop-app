@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { commandesDistinctes } from "@/lib/core/kpiRecords";
+import { fetchOrders } from "@/lib/fetchOrders";
+import { commandesDistinctes, noteBaseCA } from "@/lib/core/kpiRecords";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -84,7 +85,7 @@ export default function Dashboard() {
   });
   const { data: orders } = useQuery({
     queryKey: ["orders-summary"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
+    queryFn: () => fetchOrders(),
   });
   const { data: customers } = useQuery({
     queryKey: ["customers-summary"],
@@ -526,6 +527,7 @@ export default function Dashboard() {
                 sparkline={computed.spark(computed.monthlyData.revenue)}
                 status={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "good" : "warning") : "unmeasured"}
                 statusLabel={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? (computed.revTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
+                note={(orders?.length || 0) > 0 ? noteBaseCA(orders) : null}
                 onClick={() => navigate("/kpis")} />
               <KpiCard label="Marge nette"
                 value={((transactions?.length || 0) + (orders?.length || 0)) > 0 ? `${formatPct(computed.marginPct)}` : "—"}
@@ -577,6 +579,7 @@ export default function Dashboard() {
                     sparkline={computed.spark(computed.aovMonthly)}
                     status={(orders?.length || 0) > 0 && computed.aov > 0 ? (computed.aovTrend >= 0 ? "neutral" : "warning") : "unmeasured"}
                     statusLabel={(orders?.length || 0) > 0 && computed.aov > 0 ? (computed.aovTrend >= 0 ? "Stable" : "Attention") : "Non mesuré"}
+                note={(orders?.length || 0) > 0 ? noteBaseCA(orders) : null}
                     onClick={() => navigate("/clients")} />
                   <KpiCard label="Sentiment Client"
                     value={computed.customerSentiment != null ? `${computed.customerSentiment.toFixed(1)}/10` : "—"}

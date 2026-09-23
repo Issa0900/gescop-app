@@ -1,4 +1,5 @@
 // Shared import normalization utilities — used by importData and importMultiData
+import { codeDevise, deviseDeLigne } from "./devises.ts";
 import { rattacherParLexique } from "./registry/lexiqueChamps.ts";
 import { ENTITY_SCHEMAS } from "./entitySchemas.ts";
 
@@ -2071,10 +2072,16 @@ export function deriveFallbackIdentity(entityName: string, row: Record<string, a
 // ("ID Transaction" -> "order_id") : l'indexer une seule fois par import,
 // sous la meme forme canonique que cleCanonique() utilise pour chercher un
 // en-tete de colonne, plutot que de re-canonicaliser a chaque ligne.
-export function buildCompanyDictionaryIndex(raw: Record<string, string> | null | undefined): Record<string, string> {
+export function buildCompanyDictionaryIndex(raw: Record<string, string> | { term?: string; maps_to?: string }[] | null | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   if (!raw || typeof raw !== "object") return out;
-  for (const [term, concept] of Object.entries(raw)) {
+  // Deux formes existent : { terme: champ } (Parametres > Dictionnaire) et
+  // [{ term, maps_to }] (valeurs initiales de la page Parametres). La seconde
+  // etait lue comme { "0": objet } : aucun terme n'etait jamais applique.
+  const paires: [string, any][] = Array.isArray(raw)
+    ? raw.map((x: any) => [x?.term, x?.maps_to] as [string, any])
+    : Object.entries(raw);
+  for (const [term, concept] of paires) {
     if (!term || !concept) continue;
     out[cleCanonique(term)] = String(concept).trim();
   }
@@ -2480,6 +2487,11 @@ export function normalizeRow(
 
   // --- ORDER RESCUE HOOKS ---
   if (entityName === "Order") {
+    // Devise de la vente : colonne devise, sinon pays de la ligne (devises.ts).
+    // Sans elle, des ventes de six pays etaient additionnees comme du CAD.
+    const devise = codeDevise(r.currency) || deviseDeLigne(brutDe(row));
+    if (devise) r.currency = devise;
+    else delete r.currency;
     if (!r.order_id) {
       r.order_id = r.transaction_id || r.id_transaction || r.num_cde || r.no_cde || r.num_commande || r.numero_commande || r.order_number || r.cde_no || r.cde_id || r.ref_commande || r.code_commande || r.id;
       // Aucun numero dans le fichier : identifiant technique tire du contenu

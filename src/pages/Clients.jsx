@@ -1,4 +1,5 @@
 import React from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { montantHT } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -43,7 +44,7 @@ export default function Clients() {
   });
   const { data: orders, isLoading: lo } = useQuery({
     queryKey: ["orders-clients"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
+    queryFn: () => fetchOrders(),
   });
   // Interaction (contacts client : canal, sentiment, résolution) n'avait
   // aucune page — importée, jamais montrée. Elle vit ici, à côté du client

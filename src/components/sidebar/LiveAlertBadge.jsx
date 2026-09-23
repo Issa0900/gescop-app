@@ -1,4 +1,5 @@
 import React from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
@@ -25,7 +26,7 @@ export default function LiveAlertBadge({ compact }) {
   });
   const { data: orders } = useQuery({
     queryKey: ["orders-summary"],
-    queryFn: () => fetchAll(base44.entities.Order, "-date"),
+    queryFn: () => fetchOrders(),
   });
   const { data: customers } = useQuery({
     queryKey: ["customers-summary"],

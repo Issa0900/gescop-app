@@ -147,6 +147,10 @@
     "employee_name": {
       "type": "string"
     },
+    "currency": {
+      "type": "string",
+      "description": "Devise de la vente (code ISO : CAD, USD, EUR...), lue dans le fichier ou deduite du pays. Les montants restent dans cette devise."
+    },
     "import_id": {
       "type": "string"
     },

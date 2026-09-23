@@ -118,3 +118,55 @@ test("Base du CA affichee : HT, TTC ou inconnue", () => {
   assert.equal(baseCA([{ total: 115, original_data: JSON.stringify({ Sales: "115" }) }]), null);
   assert.equal(commandesDistinctes([{ order_id: "A", subtotal: 1 }, { order_id: "A", subtotal: 2 }, { order_id: "B", subtotal: 3 }]).length, 2);
 });
+
+test("Devises : devise de la ligne lue ou deduite du pays", async () => {
+  const { codeDevise, deviseDeLigne } = await import("../base44/shared/devises.ts");
+  assert.equal(codeDevise("usd"), "USD");
+  assert.equal(codeDevise("€"), "EUR");
+  assert.equal(deviseDeLigne({ Country: "United Kingdom", City: "London" }), "GBP");
+  assert.equal(deviseDeLigne({ Devise: "EUR", Pays: "Canada" }), "EUR");
+  assert.equal(deviseDeLigne({ City: "Paris" }), null);
+});
+
+test("Devises : converties avec le taux fourni, exclues sans taux (KPI partiel), jamais additionnees brutes", async () => {
+  const { normaliserDevises } = await import("../src/lib/core/kpiRecords.js");
+  const { computeKpiBatch } = await import("../src/lib/core/kpiEngine.js");
+  const { buildKpiDataset } = await import("../src/lib/core/kpiDataset.js");
+  const orders = [
+    { order_id: "A", date: "2026-01-01", subtotal: 100, currency: "CAD" },
+    { order_id: "B", date: "2026-01-02", subtotal: 100, currency: "CAD" },
+    { order_id: "C", date: "2026-01-03", subtotal: 100, currency: "USD" },
+    { order_id: "D", date: "2026-01-04", subtotal: 100, currency: "EUR" },
+  ];
+  const n = normaliserDevises(orders, { base: "CAD", taux: { USD: 1.37 } });
+  assert.equal(n.base, "CAD");
+  assert.equal(n.converties, 1);
+  assert.deepEqual(n.sansTaux, ["EUR"]);
+  assert.equal(normaliserDevises(n.rows, {}).rows, n.rows, "idempotent");
+  const { records, semantics } = buildKpiDataset({ orders, devises: { base: "CAD", taux: { USD: 1.37 } } });
+  const ca = computeKpiBatch(["total_revenue"], records, semantics).get("total_revenue");
+  assert.equal(Math.round(ca.value * 100) / 100, 337);
+  assert.equal(ca.status, "UNKNOWN");
+});
+
+test("Dictionnaire de donnees : apprend le sens d'une colonne inconnue, jamais un champ deja couvert", async () => {
+  const { apprendreDictionnaire } = await import("../base44/shared/dictionnaireDonnees.ts");
+  const m = [
+    ["Column_Name", "Description", "Data_Type"],
+    ["Order_ID", "Unique order number", "Text"],
+    ["Order_Date", "Date of the order", "Date"],
+    ["Customer_ID", "Customer identifier", "Text"],
+    ["Nb_Art", "Quantité d'articles vendus", "Integer"],
+    ["Order_Year", "Year derived from Order_Date", "Integer"],
+    ["Discount_Percentage", "Discount applied", "Decimal"],
+  ];
+  const appris = apprendreDictionnaire(m, 0);
+  assert.deepEqual(appris.map((a) => `${a.terme}:${a.champ}`), ["Nb_Art:quantity"]);
+  assert.deepEqual(apprendreDictionnaire(m, 0, { nb_art: "quantity" }), [], "un terme deja defini par l'entreprise n'est pas reecrit");
+});
+
+test("Dictionnaire de l'entreprise : les deux formes enregistrees sont lues", async () => {
+  const { buildCompanyDictionaryIndex } = await import("../base44/shared/importUtils.ts");
+  assert.deepEqual(buildCompanyDictionaryIndex({ "Profit Brut ($)": "gross_profit" }), { profit_brut: "gross_profit" });
+  assert.deepEqual(buildCompanyDictionaryIndex([{ term: "Profit Brut ($)", maps_to: "gross_profit" }]), { profit_brut: "gross_profit" });
+});

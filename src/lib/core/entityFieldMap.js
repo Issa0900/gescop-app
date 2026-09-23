@@ -63,6 +63,8 @@ export const ENTITY_FIELD_MAP = Object.freeze({
     fulfillment_status: { canonicalKey: "fulfillment_status", semanticType: "status", grain: GRAIN_TYPES.ORDER },
     return_status:      { canonicalKey: "return_status", semanticType: "status", grain: GRAIN_TYPES.ORDER },
     tax_federal:        { canonicalKey: "order_tax_federal", semanticType: "tax", grain: GRAIN_TYPES.ORDER },
+    currency:           { canonicalKey: "order_currency", semanticType: "category", grain: GRAIN_TYPES.ORDER },
+    currency:           { canonicalKey: "order_currency", semanticType: "category", grain: GRAIN_TYPES.ORDER },
     tax_provincial:     { canonicalKey: "order_tax_provincial", semanticType: "tax", grain: GRAIN_TYPES.ORDER },
   },
 

@@ -116,6 +116,10 @@
     },
     "preferences": {
       "type": "object"
+    },
+    "exchange_rates": {
+      "type": "object",
+      "description": "Taux de change fournis par l'entreprise : 1 unite de la devise = X unites de la devise de reference (currency). Sans taux, une vente en devise etrangere n'est pas additionnee au CA."
     }
   },
   "required": [

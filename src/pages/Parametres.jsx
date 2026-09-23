@@ -111,6 +111,7 @@ export default function Parametres() {
         employee_count: company.employee_count || 1,
         revenue: company.revenue || "",
         currency: company.currency || "CAD",
+        exchange_rates: company.exchange_rates || {},
         language: company.language || "fr",
         business_model: company.business_model || "",
         products: company.products || "",

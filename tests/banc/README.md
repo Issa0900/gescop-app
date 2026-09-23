@@ -72,6 +72,8 @@ calcule les KPI **comme la page Indicateurs** (`src/lib/core/kpiDataset.js`, par
 les fichiers (hors moteur). `node tests/banc/lancer-demo.cjs <etiquette> "<fichier1>,<fichier2>"`
 filtre ; `COHERENCE=1` affiche aussi les contrôles de la page Audit.
 Référence : `resultats/demo-avant.json` (code du 22 sept) — **29/76 → 76/76 contrôles justes**.
+Sales_transactions (6 pays, aucun taux fourni) attend le CA des seules ventes en USD : les autres
+devises sont exclues, jamais additionnées (voir `normaliserDevises`).
 
 ## Banc de robustesse
 

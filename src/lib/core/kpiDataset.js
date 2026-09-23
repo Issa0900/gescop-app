@@ -4,6 +4,7 @@
 // l'utilisateur voit.
 
 import { getEntitySemantics } from "./entityFieldMap";
+import { normaliserDevises } from "./kpiRecords";
 
 // [cle dans l'objet `data` des pages, entite Base44]
 export const ENTITES_KPI = [
@@ -36,13 +37,18 @@ export const ENTITES_KPI = [
  * namespaced by entity so the second entity cannot overwrite the first; each
  * row is tagged with `_entity` so the engine only aggregates the rows of the
  * entity a field belongs to.
+ *
+ * `data.devises` = { base, taux } (Company.currency, Company.exchange_rates).
  */
 export function buildKpiDataset(data) {
   const records = [];
   const semantics = new Map();
   for (const [cle, entite] of ENTITES_KPI) {
-    const rows = data?.[cle];
+    let rows = data?.[cle];
     if (!rows || rows.length === 0) continue;
+    // Ventes en plusieurs devises : converties (taux de l'entreprise) ou
+    // exclues, jamais additionnees telles quelles.
+    if (entite === "Order") rows = normaliserDevises(rows, data.devises).rows;
     if (entite === "Campaign" && data.campaignDaily?.length) continue;
     // Boucle, pas push(...tableau) : au-dela d'environ 100 000 lignes, l'etalement
     // depasse la taille de pile et le calcul de TOUS les KPI plantait.

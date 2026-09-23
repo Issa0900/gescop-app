@@ -25,7 +25,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       payment_status: E("paye", "en_attente", "echoue", "rembourse"),
       fulfillment_status: E("expedie", "en_preparation", "livre", "annule", "retourne"),
       return_status: E("aucun", "demande", "approuve", "refuse"),
-      region: S, status: S, tax_federal: N, tax_provincial: N, province: S, line_id: S, employee_name: S,
+      region: S, status: S, currency: S, tax_federal: N, tax_provincial: N, province: S, line_id: S, employee_name: S,
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["order_id", "date"],

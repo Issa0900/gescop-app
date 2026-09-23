@@ -1,4 +1,5 @@
 import React from "react";
+import TauxDeChange from "@/components/settings/TauxDeChange";
 import { Link } from "react-router-dom";
 import {
   Sliders,
@@ -82,6 +83,8 @@ export default function PreferencesPanel({ form, setForm }) {
               <option value="EUR">€ EUR — Euro</option>
             </select>
           </div>
+
+          <TauxDeChange form={form} setForm={setForm} />
 
           {/* Format de date */}
           <div className="space-y-2">

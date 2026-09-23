@@ -11,6 +11,8 @@ const STATUTS_HORS_CA = ["annul", "cancel", "void", "brouillon", "draft", "rembo
  * ou « Returned » comptees jusqu'ici).
  */
 export function commandeHorsCA(r) {
+  // Vente dans une devise sans taux de conversion (normaliserDevises).
+  if (r._devise_exclue) return true;
   const st = [r.status, r.payment_status, r.fulfillment_status]
     .map((x) => String(x || "").toLowerCase()).join(" ");
   if (STATUTS_HORS_CA.some((m) => st.includes(m))) return true;
@@ -137,5 +139,52 @@ export function baseCA(orders) {
 /** Libelle court de la base, pour les cartes KPI. */
 export function noteBaseCA(orders) {
   const b = baseCA(orders);
-  return b === "HT" ? "Hors taxes" : b === "TTC" ? "TTC : le fichier ne donne pas les taxes" : null;
+  const notes = [b === "HT" ? "Hors taxes" : b === "TTC" ? "TTC : le fichier ne donne pas les taxes" : null];
+  const rows = orders || [];
+  const exclues = [...new Set(rows.filter((o) => o._devise_exclue).map((o) => o.currency))];
+  const reference = rows.find((o) => o._devise_reference)?._devise_reference;
+  if (exclues.length) notes.push(`Partiel : ventes en ${exclues.join(", ")} exclues, taux de change à fournir dans Paramètres > Préférences`);
+  else if (rows.some((o) => o._devise_origine)) notes.push(`Converti en ${reference}`);
+  return notes.filter(Boolean).join(" · ") || null;
+}
+
+const CHAMPS_MONETAIRES = ["subtotal", "total", "tax", "tax_federal", "tax_provincial", "total_revenue", "total_cost", "cost", "unit_price", "unit_cost", "gross_profit", "discount", "shipping"];
+
+/**
+ * Ventes en plusieurs devises : ramenees a UNE devise de reference avant
+ * tout calcul. Reference = devise de l'entreprise si des ventes y sont
+ * libellees, sinon la devise la plus frequente. Une vente dans une autre
+ * devise est convertie avec le taux fourni par l'entreprise (1 unite = taux
+ * unites de reference) ; sans taux, elle est marquee `_devise_exclue` et
+ * n'entre dans AUCUN montant — le KPI est alors partiel, jamais une somme de
+ * dollars US, de livres et d'euros. Une seule devise (ou aucune) : rien ne change.
+ */
+export function normaliserDevises(orders, devises) {
+  const rows = orders || [];
+  // Deja normalisees (fetchOrders, puis le moteur KPI) : ne pas recommencer,
+  // la devise de reference pourrait changer et tout exclure.
+  if (rows.some((o) => o._devise_exclue || o._devise_origine || o._devise_reference)) {
+    return { rows, base: rows.find((o) => o._devise_reference)?._devise_reference ?? null, converties: rows.filter((o) => o._devise_origine).length, exclues: rows.filter((o) => o._devise_exclue).length, sansTaux: [...new Set(rows.filter((o) => o._devise_exclue).map((o) => o.currency))] };
+  }
+  const compte = new Map();
+  for (const o of rows) if (o.currency) compte.set(o.currency, (compte.get(o.currency) || 0) + 1);
+  if (compte.size <= 1) return { rows, base: [...compte.keys()][0] || devises?.base || null, converties: 0, exclues: 0, sansTaux: [] };
+  const base = devises?.base && compte.has(devises.base) ? devises.base : [...compte.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const taux = devises?.taux || {};
+  let converties = 0, exclues = 0;
+  const sansTaux = new Set();
+  const out = rows.map((o) => {
+    if (!o.currency || o.currency === base) return { ...o, _devise_reference: base };
+    const t = Number(taux[o.currency]);
+    if (Number.isFinite(t) && t > 0) {
+      converties++;
+      const c = { ...o, _devise_origine: o.currency, _devise_reference: base, currency: base };
+      for (const k of CHAMPS_MONETAIRES) if (c[k] !== undefined && c[k] !== null && c[k] !== "" && Number.isFinite(Number(c[k]))) c[k] = Number(c[k]) * t;
+      return c;
+    }
+    exclues++;
+    sansTaux.add(o.currency);
+    return { ...o, _devise_exclue: true, _devise_reference: base };
+  });
+  return { rows: out, base, converties, exclues, sansTaux: [...sansTaux] };
 }

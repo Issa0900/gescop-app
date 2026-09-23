@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { fetchOrders } from "@/lib/fetchOrders";
 import { commandesDistinctes, noteBaseCA } from "@/lib/core/kpiRecords";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -130,7 +131,7 @@ export default function Kpis() {
   const { data: orders } = useQuery({
     queryKey: ["orders-kpi"],
     queryFn: async () => {
-      const list = await fetchAll(base44.entities.Order, "-date");
+      const list = await fetchOrders();
       return list || [];
     },
     staleTime: 0,
