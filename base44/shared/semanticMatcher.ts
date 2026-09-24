@@ -97,6 +97,10 @@ export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
   const nonMonetaire = motsColonne.some((m) => MARQUEURS_NON_MONETAIRES.has(m));
 
   let bestMatch: SemanticMatch | null = null;
+  // Score du 2e meilleur concept, pour detecter l'ambiguite (ecart insuffisant
+  // entre le 1er et le 2e candidat), sur le modele de preuves.ts
+  // (`premier.score - second.score < 10`, ici a l'echelle 0-1 : < 0.10).
+  let secondBestScore = 0;
 
   for (const mapping of CONCEPT_MAPPINGS) {
     // 1. VǸrifier la compatibilitǸ des types
@@ -132,13 +136,29 @@ export function matchConcept(profile: ColumnProfile): SemanticMatch | null {
       score = Math.min(1.0, score + 0.2);
     }
 
-    if (score > 0.5 && (!bestMatch || score > bestMatch.confidence)) {
-      bestMatch = {
-        concept: mapping.concept,
-        confidence: score,
-        method: score === 1.0 ? 'exact_match' : 'synonym+type',
-        requiresValidation: score < 0.8
-      };
+    if (score > 0.5) {
+      if (!bestMatch || score > bestMatch.confidence) {
+        // L'ancien meilleur devient le 2e meilleur (pour la comparaison d'ecart).
+        if (bestMatch) secondBestScore = Math.max(secondBestScore, bestMatch.confidence);
+        bestMatch = {
+          concept: mapping.concept,
+          confidence: score,
+          method: score === 1.0 ? 'exact_match' : 'synonym+type',
+          requiresValidation: score < 0.8
+        };
+      } else {
+        secondBestScore = Math.max(secondBestScore, score);
+      }
+    }
+  }
+
+  if (bestMatch) {
+    // Ambigu si le 2e candidat est trop proche du 1er, meme quand le seuil
+    // absolu (score < 0.8) est satisfait : deux concepts concurrents avec
+    // un ecart insuffisant ne doivent pas etre retenus sans validation.
+    const ecartInsuffisant = secondBestScore > 0 && bestMatch.confidence - secondBestScore < 0.10;
+    if (ecartInsuffisant) {
+      bestMatch.requiresValidation = true;
     }
   }
 

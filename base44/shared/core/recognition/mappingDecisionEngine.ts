@@ -283,6 +283,14 @@ export function analyzeColumn(request: ColumnRecognitionRequest): RecognitionRes
   // Filtrage des doublons dans les preuves
   const uniqueEvidence = Array.from(new Set(evidenceList));
 
+  // Ambiguïté : le 1er candidat n'est retenu avec confiance que s'il se
+  // détache assez du 2e (même logique que preuves.ts, échelle 0-1 au lieu
+  // de 0-100 : premier.score - second.score < 0.10 plutôt que < 10).
+  const secondCandidate = sortedCandidates[1];
+  const ecartInsuffisant = Boolean(
+    secondCandidate && bestCandidate.score - secondCandidate.score < 0.10
+  );
+
   return {
     sourceHeader: rawHeader,
     normalizedHeader: cleanHeader,
@@ -301,6 +309,6 @@ export function analyzeColumn(request: ColumnRecognitionRequest): RecognitionRes
     currency: unitInfo.currencyCode,
     targetEntity,
     targetField,
-    requiresValidation: bestCandidate.confidence < 0.65,
+    requiresValidation: bestCandidate.confidence < 0.65 || ecartInsuffisant,
   };
 }
