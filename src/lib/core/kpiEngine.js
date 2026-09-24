@@ -9,7 +9,7 @@
 
 import { getKpiDefinition, sortKpisTopologically } from "./kpiRegistry";
 import { buildKpiLineage, buildLineageSource } from "./dataLineage";
-import { computeFieldQuality, isQualitySufficient } from "./dataQualityEngine";
+import { computeFieldQuality, isQualitySufficient, filterByConfidence } from "./dataQualityEngine";
 import { getAggregationMethod } from "./fieldSemantic";
 import { resolveContextualField } from "./entityFieldMap";
 import { commandeHorsCA, montantHT } from "./kpiRecords";
@@ -238,22 +238,41 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
     );
     
     if (matchingObs.length > 0) {
-      const sum = matchingObs.reduce((acc, obs) => acc + (obs.value || 0), 0);
-      
+      // Ne sommer que les observations dont la confiance individuelle est
+      // suffisante (seuil 60/100, cohérent avec isQualitySufficient) — avant,
+      // seule la confiance de la PREMIÈRE observation servait à un score
+      // d'affichage cosmétique, jamais à exclure une observation peu fiable
+      // de la somme elle-même.
+      const confidentObs = filterByConfidence(matchingObs, 60);
+
+      if (confidentObs.length > 0) {
+        const sum = confidentObs.reduce((acc, obs) => acc + (obs.value || 0), 0);
+
+        return buildKpiLineage({
+          kpiKey: canonicalKey,
+          name: canonicalKey,
+          value: sum,
+          unit: confidentObs[0].unit || null,
+          formula: "Agrégation d'Observations Sémantiques",
+          sources: [buildLineageSource({
+            entity: "Observation",
+            field: "value",
+            canonicalKey,
+            records: confidentObs,
+            qualityScore: confidentObs[0].confidence ? confidentObs[0].confidence * 100 : 100,
+          })],
+          status: sum === 0 ? KPI_STATUS.VALID_ZERO : KPI_STATUS.MEASURED
+        });
+      }
+
       return buildKpiLineage({
         kpiKey: canonicalKey,
         name: canonicalKey,
-        value: sum,
-        unit: matchingObs[0].unit || null,
-        formula: "Agrégation d'Observations Sémantiques",
-        sources: [buildLineageSource({
-          entity: "Observation",
-          field: "value",
-          canonicalKey,
-          records: matchingObs,
-          qualityScore: matchingObs[0].confidence ? matchingObs[0].confidence * 100 : 100,
-        })],
-        status: sum === 0 ? KPI_STATUS.VALID_ZERO : KPI_STATUS.MEASURED
+        value: null,
+        unit: null,
+        formula: "Observations disponibles mais confiance insuffisante",
+        sources: [],
+        status: KPI_STATUS.NOT_MEASURED
       });
     }
   }

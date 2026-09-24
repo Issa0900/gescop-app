@@ -135,14 +135,16 @@ export function computeFieldQuality(records, fieldName, fieldSemantic) {
  */
 export function computeDatasetQuality(records, fieldSemantics) {
   if (!records || records.length === 0) {
-    return { global: 0, byField: {}, issues: [], recordCount: 0 };
+    return { global: 0, byField: {}, issues: [], recordCount: 0, metrics_auditales: { integrite_physique: 0, couverture_mapping: 0, certitude_semantique: 0, readiness: false } };
   }
 
-  /** @type {Object<string, FieldQualityScore>} */
   const byField = {};
   const allIssues = [];
   let totalScore = 0;
   let fieldCount = 0;
+  
+  let validFields = 0;
+  let mappedFields = 0;
 
   for (const [fieldName, fs] of fieldSemantics) {
     const score = computeFieldQuality(records, fieldName, fs);
@@ -150,13 +152,26 @@ export function computeDatasetQuality(records, fieldSemantics) {
     totalScore += score.global;
     fieldCount++;
     allIssues.push(...score.issues.map((i) => `${fieldName}: ${i}`));
+    
+    validFields += score.dimensions.validity;
+    if (fs && fs.semanticType && fs.semanticType !== "unknown") {
+      mappedFields++;
+    }
   }
+  
+  const hasCrucialDimensions = fieldSemantics instanceof Map ? Array.from(fieldSemantics.values()).some(fs => fs && fs.semanticType && (fs.semanticType.includes("revenue") || fs.semanticType.includes("amount") || fs.semanticType.includes("margin") || fs.semanticType.includes("date"))) : false;
 
   return {
     global: fieldCount > 0 ? Math.round(totalScore / fieldCount) : 0,
     byField,
     issues: allIssues,
     recordCount: records.length,
+    metrics_auditales: {
+      integrite_physique: fieldCount > 0 ? Math.round(validFields / fieldCount) : 0,
+      couverture_mapping: fieldCount > 0 ? Math.round((mappedFields / fieldCount) * 100) : 0,
+      certitude_semantique: fieldCount > 0 ? Math.round(totalScore / fieldCount) : 0,
+      readiness: hasCrucialDimensions
+    }
   };
 }
 
@@ -346,6 +361,28 @@ function _computeFreshness(records, fieldSemantic) {
 }
 
 /**
+ * Filter a set of records/observations, keeping only those whose individual
+ * `confidence` clears the given threshold. `confidence` is stored on the
+ * 0–1 scale (see fieldSemantic.js: `confidence: Math.max(0, Math.min(1, confidence))`),
+ * so it is scaled to 0–100 here to stay consistent with `isQualitySufficient`,
+ * which already compares its score against a 0–100 threshold.
+ *
+ * Records without a `confidence` field are treated as fully confident (1 → 100),
+ * matching the existing fallback in kpiEngine.js (`obs.confidence ? ... : 100`).
+ *
+ * @param {Array<Object>} records - Records/observations to filter
+ * @param {number} [threshold=60] - Minimum acceptable confidence, 0–100 scale
+ * @returns {Array<Object>} The subset of records meeting the threshold
+ */
+export function filterByConfidence(records, threshold = 60) {
+  if (!Array.isArray(records)) return [];
+  return records.filter((record) => {
+    const confidence = record?.confidence ?? 1;
+    return confidence * 100 >= threshold;
+  });
+}
+
+/**
  * Check if a field's quality is sufficient for KPI calculation.
  *
  * @param {Object} fieldQuality - Result from computeFieldQuality
@@ -366,3 +403,5 @@ export function isQualitySufficient(fieldQuality, threshold = 60) {
     reason: `Qualité insuffisante (${fieldQuality.global}/100). Dimension la plus faible : ${weakest[0]} (${weakest[1]}%).`,
   };
 }
+
+

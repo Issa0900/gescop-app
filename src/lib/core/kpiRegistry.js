@@ -414,14 +414,30 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RESULT,
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: true,
-    // Simple version: Net Income + Interest + Taxes + D&A. 
-    // If we only have Revenue and Operating Expenses, it's roughly Rev - OpEx.
-    // Sans amortissements ni interets importes, l'EBITDA se confond avec le
-    // resultat (CA - couts - charges). « (CA || 0) - (charges || 0) »
-    // affichait EBITDA = CA des qu'aucune charge n'etait importee (Nordik :
-    // 381 048 $), et 0 $ quand rien ne l'etait.
-    dependencies: ["net_income"],
-    calculate: (deps) => (deps.net_income == null ? null : deps.net_income),
+    // Ancien bug : `ebitda = net_income` tel quel, sans jamais reintegrer
+    // l'amortissement (ni les interets, qu'aucune entite n'importe). Un
+    // alias silencieux qui affichait un chiffre FAUX (le resultat net) en le
+    // faisant passer pour l'EBITDA — pire que de ne rien afficher.
+    // Formule retenue (guide_complet_des_kpis_et_analyses_avanc_es.md §8.3) :
+    // EBITDA = Marge Brute - Masse Salariale - Amortissement. `dpa_rate` sur
+    // Asset donne un amortissement ESTIME annuel (dpa_annual_total, deja
+    // utilise ailleurs dans ce fichier) ; on le proratise sur period_days
+    // pour l'aligner sur la periode du rapport. Sans amortissement calculable
+    // (aucun Asset avec net_book_value + dpa_rate importe) ou sans masse
+    // salariale connue, impossible de distinguer un vrai EBITDA du resultat
+    // net : NOT_MEASURED plutot qu'un chiffre invente ou recycle.
+    // Intérêts non réintégrés : aucun champ de charge d'intérêt n'est importé
+    // nulle part dans le registre (verifie) — a ajouter le jour ou une telle
+    // donnée existe.
+    dependencies: ["gross_margin_amount", "payroll_total", "dpa_annual_total"],
+    calculate: (deps) => {
+      if (deps.gross_margin_amount == null || deps.payroll_total == null || deps.dpa_annual_total == null) {
+        return null;
+      }
+      const periodDays = deps.period_days || 365;
+      const amortissementPeriode = deps.dpa_annual_total * (periodDays / 365);
+      return deps.gross_margin_amount - deps.payroll_total - amortissementPeriode;
+    },
   },
 
   // ── TREASURY & BFR (LEVEL 2/3) ──────────────────────────────────────────
@@ -542,6 +558,18 @@ export const KPI_REGISTRY = Object.freeze({
     // Pairs with DSO: how many days of expenses sit unpaid in accounts
     // payable. Higher can mean better cash management, or slow-paying
     // suppliers strain - read it alongside DSO, not alone.
+    // ATTENTION : ceci est un DPO COMPTABLE (rotation des comptes
+    // fournisseurs), pas le DPO CONTRACTUEL defini dans
+    // guide_complet_des_kpis_et_analyses_avanc_es.md §"Delai Moyen de
+    // Reglement Fournisseur" (moyenne des conditions Net-15/30/45/60
+    // negociees). Supplier.payment_terms existe (voir entitySchemas.ts /
+    // Achats.jsx) mais c'est un champ texte libre non normalise ("Net 30",
+    // "30 jours", "2/10 net 30"...) : aucune extraction fiable du nombre de
+    // jours n'existe ailleurs dans le code. En construire une ici risquerait
+    // d'inventer un chiffre a partir d'un parsing regex fragile, ce que ce
+    // fichier evite deliberement ailleurs (cf. commentaires gross_margin_amount,
+    // net_income). Non implemente volontairement — a valider avec un humain
+    // avant d'ajouter un `dpo_contractual` base sur un parseur de ce champ.
     dependencies: ["accounts_payable", "total_expense"],
     calculate: (deps) => {
       if (deps.accounts_payable == null || !deps.total_expense) return null;
@@ -976,6 +1004,45 @@ export const KPI_REGISTRY = Object.freeze({
     calculate: (deps) => deps.inventory_value != null ? deps.inventory_value : null,
   },
 
+  // Moyenne du premier et du dernier releve disponible, par produit (et
+  // entrepot), puis somme sur tous les produits. Quand un produit n'a qu'un
+  // seul releve dans les donnees (import ponctuel), premier == dernier et la
+  // moyenne se reduit logiquement a la valeur instantanee : ce n'est pas une
+  // fausse moyenne calculee, juste l'absence de donnees pour en batir une
+  // vraie — le meme calcul devient exact des qu'un deuxieme releve arrive.
+  inventory_value_average: {
+    id: "inventory_value_average",
+    name: { fr: "Valeur moyenne du stock", en: "Average Inventory Value" },
+    level: KPI_LEVELS.MESURE,
+    domain: DOMAINS.OPERATIONS,
+    semanticType: "inventory_value",
+    dataType: DATA_TYPES.CURRENCY,
+    isAdditive: false,
+    dependencies: [],
+    calculate: (deps) => {
+      const records = (deps._records || []).filter(
+        (r) => r._entity === "Inventory" && r.inventory_value != null && r.inventory_value !== ""
+      );
+      if (records.length === 0) return null;
+      const byGroup = new Map();
+      for (const r of records) {
+        const v = Number(r.inventory_value);
+        if (!Number.isFinite(v)) continue;
+        const key = `${r.product_id ?? r.product_name ?? "?"}|${r.warehouse_id ?? r.location ?? ""}`;
+        const d = r.date || r.reference_date || "";
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push({ d, v });
+      }
+      if (byGroup.size === 0) return null;
+      let total = 0;
+      for (const readings of byGroup.values()) {
+        readings.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+        total += (readings[0].v + readings[readings.length - 1].v) / 2;
+      }
+      return total;
+    },
+  },
+
   stock_turnover_rate: {
     id: "stock_turnover_rate",
     name: { fr: "Rotation des stocks", en: "Stock Turnover" },
@@ -984,10 +1051,17 @@ export const KPI_REGISTRY = Object.freeze({
     semanticType: "ratio",
     dataType: DATA_TYPES.NUMBER,
     isAdditive: false,
-    dependencies: ["cogs", "inventory_value_total"],
+    // La doc definit la rotation sur le stock MOYEN de la periode
+    // (COGS annuel / valeur MOYENNE du stock). Diviser par
+    // inventory_value_total (somme du dernier releve par produit, un stock
+    // INSTANTANE) gonflait ou sous-estimait artificiellement la rotation
+    // selon que le stock etait plus haut ou plus bas en debut de periode.
+    // inventory_value_average degenere proprement vers la meme valeur
+    // instantanee quand un seul releve existe (voir son commentaire).
+    dependencies: ["cogs", "inventory_value_average"],
     calculate: (deps) => {
-      if (!deps.inventory_value_total || deps.cogs == null) return null;
-      return deps.cogs / deps.inventory_value_total;
+      if (!deps.inventory_value_average || deps.cogs == null) return null;
+      return deps.cogs / deps.inventory_value_average;
     },
   },
 
