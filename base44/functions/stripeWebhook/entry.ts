@@ -1,9 +1,68 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 
+// Vérification manuelle de la signature Stripe (aucun SDK "stripe" n'est utilisé
+// ailleurs dans le repo — createCheckoutSession appelle l'API REST Stripe directement
+// via fetch, donc on reste cohérent en implémentant l'algorithme de signature
+// documenté par Stripe avec Web Crypto plutôt que d'ajouter une nouvelle dépendance).
+async function verifyStripeSignature(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
+  if (!signatureHeader || !secret) return false;
+
+  const parts = signatureHeader.split(",").reduce((acc: Record<string, string>, part) => {
+    const [key, value] = part.split("=");
+    if (key && value) acc[key.trim()] = value.trim();
+    return acc;
+  }, {});
+
+  const timestamp = parts["t"];
+  const providedSignature = parts["v1"];
+  if (!timestamp || !providedSignature) return false;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signedPayload = `${timestamp}.${rawBody}`;
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload));
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (expectedSignature.length !== providedSignature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expectedSignature.length; i++) {
+    mismatch |= expectedSignature.charCodeAt(i) ^ providedSignature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 export default async function(req: Request) {
   try {
     const base44 = createClientFromRequest(req);
-    const event = await req.json();
+
+    const rawBody = await req.text();
+    const signatureHeader = req.headers.get("stripe-signature");
+    const webhookSecret = Deno?.env?.get("STRIPE_WEBHOOK_SECRET") || (globalThis as any)?.process?.env?.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error("[Stripe Webhook] STRIPE_WEBHOOK_SECRET manquant côté serveur");
+      return Response.json({ error: "Webhook non configuré" }, { status: 500 });
+    }
+
+    if (!signatureHeader) {
+      return Response.json({ error: "Signature Stripe manquante" }, { status: 400 });
+    }
+
+    const isValidSignature = await verifyStripeSignature(rawBody, signatureHeader, webhookSecret);
+    if (!isValidSignature) {
+      console.error("[Stripe Webhook] Signature invalide");
+      return Response.json({ error: "Signature Stripe invalide" }, { status: 401 });
+    }
+
+    const event = JSON.parse(rawBody);
 
     const eventType = event?.type;
     const dataObject = event?.data?.object;

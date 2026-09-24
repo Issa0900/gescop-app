@@ -11,8 +11,17 @@ export default async function(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { action = "cancel", reason = "", immediate = false } = body;
 
-    // Récupérer l'abonnement en cours
-    const subscriptions = await base44.entities.Subscription.list("-created_date", 1);
+    // Récupérer l'entreprise de l'utilisateur (même résolution que createCheckoutSession)
+    const companies = await base44.entities.Company.list();
+    const company = companies && companies[0] ? companies[0] : null;
+    const companyId = company?.id || user.id;
+
+    // Récupérer l'abonnement en cours, filtré sur l'entreprise de l'utilisateur appelant
+    const subscriptions = await base44.entities.Subscription.filter(
+      { company_id: companyId },
+      "-created_date",
+      1
+    );
     const sub = subscriptions && subscriptions[0] ? subscriptions[0] : null;
 
     if (!sub) {
