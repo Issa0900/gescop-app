@@ -13,14 +13,19 @@ const poser = (c: any) => { (globalThis as any).__BASE44_STUB = c; };
 
 function client(me: () => Promise<any>, courriels: any[]) {
   const record = { id: "an-1", created_by_id: "proprio", title: "Marge négative", severity: "critique" };
-  const entities = new Proxy({}, { get: () => ({ get: async (id: string) => (id === "an-1" ? record : null), create: async (d: any) => d }) });
+  const alertes: any[] = [];
+  const entities = new Proxy({}, { get: () => ({
+    get: async (id: string) => (id === "an-1" ? record : null),
+    create: async (d: any) => d,
+    filter: async (q: any) => alertes.filter((a) => a.category === q.category),
+  }) });
   return {
     auth: { me },
     entities,
     asServiceRole: {
       entities: new Proxy({}, { get: (_t, n) => ({
         get: async (id: string) => (n === "User" ? { id, email: `${id}@exemple.test` } : null),
-        create: async (d: any) => d,
+        create: async (d: any) => { if (n === "Alert") alertes.push({ ...d, created_date: new Date().toISOString() }); return d; },
       }) }),
       integrations: { Core: { SendEmail: async (m: any) => { courriels.push(m); return {}; } } },
     },
@@ -45,6 +50,9 @@ courriels = [];
 poser(client(async () => ({ id: "proprio" }), courriels));
 rep = await handler(requete({ entity_type: "anomaly", entity_id: "an-1", user_id: "autre" }));
 verif(rep.status === 200 && courriels[0]?.to === "proprio@exemple.test", "propriétaire : courriel envoyé à son adresse, pas au user_id du corps");
+// 3b. Rappel pour le même enregistrement : déjà notifié, pas de second courriel.
+rep = await handler(requete({ entity_type: "anomaly", entity_id: "an-1" }));
+verif(rep.status === 200 && courriels.length === 1, "même anomalie rappelée : pas de second courriel (règle des nouveautés)");
 delete (globalThis as any).__BASE44_STUB;
 
 // 4. Les workflows n'envoient plus de paramètre que la fonction ignore.

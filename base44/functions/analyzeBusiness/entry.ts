@@ -4,6 +4,7 @@ import { buildBusinessContext } from "../../shared/businessContext.ts";
 import { analyzeQualitativeObservations, summarizeQualitativeSignals } from "../../shared/qualitativeEngine.ts";
 import { buildContextGraph } from "../../shared/contextEngine.ts";
 import { lireInstantane, blocInstantane } from "../../shared/instantaneIA.ts";
+import { notifierNouveautes } from "../../shared/notificationsCritiques.ts";
 
 // sec9-11 de l'audit : un domaine sans donnees ne doit jamais compter comme
 // s'il avait une bonne (ou mauvaise) performance. On ne fait plus confiance
@@ -267,6 +268,10 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       last_analysis_date: new Date().toISOString(),
     });
 
+    // Enregistrements crees, gardes pour la notification des nouveautes.
+    const anomaliesCreees: any[] = [];
+    const risquesCrees: any[] = [];
+
     // Create anomalies
     if (data.anomalies && data.anomalies.length) {
       for (let i = 0; i < data.anomalies.length; i += 100) {
@@ -282,7 +287,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           status: "nouveau",
           detected_date: new Date().toISOString().slice(0, 10),
         }));
-        await base44.entities.Anomaly.bulkCreate(batch);
+        const crees = await base44.entities.Anomaly.bulkCreate(batch);
+        anomaliesCreees.push(...(Array.isArray(crees) && crees.length === batch.length ? crees : batch));
       }
     }
 
@@ -303,7 +309,8 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
           confidence_pct: r.confidence_pct || 0,
           status: "actif",
         }));
-        await base44.entities.Risk.bulkCreate(batch);
+        const crees = await base44.entities.Risk.bulkCreate(batch);
+        risquesCrees.push(...(Array.isArray(crees) && crees.length === batch.length ? crees : batch));
       }
     }
 
@@ -366,6 +373,13 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
       }
     }
 
+    // Courriel pour les anomalies critiques et risques d'urgence elevee
+    // NOUVEAUX seulement (meme titre non notifie depuis 30 jours) : voir
+    // shared/notificationsCritiques.ts. Les workflows Base44 ne pouvaient pas
+    // le faire (bulkCreate ne les declenche pas, et ils n'ont pas de session).
+    const notifications = await notifierNouveautes(base44, user, anomaliesCreees, risquesCrees);
+    if (notifications.erreurs.length) console.error("Notifications critiques :", notifications.erreurs);
+
     await base44.entities.AnalysisRun.create({
       health_score: healthScore,
       dimension_scores: dimScores,
@@ -389,6 +403,7 @@ Réponds UNIQUEMENT avec un JSON valide respectant ce schéma. Aucun texte hors 
         recommendations: (data.recommendations || []).length,
         kpis: 0,
         alerts: alerts.length,
+        notifications: notifications.envoyes,
       },
     });
   } catch (error: any) {

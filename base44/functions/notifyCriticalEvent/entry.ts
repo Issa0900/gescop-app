@@ -1,4 +1,5 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
+import { notifier, aNotifier } from "../../shared/notificationsCritiques.ts";
 
 const ENTITY_NAMES: Record<string, string> = { anomaly: "Anomaly", risk: "Risk" };
 
@@ -50,54 +51,16 @@ export default async function(req) {
       return Response.json({ error: "Utilisateur introuvable" }, { status: 404 });
     }
 
-    const title = record.title;
-    const description = record.description;
-    const detail = entity_type === "anomaly" ? record.explanation : record.category;
-    const financial_impact = record.financial_impact;
+    // Meme regle que les notifications envoyees par analyzeBusiness : seulement
+    // un element nouveau (meme titre non notifie depuis 30 jours), et meme
+    // courriel + alerte-memoire (shared/notificationsCritiques.ts).
+    const dejaNotifiees = await base44.entities.Alert.filter({ category: entity_type }, "-created_date", 1000);
+    if (aNotifier(entity_type, [record], dejaNotifiees || []).length === 0) {
+      return Response.json({ success: true, envoye: false, motif: "déjà notifié récemment ou non critique" });
+    }
+    await notifier(base44, entity_type, record, { id: caller.id, email: user.email });
 
-    const impactStr = financial_impact
-      ? `Impact financier estimé: ${financial_impact > 0 ? "+" : ""}${Math.round(financial_impact).toLocaleString("fr-CA")} $`
-      : "";
-
-    const typeLabel = entity_type === "anomaly" ? "Anomalie critique" : "Risque majeur";
-    const subject = `[GESCOP] ${typeLabel} détectée : ${title}`;
-    const emailBody = [
-      `Bonjour,`,
-      ``,
-      `GESCOP a détecté un élément nécessitant votre attention immédiate :`,
-      ``,
-      `Type: ${typeLabel}`,
-      `Titre: ${title}`,
-      description ? `Description: ${description}` : "",
-      detail ? `Détails: ${detail}` : "",
-      impactStr,
-      ``,
-      `Connectez-vous à votre tableau de bord GESCOP pour consulter les détails et les actions recommandées.`,
-      ``,
-      `Cordialement,`,
-      `L'équipe GESCOP`,
-    ].filter(Boolean).join("\n");
-
-    // Send email notification
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: user.email,
-      subject,
-      body: emailBody,
-    });
-
-    // Create an in-app Alert record (visible to the user)
-    await base44.asServiceRole.entities.Alert.create({
-      title,
-      message: description || detail || typeLabel,
-      level: "critique",
-      category: entity_type,
-      status: "non_lue",
-      link_type: entity_type,
-      link_id: entity_id,
-      created_by_id: caller.id,
-    });
-
-    return Response.json({ success: true });
+    return Response.json({ success: true, envoye: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
