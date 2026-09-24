@@ -21,6 +21,10 @@ export type Observation = {
   entity_id?: string;       // RǸfǸrence (ex: ID client, ID produit)
   source_id: string;        // TraabilitǸ (ID de l'import ou du fichier)
   confidence: number;       // Confiance hǸritǸe du Semantic Matcher
+  grain?: DatasetGrain['resolution'] | DatasetGrain['type']; // RǸsolution temporelle (daily/monthly/yearly) si connue,
+                                                              // sinon le type de grain (transactional/aggregated/...).
+                                                              // Permet en aval de distinguer une observation dǸj agrǸgǸe
+                                                              // d'une observation brute et d'Ǹviter un double comptage.
 };
 
 /**
@@ -62,10 +66,11 @@ export function generateObservations(
       source_id: sourceId,
       confidence: match.confidence,
       date: rowDate,
-      entity_id: rowEntityId
+      entity_id: rowEntityId,
+      grain: grain.resolution ?? grain.type
     };
 
-    if (obsType === 'quantitative' && typeof value === 'number') {
+    if (obsType === 'quantitative' && typeof value === 'number' && !Number.isNaN(value)) {
       observation.value = value;
     } else if (obsType === 'qualitative') {
       observation.text = String(value);
