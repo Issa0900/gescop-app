@@ -1,6 +1,7 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { normalizeRow, isSummaryOrTotalRow } from "../../shared/importUtils.ts";
 import { fetchDelimitedRows } from "../../shared/csvParse.ts";
+import { urlDeLecture, referenceFichier } from "../../shared/fichierPrive.ts";
 
 export default async function(req) {
   try {
@@ -9,16 +10,18 @@ export default async function(req) {
     if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await req.json();
-    const { file_url, source_type, file_name } = body;
-    if (!file_url || !source_type) {
-      return Response.json({ error: "file_url et source_type requis" }, { status: 400 });
+    const { source_type, file_name } = body;
+    if (!(body.file_uri || body.file_url) || !source_type) {
+      return Response.json({ error: "file_uri (ou file_url) et source_type requis" }, { status: 400 });
     }
+    // Fichier prive : lu par URL signee, seule sa reference est conservee.
+    const file_url = await urlDeLecture(base44, body);
 
     // Create the import record (en cours)
     const importRec = await base44.entities.Import.create({
       source_type,
       file_name: file_name || "import",
-      file_url,
+      file_url: referenceFichier(body),
       entity_type: "Transaction",
       status: "en_cours",
       rows_processed: 0,

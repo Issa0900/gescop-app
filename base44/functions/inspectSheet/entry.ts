@@ -2,6 +2,7 @@ import { createFixedClientFromRequest as createClientFromRequest } from "../../s
 import { normalizeRow } from "../../shared/importUtils.ts";
 import { getSchema } from "../../shared/entitySchemas.ts";
 import { fetchExternalFile } from "../../shared/safeFetch.ts";
+import { urlDeLecture } from "../../shared/fichierPrive.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
 /**
@@ -15,8 +16,10 @@ export default async function (req: Request) {
   const user = await base44.auth.me();
   if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
-  const { file_url, sheets, mode, sheet, entity, key } = await req.json();
-  const ab = await (await fetchExternalFile(file_url)).arrayBuffer();
+  const body = await req.json();
+  const { sheets, mode, sheet, entity, key } = body;
+  // Fichier prive (file_uri) lu par URL signee ; file_url reste accepte.
+  const ab = await (await fetchExternalFile(await urlDeLecture(base44, body))).arrayBuffer();
   const wb = XLSX.read(new Uint8Array(ab), { type: "array" });
 
   if (mode === "backfill") {

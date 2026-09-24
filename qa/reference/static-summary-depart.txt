@@ -1,0 +1,4 @@
+build exit=0
+lint erreurs=23
+typecheck erreurs=146
+npm test exit=0 | ℹ pass 195 ℹ fail 0 

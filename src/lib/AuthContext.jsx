@@ -18,8 +18,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    // Test Backdoor for Playwright E2E testing
-    if (localStorage.getItem('PLAYWRIGHT_TEST') === 'true') {
+    // Contournement réservé aux tests Playwright, qui tournent sur le serveur de
+    // développement. `import.meta.env.DEV` vaut false au build : Vite retire ce
+    // bloc du bundle de production (contrôlé par qa/run-all.sh, couche 1a).
+    if (import.meta.env.DEV && localStorage.getItem('PLAYWRIGHT_TEST') === 'true') {
       setUser({ id: 'test-user', email: 'test@example.com' });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);

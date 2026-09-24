@@ -47,3 +47,6 @@ memory_journal.md
 tests/banc/.build/
 tests/banc/resultats/*
 !tests/banc/resultats/avant.json
+
+# Agent QA : sorties locales de qa/run-all.sh
+qa/out/

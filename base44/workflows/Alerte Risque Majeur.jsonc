@@ -26,12 +26,7 @@
             "function_name": "notifyCriticalEvent",
             "args": {
               "entity_type": "risk",
-              "entity_id": "${ .trigger.entity_id }",
-              "title": "${ .trigger.data.title }",
-              "description": "${ .trigger.data.description }",
-              "detail": "${ .trigger.data.category }",
-              "financial_impact": "${ .trigger.data.financial_impact }",
-              "user_id": "${ .trigger.data.created_by_id }"
+              "entity_id": "${ .trigger.entity_id }"
             }
           },
           "then": "end",

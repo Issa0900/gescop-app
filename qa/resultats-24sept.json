@@ -1,0 +1,119 @@
+[
+ {
+  "couche": "e2e",
+  "scenario": "vide",
+  "route": "/tarifs",
+  "gravite": "moyen",
+  "type": "donnée absente affichée comme 0 $",
+  "detail": "1 montant(s) « 0 $ » affichés sans aucune donnée importée",
+  "at": "2026-09-24T15:05:02.126Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "vide",
+  "route": "/facturation",
+  "gravite": "moyen",
+  "type": "donnée absente affichée comme 0 $",
+  "detail": "1 montant(s) « 0 $ » affichés sans aucune donnée importée",
+  "at": "2026-09-24T15:05:02.507Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "vide",
+  "route": "/parametres/facturation",
+  "gravite": "moyen",
+  "type": "donnée absente affichée comme 0 $",
+  "detail": "1 montant(s) « 0 $ » affichés sans aucune donnée importée",
+  "at": "2026-09-24T15:05:07.111Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/facturation",
+  "gravite": "mineur",
+  "type": "console.error",
+  "detail": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at Badge (http://localhost:5175/src/components/ui/badge.jsx:18:18)\n    at p\n    at div\n    at div\n    at div\n    at div\n    at _c9 (http://localhost:5175/src/components/ui/card.jsx:49:47)\n    at div",
+  "at": "2026-09-24T15:07:52.878Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/parametres/facturation",
+  "gravite": "mineur",
+  "type": "console.error",
+  "detail": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at Badge (http://localhost:5175/src/components/ui/badge.jsx:18:18)\n    at p\n    at div\n    at div\n    at div\n    at div\n    at _c9 (http://localhost:5175/src/components/ui/card.jsx:49:47)\n    at div",
+  "at": "2026-09-24T15:07:54.254Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/audit",
+  "gravite": "mineur",
+  "type": "débordement horizontal sur mobile",
+  "detail": "largeur page 491px pour écran 390px — div.inline-flex.h-9, button.inline-flex.items-center",
+  "at": "2026-09-24T15:06:54.879Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/kpis",
+  "gravite": "mineur",
+  "type": "débordement horizontal sur mobile",
+  "detail": "largeur page 442px pour écran 390px — div.flex.gap-2, button.inline-flex.items-center, div.flex.w-32",
+  "at": "2026-09-24T15:07:14.521Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/taches",
+  "gravite": "mineur",
+  "type": "débordement horizontal sur mobile",
+  "detail": "largeur page 548px pour écran 390px — div.flex.items-center, button.inline-flex.items-center, svg.[object.SVGAnimatedString]",
+  "at": "2026-09-24T15:07:24.147Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "mobile",
+  "route": "/parametres",
+  "gravite": "mineur",
+  "type": "débordement horizontal sur mobile",
+  "detail": "largeur page 923px pour écran 390px — button.inline-flex.items-center, div.flex.items-center, button.inline-flex.items-center",
+  "at": "2026-09-24T15:07:33.851Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "clics",
+  "route": "/facturation",
+  "gravite": "mineur",
+  "type": "console.error après clic",
+  "detail": "bouton « Gérer ma carte & Reçus » → Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at Badge (http://localhost:5175/src/components/ui/badge.jsx:18:18)\n    at p\n    at div\n    at div\n    at div\n    at div\n    at _c9 (http://localhost:5175/src/components/ui/card.jsx:49:47)\n    at div",
+  "at": "2026-09-24T15:09:38.976Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "clics",
+  "route": "/parametres/facturation",
+  "gravite": "mineur",
+  "type": "console.error après clic",
+  "detail": "bouton « Gérer ma carte & Reçus » → Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at Badge (http://localhost:5175/src/components/ui/badge.jsx:18:18)\n    at p\n    at div\n    at div\n    at div\n    at div\n    at _c9 (http://localhost:5175/src/components/ui/card.jsx:49:47)\n    at div",
+  "at": "2026-09-24T15:09:46.092Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "parametres",
+  "route": "/parametres?tab=facturation",
+  "gravite": "mineur",
+  "type": "console.error",
+  "detail": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at Badge (http://localhost:5175/src/components/ui/badge.jsx:18:18)\n    at p\n    at div\n    at div\n    at div\n    at div\n    at _c9 (http://localhost:5175/src/components/ui/card.jsx:49:47)\n    at div",
+  "at": "2026-09-24T15:11:04.006Z"
+ },
+ {
+  "couche": "e2e",
+  "scenario": "navigation",
+  "route": "-",
+  "gravite": "mineur",
+  "type": "pages absentes du menu",
+  "detail": "/facturation",
+  "at": "2026-09-24T15:11:27.070Z"
+ }
+]

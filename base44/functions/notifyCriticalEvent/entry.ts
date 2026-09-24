@@ -5,7 +5,18 @@ const ENTITY_NAMES: Record<string, string> = { anomaly: "Anomaly", risk: "Risk" 
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const caller = await base44.auth.me();
+    // Sans session, le SDK leve une exception au lieu de rendre null : c'etait
+    // un 500. Un appel sans utilisateur (workflow, webhook, inconnu) recoit un
+    // 401 explicite. Base44 ne documente aucun moyen de prouver qu'un appel
+    // vient d'un workflow de l'app (le jeton de service est ajoute a TOUT
+    // appel par la plateforme) : on ne fait donc confiance a aucun appel
+    // anonyme, ni a un user_id du corps (voir qa/COMPTE-RENDU.md, lot 1.3).
+    let caller: any = null;
+    try {
+      caller = await base44.auth.me();
+    } catch {
+      caller = null;
+    }
     if (!caller) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await req.json();

@@ -31,7 +31,8 @@
       "type": "string"
     },
     "file_url": {
-      "type": "string"
+      "type": "string",
+      "description": "Reference du fichier source : URI privee (private/...) depuis le 24 sept. 2026, lisible seulement par URL signee ; URL publique pour les imports plus anciens."
     },
     "ignored_rows": {
       "type": "number",

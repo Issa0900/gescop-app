@@ -1,0 +1,4 @@
+Date opération;No commande;Client;Montant;Statut paiement
+05/03/2026;CMD-001;Boulangerie Nord;"1 250,00 $";Payé
+12/03/2026;CMD-002;Café Limoilou;"980,50 $";Payé
+19/03/2026;CMD-003;Épicerie St-Roch;"2 430,00 $";En attente

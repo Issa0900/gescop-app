@@ -7,6 +7,7 @@ import { REASON, motifChampManquant } from "../../shared/importStatus.ts";
 import { detectEntityByName, detectEntityByHeaders, detectEntityByFieldOverlap, entiteCompatible, sheetRows, trouverLigneEntetes, estDictionnaireDeDonnees } from "../../shared/sheetDetect.ts";
 import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import { fetchExternalFile } from "../../shared/safeFetch.ts";
+import { urlDeLecture, referenceFichier } from "../../shared/fichierPrive.ts";
 import {
   analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan,
   construireEchantillon, type PlanImport, type LigneEcartee,
@@ -271,7 +272,7 @@ export default async function (req: Request) {
     const plansFournis: Record<string, PlanImport> = {};
     if (plans && typeof plans === "object") Object.assign(plansFournis, plans);
     if (!files || !Array.isArray(files) || files.length === 0) {
-      return Response.json({ error: "files requis (tableau de {file_url, file_name})" }, { status: 400 });
+      return Response.json({ error: "files requis (tableau de {file_uri ou file_url, file_name})" }, { status: 400 });
     }
 
     const results: any[] = [];
@@ -280,7 +281,17 @@ export default async function (req: Request) {
     const relations = nouveauContexteRelations();
 
     for (const file of files) {
-      const { file_url, file_name } = file;
+      const { file_name } = file;
+      // Lecture par URL signee (fichier prive) ; seule la reference, qui
+      // n'ouvre rien sans signature, est conservee sur l'import.
+      const fichierRef = referenceFichier(file);
+      let file_url: string;
+      try {
+        file_url = await urlDeLecture(base44, file);
+      } catch (e: any) {
+        results.push({ file_name, entity: null, status: "echoue", rows_read: 0, rows: 0, reason_code: REASON.TECHNICAL_PARSE_ERROR, error: e.message });
+        continue;
+      }
       const ext = (file_name || "").split(".").pop().toLowerCase();
       const sourceType = ["csv", "xlsx", "xls", "tsv", "pdf"].includes(ext) ? ext : "csv";
 
@@ -334,7 +345,7 @@ export default async function (req: Request) {
                 results.push({ file_name: label, sheet: nomFeuille, entity: null, status: "analyse", rows_read: definitions, dictionnaire: true, message, plan: { ...plan, entite: null } });
                 continue;
               }
-              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, file_url);
+              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, fichierRef);
               // Apprendre le sens des colonnes que GESCOP ne reconnait pas par
               // leur nom, d'apres leur description (dictionnaireDonnees.ts).
               // Jamais de reecriture d'un terme deja defini par l'entreprise.
@@ -448,7 +459,7 @@ export default async function (req: Request) {
               via = parRegles.via as any;
             }
             if (!entity) {
-              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, file_url);
+              const conserve = await conserverFeuilleInconnue(base44, label, matrix, plan.ligne_entetes, sourceType, fichierRef);
               results.push({
                 file_name: label, entity: null, status: "quarantaine", import_id: conserve.import_id,
                 rows_read: conserve.metrics.total_rows, rows: 0, quarantined: conserve.metrics.unknown_rows,
@@ -462,7 +473,7 @@ export default async function (req: Request) {
             }
 
             const lecture = lignesSelonPlan(plan, matrix, file_name, entity);
-            const res = await importRows(base44, entity, lecture.rows, sourceType, label, file_url, {
+            const res = await importRows(base44, entity, lecture.rows, sourceType, label, fichierRef, {
               plan: lecture.plan, signature: analyse.signature, confirme: Boolean(planValide) && !lecture.note,
             }, companyDictionary, lecture.ecartees);
             if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
@@ -526,7 +537,7 @@ export default async function (req: Request) {
           else if (out && Array.isArray(Object.values(out)[0])) rows = Object.values(out)[0] as any[];
         }
 
-        const res = await importRows(base44, entityName, rows, sourceType, file_name, file_url, undefined, companyDictionary);
+        const res = await importRows(base44, entityName, rows, sourceType, file_name, fichierRef, undefined, companyDictionary);
         if (res.rateLimited) await pause(RATE_LIMIT_COOLDOWN_MS);
         results.push({ file_name, detected_via: entity_override ? "manuel" : "nom", ...res });
       } catch (e: any) {

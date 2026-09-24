@@ -1,0 +1,65 @@
+{
+ "plan": {
+  "entite": "Order",
+  "ligne_entetes": 0,
+  "lignes_ignorees": [],
+  "colonnes": [
+   {
+    "colonne": "Date opération",
+    "champ": "date"
+   },
+   {
+    "colonne": "No commande",
+    "champ": "order_id"
+   },
+   {
+    "colonne": "Client",
+    "champ": "customer_id"
+   },
+   {
+    "colonne": "Montant",
+    "champ": "total"
+   },
+   {
+    "colonne": "Statut paiement",
+    "champ": "payment_status"
+   }
+  ],
+  "confiance": "moyenne",
+  "explication": "Lecture sémantique de ventes-quebec.csv : reconnaissance de 5/5 colonnes pour l'entité Order.",
+  "origine": "regles",
+  "corrections": [],
+  "archetype": "MASTER_DATA",
+  "grain": "customer",
+  "isAggregatedSummary": false,
+  "qualityProfile": {
+   "overallQualityScore": 97,
+   "completenessScore": 100,
+   "structuralScore": 100,
+   "consistencyScore": 100,
+   "uniquenessScore": 100,
+   "semanticConfidence": 79,
+   "riskLevel": "LOW",
+   "totalRows": 3,
+   "usableRows": 3,
+   "quarantinedRows": 0,
+   "isolatedSummaryRows": 0,
+   "diagnostics": [
+    "Taux de complétude des données : 100%."
+   ]
+  },
+  "decision": {
+   "action": "RECOMMENDED_REVIEW",
+   "confidenceScore": 88,
+   "canAutoProceed": false,
+   "requiresUserConfirmation": true,
+   "statusLabel": "Validation recommandée",
+   "uiTone": "info",
+   "reasons": [
+    "Quelques ambiguïtés mineures identifiées."
+   ],
+   "suggestedAction": "Vérifier le rattachement des colonnes avant validation."
+  }
+ },
+ "echantillon": " 0 | Date opération | No commande | Client | Montant | Statut paiement\n 1 | 05/03/2026 | CMD-001 | Boulangerie Nord | 1 250,00 $ | Payé\n 2 | 12/03/2026 | CMD-002 | Café Limoilou | 980,50 $ | Payé\n 3 | 19/03/2026 | CMD-003 | Épicerie St-Roch | 2 430,00 $ | En attente"
+}

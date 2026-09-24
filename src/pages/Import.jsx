@@ -120,8 +120,11 @@ export default function ImportPage() {
     try {
       const uploadedFiles = [];
       for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        uploadedFiles.push({ file_url, file_name: file.name });
+        // Stockage privé : les fichiers financiers des clients ne doivent pas
+        // avoir d'URL publique (Loi 25). Les fonctions les lisent par une URL
+        // signée de courte durée (base44/shared/fichierPrive.ts).
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+        uploadedFiles.push({ file_uri, file_name: file.name });
       }
       setUploading(false);
       setAnalyzing(true);
