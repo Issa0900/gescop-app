@@ -11,7 +11,8 @@ fs.mkdirSync(build, { recursive: true });
 fs.writeFileSync(path.join(build, "sdk-stub.cjs"), "module.exports = { createClient: () => ({}) };");
 
 // « robustesse » comme etiquette lance le banc de robustesse (tests/banc/robustesse.ts).
-const cible = process.argv[2] === "robustesse" ? "robustesse" : "demo";
+// « diagnostic » lance le diagnostic de l'import sous plusieurs comportements d'IA (tests/banc/diagnostic.ts).
+const cible = ["robustesse", "diagnostic"].includes(process.argv[2]) ? process.argv[2] : "demo";
 esbuild.buildSync({
   entryPoints: [`tests/banc/${cible}.ts`],
   bundle: true,
@@ -26,5 +27,5 @@ esbuild.buildSync({
   },
 });
 
-execFileSync(process.execPath, ["--max-old-space-size=6000", path.join(build, `${cible}.cjs`), process.argv[2] || "demo-courant", process.argv[3] || ""], { stdio: "inherit" });
+execFileSync(process.execPath, ["--max-old-space-size=6000", path.join(build, `${cible}.cjs`), process.argv[2] || "demo-courant", process.argv[3] || "", process.argv[4] || ""], { stdio: "inherit" });
 
