@@ -27,7 +27,7 @@ import {
   Layers,
   Compass,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "@/lib/fake-framer-motion.jsx";
 
 const FAMILY_ICONS = {
   market: TrendingUp,
