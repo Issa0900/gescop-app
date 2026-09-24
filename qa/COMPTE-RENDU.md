@@ -119,8 +119,8 @@ Commits sur `correctifs-qa-2026-09` : lot 1, lot 1.3 (suite, après ta réponse)
 **Décisions prises en cours de route** (toutes réversibles) : fenêtre de nouveauté des courriels critiques = 30 jours (`JOURS_NOUVEAUTE`) ; modèle d'enrichissement = `gemini_3_flash` ; workflows d'alerte conservés (sans effet) ; outil QA adapté à Windows (chemins, 2 navigateurs, 45 s de navigation, préchauffage sans appel réseau).
 
 **Points ouverts à trancher**
-1. `gemini_3_8_flash` (import IA, radar) n'est pas dans la liste des modèles du SDK 0.8.48 — vérifier dans l'éditeur Base44, sinon passer à `gemini_3_flash` (lot 4).
-2. `UnderstandingPanel.jsx` affiche une compréhension inventée (succursales Montréal/Québec/Laval/Lévis, « 98,2 % ») ; les valeurs initiales du dictionnaire sont enregistrées au premier « Enregistrer » (lot 3).
+1. ~~`gemini_3_8_flash`~~ — **corrigé au lot 6** (`gemini_3_flash`).
+2. ~~Compréhension inventée, dictionnaire d'exemple~~ — **corrigés au lot 6**.
 3. Fichiers parasites suivis par git à la racine : `derniers ajustements` (+ U+F022) et `tatus` (étape 0) — à supprimer (`git rm`) si tu le souhaites.
 4. `deno.json` : créé par `qa/run-all.sh` s'il manque, laissé non suivi ; `deno.lock` est modifié à chaque lancement des scripts Deno, jamais commité.
 5. Les deux workflows d'alerte peuvent être supprimés dans l'éditeur Base44.
@@ -132,5 +132,34 @@ Commits sur `correctifs-qa-2026-09` : lot 1, lot 1.3 (suite, après ta réponse)
 3. Supprimer cet import : la page KPI revient à « non mesuré » et les alertes des autres imports sont toujours là (un message invite à relancer l'analyse).
 4. L'adresse du fichier téléversé ne s'ouvre pas en navigation privée. Elle n'est pas affichée dans l'historique des imports : la relever dans l'onglet Réseau des outils de développement (réponse de `UploadPrivateFile`, champ `file_uri`) ou dans l'enregistrement `Import` du tableau de bord Base44. Vérifier aussi que l'import lui-même a réussi (c'est ce qui prouve que la fonction obtient bien l'URL signée).
 5. Paramètres > Organisation : aucune succursale fictive ; titres affichés une seule fois (aussi dans Préférences).
-6. Onboarding avec l'adresse d'un vrai site web : le nom et le secteur se pré-remplissent.
+   Paramètres > Compréhension > « Voir ce que GESCOP a compris » : tes vrais types de données et nombres de lignes, aucune succursale que tu n'as pas. Paramètres > Dictionnaire : si le bandeau « Termes d'exemple détectés » apparaît, clique « Retirer les exemples » puis Enregistrer (sauf si ces termes sont vraiment les tiens). Ajoute un terme (ex. le nom exact d'une colonne de ton fichier → `amount`), enregistre, réimporte : la colonne doit être reconnue.
+6. Onboarding avec l'adresse d'un vrai site web : le nom et le secteur se pré-remplissent. Un import qui passe par l'IA (fichier aux colonnes inhabituelles) et un scan du Radar doivent aussi aboutir (modèle `gemini_3_flash`, lot 6).
 7. Lancer une analyse qui produit une anomalie critique (ou un risque d'urgence élevée) : le courriel arrive. Relancer l'analyse : **pas** de second courriel pour le même titre (règle des 30 jours). Vérifier aussi qu'une alerte « anomaly » apparaît dans la cloche.
+
+---
+
+## Lot 6 — Points ouverts tranchés par Issa (« corrige »)
+
+### 6.1 Modèle `gemini_3_8_flash` (import, radar) — corrigé
+- `importMultiData` et `scanExternalRadar` utilisent `MODELE_RAPIDE = "gemini_3_flash"` (dans la liste du SDK), défini une seule fois dans `base44/shared/modelesLLM.ts` ; `MODELE_ENRICHISSEMENT_WEB` en dérive.
+- Preuve : `qa/recette/QA05` n'a plus d'exception : tout modèle en toutes lettres doit être dans la liste du SDK, toute constante `MODELE_…` aussi, et chaque `model: MODELE_…` doit venir de `modelesLLM.ts`. Sur le code d'avant : 2 échecs (import, radar).
+
+### 6.2 Compréhension inventée (`UnderstandingPanel.jsx`) — corrigé
+- Les trois colonnes du haut (capacités générales de GESCOP) sont gardées. Le bloc « Interprétation actuelle du modèle » est calculé par `src/lib/comprehension.js` à partir des vraies données, lues à l'ouverture du détail :
+  - **données reconnues** : types importés et nombre de lignes (enregistrements `Import`) ;
+  - **succursales** : celles saisies dans Organisation, puis celles vues dans les ventes (`store`, `succursale`) et les employés (`branch`), avec leur origine ; sinon « aucune succursale connue » ;
+  - **règles de protection** : seulement des règles réelles du moteur (taux jamais additionnés, CA hors taxes, commandes annulées exclues, donnée absente = « non mesurée ») ;
+  - **lignes importées** : lignes importées / lignes lues des imports qui le disent ; sinon « non mesuré » (remplace le « 98.2 % ») ;
+  - colonnes non reconnues, avec un renvoi au Dictionnaire ; sans aucun import : « Aucune donnée importée ».
+- Preuves : `tests/comprehension.test.js` (4 cas : compte vide, calculs, succursales sans doublon, plus aucun texte inventé dans le composant) ; scénario L de l'agent (« Ventes / commandes (120 lignes) » affiché, ni Laval, ni Lévis, ni 98,2) — échoue sur le code d'avant.
+
+### 6.3 Dictionnaire d'exemple enregistré d'office — corrigé, et 3 défauts voisins trouvés en chemin
+- `Parametres.jsx` : le dictionnaire par défaut n'est plus rempli (`company.company_dictionary ?? null`). `DictionaryPanel.jsx` n'affiche plus 8 termes d'exemple comme des données (ils étaient enregistrés dès le premier ajout) ; les exemples ne sont plus qu'un texte d'aide quand le dictionnaire est vide.
+- **Comptes existants** : rien n'est effacé automatiquement. Si le dictionnaire contient exactement les 5 exemples enregistrés d'office avant ce correctif (même terme ET même champ), le panneau le signale et propose « Retirer les exemples » (retire ces 5 termes seulement ; effet à l'enregistrement).
+- Défauts voisins corrigés (même dictionnaire, `src/lib/dictionnaire.js` partagé) :
+  1. un terme ajouté dans Paramètres était enregistré avec la clé `concept`, que l'import ne lit pas : **il n'était jamais appliqué**. Il est maintenant écrit avec `maps_to`, et `buildCompanyDictionaryIndex` lit aussi `concept` pour les termes déjà enregistrés ;
+  2. l'apprentissage à l'import (`Import.jsx`) remplaçait un dictionnaire en forme liste par les seuls termes appris (le reste était perdu) ; il le complète maintenant dans sa forme ;
+  3. supprimer un terme pendant une recherche supprimait le mauvais (index de la liste filtrée) ; suppression par identifiant.
+- Preuves : `tests/dictionnaire_entreprise.test.js` (6 cas, dont la chaîne complète « terme ajouté dans Paramètres → reconnu par l'import ») — 3 échouent sur le code d'avant ; scénario L : dictionnaire vide → rien d'affiché comme donnée, « Enregistrer » n'écrit aucun terme.
+
+**Résultat `./qa/run-all.sh` après le lot 6** : toutes les couches passent — build OK, porte 0, lint 0, typecheck 145, `npm test` **209/209** (+10), 31/31 Deno, **156/156** navigateur (scénario L ajouté), aucun nouveau constat.

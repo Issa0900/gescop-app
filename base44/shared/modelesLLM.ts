@@ -8,5 +8,11 @@ export const MODELES_INVOKELLM = [
   "claude_sonnet_4_6", "claude_opus_4_6", "claude_opus_4_7", "claude_opus_4_8", "claude-sonnet-5",
 ] as const;
 
+/**
+ * Modèle rapide : lecture des fichiers à l'import, radar externe. Remplace
+ * « gemini_3_8_flash », absent de la liste du SDK (lot 6, 24 sept. 2026).
+ */
+export const MODELE_RAPIDE = "gemini_3_flash";
+
 /** Rapide, avec recherche web (add_context_from_internet) : enrichissement par site web. */
-export const MODELE_ENRICHISSEMENT_WEB = "gemini_3_flash";
+export const MODELE_ENRICHISSEMENT_WEB = MODELE_RAPIDE;

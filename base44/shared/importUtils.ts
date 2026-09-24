@@ -2393,7 +2393,9 @@ export function buildCompanyDictionaryIndex(raw: Record<string, string> | { term
   // [{ term, maps_to }] (valeurs initiales de la page Parametres). La seconde
   // etait lue comme { "0": objet } : aucun terme n'etait jamais applique.
   const paires: [string, any][] = Array.isArray(raw)
-    ? raw.map((x: any) => [x?.term, x?.maps_to] as [string, any])
+    // `concept` : clé qu'écrivait Paramètres > Dictionnaire avant le 24 sept.
+    // 2026 ; ces termes n'étaient jamais appliqués.
+    ? raw.map((x: any) => [x?.term, x?.maps_to ?? x?.concept] as [string, any])
     : Object.entries(raw);
   for (const [term, concept] of paires) {
     if (!term || !concept) continue;

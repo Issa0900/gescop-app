@@ -1,9 +1,30 @@
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Brain, CheckCircle2, ShieldCheck, Sparkles, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { base44 } from "@/api/base44Client";
+import { useCompany } from "@/hooks/useCompany";
+import { resumerComprehension } from "@/lib/comprehension";
+
+const nombre = (n) => Number(n || 0).toLocaleString("fr-CA");
 
 export default function UnderstandingPanel() {
   const [showDetailedUnderstanding, setShowDetailedUnderstanding] = useState(false);
+  const { company } = useCompany();
+  // Lu seulement quand l'utilisateur ouvre le détail : ce qui est affiché vient
+  // des vraies données (src/lib/comprehension.js), plus d'un texte en dur.
+  const { data: resume, isLoading } = useQuery({
+    queryKey: ["comprehension", company?.id],
+    enabled: showDetailedUnderstanding,
+    queryFn: async () => {
+      const [imports, orders, employees] = await Promise.all([
+        base44.entities.Import.list("-created_date", 200),
+        base44.entities.Order.list("-date", 1000),
+        base44.entities.Employee.list("-created_date", 500),
+      ]);
+      return resumerComprehension({ imports, company, orders, employees });
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -115,12 +136,34 @@ export default function UnderstandingPanel() {
       {showDetailedUnderstanding && (
         <div className="rounded-2xl border border-indigo-150 bg-white p-5 shadow-xs space-y-3 text-xs">
           <h4 className="font-bold text-indigo-950 uppercase tracking-wider text-[11px]">Interprétation actuelle du modèle</h4>
-          <div className="space-y-2 text-slate-700">
-            <p>• <strong>Granularité principale :</strong> Transactions de vente consolidées par succursale et commandes détaillées.</p>
-            <p>• <strong>Entités rattachées :</strong> Succursales physiques (Montréal, Québec, Laval, Lévis), COGS rattaché aux coûts de marchandises.</p>
-            <p>• <strong>Règles de protection :</strong> Interdiction de sommer des marges en pourcentage, conversion stricte des canaux publicitaires réels.</p>
-            <p>• <strong>Degré de confiance sémantique moyen :</strong> 98.2% sur les données importées.</p>
-          </div>
+          {isLoading || !resume ? (
+            <p className="text-slate-500">Lecture de vos données…</p>
+          ) : !resume.aDesImports ? (
+            <p className="text-slate-700">Aucune donnée importée pour l'instant : GESCOP n'a encore rien interprété. Importez un fichier depuis la page Importer.</p>
+          ) : (
+            <div className="space-y-2 text-slate-700">
+              <p>• <strong>Données reconnues :</strong>{" "}
+                {resume.types.length > 0
+                  ? resume.types.map((t) => `${t.libelle} (${nombre(t.lignes)} ligne${t.lignes > 1 ? "s" : ""})`).join(", ")
+                  : "aucun type de données reconnu dans vos imports"}.
+              </p>
+              <p>• <strong>Succursales :</strong>{" "}
+                {resume.succursales.length > 0
+                  ? `${resume.succursales.slice(0, 8).join(", ")}${resume.succursales.length > 8 ? ` et ${resume.succursales.length - 8} autre(s)` : ""}`
+                    + ` — ${resume.succursalesSource.saisies} saisie(s) dans Organisation, ${resume.succursalesSource.vues} vue(s) dans vos données`
+                  : "aucune succursale connue (ni saisie dans Organisation, ni présente dans vos ventes ou employés)"}.
+              </p>
+              <p>• <strong>Règles de protection :</strong> pourcentages et taux jamais additionnés ; chiffre d'affaires calculé hors taxes ; commandes annulées exclues du chiffre d'affaires ; une donnée absente reste « non mesurée », jamais 0.</p>
+              <p>• <strong>Lignes importées :</strong>{" "}
+                {resume.tauxImport == null
+                  ? "non mesuré (vos imports ne précisent pas le nombre de lignes lues)"
+                  : `${resume.tauxImport.toLocaleString("fr-CA")} % (${nombre(resume.lignesImportees)} sur ${nombre(resume.lignesLues)} lignes lues ; les autres sont conservées au registre de l'import)`}.
+              </p>
+              {resume.colonnesNonReconnues.length > 0 && (
+                <p>• <strong>Colonnes non reconnues :</strong> {resume.colonnesNonReconnues.slice(0, 10).join(", ")}{resume.colonnesNonReconnues.length > 10 ? "…" : ""} — ajoutez-les au Dictionnaire pour qu'elles soient comprises.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -133,13 +133,9 @@ export default function Parametres() {
         strategic_goals: company.strategic_goals || [],
         // Vide si l'entreprise n'a rien saisi : jamais de succursales d'exemple.
         organization_structure: structureOrganisation(company.organization_structure),
-        company_dictionary: company.company_dictionary || [
-          { term: "Succursale", maps_to: "location_id", description: "Point de vente géographique distinct" },
-          { term: "Coût Total ($)", maps_to: "total_cost", description: "Coût d'acquisition des marchandises vendues (COGS)" },
-          { term: "Profit Brut ($)", maps_to: "gross_profit", description: "Bénéfice brut avant charges d'exploitation" },
-          { term: "% Marge", maps_to: "gross_margin", description: "Taux de marge brute calculé en pourcentage" },
-          { term: "Date Transaction", maps_to: "date", description: "Horodatage de la vente au point de caisse" }
-        ],
+        // Ce que l'entreprise a vraiment défini, rien d'autre : les 5 exemples
+        // enregistrés d'office ici étaient ensuite imposés à chaque import.
+        company_dictionary: company.company_dictionary ?? null,
         target_markets: company.target_markets || {},
         monitored_domains: company.monitored_domains || [
           "concurrence", "marche_demande", "clients_comportements", "prix_offres",

@@ -3,17 +3,14 @@ import { BookOpen, Plus, Trash2, Sparkles, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/LanguageContext";
+import {
+  lireDictionnaire, versEnregistrement, EXEMPLES_DICTIONNAIRE, EXEMPLES_ENREGISTRES_AVANT,
+  contientExemplesAvant, retirerExemplesAvant,
+} from "@/lib/dictionnaire";
 
-const DEFAULT_TERMS = [
-  { id: "1", term: "Succursale", concept: "location_id", description: "Point de vente géographique distinct" },
-  { id: "2", term: "Coût Total ($)", concept: "total_cost", description: "Coût d'acquisition des marchandises vendues (COGS)" },
-  { id: "3", term: "Profit Brut ($)", concept: "gross_profit", description: "Bénéfice brut avant charges d'exploitation" },
-  { id: "4", term: "% Marge", concept: "gross_margin", description: "Taux de marge brute calculé en pourcentage" },
-  { id: "5", term: "Date Transaction", concept: "date", description: "Horodatage de la vente au point de caisse" },
-  { id: "6", term: "Courriel", concept: "customer_email", description: "Adresse e-mail unique du client" },
-  { id: "7", term: "Facebook Ads", concept: "meta_ads", description: "Dépenses publicitaires d'acquisition" },
-  { id: "8", term: "Ventes", concept: "revenue", description: "Chiffre d'affaires ou total des commandes" }
-];
+// Plus de termes d'exemple affichés comme s'ils étaient ceux de l'entreprise :
+// ils étaient enregistrés au premier ajout puis imposés à chaque import
+// (src/lib/dictionnaire.js, lot 6).
 
 export default function DictionaryPanel({ form, setForm }) {
   const { language } = useLanguage();
@@ -24,31 +21,14 @@ export default function DictionaryPanel({ form, setForm }) {
   const [newConcept, setNewConcept] = useState("");
   const [newDesc, setNewDesc] = useState("");
 
-  const dictItems = useMemo(() => {
-    const raw = form?.company_dictionary;
-    if (Array.isArray(raw) && raw.length > 0) {
-      return raw.map((item, idx) => ({
-        id: item.id || ("dict_" + idx),
-        term: String(item.term || item.source || item.key || ""),
-        concept: String(item.maps_to || item.concept || item.target || ""),
-        description: String(item.description || ""),
-      }));
-    }
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-      return Object.entries(raw).map(([key, val], idx) => ({
-        id: "dict_" + idx,
-        term: key,
-        concept: typeof val === "object" ? String(val?.maps_to || val?.concept || "") : String(val || ""),
-        description: typeof val === "object" ? String(val?.description || "") : "",
-      }));
-    }
-    return DEFAULT_TERMS;
-  }, [form?.company_dictionary]);
+  const dictItems = useMemo(() => lireDictionnaire(form?.company_dictionary), [form?.company_dictionary]);
+  const exemplesAvant = useMemo(() => contientExemplesAvant(form?.company_dictionary), [form?.company_dictionary]);
 
   const updateDictionary = (nextList) => {
     setForm((f) => ({
       ...f,
-      company_dictionary: nextList,
+      // Forme liste avec `maps_to`, la clé que lit l'import.
+      company_dictionary: versEnregistrement(nextList),
     }));
   };
 
@@ -57,7 +37,7 @@ export default function DictionaryPanel({ form, setForm }) {
     const newItem = {
       id: "dict_" + Date.now(),
       term: newTerm.trim(),
-      concept: newConcept.trim().toLowerCase().replace(/\s+/g, "_"),
+      maps_to: newConcept.trim().toLowerCase().replace(/\s+/g, "_"),
       description: newDesc.trim() || (isEn ? "Custom mapping" : "Correspondance personnalisée"),
     };
     updateDictionary([...dictItems, newItem]);
@@ -66,9 +46,10 @@ export default function DictionaryPanel({ form, setForm }) {
     setNewDesc("");
   };
 
-  const removeTerm = (idxToRemove) => {
-    const nextList = dictItems.filter((_, idx) => idx !== idxToRemove);
-    updateDictionary(nextList);
+  // Par identifiant : l'index de la liste filtrée par la recherche ne
+  // correspond pas à celui de la liste complète.
+  const removeTerm = (id) => {
+    updateDictionary(dictItems.filter((item) => item.id !== id));
   };
 
   const filteredItems = useMemo(() => {
@@ -77,7 +58,7 @@ export default function DictionaryPanel({ form, setForm }) {
     return dictItems.filter(
       (item) =>
         item.term.toLowerCase().includes(q) ||
-        item.concept.toLowerCase().includes(q) ||
+        item.maps_to.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q)
     );
   }, [dictItems, search]);
@@ -107,6 +88,21 @@ export default function DictionaryPanel({ form, setForm }) {
             : "Chaque correction ou correspondance validée lors de vos imports est automatiquement retenue ici pour tous les futurs fichiers de votre entreprise."}
         </div>
       </div>
+
+      {exemplesAvant && (
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 p-4 text-xs text-amber-900 flex flex-wrap items-start justify-between gap-3 dark:bg-amber-950/30 dark:text-amber-200">
+          <div className="min-w-0">
+            <strong className="font-semibold">{isEn ? "Example terms detected:" : "Termes d'exemple détectés :"}</strong>{" "}
+            {EXEMPLES_ENREGISTRES_AVANT.map((e) => `« ${e.term} » → ${e.maps_to}`).join(", ")}.{" "}
+            {isEn
+              ? "GESCOP used to save these examples automatically, and they are applied to every import. Remove them unless they match your files."
+              : "GESCOP enregistrait ces exemples d'office, et ils sont appliqués à chaque import. Retirez-les s'ils ne correspondent pas à vos fichiers."}
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={() => setForm((f) => ({ ...f, company_dictionary: retirerExemplesAvant(f?.company_dictionary) }))}>
+            {isEn ? "Remove the examples" : "Retirer les exemples"}
+          </Button>
+        </div>
+      )}
 
       {/* Tableau du dictionnaire */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
@@ -139,7 +135,11 @@ export default function DictionaryPanel({ form, setForm }) {
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-6 text-center text-muted-foreground text-xs">
-                    {isEn ? "No matching terms found." : "Aucun terme correspondant trouvé."}
+                    {dictItems.length === 0
+                      ? (isEn
+                        ? `No term yet. Add the column names of your files that GESCOP does not recognize, e.g. ${EXEMPLES_DICTIONNAIRE.map((e) => `"${e.term}" → ${e.maps_to}`).join(", ")}.`
+                        : `Aucun terme pour l'instant. Ajoutez les noms de colonnes de vos fichiers que GESCOP ne reconnaît pas, par exemple ${EXEMPLES_DICTIONNAIRE.map((e) => `« ${e.term} » → ${e.maps_to}`).join(", ")}.`)
+                      : (isEn ? "No matching terms found." : "Aucun terme correspondant trouvé.")}
                   </td>
                 </tr>
               ) : (
@@ -150,7 +150,7 @@ export default function DictionaryPanel({ form, setForm }) {
                     </td>
                     <td className="py-3 px-4">
                       <span className="font-mono text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-md text-[11px]">
-                        {item.concept || "mapping"}
+                        {item.maps_to || "mapping"}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell max-w-xs truncate">
@@ -159,7 +159,7 @@ export default function DictionaryPanel({ form, setForm }) {
                     <td className="py-3 px-4 text-right">
                       <button
                         type="button"
-                        onClick={() => removeTerm(idx)}
+                        onClick={() => removeTerm(item.id)}
                         className="text-muted-foreground hover:text-red-600 p-1 rounded-md transition-colors"
                         title={isEn ? "Remove term" : "Supprimer ce terme"}
                       >

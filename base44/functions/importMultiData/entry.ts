@@ -18,6 +18,7 @@ import { traiterLignes, champsImport, conserverFeuilleInconnue } from "../../sha
 import { appliquerPreuvesEntreTables, nouveauContexteRelations } from "../../shared/preuvesTables.ts";
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { MODELE_RAPIDE } from "../../shared/modelesLLM.ts";
 import { calculerFormulesManquantes } from "../../shared/formules.ts";
 import { apprendreDictionnaire } from "../../shared/dictionnaireDonnees.ts";
 
@@ -109,7 +110,7 @@ async function planPourFeuille(
     (args) => base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: args.prompt,
       response_json_schema: args.response_json_schema,
-      model: "gemini_3_8_flash",
+      model: MODELE_RAPIDE,
     }),
     { matrix, nomFichier: label, entitesPossibles: Object.keys(ENTITY_SCHEMAS), planDeSecours: secours, companyDictionary },
   );

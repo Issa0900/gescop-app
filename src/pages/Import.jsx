@@ -26,6 +26,7 @@ import PlanConfirmation from "@/components/import/PlanConfirmation";
 import DoublonsAVerifier from "@/components/import/DoublonsAVerifier";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { supprimerImport, MESSAGE_ALERTES } from "@/lib/supprimerImport";
+import { ajouterTermes, lireDictionnaire } from "@/lib/dictionnaire";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -176,11 +177,13 @@ export default function ImportPage() {
     const companies = await base44.entities.Company.list();
     const company = companies?.[0];
     if (!company) return 0;
-    const actuel = company.company_dictionary && !Array.isArray(company.company_dictionary) ? company.company_dictionary : {};
-    const nouveaux = Object.fromEntries(Object.entries(appris).filter(([k, v]) => actuel[k] !== v));
-    if (Object.keys(nouveaux).length === 0) return 0;
-    await base44.entities.Company.update(company.id, { company_dictionary: { ...actuel, ...nouveaux } });
-    return Object.keys(nouveaux).length;
+    // Complète le dictionnaire dans sa forme actuelle : une forme liste
+    // (Paramètres) était remplacée par les seuls termes appris.
+    const suivant = ajouterTermes(company.company_dictionary, appris);
+    if (!suivant) return 0;
+    await base44.entities.Company.update(company.id, { company_dictionary: suivant });
+    const avant = new Map(lireDictionnaire(company.company_dictionary).map((x) => [x.term.trim().toLowerCase(), x.maps_to]));
+    return Object.entries(appris).filter(([k, v]) => avant.get(k.trim().toLowerCase()) !== v).length;
   };
 
   /**

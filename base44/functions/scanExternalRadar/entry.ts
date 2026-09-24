@@ -1,4 +1,5 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
+import { MODELE_RAPIDE } from "../../shared/modelesLLM.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GESCOP Universal Radar Engine — Scan Externe Intelligent Multi-Domaines
@@ -95,7 +96,7 @@ Rédige tout en français et réponds en JSON respectant le schéma.`;
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       add_context_from_internet: true,
-      model: "gemini_3_8_flash",
+      model: MODELE_RAPIDE,
       response_json_schema: {
         type: "object",
         properties: {

@@ -407,3 +407,40 @@ test('K — organisation vide : ni exemple affiché ni enregistré', async ({ pa
   expect(exemples, 'aucun exemple affiché comme donnée').toEqual([]);
   expect(listes, 'aucune liste non vide enregistrée').toEqual([]);
 });
+
+// ─── 12. Paramètres > Compréhension et Dictionnaire : rien d'inventé ─────
+// La compréhension affichée vient des imports ; une entreprise sans
+// dictionnaire n'en reçoit aucun d'office en enregistrant (lot 6).
+test('L — compréhension réelle, dictionnaire sans exemple enregistré', async ({ page }) => {
+  const erreurs = surveiller(page);
+  const ecritures = [];
+  page.on('request', (r) => {
+    if (/\/entities\/Company\//.test(r.url()) && ['PUT', 'PATCH'].includes(r.method())) ecritures.push(r.postDataJSON());
+  });
+  const { company_dictionary: _ignore, ...sansDico } = RICH.Company[0];
+  await fauxBackend(page, { ...RICH, Company: [sansDico] });
+  await authentifier(page);
+
+  await page.goto('/parametres?tab=comprehension');
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.getByRole('button', { name: /Voir ce que GESCOP a compris/ }).click();
+  await expect(page.getByText(/Données reconnues/)).toBeVisible({ timeout: 10000 });
+  const comprehension = await page.locator('main').first().innerText();
+  const inventes = ['Laval', 'Lévis', '98.2', '98,2'].filter((x) => comprehension.includes(x));
+  if (inventes.length) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=comprehension', gravite: 'moyen', type: 'compréhension inventée affichée', detail: inventes.join(', ') });
+  expect(inventes, 'aucune compréhension écrite en dur').toEqual([]);
+  expect(comprehension, 'les imports réels sont décrits').toMatch(/Ventes \/ commandes \(120 lignes\)/);
+
+  await page.goto('/parametres?tab=dictionnaire');
+  await page.waitForLoadState('networkidle').catch(() => {});
+  const dico = await page.locator('main').first().innerText();
+  const exemples = ['Profit Brut', 'Facebook Ads', 'meta_ads'].filter((x) => dico.includes(x));
+  expect(exemples, 'aucun terme d\'exemple affiché comme donnée').toEqual([]);
+  await page.getByRole('button', { name: /Enregistrer les modifications/ }).first().click();
+  await expect.poll(() => ecritures.length, { timeout: 5000 }).toBeGreaterThan(0);
+  const ecrit = ecritures.at(-1)?.company_dictionary;
+  const nb = Array.isArray(ecrit) ? ecrit.length : ecrit && typeof ecrit === 'object' ? Object.keys(ecrit).length : 0;
+  if (nb) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=dictionnaire', gravite: 'moyen', type: 'dictionnaire d\'exemple enregistré', detail: JSON.stringify(ecrit).slice(0, 200) });
+  expect(nb, 'aucun terme enregistré d\'office').toBe(0);
+  for (const e of erreurs) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=comprehension', gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
+});
