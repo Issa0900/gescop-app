@@ -51,7 +51,6 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
     properties: {
       product_id: S, sku: S, product_name: S,
       category: E("decoration", "cuisine", "maison", "accessoires", "cadeaux", "lifestyle", "équipement", "accessoire", "piece", "entretien"),
-      category: S,
       subcategory: S, supplier_id: S, supplier_name: S, purchase_cost: N, selling_price: N, gross_margin: N,
       launch_date: D,
       status: E("actif", "discontinue", "rupture", "nouveau", "dormant"),
