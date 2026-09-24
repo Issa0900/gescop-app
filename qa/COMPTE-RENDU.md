@@ -163,3 +163,13 @@ Commits sur `correctifs-qa-2026-09` : lot 1, lot 1.3 (suite, après ta réponse)
 - Preuves : `tests/dictionnaire_entreprise.test.js` (6 cas, dont la chaîne complète « terme ajouté dans Paramètres → reconnu par l'import ») — 3 échouent sur le code d'avant ; scénario L : dictionnaire vide → rien d'affiché comme donnée, « Enregistrer » n'écrit aucun terme.
 
 **Résultat `./qa/run-all.sh` après le lot 6** : toutes les couches passent — build OK, porte 0, lint 0, typecheck 145, `npm test` **209/209** (+10), 31/31 Deno, **156/156** navigateur (scénario L ajouté), aucun nouveau constat.
+
+---
+
+## Mise en ligne (24 sept. 2026, à la demande d'Issa)
+
+- `main` avancé en avance rapide sur `correctifs-qa-2026-09` (918f518) et poussé sur GitHub, avec la branche.
+- `npm run deploy` : site reconstruit, 38 entités, 15 fonctions (13 déployées, `createCheckoutSession` et `resolveDuplicate` inchangées) ; « App deployed successfully » — https://smart-pilot-gescop.base44.app
+- Vérifié en ligne, en lecture seule (fichiers statiques du site, aucun appel à l'API) : aucune occurrence de `PLAYWRIGHT_TEST` dans les scripts publiés ; la page Importer publiée appelle `UploadPrivateFile` et plus `UploadFile` ; la page Paramètres publiée contient le nouveau panneau Dictionnaire.
+- La CLI n'a pas listé les workflows : les deux workflows d'alerte en ligne sont donc probablement inchangés. Sans effet (sans session, `notifyCriticalEvent` répond 401), à supprimer dans l'éditeur Base44 si tu veux.
+- Reste à faire par Issa : la liste de contrôle ci-dessus (points 1 à 7), qui demande d'être connecté ou d'écrire des données.
