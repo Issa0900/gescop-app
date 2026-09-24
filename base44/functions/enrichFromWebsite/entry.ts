@@ -1,4 +1,5 @@
 import { createFixedClientFromRequest as createClientFromRequest, invokeLLM } from "../../shared/client.ts";
+import { MODELE_ENRICHISSEMENT_WEB } from "../../shared/modelesLLM.ts";
 
 export default async function(req) {
   try {
@@ -49,7 +50,8 @@ Sois précis et concis. Si une information n'est pas trouvable sur le site, lais
 
     const result = await invokeLLM(base44, {
       prompt,
-      model: "claude-3-5-sonnet",
+      // "claude-3-5-sonnet" n'est pas un modele InvokeLLM (voir shared/modelesLLM.ts).
+      model: MODELE_ENRICHISSEMENT_WEB,
       temperature: 0.2,
       add_context_from_internet: true,
       response_json_schema: schema
