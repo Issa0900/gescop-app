@@ -35,3 +35,17 @@ Ce que dit la documentation Base44 (pages *Backend functions > overview* et *Aut
 - **Question pour Issa** (non tranchée, changement de comportement métier) : piste proposée — envoyer la notification depuis `analyzeBusiness` lui-même (qui a la session de l'utilisateur) pour les anomalies `critique` et les risques d'urgence `elevee`, et supprimer les deux workflows. À décider : faut-il un courriel à **chaque** analyse (les anomalies sont recréées à chaque passage), ou seulement pour une anomalie nouvelle (même titre non vu depuis N jours) ? Tant que ce n'est pas décidé, le point 7 de la liste de contrôle échouera probablement.
 
 **Résultat `./qa/run-all.sh` après le lot 1** : RÉSULTAT « toutes les couches passent » — build OK, porte de test dans `dist/` = 0, `npm test` sans échec, 29/29 scripts Deno (QA02 et QA03 ajoutés), 154/154 scénarios navigateur, lint 23, typecheck 146 ; aucun nouveau constat par rapport au départ, aucun constat critique ou majeur. Outil QA : un préchauffage du serveur de dev (`qa/e2e/prechauffage.js`, toutes requêtes `/api` bloquées, rien ne part vers l'app en ligne) évite l'expiration du tout premier scénario pendant que Vite compile.
+
+## Lot 2 — Intégrité des données
+
+### 2.1 Supprimer un import laisse ses Observations (majeur) — corrigé
+### 2.2 Supprimer un import efface toutes les alertes du compte (majeur) — corrigé
+- La logique de `handleDelete` est sortie de `src/pages/Import.jsx` dans `src/lib/supprimerImport.js` pour être testable ; `Import.jsx` ne garde que la confirmation et les messages.
+- 2.1 : les `Observation` de l'import sont supprimées par `import_id` avec la même boucle « supprimer, relire » que les lignes de l'entité ; s'il en reste, l'import est conservé (« Suppression incomplète ») pour pouvoir relancer.
+- 2.2 : vérifié dans `base44/entities/Alert.jsonc` et `analyzeBusiness` : les alertes d'analyse portent sur tout le compte, aucune n'a de lien vers un import (`link_id` n'est rempli que par la notification critique, et désigne une anomalie ou un risque). Aucun lien fiable → **aucune alerte n'est supprimée** ; le message de fin dit « Relancez l'analyse pour mettre les alertes à jour. »
+- Preuve : `tests/supprimer_import.test.js` (4 cas, dans `npm test`) — Observations de l'import effacées et celles de l'autre import conservées ; les 3 alertes du compte survivent ; Observations indélébiles → import conservé ; type invalide → rien supprimé. Rejoué sur l'ancienne logique (copie hors dépôt) : 3 cas sur 4 échouent.
+- « Tout supprimer » n'est pas modifié (il efface déjà tout, Observations et alertes comprises).
+
+### 2.3 Données de test en production — action d'Issa (liste de contrôle, points 2 et 3).
+
+**Résultat `./qa/run-all.sh` après le lot 2** : toutes les couches passent — build OK, porte 0, `npm test` 199/199, 29/29 Deno, 154/154 navigateur, lint 23, typecheck 146, aucun nouveau constat.

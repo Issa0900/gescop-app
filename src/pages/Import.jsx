@@ -25,6 +25,7 @@ import ImportProgress from "@/components/import/ImportProgress";
 import PlanConfirmation from "@/components/import/PlanConfirmation";
 import DoublonsAVerifier from "@/components/import/DoublonsAVerifier";
 import { motion } from "@/lib/fake-framer-motion.jsx";
+import { supprimerImport, MESSAGE_ALERTES } from "@/lib/supprimerImport";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -302,25 +303,15 @@ export default function ImportPage() {
    * "supprimés". Those rows then became unreachable: nothing pointed to them
    * any more, and only the global purge could clear them.
    *
-   * Now: delete, verify, and keep the journal entry if anything survives.
+   * Now: delete, verify, and keep the journal entry if anything survives —
+   * Observations included (src/lib/supprimerImport.js).
    */
   const handleDelete = async (imp) => {
     const entityName = imp.entity_type;
     // Import d'une feuille au type non reconnu : aucune donnee metier, seulement
     // ses lignes brutes dans le registre. Rien ne peut rester orphelin.
-    if (!entityName && imp.status === "quarantaine") {
-      if (!window.confirm(`Supprimer cet import effacera aussi ses ${imp.rows_quarantined || 0} ligne(s) conservée(s) telles quelles. Continuer ?`)) return;
-      try {
-        await base44.entities.ImportIssue.deleteMany({ import_id: imp.id });
-        await base44.entities.Import.delete(imp.id);
-        qc.invalidateQueries();
-        toast({ title: "Import supprimé · lignes conservées effacées" });
-      } catch (e) {
-        toast({ title: "Erreur: " + e.message, variant: "destructive" });
-      }
-      return;
-    }
-    if (!entityName || !base44.entities[entityName]) {
+    const quarantaine = !entityName && imp.status === "quarantaine";
+    if (!quarantaine && (!entityName || !base44.entities[entityName])) {
       toast({
         title: "Suppression impossible",
         description: `Cet import ne précise pas de type d'entité valide (${entityName || "vide"}). `
@@ -329,44 +320,35 @@ export default function ImportPage() {
       });
       return;
     }
-    if (!window.confirm(`Supprimer cet import effacera aussi tous les enregistrements ${entityName} associés. Continuer ?`)) return;
+    const question = quarantaine
+      ? `Supprimer cet import effacera aussi ses ${imp.rows_quarantined || 0} ligne(s) conservée(s) telles quelles. Continuer ?`
+      : `Supprimer cet import effacera aussi tous les enregistrements ${entityName} associés. Continuer ?`;
+    if (!window.confirm(question)) return;
 
-    const entity = base44.entities[entityName];
     try {
-      let deleted = 0;
-      let remaining = 0;
-      // Loop in case the server caps how many rows one call removes.
-      for (let pass = 0; pass < 10; pass += 1) {
-        const res = await entity.deleteMany({ import_id: imp.id });
-        deleted += Number(res?.deleted) || 0;
-        const left = await entity.filter({ import_id: imp.id }, null, 1);
-        remaining = (left || []).length;
-        if (remaining === 0) break;
-        // No progress on this pass: retrying will not help.
-        if (!res?.deleted) break;
-      }
-
-      if (remaining > 0) {
-        // Keep the import record so the rows stay reachable and deletable.
+      // Lignes, Observations (le moteur KPI s'en sert), registre, puis
+      // l'import — avec verification (src/lib/supprimerImport.js).
+      const r = await supprimerImport(base44.entities, imp);
+      qc.invalidateQueries();
+      if (r.statut === "incomplet") {
+        // L'import est conserve pour que les lignes restent atteignables.
         toast({
           title: "Suppression incomplète",
-          description: `${deleted} enregistrement(s) ${entityName} supprimé(s), mais il en reste. `
+          description: `${r.supprimes} enregistrement(s) ${entityName} supprimé(s), mais il reste `
+            + `${r.restants ? "des enregistrements" : "des observations"}. `
             + "L'import a été conservé pour que vous puissiez relancer la suppression — sinon ces lignes deviendraient introuvables.",
           variant: "destructive",
         });
-        qc.invalidateQueries();
         return;
       }
-
-      // Le registre des lignes ecartees de cet import n'a plus de sens sans lui.
-      await base44.entities.ImportIssue.deleteMany({ import_id: imp.id });
-      await base44.entities.Import.delete(imp.id);
-      // Les alertes/notifications produites par l'analyse pointaient sur ces
-      // lignes : sans ce nettoyage, la cloche continuait d'afficher des alertes
-      // pour des données qui n'existent plus.
-      await base44.entities.Alert.deleteMany({ category: { $in: ["anomalie", "risque", "opportunite"] } });
-      qc.invalidateQueries();
-      toast({ title: `Import supprimé · ${deleted} enregistrement(s) ${entityName} effacé(s) · alertes obsolètes effacées` });
+      toast({
+        title: quarantaine
+          ? "Import supprimé · lignes conservées effacées"
+          : `Import supprimé · ${r.supprimes} enregistrement(s) ${entityName} effacé(s)`,
+        // Les alertes d'analyse portent sur l'ensemble des donnees et ne sont
+        // reliees a aucun import : elles ne sont pas effacees ici.
+        description: quarantaine ? undefined : MESSAGE_ALERTES,
+      });
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     }
