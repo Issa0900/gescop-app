@@ -1,5 +1,6 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
+import { validateStructuredResponse } from "../../shared/decisionEngine.ts";
 
 function getPeriodRanges(type, now) {
   if (type === "quotidien") {
@@ -242,7 +243,7 @@ export default async function (req) {
 
     const comparisonData = wantComparison ? buildComparison(ctx, type, now) : null;
     const comparisonBlock = comparisonData
-      ? `\n\n=== COMPARAISON PÉRIODE CONTRE PÉRIODE (données calculées) ===\nPériode actuelle: ${comparisonData.currentLabel}\nPériode précédente: ${comparisonData.previousLabel}\n${comparisonToText(comparisonData)}\n\nAnalyse l'évolution de chaque indicateur: identifie les progressions et régressions significatives, et propose une explication probable pour les variations les plus marquantes.`
+      ? `\n\n=== COMPARAISON PÉRIODE CONTRE PÉRIODE (données calculées) ===\nPériode actuelle: ${comparisonData.currentLabel}\nPériode précédente: ${comparisonData.previousLabel}\n${comparisonToText(comparisonData)}\n\nAnalyse l'évolution de chaque indicateur: identifie les progressions et régressions significatives, et propose une explication probable pour les variations les plus marquantes.\n\nPour CHAQUE explication de variation (champ variationAnalysis ci-dessous), tu dois impérativement classifier ton affirmation, comme pour un diagnostic financier rigoureux :\n- FACT : fait brut directement vérifiable dans les chiffres ci-dessus.\n- CALCULATION : résultat d'un calcul arithmétique direct sur ces chiffres (delta, %, ratio).\n- OBSERVATION : constat factuel d'une tendance sans en expliquer la cause.\n- INFERENCE : déduction logique croisant plusieurs indicateurs.\n- HYPOTHESIS : explication plausible de la variation qui nécessite une validation terrain (aucune donnée externe ne la confirme directement).\n- RECOMMENDATION : action recommandée en réaction à cette variation.\nRenseigne aussi "confidence" (0.0 à 1.0) et "sources" (les indicateurs/tables précis utilisés). N'utilise JAMAIS FACT ou CALCULATION pour une explication causale non vérifiable dans les données (ex: "probablement dû à la météo") — classe-la HYPOTHESIS avec une confidence reflétant cette incertitude.`
       : "";
 
     const prompt = `Tu es GESCOP. ${reportSpecs[type] || reportSpecs.quotidien}
@@ -252,7 +253,7 @@ ${ctx.context}
 
 Toutes les valeurs textuelles (résumé, contenu, sections, insights, etc.) doivent être rédigées en français.
 
-Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), content (le rapport complet en markdown bien structuré avec titres et sections), sections (un objet où chaque clé est un nom de section et la valeur est le contenu de cette section)${comparisonData ? ", evolutionSummary (un texte de 3-5 phrases qui analyse l'évolution des indicateurs clés entre la période actuelle et la période précédente), keyInsights (un tableau de 3 à 5 chaînes, chaque chaîne étant un insight sur l'évolution marquante d'un indicateur)" : ""}.`;
+Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), content (le rapport complet en markdown bien structuré avec titres et sections), sections (un objet où chaque clé est un nom de section et la valeur est le contenu de cette section)${comparisonData ? ", variationAnalysis (un tableau de 3 à 5 objets {label, classification, text, confidence, sources} — un par variation marquante, voir le format de classification exigé plus haut), keyInsights (un tableau de 3 à 5 chaînes, chaque chaîne étant un insight sur l'évolution marquante d'un indicateur)" : ""}.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
@@ -262,13 +263,63 @@ Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), co
           summary: { type: "string" },
           content: { type: "string" },
           sections: { type: "object" },
-          evolutionSummary: { type: "string" },
+          variationAnalysis: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                label: { type: "string" },
+                classification: { type: "string", enum: ["FACT", "CALCULATION", "OBSERVATION", "INFERENCE", "HYPOTHESIS", "RECOMMENDATION"] },
+                text: { type: "string" },
+                confidence: { type: "number" },
+                sources: { type: "array", items: { type: "string" } },
+              },
+            },
+          },
           keyInsights: { type: "array", items: { type: "string" } },
         },
       },
     });
 
     const data = typeof result === "string" ? JSON.parse(result) : result;
+
+    // Garde-fou serveur (audit 23 sept, même contrôle que chatAssistant) :
+    // generateReport demandait jusqu'ici au LLM un texte libre ("explication
+    // probable des variations") sans aucune structure de classification, donc
+    // rien ne pouvait être vérifié. Le prompt ci-dessus exige maintenant une
+    // classification par variation (variationAnalysis) ; on la valide ici
+    // avant de stocker/retourner le rapport, avec le même contrôle que
+    // chatAssistant (decisionEngine.ts, jusque-là orphelin).
+    const rawVariationAnalysis = Array.isArray(data.variationAnalysis) ? data.variationAnalysis : [];
+    let reportReviewRequired = false;
+    const variationAnalysis = rawVariationAnalysis.map((v) => {
+      const validation = validateStructuredResponse({
+        classification: v?.classification,
+        text: v?.text || "",
+        confidence: v?.confidence,
+        sources: v?.sources || [],
+      });
+      if (!validation.valid) reportReviewRequired = true;
+      return {
+        label: v?.label || "",
+        classification: v?.classification || "INFERENCE",
+        text: v?.text || "",
+        confidence: v?.confidence ?? 0.5,
+        sources: v?.sources || [],
+        status: validation.valid ? "OK" : "REVIEW_REQUIRED",
+        review_reason: validation.valid ? null : validation.reason,
+      };
+    });
+
+    // src/components/reports/ReportComparison.jsx (et l'export PDF dans
+    // src/lib/exportUtils.js) lisent comparison.evolutionSummary comme un
+    // texte unique — champ conservé pour ne rien casser côté UI, reconstruit
+    // ici à partir des explications désormais classifiées et validées, avec
+    // un avertissement visible sur celles qui n'ont pas passé le contrôle.
+    const evolutionSummary = variationAnalysis
+      .map((v) => (v.status === "REVIEW_REQUIRED" ? `⚠️ [À vérifier — ${v.review_reason}] ${v.text}` : v.text))
+      .filter(Boolean)
+      .join(" ");
 
     const report = await base44.entities.Report.create({
       type,
@@ -279,8 +330,10 @@ Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), co
       comparison: comparisonData
         ? {
             ...comparisonData,
-            evolutionSummary: data.evolutionSummary || "",
+            evolutionSummary,
+            variationAnalysis,
             keyInsights: data.keyInsights || [],
+            reviewRequired: reportReviewRequired,
           }
         : null,
     });

@@ -1,5 +1,6 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
+import { validateStructuredResponse } from "../../shared/decisionEngine.ts";
 
 export default async function(req) {
   try {
@@ -79,11 +80,34 @@ Renseigne impérativement le champ "classification" parmi :
     });
 
     const data = typeof result === "string" ? JSON.parse(result) : result;
-    return Response.json({ 
+
+    // Garde-fou serveur (audit 23 sept) : le prompt ci-dessus impose au LLM de
+    // classifier sa réponse avec une confidence et des sources, mais rien ne
+    // vérifiait qu'il a réellement suivi cette consigne avant de transmettre
+    // la réponse au client. On valide ici via decisionEngine.ts, jusque-là un
+    // module orphelin écrit pour ça mais jamais appelé.
+    const validation = validateStructuredResponse({
+      classification: data.classification,
+      text: data.response || "",
+      confidence: data.confidence,
+      sources: data.sources || [],
+    });
+
+    const responseText = validation.valid
+      ? (data.response || "")
+      : `⚠️ **Vérification requise** : cette réponse n'a pas passé le contrôle de cohérence automatique (${validation.reason}). Traitez-la comme une piste à valider, pas comme un fait établi.\n\n${data.response || ""}`;
+
+    return Response.json({
       classification: data.classification || "INFERENCE",
-      response: data.response || "", 
+      response: responseText,
       confidence: data.confidence || 0.5,
-      sources: data.sources || [] 
+      sources: data.sources || [],
+      // Champ additionnel, ignoré par le frontend actuel (src/pages/Assistant.jsx
+      // ne lit que classification/response/confidence/sources) : ne casse rien,
+      // et permet à un futur consommateur (ou à des logs) de filtrer sans
+      // reparser le texte.
+      status: validation.valid ? "OK" : "REVIEW_REQUIRED",
+      review_reason: validation.valid ? null : validation.reason,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
