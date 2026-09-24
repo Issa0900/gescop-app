@@ -101,7 +101,7 @@ export default function Audit() {
       </div>
 
       <Tabs defaultValue="reconcile">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="reconcile">Exhaustivité</TabsTrigger>
           <TabsTrigger value="coherence">Cohérence</TabsTrigger>
           <TabsTrigger value="quality">Qualité des imports</TabsTrigger>

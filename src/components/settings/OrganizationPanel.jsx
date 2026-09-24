@@ -3,41 +3,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Layers, MapPin, Building, Briefcase, Users, Plus, Trash2, CheckCircle2, Globe } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
+import { structureOrganisation } from "@/lib/organisationParDefaut";
 
 export default function OrganizationPanel({ form, setForm }) {
   const { language } = useLanguage();
   const isEn = language === "en";
 
-  const defaultOrg = {
-    active_levels: ["entreprise", "region", "succursale", "departement", "employe"],
-    regions: ["Grand Montréal", "Laurentides", "Estrie", "Québec Capitale"],
-    branches: [
-      { id: "b1", name: "Succursale Montréal - Centre", region: "Grand Montréal", type: "Succursale physique" },
-      { id: "b2", name: "Succursale Laval", region: "Grand Montréal", type: "Succursale physique" },
-      { id: "b3", name: "Succursale Saint-Jérôme", region: "Laurentides", type: "Succursale physique" },
-      { id: "b4", name: "Boutique en ligne (E-commerce)", region: "National", type: "Canal numérique" }
-    ],
-    departments: [
-      { id: "d1", name: "Ventes & Conseil Client", manager: "Direction des Ventes" },
-      { id: "d2", name: "Achats & Gestion des stocks", manager: "Approvisionnement" },
-      { id: "d3", name: "Comptabilité & Finance", manager: "Contrôleur financier" },
-      { id: "d4", name: "Marketing & Acquisition", manager: "Responsable Marketing" }
-    ],
-  };
-
-  const rawOrg = form?.organization_structure || {};
-  const activeLevels = Array.isArray(rawOrg.active_levels)
-    ? rawOrg.active_levels
-    : defaultOrg.active_levels;
-  const regions = Array.isArray(rawOrg.regions)
-    ? rawOrg.regions
-    : defaultOrg.regions;
-  const branches = Array.isArray(rawOrg.branches)
-    ? rawOrg.branches
-    : defaultOrg.branches;
-  const departments = Array.isArray(rawOrg.departments)
-    ? rawOrg.departments
-    : defaultOrg.departments;
+  // Structure vide par défaut (src/lib/organisationParDefaut.js) : les exemples
+  // ne sont que du texte d'aide dans les champs de saisie.
+  const { active_levels: activeLevels, regions, branches, departments } = structureOrganisation(form?.organization_structure);
 
   const [newBranch, setNewBranch] = useState("");
   const [newBranchRegion, setNewBranchRegion] = useState(
@@ -79,7 +53,7 @@ export default function OrganizationPanel({ form, setForm }) {
     const item = {
       id: "b_" + Date.now(),
       name: newBranch.trim(),
-      region: newBranchRegion || "Grand Montréal",
+      region: newBranchRegion || (typeof regions[0] === "string" ? regions[0] : (regions[0]?.name || "")),
       type: "Succursale",
     };
     updateOrg({ branches: [...branches, item] });

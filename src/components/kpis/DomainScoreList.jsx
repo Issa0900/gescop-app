@@ -31,16 +31,16 @@ export default function DomainScoreList({ domains }) {
         const s = statusOf(d.score);
         return (
           <div key={d.key} className="flex items-center gap-4 px-4 py-3">
-            <span className="w-24 shrink-0 text-sm font-medium">{d.label}</span>
+            <span className="w-20 shrink-0 text-sm font-medium sm:w-24">{d.label}</span>
 
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div className={`h-full rounded-full ${s.bar} transition-all duration-500`} style={{ width: d.measured === false ? "0%" : `${Math.max(2, Math.min(100, d.score))}%` }} />
               </div>
               {d.explanation && <p className="mt-1.5 truncate text-xs text-muted-foreground">{d.explanation}</p>}
             </div>
 
-            <div className="flex w-32 shrink-0 items-center justify-end gap-2">
+            <div className="flex shrink-0 items-center justify-end gap-2 sm:w-32">
               {d.measured === false ? (
                 <>
                   <span className="text-lg font-bold tabular-nums text-muted-foreground">-</span>

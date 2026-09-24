@@ -58,13 +58,11 @@ export default function PreferencesPanel({ form, setForm }) {
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-center gap-2">
           <Sliders className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-foreground">Préférences Régionales & Affichage</h2>
           <h2 className="font-semibold text-foreground">
             {isEn ? "Regional & Display Preferences" : "Préférences Régionales & Affichage"}
           </h2>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Personnalisez la devise, la langue de restitution et les paramètres de formatage de GESCOP.
           {isEn
             ? "Customize currency, display language, and formatting preferences across GESCOP."
             : "Personnalisez la devise, la langue de restitution et les paramètres de formatage de GESCOP."}
@@ -75,12 +73,9 @@ export default function PreferencesPanel({ form, setForm }) {
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-xs font-semibold text-foreground">
               <Globe className="h-4 w-4 text-primary" />
-              Langue de l'interface et des analyses
               {isEn ? "Interface & Analytics Language" : "Langue de l'interface et des analyses"}
             </Label>
             <select
-              value={form.language || "fr"}
-              onChange={(e) => setForm({ ...form, language: e.target.value })}
               value={form.language || language || "fr"}
               onChange={(e) => handleLanguageChange(e.target.value)}
               className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

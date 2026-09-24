@@ -10,6 +10,9 @@ export default async function prechauffer(config) {
   // Aucune requête ne doit partir vers l'app en ligne : seul le code est chargé.
   await page.route((u) => !u.href.startsWith(baseURL) || u.pathname.startsWith('/api/'), (r) => r.abort());
   await page.goto(baseURL + '/login', { timeout: 180_000 }).catch(() => {});
-  await page.goto(baseURL + '/', { timeout: 180_000 }).catch(() => {});
+  for (const route of ['/', '/insights', '/importer', '/parametres']) {
+    await page.goto(baseURL + route, { timeout: 180_000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+  }
   await browser.close();
 }

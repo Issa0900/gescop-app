@@ -55,3 +55,26 @@ Ce que dit la documentation Base44 (pages *Backend functions > overview* et *Aut
 ### 2.3 Données de test en production — action d'Issa (liste de contrôle, points 2 et 3).
 
 **Résultat `./qa/run-all.sh` après le lot 2** : toutes les couches passent — build OK, porte 0, `npm test` 199/199, 29/29 Deno, 154/154 navigateur, lint 23, typecheck 146, aucun nouveau constat.
+
+## Lot 3 — Interface
+
+### 3.1 Succursales et régions fictives pré-remplies (moyen) — corrigé
+- Nouveau `src/lib/organisationParDefaut.js` : la seule structure par défaut, **vide** (`active_levels` de base, listes vides), importée par `Parametres.jsx` et `OrganizationPanel.jsx` (les deux copies des exemples sont supprimées). Les exemples restent en texte d'aide des champs de saisie. Une succursale ajoutée sans région choisie prend la première région saisie, plus « Grand Montréal ».
+- Preuve : scénario K ajouté à l'agent (`qa/e2e/agent-qa.spec.js`) — onglet Organisation d'une entreprise sans structure : aucun exemple affiché ; « Enregistrer » n'écrit aucune liste non vide. Sur le code d'origine : échec (7 exemples affichés).
+- Même défaut ailleurs, **non corrigé** (hors du périmètre décrit, demande de vraies données) : `src/components/settings/UnderstandingPanel.jsx` affiche en dur « Succursales physiques (Montréal, Québec, Laval, Lévis) » et « Degré de confiance sémantique moyen : 98.2 % » comme si c'était ce que GESCOP a compris de l'entreprise. De même, les valeurs initiales du dictionnaire (`Parametres.jsx`, « Succursale → location_id », « Coût Total ($) »…) sont enregistrées au premier « Enregistrer » et servent ensuite à l'import. À décider.
+
+### 3.2 Textes en double dans Paramètres (moyen) — corrigé
+- Recherche du motif dans tout `src/` (texte en dur immédiatement suivi de `{t("clé", "même texte")}`) : **8** occurrences, toutes dans `Parametres.jsx` (les 7 listées + le bouton de la barre du bas). Seul l'appel `t(...)` est gardé (`t` retombe sur le texte français fourni : rien ne disparaît).
+- Deux doublons de la même famille trouvés en plus : le menu des onglets affichait le libellé **et** sa traduction côte à côte (« Organisation & Succursales » + « Structure & Organisation » : c'est le « Organis… Struct… » du constat 3.3) ; la barre du bas avait deux boutons « Enregistrer les modifications ». Le menu affiche maintenant le titre traduit et, dessous, sa description (`tab_*_desc`) ; un seul bouton en bas.
+- Le nouveau détecteur a trouvé le même défaut dans **Paramètres > Préférences** (`components/settings/PreferencesPanel.jsx`, variante `isEn ? "…" : "même texte"`) : titre affiché deux fois, sous-titre et libellé « Langue » en double, et **deux `value`/`onChange` sur le choix de langue** (le second gagnait en silence ; le premier, qui ne changeait pas la langue de l'interface, est retiré — comportement inchangé). Une recherche de la variante `isEn` dans tout `src/` et de tous les attributs JSX en double ne trouve rien d'autre. Garde-fou : règle ESLint `react/jsx-no-duplicate-props` ajoutée à `eslint.config.js`.
+- Preuve : détecteur ajouté à l'agent (`textesRepetes` : même segment de 15 caractères ou plus collé à lui-même) sur chaque page des scénarios A et B et chaque onglet de Paramètres (scénario I) → constat « texte affiché en double ». Sur l'ancien `Parametres.jsx` il signale « Centre de Configuration & Contexte Entreprise | Référentiel central… | Enregistrer les modifications » ; après correction, aucun.
+
+### 3.3 Débordement horizontal sur mobile (mineur) — corrigé
+- `Taches.jsx`, `Kpis.jsx`, barre du bas de `Parametres.jsx` : `flex-wrap` et espacement sur les barres d'actions ; `Audit.jsx` : la liste d'onglets passe à la ligne ; `components/kpis/DomainScoreList.jsx` : la colonne centrale avait `flex-1` sans `min-w-0` (le texte tronqué imposait sa largeur) et le score une largeur fixe.
+- Mesure à 390 px : Paramètres 848 → 390 px, Tâches 507 → 390, Audit 453 → 390, KPI 399 → 390. Preuve : scénario C sans constat de débordement.
+
+### 3.4 Structure HTML invalide dans Facturation (mineur) — corrigé
+- `Facturation.jsx` : le `<p>` qui contenait le badge « Sécurisée » devient un `<div>` (même rendu). Preuve : plus de `validateDOMNesting` sur `/facturation`, `/parametres/facturation` et l'onglet Facturation dans l'agent.
+
+**Résultat `./qa/run-all.sh` après le lot 3** : toutes les couches passent — build OK, porte 0, `npm test` 199/199, 30/30 Deno, **155/155** navigateur (scénario K ajouté), lint 23, typecheck **145** ; aucun nouveau constat ; disparus : les 4 débordements mobiles, les 5 `validateDOMNesting` de Facturation. Restent (déjà au départ, hors mission) : « 0 $ » sur Tarifs/Facturation (prix d'un forfait gratuit, faux positif de l'agent) et `/facturation` absente du menu (accessible par Paramètres > Abonnement).
+Outil QA : deux lancements ont échoué sur l'expiration du **premier** `page.goto('/login')` (serveur de dev froid, jamais sur une page modifiée) ; sous Windows la navigation a maintenant 45 s (20 s ailleurs) et le préchauffage charge 4 pages jusqu'au repos du réseau.

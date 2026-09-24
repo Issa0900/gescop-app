@@ -416,12 +416,12 @@ export default function Kpis() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Indicateurs clés (KPI)</h1>
           <p className="mt-1 text-muted-foreground">Indicateurs calculés en temps réel à partir de vos données, par domaine.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode((v) => !v)} disabled={allKpis.length === 0}>
             {editMode ? <Check className="mr-1.5 h-4 w-4" /> : <SlidersHorizontal className="mr-1.5 h-4 w-4" />}
             {editMode ? "Terminé" : "Personnaliser"}

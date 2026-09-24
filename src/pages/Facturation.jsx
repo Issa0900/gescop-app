@@ -339,12 +339,13 @@ export default function Facturation() {
                 CARD
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                {/* div et non p : un Badge (div) ne peut pas être dans un <p> (validateDOMNesting). */}
+                <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
                   Carte bancaire enregistrée
                   <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-emerald-600 border-emerald-500/30">
                     Sécurisée
                   </Badge>
-                </p>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Gérée et chiffrée par Stripe Payments (PCI-DSS niveau 1).
                 </p>

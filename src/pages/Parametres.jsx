@@ -44,6 +44,7 @@ import SourcesConnectionsPanel from "@/components/settings/SourcesConnectionsPan
 import UsersAccessPanel from "@/components/settings/UsersAccessPanel";
 import PreferencesPanel from "@/components/settings/PreferencesPanel";
 import Facturation from "@/pages/Facturation";
+import { structureOrganisation } from "@/lib/organisationParDefaut";
 
 const SETTINGS_SECTIONS = [
   {
@@ -130,21 +131,8 @@ export default function Parametres() {
         tools: company.tools || "",
         objectives: company.objectives || [],
         strategic_goals: company.strategic_goals || [],
-        organization_structure: company.organization_structure || {
-          regions: ["Grand Montréal", "Laurentides", "Estrie", "Québec Capitale"],
-          branches: [
-            { id: "b1", name: "Succursale Montréal - Centre", region: "Grand Montréal", type: "Succursale physique" },
-            { id: "b2", name: "Succursale Laval", region: "Grand Montréal", type: "Succursale physique" },
-            { id: "b3", name: "Succursale Saint-Jérôme", region: "Laurentides", type: "Succursale physique" },
-            { id: "b4", name: "Boutique en ligne (E-commerce)", region: "National", type: "Canal numérique" }
-          ],
-          departments: [
-            { id: "d1", name: "Ventes & Conseil Client", manager: "Direction des Ventes" },
-            { id: "d2", name: "Achats & Gestion des stocks", manager: "Approvisionnement" },
-            { id: "d3", name: "Comptabilité & Finance", manager: "Contrôleur financier" },
-            { id: "d4", name: "Marketing & Acquisition", manager: "Responsable Marketing" }
-          ]
-        },
+        // Vide si l'entreprise n'a rien saisi : jamais de succursales d'exemple.
+        organization_structure: structureOrganisation(company.organization_structure),
         company_dictionary: company.company_dictionary || [
           { term: "Succursale", maps_to: "location_id", description: "Point de vente géographique distinct" },
           { term: "Coût Total ($)", maps_to: "total_cost", description: "Coût d'acquisition des marchandises vendues (COGS)" },
@@ -320,11 +308,9 @@ export default function Parametres() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                Centre de Configuration & Contexte Entreprise
                 {t("settings_title", "Centre de Configuration & Contexte Entreprise")}
               </h1>
               <p className="text-xs text-muted-foreground sm:text-sm">
-                Référentiel central alimentant l'intelligence sémantique, les KPI, le Radar et la prise de décision.
                 {t("settings_subtitle", "Référentiel central alimentant l'intelligence sémantique, les KPI, le Radar et la prise de décision.")}
               </p>
             </div>
@@ -355,13 +341,11 @@ export default function Parametres() {
             {saving ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Enregistrement…
                 {t("settings_saving", "Enregistrement…")}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Enregistrer les modifications
                 {t("settings_save", "Enregistrer les modifications")}
               </>
             )}
@@ -397,8 +381,16 @@ export default function Parametres() {
                         )}
                       >
                         <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
-                        <span className="truncate">{item.label}</span>
-                        <span className="truncate">{tabTitle}</span>
+                        {/* Libellé et description l'un sous l'autre (ils étaient
+                            collés sur une ligne, libellé en double). */}
+                        <span className="flex min-w-0 flex-col">
+                          <span className="truncate">{tabTitle}</span>
+                          {item.desc && (
+                            <span className={cn("truncate text-[10px] font-normal", isActive ? "text-primary-foreground/80" : "text-muted-foreground/80")}>
+                              {t(`tab_${item.id}_desc`, item.desc)}
+                            </span>
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -423,11 +415,9 @@ export default function Parametres() {
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-[11px] text-muted-foreground space-y-1">
                 <div className="flex items-center gap-1.5 font-medium text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  Mémoire GESCOP
                   {t("settings_memory_title", "Mémoire GESCOP")}
                 </div>
                 <p className="leading-relaxed">
-                  Toute information renseignée ici permet au moteur d'import d'éviter les faux rejets et d'adapter instantanément les formules de calcul.
                   {t("settings_memory_desc", "Toute information renseignée ici permet au moteur d'import d'éviter les faux rejets et d'adapter instantanément les formules de calcul.")}
                 </p>
               </div>
@@ -499,17 +489,11 @@ export default function Parametres() {
 
           {/* Bottom Save Bar */}
           {activeTab !== "facturation" && (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-xs">
               <div className="text-xs text-muted-foreground">
-                Modifications en cours pour <span className="font-semibold text-foreground">{form?.name || "l'entreprise"}</span>
                 {t("settings_current_editing", "Modifications en cours pour")} <span className="font-semibold text-foreground">{form?.name || "l'entreprise"}</span>
               </div>
-              <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
-                <Save className="h-4 w-4" />
-                {saving ? "Enregistrement…" : "Enregistrer les modifications"}
-                {saving ? t("settings_saving", "Enregistrement…") : t("settings_save", "Enregistrer les modifications")}
-              </Button>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"

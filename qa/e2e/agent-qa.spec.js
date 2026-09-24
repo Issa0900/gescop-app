@@ -28,6 +28,21 @@ const PAGES = [
 // Textes qui trahissent un bug d'affichage (valeur non calculée ou mal formatée).
 const TEXTES_SUSPECTS = [/\bNaN\b/, /\bundefined\b/, /\bInfinity\b/, /\[object Object\]/, /Invalid Date/, /\bnull\s?\$/];
 
+/**
+ * Texte collé à lui-même (même segment de 15 caractères ou plus répété sans
+ * séparation), typique d'un texte en dur laissé à côté de son appel t(...) :
+ * « Enregistrer les modificationsEnregistrer les modifications ».
+ */
+function textesRepetes(texte) {
+  const trouves = [];
+  for (const ligne of texte.split('\n')) {
+    if (ligne.length > 400) continue;
+    const m = ligne.match(/(\p{L}[^\n\t]{14,}?)\1/u);
+    if (m) trouves.push(m[1].trim());
+  }
+  return [...new Set(trouves)].slice(0, 3);
+}
+
 function noter(f) {
   fs.appendFileSync(FINDINGS, JSON.stringify({ ...f, at: new Date().toISOString() }) + '\n');
 }
@@ -114,6 +129,8 @@ async function inspecterPage(page, route, scenario, erreurs) {
     const lignes = texte.split('\n').filter((l) => re.test(l)).slice(0, 3);
     if (lignes.length) constats.push({ gravite: 'moyen', type: `valeur affichée suspecte ${re}`, detail: lignes.join(' | ').slice(0, 300) });
   }
+  const repetes = textesRepetes(texte);
+  if (repetes.length) constats.push({ gravite: 'moyen', type: 'texte affiché en double', detail: repetes.join(' | ').slice(0, 300) });
   for (const e of erreurs.splice(0)) constats.push({ gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
   if (scenario === 'vide') {
     const zeros = texte.split('\n').filter((l) => /^\s*0(,00)?\s?\$\s*$|^\s*0 \$/.test(l)).length;
@@ -309,6 +326,8 @@ test.describe('Scénario I — onglets Paramètres', () => {
       await page.waitForLoadState('networkidle').catch(() => {});
       await page.waitForTimeout(700);
       const t = await page.locator('body').innerText();
+      const repetes = textesRepetes(t);
+      if (repetes.length) noter({ couche: 'e2e', scenario: 'parametres', route: `/parametres?tab=${onglet}`, gravite: 'moyen', type: 'texte affiché en double', detail: repetes.join(' | ').slice(0, 300) });
       if (/Cette page n'a pas pu s'afficher/.test(t)) noter({ couche: 'e2e', scenario: 'parametres', route: `/parametres?tab=${onglet}`, gravite: 'critique', type: 'onglet Paramètres planté', detail: (t.match(/Cannot[^\n]*|TypeError[^\n]*/) || [''])[0].slice(0, 200) });
       await page.screenshot({ path: path.join(SHOTS, `parametres_${onglet}.png`) }).catch(() => {});
       for (const e of erreurs) noter({ couche: 'e2e', scenario: 'parametres', route: `/parametres?tab=${onglet}`, gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
@@ -360,4 +379,30 @@ test('J3 — tableau de bord : lancer l\'analyse', async ({ page }) => {
     if (!ok) noter({ couche: 'e2e', scenario: 'ia', route: '/', gravite: 'moyen', type: 'fin d\'analyse non confirmée', detail: `appels: ${journal.filter((l) => /analyzeBusiness/.test(l)).length}` });
   } else noter({ couche: 'e2e', scenario: 'ia', route: '/', gravite: 'info', type: 'bouton d\'analyse absent avec données', detail: '' });
   for (const e of erreurs) noter({ couche: 'e2e', scenario: 'ia', route: '/', gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
+});
+
+// ─── 11. Paramètres > Organisation : aucune structure inventée ───────────
+// Une entreprise sans structure ne doit voir aucune région ni succursale
+// d'exemple, et « Enregistrer » ne doit écrire aucune liste non vide.
+test('K — organisation vide : ni exemple affiché ni enregistré', async ({ page }) => {
+  const erreurs = surveiller(page);
+  const ecritures = [];
+  page.on('request', (r) => {
+    if (/\/entities\/Company\//.test(r.url()) && ['PUT', 'PATCH'].includes(r.method())) ecritures.push(r.postDataJSON());
+  });
+  await fauxBackend(page, RICH);
+  await authentifier(page);
+  await page.goto('/parametres?tab=organisation');
+  await page.waitForLoadState('networkidle').catch(() => {});
+  const texte = await page.locator('main').first().innerText();
+  const exemples = ['Grand Montréal', 'Laurentides', 'Succursale Laval', 'Saint-Jérôme', 'Ventes & Conseil Client'].filter((x) => texte.includes(x));
+  if (exemples.length) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=organisation', gravite: 'moyen', type: 'structure fictive affichée', detail: exemples.join(', ') });
+  await page.getByRole('button', { name: /Enregistrer les modifications/ }).first().click();
+  await expect.poll(() => ecritures.length, { timeout: 5000 }).toBeGreaterThan(0);
+  const org = ecritures.at(-1)?.organization_structure || {};
+  const listes = ['regions', 'branches', 'departments'].filter((k) => Array.isArray(org[k]) && org[k].length > 0);
+  if (listes.length) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=organisation', gravite: 'moyen', type: 'structure fictive enregistrée', detail: `${listes.join(', ')} : ${JSON.stringify(org).slice(0, 200)}` });
+  for (const e of erreurs) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=organisation', gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
+  expect(exemples, 'aucun exemple affiché comme donnée').toEqual([]);
+  expect(listes, 'aucune liste non vide enregistrée').toEqual([]);
 });

@@ -38,6 +38,9 @@ export default [
       "no-unused-vars": "off",
       "react/jsx-uses-vars": "error",
       "react/jsx-uses-react": "error",
+      // Deux fois le meme attribut : le second gagne en silence (PreferencesPanel
+      // avait deux value/onChange sur le choix de langue, 24 sept. 2026).
+      "react/jsx-no-duplicate-props": "error",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [
         "warn",
