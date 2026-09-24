@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import { 
-  ChevronDown, Lightbulb, Upload, LayoutDashboard, BarChart3, AlertTriangle, 
-  ShieldAlert, Radar as RadarIcon, CheckSquare, Bell, FileText, MessageSquare, 
-  Settings, Sparkles, Rocket, Brain, TrendingUp, Calculator, Target, History, 
-  Users, Package, Megaphone, Wallet, ShieldCheck, CheckCircle2, HelpCircle, 
-  ArrowRight, Check, AlertCircle, Info, Building2, Landmark, Truck, Wrench,
+  ChevronDown, Lightbulb, Upload, LayoutDashboard, AlertTriangle, MessageSquare, Sparkles, Brain, Calculator, Target, 
+  Users, Package, Wallet, ShieldCheck, CheckCircle2, Building2, Landmark, Wrench,
   ShoppingCart, Columns3
 } from "lucide-react";
 import { cn } from "@/lib/utils";

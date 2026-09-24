@@ -266,7 +266,8 @@ test('F — parcours d\'import CSV de bout en bout', async ({ page }) => {
   await fauxBackend(page, RICH, journal);
   await authentifier(page);
   await page.goto('/importer');
-  await page.setInputFiles('input[type=file]', path.join(QA, 'fixtures/ventes-quebec.csv'));
+  // 15 s : sous charge, /importer peut mettre plus que l'actionTimeout de 3 s à s'afficher.
+  await page.setInputFiles('input[type=file]', path.join(QA, 'fixtures/ventes-quebec.csv'), { timeout: 15000 });
   const confirmer = page.getByRole('button', { name: /Importer ces données/ });
   await expect(confirmer).toBeVisible({ timeout: 15000 });
   await page.screenshot({ path: path.join(SHOTS, 'import_1_plan.png'), fullPage: true });
@@ -295,7 +296,7 @@ test('G — import : message clair quand le serveur échoue', async ({ page }) =
   await authentifier(page);
   await page.goto('/importer');
   fs.writeFileSync(path.join(OUT, 'vide.csv'), 'a;b\n');
-  await page.setInputFiles('input[type=file]', path.join(OUT, 'vide.csv'));
+  await page.setInputFiles('input[type=file]', path.join(OUT, 'vide.csv'), { timeout: 15000 });
   const vu = await page.getByText(/Fichier corrompu/).first().waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false);
   if (!vu) noter({ couche: 'e2e', scenario: 'import', route: '/importer', gravite: 'moyen', type: 'erreur d\'import non affichée', detail: 'le message d\'erreur du serveur n\'apparaît pas à l\'utilisateur' });
   for (const e of erreurs) noter({ couche: 'e2e', scenario: 'import-erreur', route: '/importer', gravite: 'mineur', ...e });

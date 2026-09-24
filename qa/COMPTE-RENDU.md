@@ -88,3 +88,49 @@ Outil QA : deux lancements ont échoué sur l'expiration du **premier** `page.go
 - **À trancher par Issa** : `importMultiData` (lecture des fichiers par l'IA) et `scanExternalRadar` utilisent `gemini_3_8_flash`, **absent de la liste du SDK 0.8.48**. Non modifié (hors du périmètre décrit, et je ne peux pas savoir si le serveur Base44 l'accepte déjà). Si ce nom est refusé, l'import retombe sur les règles déterministes (prévu et annoncé à l'écran) et le radar échoue. QA05 l'affiche en « note » sans échouer ; à remplacer par `gemini_3_flash` si l'éditeur Base44 ne le propose pas.
 
 **Résultat `./qa/run-all.sh` après le lot 4** : toutes les couches passent — build OK, porte 0, `npm test` 199/199, **31/31** Deno (QA05 ajouté), 155/155 navigateur, lint 23, typecheck 145, aucun nouveau constat.
+
+## Lot 5 — Hygiène
+
+- `npm run lint:fix` : **23 → 0 erreur** de lint ; il n'a retiré que des imports inutilisés (`AuthLayout.jsx`, `Facturation.jsx`, `Manuel.jsx`, `Tarifs.jsx`), vérifié ligne à ligne. Rien à corriger à la main. Restent 34 avertissements (variables inutilisées), hors objectif.
+- Typecheck : **146 → 145** erreurs (plafond de 146 respecté ; la baisse date du lot 3).
+- `AGENTS.md`, section « ACTUAL PIPELINE STATUS » : paragraphe « Correctifs de l'agent QA (24 Sept 2026) » ajouté (ce qui a changé, et ce qui reste ouvert).
+- Outil QA : le scénario G (erreur d'import) a expiré une fois sur `setInputFiles` (3 s) pendant que `/importer` s'affichait sous charge ; F et G ont maintenant 15 s pour cette étape (F et G rejoués 4 fois : 8/8).
+
+**Résultat `./qa/run-all.sh` après le lot 5** : toutes les couches passent — build OK, porte 0, **lint 0**, typecheck 145, `npm test` 199/199, 31/31 Deno, 155/155 navigateur, aucun nouveau constat par rapport au départ.
+
+---
+
+## Bilan final
+
+| | Départ | Fin |
+|---|---|---|
+| Build | OK | OK |
+| `PLAYWRIGHT_TEST` dans `dist/` | 1 fichier | **0** (contrôlé) |
+| `npm test` | 195/195 | **199/199** (+ `supprimer_import`) |
+| Scripts Deno | 27/27 | **31/31** (+ QA02 à QA05) |
+| Scénarios navigateur | 154/154 | **155/155** (+ K) |
+| Lint (erreurs) | 23 | **0** |
+| Typecheck (erreurs) | 146 | **145** |
+| Constats critiques / majeurs | 0 / 0 (l'agent ne voyait pas les failles du lot 1) | 0 / 0 |
+| Constats moyens / mineurs | 3 / 10 | 3 / 1 (restants hors mission, voir lot 3) |
+
+Commits sur `correctifs-qa-2026-09` : lot 1, lot 1.3 (suite, après ta réponse), lot 2, lot 3, lot 4, lot 5. Rien n'a été publié, poussé, ni écrit dans la base de production.
+
+**Décisions prises en cours de route** (toutes réversibles) : fenêtre de nouveauté des courriels critiques = 30 jours (`JOURS_NOUVEAUTE`) ; modèle d'enrichissement = `gemini_3_flash` ; workflows d'alerte conservés (sans effet) ; outil QA adapté à Windows (chemins, 2 navigateurs, 45 s de navigation, préchauffage sans appel réseau).
+
+**Points ouverts à trancher**
+1. `gemini_3_8_flash` (import IA, radar) n'est pas dans la liste des modèles du SDK 0.8.48 — vérifier dans l'éditeur Base44, sinon passer à `gemini_3_flash` (lot 4).
+2. `UnderstandingPanel.jsx` affiche une compréhension inventée (succursales Montréal/Québec/Laval/Lévis, « 98,2 % ») ; les valeurs initiales du dictionnaire sont enregistrées au premier « Enregistrer » (lot 3).
+3. Fichiers parasites suivis par git à la racine : `derniers ajustements` (+ U+F022) et `tatus` (étape 0) — à supprimer (`git rm`) si tu le souhaites.
+4. `deno.json` : créé par `qa/run-all.sh` s'il manque, laissé non suivi ; `deno.lock` est modifié à chaque lancement des scripts Deno, jamais commité.
+5. Les deux workflows d'alerte peuvent être supprimés dans l'éditeur Base44.
+
+## Liste de contrôle d'Issa (après `npm run deploy`, s'il décide de publier)
+
+1. Navigateur privé sur l'app en ligne, ajouter `PLAYWRIGHT_TEST=true` dans le stockage local (outils de développement), recharger : on doit rester sur la page de connexion.
+2. Connecté avec son compte : Importer, « Tout supprimer », puis importer un fichier de test, noter le chiffre d'affaires sur la page KPI, réimporter le même fichier : le chiffre ne doit pas bouger. (Rappel lot 2.3 : c'est aussi le moment de vider les données de test déjà en ligne avec « Tout supprimer ».)
+3. Supprimer cet import : la page KPI revient à « non mesuré » et les alertes des autres imports sont toujours là (un message invite à relancer l'analyse).
+4. L'adresse du fichier téléversé ne s'ouvre pas en navigation privée. Elle n'est pas affichée dans l'historique des imports : la relever dans l'onglet Réseau des outils de développement (réponse de `UploadPrivateFile`, champ `file_uri`) ou dans l'enregistrement `Import` du tableau de bord Base44. Vérifier aussi que l'import lui-même a réussi (c'est ce qui prouve que la fonction obtient bien l'URL signée).
+5. Paramètres > Organisation : aucune succursale fictive ; titres affichés une seule fois (aussi dans Préférences).
+6. Onboarding avec l'adresse d'un vrai site web : le nom et le secteur se pré-remplissent.
+7. Lancer une analyse qui produit une anomalie critique (ou un risque d'urgence élevée) : le courriel arrive. Relancer l'analyse : **pas** de second courriel pour le même titre (règle des 30 jours). Vérifier aussi qu'une alerte « anomaly » apparaît dans la cloche.

@@ -4,14 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useLanguage } from "@/lib/LanguageContext";
 import { base44 } from "@/api/base44Client";
-import { PLANS } from "@/lib/entitlements";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CreditCard,
   ExternalLink,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
   ArrowUpRight,
@@ -23,8 +21,7 @@ import {
   RotateCcw,
   Trash2,
   Check,
-  Calendar,
-  Lock
+  Calendar
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, TrendingUp, Brain, Activity, Target, Zap } from "lucide-react";
+import { ShieldCheck, TrendingUp, Activity, Target, Zap } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 
 /**
