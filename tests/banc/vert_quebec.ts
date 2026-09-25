@@ -12,6 +12,7 @@
 // Usage : node tests/banc/lancer-demo.cjs vq [modes]
 
 import { MODES, client, appeler, kpiPage, proche } from "./ia_simulee.ts";
+import { calculerSuccursales } from "../../src/lib/succursales.js";
 
 declare const require: any;
 declare const process: any;
@@ -42,6 +43,20 @@ export const CONTROLES: Controle[] = [
       for (const r of t.Transaction || []) if (r.type === "income" && r.branch) par[norm(r.branch)] = Math.round(((par[norm(r.branch)] || 0) + Number(r.amount)) * 100) / 100;
       return Object.keys(par).length ? par : null;
     },
+  },
+  // Page Succursales (lots 1.3 et 4.3) : transactions + commandes non annulees,
+  // un groupe par succursale reelle, « Toutes succursales » a part.
+  {
+    lot: "1.3/4.3", id: "Page Succursales : CA par succursale",
+    attendu: { "quebec (siege)": 1736534.87, levis: 867366.08, "trois-rivieres": 576080.28, "en ligne": 5626.51 },
+    calcul: (t) => {
+      const r = calculerSuccursales({ orders: t.Order, transactions: t.Transaction, employees: t.Employee, assets: t.Asset });
+      return Object.fromEntries(r.locations.filter((l) => l.revenue > 0).map((l) => [norm(l.name), Math.round(l.revenue * 100) / 100]));
+    },
+  },
+  {
+    lot: "4.3", id: "Page Succursales : groupes affichés", attendu: 5,
+    calcul: (t) => calculerSuccursales({ orders: t.Order, transactions: t.Transaction, employees: t.Employee, assets: t.Asset }).locations.length,
   },
   // Lot 2 : tresorerie (02_flux_tresorerie.csv) — solde de cloture du dernier mois
   {

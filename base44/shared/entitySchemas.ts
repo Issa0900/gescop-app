@@ -206,7 +206,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
   },
   Transaction: {
     properties: {
-      date: D, description: S, amount: N, type: E("income", "expense"), category: S, source: S,
+      date: D, description: S, amount: N, type: E("income", "expense"), category: S, branch: S, source: S,
       currency: S, client: S, product: S, reference_order_id: S,
       import_id: S, fingerprint: S, original_data: S,
     },
@@ -231,6 +231,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
       asset_id: S, description: S, acquisition_date: D, dpa_class: S, dpa_rate: N,
       initial_cost: N, accumulated_depreciation: N, net_book_value: N,
       location_id: S, historical_comment: S,
+      category: S, useful_life_years: N, residual_value: N, depreciation_method: S,
       import_id: S, fingerprint: S, original_data: S,
     },
     required: ["asset_id"],

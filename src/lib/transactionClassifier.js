@@ -5,6 +5,8 @@
  * validée avant d'entrer dans un calcul KPI (CA, Marge, Stock estimé).
  */
 
+import { sensParIndices } from "../../base44/shared/sensTransaction.ts";
+
 const INCOME_TYPES = ["income", "entree", "credit", "revenu", "encaissement", "vente", "ventes", "recette", "recettes", "revenue"];
 const EXPENSE_TYPES = ["expense", "sortie", "debit", "depense", "decaissement", "charge", "charges", "frais", "achat", "achats", "remboursement", "refund", "transfer", "transfert", "salaire", "salaires", "cout", "couts"];
 
@@ -131,8 +133,10 @@ export function classifyTransaction(t) {
   const explicit = classifyType(t.type);
   if (explicit) return explicit;
 
-  const amount = amountForClassification(t);
-  return amount === null || amount >= 0 ? "income" : "expense";
+  // Meme regle que l'import (base44/shared/sensTransaction.ts) : signe negatif,
+  // puis categorie, puis description. Plus de « positif = revenu » par defaut :
+  // une transaction sans sens n'entre ni dans le CA ni dans les charges.
+  return sensParIndices(amountForClassification(t), t.category, t.description);
 }
 
 /** Returns `true` when the transaction should count as revenue. */

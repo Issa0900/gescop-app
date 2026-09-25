@@ -232,6 +232,11 @@ export const REGLES: Regle[] = [
   // ── Stocks ──────────────────────────────────────────────────────────────
   R("warehouse_id", ["Inventory"], [["entrepot", "depot", "warehouse", "site"], ID]),
   R("warehouse_name", ["Inventory"], [["entrepot", "depot", "warehouse"], ["nom", "name", "libelle"]]),
+  // Une colonne « succursale » a partout un champ ou atterrir : sinon elle
+  // restait dans original_data, invisible aux calculs (rapport, lot 1.3).
+  R("warehouse_name", ["Inventory"], [["succursale", "magasin", "boutique", "store", "site", "emplacement", "branch"]], ID),
+  R("branch", ["Transaction"], [["succursale", "magasin", "boutique", "store", "agence", "branch", "site", "emplacement", "location"]], ID),
+  R("location_id", ["Asset"], [["succursale", "magasin", "boutique", "store", "agence", "branch", "site", "emplacement", "location", "lieu"]], ID),
   R("reserved_qty", ["Inventory"], [["reserve", "reservee", "reserved", "allocated"]]),
   R("in_transit_qty", ["Inventory"], [["transit"]]),
   R("quantity_available", ["Inventory"], [["disponible", "available", "dispo"]]),
@@ -288,6 +293,13 @@ export const REGLES: Regle[] = [
   R("accumulated_depreciation", ["Asset"], [["amortissement", "depreciation", "amortization"]], ["taux", "rate"]),
   R("net_book_value", ["Asset"], [["valeur", "value"], ["nette", "net", "comptable", "book"]]),
   R("historical_comment", ["Asset"], [["commentaire", "comment", "note", "remarque", "observation"]]),
+  // « valeur_acquisition » / « prix d'achat » : sans ce second libelle, le cout
+  // d'une immobilisation n'etait jamais lu (rapport du 25 sept. 2026).
+  R("initial_cost", ["Asset"], [["valeur", "value", "prix", "price", "montant"], ["acquisition", "achat", "initial", "initiale", "origine", "historique", "purchase"]]),
+  R("category", ["Asset"], [["categorie", "category", "nature", "famille"]], ["dpa", "cca", "fiscale"]),
+  R("useful_life_years", ["Asset"], [["duree", "life", "vie"]], ["restante", "remaining"]),
+  R("residual_value", ["Asset"], [["residuelle", "residual", "recuperation", "salvage"]]),
+  R("depreciation_method", ["Asset"], [["methode", "method", "mode"], ["amortissement", "depreciation", "amortization"]]),
 
   // ── Paiements ───────────────────────────────────────────────────────────
   R("payment_id", ["Payment"], [["paiement", "payment", "reglement", "encaissement"], ID]),

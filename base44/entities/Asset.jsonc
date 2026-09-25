@@ -30,6 +30,22 @@
     "location_id": {
       "type": "string"
     },
+    "category": {
+      "type": "string",
+      "description": "Categorie de l'actif (vehicule, equipement, amenagement...)."
+    },
+    "useful_life_years": {
+      "type": "number",
+      "description": "Duree de vie utile, en annees."
+    },
+    "residual_value": {
+      "type": "number",
+      "description": "Valeur residuelle en fin de vie."
+    },
+    "depreciation_method": {
+      "type": "string",
+      "description": "Methode d'amortissement (lineaire, degressif...)."
+    },
     "historical_comment": {
       "type": "string"
     },

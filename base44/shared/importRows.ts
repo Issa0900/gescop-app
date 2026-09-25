@@ -373,6 +373,16 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     if (id && !refusees.has(source)) reprises.push({ issueId: id, issue: null, recuperee: true });
   }
 
+  // Transactions sans sens lisible (ni type, ni signe negatif, ni indice dans
+  // la categorie ou la description) : ecrites, mais hors CA et hors charges.
+  // On le dit, au lieu de les compter en revenu comme avant (rapport 25 sept.).
+  if (entityName === "Transaction") {
+    const sansSens = newRows.filter((r) => !r.type && !refusees.has((r as any)[LIGNE_SOURCE] || r)).length;
+    if (sansSens > 0) {
+      messages.push(`${sansSens} transaction(s) sans sens lisible (ni type revenu/dépense, ni montant négatif, ni catégorie parlante) : importées mais exclues du chiffre d'affaires et des charges. Ajoutez une colonne « type » (revenu / dépense) ou une catégorie.`);
+    }
+  }
+
   // Sauvegarde des Observations (Silencieuse pour ne pas bloquer l'import)
   const rawObservations: any[] = [];
   for (const r of newRows) {

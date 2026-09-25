@@ -2,6 +2,7 @@
 import { codeDevise, deviseDeLigne } from "./devises.ts";
 import { rattacherParLexique } from "./registry/lexiqueChamps.ts";
 import { ENTITY_SCHEMAS } from "./entitySchemas.ts";
+import { sensParIndices } from "./sensTransaction.ts";
 
 import { buildFieldAliasesFromRegistry } from "./registry/generateAliases.ts";
 
@@ -1991,6 +1992,18 @@ export function coerceEnum(value: any, enumOptions: string[]): any {
  * la valeur d'origine n'est plus lisible dans le champ : l'import doit le
  * signaler plutot que de presenter « autre » comme ce que disait le fichier.
  */
+/** ENUM_TRANSLATIONS lu dans l'autre sens : equivalent (sans accents) -> termes qui le designent. */
+const TRADUCTIONS_INVERSES: Record<string, string[]> = (() => {
+  const inv: Record<string, string[]> = {};
+  for (const [terme, equivalents] of Object.entries(ENUM_TRANSLATIONS)) {
+    for (const e of equivalents) {
+      const cle = stripAccents(String(e).toLowerCase().trim());
+      (inv[cle] ||= []).includes(terme) || inv[cle].push(terme);
+    }
+  }
+  return inv;
+})();
+
 export function coerceEnumDetail(value: any, enumOptions: string[]): { value: any; repli: boolean } {
   const reconnu = coerceEnumBrut(value, enumOptions, false);
   if (reconnu !== null || !value || !enumOptions) return { value: reconnu ?? value, repli: false };
@@ -2010,6 +2023,15 @@ function coerceEnumBrut(value: any, enumOptions: string[], replierSurAutre: bool
   const translations = ENUM_TRANSLATIONS[raw] || ENUM_TRANSLATIONS[normalized] || ENUM_TRANSLATIONS[rawNoAccents] || ENUM_TRANSLATIONS[normNoAccents];
   if (translations) {
     const match = translations.find((t) => enumOptions.includes(t));
+    if (match) return match;
+  }
+  // Sens inverse (francais -> anglais) : la table est ecrite « terme anglais ->
+  // ses equivalents », elle ne traduisait donc pas « depense » vers une liste
+  // anglaise (income/expense). Le controle d'une reponse de l'IA jugeait alors
+  // la colonne type illisible et la retirait : CA +70 % (rapport du 25 sept.).
+  const inverses = TRADUCTIONS_INVERSES[rawNoAccents] || TRADUCTIONS_INVERSES[normNoAccents];
+  if (inverses) {
+    const match = inverses.find((t) => enumOptions.includes(t));
     if (match) return match;
   }
   const match = enumOptions.find((e) => {
@@ -2761,11 +2783,13 @@ export function normalizeRow(
       if (recognizedTypes.includes(categoryNormRaw)) {
         type = categoryType; // category avait un type reconnu
       } else {
-        // Déduction par signe du montant
-        type = (amount ?? 0) >= 0 ? "income" : "expense";
+        // Signe negatif, puis indice dans le type, la categorie ou la
+        // description (sensTransaction.ts). Plus de « positif = revenu » :
+        // sans indice, la transaction reste sans sens et c'est signale.
+        type = sensParIndices(amount, r.type, r.category, r.description) || "";
       }
     }
-    if (!type) type = (amount ?? 0) >= 0 ? "income" : "expense";
+    if (!type) type = sensParIndices(amount, r.category, r.description) || "";
     const typeNorm = stripAccents(type);
     if (["revenu", "revenue", "credit", "entree", "income"].includes(typeNorm)) type = "income";
     if (["depense", "expense", "debit", "sortie"].includes(typeNorm)) type = "expense";
@@ -2785,6 +2809,9 @@ export function normalizeRow(
       amount: amount === null ? undefined : Math.abs(amount),
       type: normalizedType,
       category: r.category || "",
+      // Succursale : sans ce champ, la colonne n'avait nulle part ou aller et le
+      // CA restait « Non assigne » sur la page Succursales (rapport, lot 1.3).
+      branch: r.branch || r.succursale || r.location || r.store || undefined,
       source: sourceType || "csv",
       // Une colonne Devise/Currency explicite doit etre respectee : sans ce
       // fallback, un fichier en USD ou EUR etait toujours etiquete CAD,
@@ -3073,13 +3100,11 @@ export function normalizeRow(
       const accum = parseNumber(r.accumulated_depreciation) || 0;
       r.net_book_value = Math.max(0, initial - accum);
     }
-    if (!r.location_id) {
-      const text = `${r.description || ""} ${r.historical_comment || ""}`;
-      if (/l[ée]vis/i.test(text)) r.location_id = "Lévis";
-      else if (/sainte[- ]foy|ste[- ]foy/i.test(text)) r.location_id = "Sainte-Foy";
-      else if (/b[ée]cancour/i.test(text)) r.location_id = "Bécancour";
-      else r.location_id = "Siège social";
-    }
+    // Succursale : celle du fichier, jamais une valeur inventee. On devinait
+    // avant d'apres des villes ecrites en dur pour UN classeur (Levis,
+    // Sainte-Foy, Becancour) et on mettait « Siege social » par defaut : les
+    // actifs de tout autre fichier atterrissaient dans une fausse succursale.
+    if (!r.location_id) r.location_id = r.succursale || r.branch || r.location || r.site || undefined;
   }
 
   // For other entities: normalize enums, coerce types, keep only schema fields, strip empty values
