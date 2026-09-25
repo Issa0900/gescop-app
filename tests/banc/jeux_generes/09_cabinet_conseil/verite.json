@@ -1,0 +1,29 @@
+{
+ "secteur": "Cabinet conseil",
+ "note": "Mandats nommant le client par son nom seulement ; en-têtes anglais et français mêlés.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Customer",
+   "attendu": 15
+  },
+  {
+   "type": "lignes",
+   "entite": "Order",
+   "attendu": 120
+  },
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Order"
+   ],
+   "attendu": 695349.6,
+   "lot": ""
+  },
+  {
+   "type": "clients_rattaches",
+   "attendu": 120
+  }
+ ]
+}

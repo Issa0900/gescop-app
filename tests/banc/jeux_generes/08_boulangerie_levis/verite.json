@@ -1,0 +1,15 @@
+{
+ "secteur": "Boulangerie (Lévis)",
+ "note": "Relevé mensuel sans colonne de clôture : le solde doit être reconstitué (lot 2), dates en vraies cellules Excel.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Cashflow",
+   "attendu": 8
+  },
+  {
+   "type": "solde",
+   "attendu": 35528.87
+  }
+ ]
+}

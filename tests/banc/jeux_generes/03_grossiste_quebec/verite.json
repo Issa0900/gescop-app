@@ -1,0 +1,20 @@
+{
+ "secteur": "Grossiste (Québec)",
+ "note": "Deux lignes de titre au-dessus des en-têtes, ligne TOTAL GÉNÉRAL en bas, TPS/TVQ détaillées.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Order",
+   "attendu": 180
+  },
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Order"
+   ],
+   "attendu": 389536.45,
+   "lot": "CA HT (sous-total), annulées exclues"
+  }
+ ]
+}

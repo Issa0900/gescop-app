@@ -1,0 +1,29 @@
+{
+ "secteur": "E-commerce (États-Unis)",
+ "note": "Montants « $1,234.56 », dates MM/JJ/AAAA, remise en %, Return Flag Yes/No contredit parfois le statut, colonne représentant.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Order",
+   "attendu": 900
+  },
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Order"
+   ],
+   "attendu": 210910.5,
+   "lot": "montant après remise, statut fait foi"
+  },
+  {
+   "type": "kpi",
+   "id": "aov",
+   "entites": [
+    "Order"
+   ],
+   "attendu": 270.4,
+   "lot": "panier moyen sur commandes distinctes"
+  }
+ ]
+}

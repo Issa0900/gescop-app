@@ -1,0 +1,36 @@
+{
+ "secteur": "Quincaillerie (Trois-Rivières)",
+ "note": "Sommaire par succursale avec une ligne « Total consolidé » par mois (à exclure des faits).",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "ExecutiveSummary",
+   "attendu": 12
+  },
+  {
+   "type": "lignes",
+   "entite": "Employee",
+   "attendu": 14
+  },
+  {
+   "type": "lignes",
+   "entite": "Payroll",
+   "attendu": 28
+  },
+  {
+   "type": "kpi",
+   "id": "payroll_total",
+   "entites": [
+    "Payroll"
+   ],
+   "attendu": 142900.6,
+   "lot": "brut + charges patronales"
+  },
+  {
+   "type": "distincts",
+   "entite": "Employee",
+   "champ": "branch",
+   "attendu": 2
+  }
+ ]
+}

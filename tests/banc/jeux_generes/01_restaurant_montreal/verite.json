@@ -1,0 +1,52 @@
+{
+ "secteur": "Restaurant (Montréal)",
+ "note": "CSV séparé par « ; », décimale virgule, dates JJ/MM/AAAA, type « Recette/Dépense ».",
+ "controles": [
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Transaction"
+   ],
+   "attendu": 249915.84,
+   "lot": "CA recettes"
+  },
+  {
+   "type": "kpi",
+   "id": "total_expense",
+   "entites": [
+    "Transaction"
+   ],
+   "attendu": 128879.6,
+   "lot": "charges"
+  },
+  {
+   "type": "kpi",
+   "id": "net_income",
+   "entites": [
+    "Transaction"
+   ],
+   "attendu": 121036.24,
+   "lot": ""
+  },
+  {
+   "type": "lignes",
+   "entite": "Transaction",
+   "attendu": 158
+  },
+  {
+   "type": "lignes",
+   "entite": "Payroll",
+   "attendu": 24
+  },
+  {
+   "type": "kpi",
+   "id": "payroll_total",
+   "entites": [
+    "Payroll"
+   ],
+   "attendu": 75832.03,
+   "lot": "paie : brut (les pourboires ne sont pas un coût employeur)"
+  }
+ ]
+}

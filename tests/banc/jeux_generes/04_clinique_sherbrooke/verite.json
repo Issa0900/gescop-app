@@ -1,0 +1,29 @@
+{
+ "secteur": "Clinique (Sherbrooke)",
+ "note": "Aucune colonne type : le sens doit venir de la catégorie (règle du lot 1.2), jamais « positif = revenu ».",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Transaction",
+   "attendu": 300
+  },
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Transaction"
+   ],
+   "attendu": 39446.4,
+   "lot": ""
+  },
+  {
+   "type": "kpi",
+   "id": "total_expense",
+   "entites": [
+    "Transaction"
+   ],
+   "attendu": 218377.65,
+   "lot": ""
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+{
+ "secteur": "SaaS (Toronto)",
+ "note": "Classeur anglais 4 feuilles ; factures HT + HST ; statuts Refunded/Void ; dépenses en montants négatifs.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Customer",
+   "attendu": 40
+  },
+  {
+   "type": "lignes",
+   "entite": "Order",
+   "attendu": 260
+  },
+  {
+   "type": "lignes",
+   "entite": "Payroll",
+   "attendu": 48
+  },
+  {
+   "type": "kpi",
+   "id": "total_revenue",
+   "entites": [
+    "Order"
+   ],
+   "attendu": 132496.0,
+   "lot": "CA HT hors remboursées/annulées"
+  },
+  {
+   "type": "kpi",
+   "id": "total_expense",
+   "entites": [
+    "Expense",
+    "Transaction"
+   ],
+   "attendu": 590721.84,
+   "lot": "dépenses signées négatives"
+  },
+  {
+   "type": "kpi",
+   "id": "payroll_total",
+   "entites": [
+    "Payroll"
+   ],
+   "attendu": 444217.54,
+   "lot": "brut + heures sup + prime + part employeur"
+  }
+ ]
+}

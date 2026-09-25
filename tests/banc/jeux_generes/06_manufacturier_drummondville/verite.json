@@ -1,0 +1,34 @@
+{
+ "secteur": "Manufacturier (Drummondville)",
+ "note": "Stocks par entrepôt, immobilisations avec coût, durée, valeur résiduelle et site.",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Inventory",
+   "attendu": 60
+  },
+  {
+   "type": "lignes",
+   "entite": "Asset",
+   "attendu": 12
+  },
+  {
+   "type": "somme",
+   "entite": "Asset",
+   "champ": "initial_cost",
+   "attendu": 1550229.44
+  },
+  {
+   "type": "somme",
+   "entite": "Inventory",
+   "champ": "inventory_value",
+   "attendu": 689177.6
+  },
+  {
+   "type": "distincts",
+   "entite": "Inventory",
+   "champ": "warehouse_name",
+   "attendu": 2
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+ "secteur": "Agence marketing",
+ "note": "Campagnes et performance journalière (anglais).",
+ "controles": [
+  {
+   "type": "lignes",
+   "entite": "Campaign",
+   "attendu": 4
+  },
+  {
+   "type": "lignes",
+   "entite": "CampaignDaily",
+   "attendu": 736
+  },
+  {
+   "type": "kpi",
+   "id": "marketing_spend",
+   "entites": [
+    "CampaignDaily",
+    "Campaign"
+   ],
+   "attendu": 118488.54,
+   "lot": ""
+  },
+  {
+   "type": "kpi",
+   "id": "roas",
+   "entites": [
+    "CampaignDaily",
+    "Campaign"
+   ],
+   "attendu": 3.31,
+   "lot": ""
+  },
+  {
+   "type": "kpi",
+   "id": "cpc",
+   "entites": [
+    "CampaignDaily",
+    "Campaign"
+   ],
+   "attendu": 0.8,
+   "lot": ""
+  }
+ ]
+}

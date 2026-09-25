@@ -24,6 +24,7 @@ export const MOTS_DEPENSE = [
   "assurance", "assurances", "insurance", "entretien", "maintenance", "reparation", "reparations",
   "marketing", "publicite", "publicitaire", "publicitaires", "advertising", "electricite", "chauffage", "utilities",
   "taxe", "taxes", "impot", "impots", "tax", "interet", "interets", "interest", "fournisseur", "fournisseurs", "supplier",
+  "fourniture", "fournitures", "supplies",
 ];
 
 /** Expressions de plusieurs mots qui désignent une dépense. */

@@ -1949,7 +1949,9 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "en retard": ["non_atteint"], "en attente": ["en_attente", "en_cours"],
   "avis": ["avis", "question"], "reclamation": ["reclamation", "plainte"], "rh": ["administration", "service_client"],
   "recu": ["recu"], "en cours": ["en_cours"],
-  "income": ["revenu", "revenue", "credit", "entree", "encaissement"],
+  // « Recette », « Vente(s) » : types de journal de caisse ; sans eux, une reponse
+  // de l'IA voyait sa colonne type retiree (jeux generes, 25 sept. 2026).
+  "income": ["revenu", "revenue", "credit", "entree", "encaissement", "recette", "recettes", "vente", "ventes", "sales"],
   "expense": ["depense", "debit", "sortie", "decaissement", "remboursement", "achat", "charge"],
 
   // --- Familles de veille (ExternalSignal.family) ---
@@ -2872,6 +2874,13 @@ export function normalizeRow(
   // nom comme reference client (le rapprochement par nom se fait a la lecture,
   // src/lib/rapprochementClients.js) au lieu d'ecarter toutes ses lignes.
   if (entityName === "Interaction" && !r.customer_id && r.customer_name) r.customer_id = r.customer_name;
+
+  // Depense : un montant saisi en negatif (export comptable signe) reste une
+  // depense ; le total des charges devenait negatif (jeux generes, 25 sept.).
+  if (entityName === "Expense") {
+    const m = parseNumber(r.amount);
+    if (m !== null && m < 0) r.amount = Math.abs(m);
+  }
 
   // Paie : le cout d'une fiche de paie (total_cost) est rarement une colonne ;
   // les fichiers donnent le brut, les heures sup, les primes, la part

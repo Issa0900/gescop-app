@@ -1,0 +1,901 @@
+Order ID,Order Date,Customer Name,Sales Channel,Quantity,Unit Price,Discount,Sales Amount,Order Status,Return Flag,Sales Representative
+ORD00000,02/27/2026,John Smith,Online,3,$29.73,0%,$89.19,Cancelled,No,Alex Sales Rep
+ORD00001,11/01/2025,Emily Clark,Retail Store,2,$80.40,0%,$160.80,Delivered,No,Jamie Account Manager
+ORD00002,04/28/2026,Michael Brown,Online,2,$127.01,0%,$254.02,Delivered,No,Jamie Account Manager
+ORD00003,01/22/2026,Sarah Walker,Online,4,$57.54,0%,$230.16,Delivered,No,Alex Sales Rep
+ORD00004,11/10/2025,David Miller,Mobile App,5,$76.12,0%,$380.60,Delivered,No,Alex Sales Rep
+ORD00005,07/13/2026,Jessica Young,Online,5,$168.89,20%,$675.56,Delivered,No,Jamie Account Manager
+ORD00006,01/17/2026,Daniel Moore,Mobile App,4,$132.39,0%,$529.56,Delivered,No,Alex Sales Rep
+ORD00007,03/03/2026,Laura Johnson,Mobile App,3,$97.94,0%,$293.82,Shipped,No,Jamie Account Manager
+ORD00008,03/24/2026,James Lewis,Online,4,$157.93,10%,$568.55,Delivered,No,Jamie Account Manager
+ORD00009,05/18/2026,Olivia Taylor,Retail Store,2,$66.15,0%,$132.30,Delivered,No,Alex Sales Rep
+ORD00010,05/28/2026,Ryan Hall,Online,2,$162.05,20%,$259.28,Delivered,No,Jamie Account Manager
+ORD00011,10/13/2025,Megan Wilson,Online,1,$88.94,0%,$88.94,Delivered,No,Jamie Account Manager
+ORD00012,07/25/2026,John Smith,Retail Store,4,$176.53,10%,$635.51,Shipped,No,Alex Sales Rep
+ORD00013,04/24/2026,Emily Clark,Retail Store,4,$177.96,20%,$569.47,Delivered,No,Alex Sales Rep
+ORD00014,05/15/2026,Michael Brown,Online,1,$35.84,0%,$35.84,Delivered,No,Jamie Account Manager
+ORD00015,02/10/2026,Sarah Walker,Online,5,$69.90,0%,$349.50,Delivered,No,Jamie Account Manager
+ORD00016,09/22/2025,David Miller,Retail Store,1,$153.82,10%,$138.44,Returned,Yes,Jamie Account Manager
+ORD00017,10/24/2025,Jessica Young,Retail Store,3,$170.92,10%,$461.48,Delivered,No,Alex Sales Rep
+ORD00018,09/01/2025,Daniel Moore,Retail Store,1,$64.17,20%,$51.34,Shipped,No,Alex Sales Rep
+ORD00019,01/02/2026,Laura Johnson,Retail Store,4,$118.42,0%,$473.68,Shipped,No,Alex Sales Rep
+ORD00020,07/02/2026,James Lewis,Retail Store,5,$168.34,20%,$673.36,Delivered,No,Jamie Account Manager
+ORD00021,07/31/2026,Olivia Taylor,Online,4,$94.16,20%,$301.31,Delivered,No,Jamie Account Manager
+ORD00022,05/15/2026,Ryan Hall,Retail Store,4,$90.33,10%,$325.19,Returned,Yes,Jamie Account Manager
+ORD00023,04/30/2026,Megan Wilson,Mobile App,1,$77.37,20%,$61.90,Delivered,No,Jamie Account Manager
+ORD00024,08/20/2026,John Smith,Online,2,$87.56,0%,$175.12,Delivered,No,Alex Sales Rep
+ORD00025,01/15/2026,Emily Clark,Mobile App,1,$91.59,20%,$73.27,Delivered,No,Alex Sales Rep
+ORD00026,02/03/2026,Michael Brown,Mobile App,3,$135.55,20%,$325.32,Delivered,No,Alex Sales Rep
+ORD00027,11/10/2025,Sarah Walker,Mobile App,5,$169.34,0%,$846.70,Cancelled,No,Jamie Account Manager
+ORD00028,05/10/2026,David Miller,Mobile App,4,$101.26,0%,$405.04,Delivered,No,Alex Sales Rep
+ORD00029,02/23/2026,Jessica Young,Online,4,$79.93,10%,$287.75,Returned,Yes,Alex Sales Rep
+ORD00030,01/06/2026,Daniel Moore,Online,4,$89.52,0%,$358.08,Delivered,No,Jamie Account Manager
+ORD00031,03/07/2026,Laura Johnson,Retail Store,4,$52.77,20%,$168.86,Delivered,No,Alex Sales Rep
+ORD00032,07/07/2026,James Lewis,Online,2,$99.69,0%,$199.38,Shipped,No,Alex Sales Rep
+ORD00033,01/09/2026,Olivia Taylor,Mobile App,2,$127.03,0%,$254.06,Delivered,No,Jamie Account Manager
+ORD00034,09/19/2025,Ryan Hall,Online,2,$123.32,0%,$246.64,Delivered,No,Jamie Account Manager
+ORD00035,02/15/2026,Megan Wilson,Retail Store,2,$10.27,0%,$20.54,Delivered,No,Jamie Account Manager
+ORD00036,07/19/2026,John Smith,Retail Store,3,$121.65,20%,$291.96,Returned,Yes,Jamie Account Manager
+ORD00037,05/05/2026,Emily Clark,Online,5,$28.10,0%,$140.50,Delivered,No,Alex Sales Rep
+ORD00038,10/21/2025,Michael Brown,Mobile App,3,$113.15,0%,$339.45,Delivered,No,Jamie Account Manager
+ORD00039,01/24/2026,Sarah Walker,Mobile App,5,$148.96,20%,$595.84,Delivered,No,Alex Sales Rep
+ORD00040,04/14/2026,David Miller,Mobile App,3,$11.53,0%,$34.59,Delivered,No,Jamie Account Manager
+ORD00041,12/05/2025,Jessica Young,Retail Store,3,$150.73,20%,$361.75,Delivered,No,Alex Sales Rep
+ORD00042,08/07/2026,Daniel Moore,Retail Store,1,$62.21,20%,$49.77,Delivered,No,Alex Sales Rep
+ORD00043,11/10/2025,Laura Johnson,Online,2,$131.18,20%,$209.89,Shipped,No,Jamie Account Manager
+ORD00044,02/02/2026,James Lewis,Online,1,$48.51,10%,$43.66,Cancelled,No,Jamie Account Manager
+ORD00045,05/24/2026,Olivia Taylor,Online,2,$104.16,10%,$187.49,Delivered,No,Jamie Account Manager
+ORD00046,01/07/2026,Ryan Hall,Online,2,$161.51,0%,$323.02,Delivered,No,Jamie Account Manager
+ORD00047,03/18/2026,Megan Wilson,Retail Store,5,$138.90,10%,$625.05,Delivered,No,Jamie Account Manager
+ORD00048,01/01/2026,John Smith,Retail Store,4,$88.42,10%,$318.31,Delivered,No,Jamie Account Manager
+ORD00049,12/07/2025,Emily Clark,Mobile App,3,$30.81,20%,$73.94,Delivered,No,Alex Sales Rep
+ORD00050,10/06/2025,Michael Brown,Mobile App,5,$105.65,20%,$422.60,Delivered,No,Jamie Account Manager
+ORD00051,04/27/2026,Sarah Walker,Retail Store,3,$39.68,0%,$119.04,Delivered,No,Jamie Account Manager
+ORD00052,03/25/2026,David Miller,Mobile App,3,$76.08,0%,$228.24,Returned,Yes,Jamie Account Manager
+ORD00053,07/08/2026,Jessica Young,Retail Store,4,$176.34,0%,$705.36,Delivered,No,Alex Sales Rep
+ORD00054,12/10/2025,Daniel Moore,Mobile App,3,$19.40,10%,$52.38,Delivered,No,Jamie Account Manager
+ORD00055,07/17/2026,Laura Johnson,Mobile App,1,$80.00,20%,$64.00,Delivered,No,Jamie Account Manager
+ORD00056,04/03/2026,James Lewis,Mobile App,4,$140.05,20%,$448.16,Delivered,No,Jamie Account Manager
+ORD00057,12/07/2025,Olivia Taylor,Online,4,$26.99,0%,$107.96,Delivered,No,Jamie Account Manager
+ORD00058,05/18/2026,Ryan Hall,Online,1,$65.58,0%,$65.58,Delivered,No,Alex Sales Rep
+ORD00059,04/21/2026,Megan Wilson,Mobile App,3,$28.08,10%,$75.82,Delivered,No,Jamie Account Manager
+ORD00060,12/03/2025,John Smith,Retail Store,2,$46.81,10%,$84.26,Returned,Yes,Alex Sales Rep
+ORD00061,01/25/2026,Emily Clark,Retail Store,5,$80.37,0%,$401.85,Delivered,No,Jamie Account Manager
+ORD00062,11/15/2025,Michael Brown,Mobile App,2,$101.29,10%,$182.32,Delivered,No,Alex Sales Rep
+ORD00063,01/11/2026,Sarah Walker,Mobile App,5,$63.10,0%,$315.50,Delivered,No,Jamie Account Manager
+ORD00064,12/12/2025,David Miller,Online,4,$59.21,20%,$189.47,Delivered,No,Jamie Account Manager
+ORD00065,01/01/2026,Jessica Young,Mobile App,1,$64.92,0%,$64.92,Delivered,No,Jamie Account Manager
+ORD00066,05/10/2026,Daniel Moore,Mobile App,5,$117.56,0%,$587.80,Delivered,No,Jamie Account Manager
+ORD00067,02/15/2026,Laura Johnson,Mobile App,2,$60.80,0%,$121.60,Delivered,No,Jamie Account Manager
+ORD00068,03/08/2026,James Lewis,Mobile App,5,$40.66,0%,$203.30,Delivered,No,Alex Sales Rep
+ORD00069,01/27/2026,Olivia Taylor,Retail Store,3,$131.99,20%,$316.78,Delivered,No,Jamie Account Manager
+ORD00070,10/20/2025,Ryan Hall,Retail Store,3,$143.15,10%,$386.51,Delivered,No,Jamie Account Manager
+ORD00071,12/09/2025,Megan Wilson,Mobile App,3,$123.47,0%,$370.41,Delivered,No,Alex Sales Rep
+ORD00072,12/06/2025,John Smith,Mobile App,2,$151.06,0%,$302.12,Delivered,No,Alex Sales Rep
+ORD00073,11/18/2025,Emily Clark,Retail Store,5,$152.57,10%,$686.57,Delivered,No,Jamie Account Manager
+ORD00074,06/04/2026,Michael Brown,Online,2,$65.91,0%,$131.82,Delivered,No,Jamie Account Manager
+ORD00075,06/14/2026,Sarah Walker,Mobile App,2,$153.87,20%,$246.19,Delivered,No,Alex Sales Rep
+ORD00076,03/17/2026,David Miller,Mobile App,1,$163.45,10%,$147.11,Delivered,No,Jamie Account Manager
+ORD00077,10/26/2025,Jessica Young,Online,5,$112.84,0%,$564.20,Delivered,No,Alex Sales Rep
+ORD00078,10/01/2025,Daniel Moore,Mobile App,5,$129.01,0%,$645.05,Delivered,No,Jamie Account Manager
+ORD00079,11/26/2025,Laura Johnson,Online,4,$178.94,0%,$715.76,Delivered,No,Alex Sales Rep
+ORD00080,07/20/2026,James Lewis,Retail Store,5,$169.04,0%,$845.20,Delivered,No,Jamie Account Manager
+ORD00081,04/17/2026,Olivia Taylor,Online,4,$38.53,0%,$154.12,Delivered,No,Jamie Account Manager
+ORD00082,11/18/2025,Ryan Hall,Retail Store,2,$74.13,10%,$133.43,Cancelled,No,Alex Sales Rep
+ORD00083,05/22/2026,Megan Wilson,Mobile App,1,$91.95,0%,$91.95,Delivered,No,Jamie Account Manager
+ORD00084,07/06/2026,John Smith,Mobile App,3,$32.12,0%,$96.36,Delivered,No,Alex Sales Rep
+ORD00085,10/31/2025,Emily Clark,Retail Store,4,$118.24,20%,$378.37,Delivered,No,Alex Sales Rep
+ORD00086,03/23/2026,Michael Brown,Online,3,$45.28,0%,$135.84,Delivered,No,Alex Sales Rep
+ORD00087,02/08/2026,Sarah Walker,Retail Store,2,$166.11,0%,$332.22,Delivered,No,Jamie Account Manager
+ORD00088,10/24/2025,David Miller,Retail Store,1,$71.48,10%,$64.33,Delivered,No,Alex Sales Rep
+ORD00089,01/23/2026,Jessica Young,Mobile App,1,$117.43,20%,$93.94,Cancelled,No,Jamie Account Manager
+ORD00090,10/27/2025,Daniel Moore,Mobile App,5,$61.89,20%,$247.56,Delivered,No,Jamie Account Manager
+ORD00091,04/28/2026,Laura Johnson,Online,3,$175.59,0%,$526.77,Delivered,No,Alex Sales Rep
+ORD00092,11/14/2025,James Lewis,Retail Store,1,$97.17,20%,$77.74,Delivered,No,Jamie Account Manager
+ORD00093,05/22/2026,Olivia Taylor,Mobile App,5,$27.07,20%,$108.28,Delivered,No,Jamie Account Manager
+ORD00094,01/31/2026,Ryan Hall,Retail Store,2,$100.03,10%,$180.05,Delivered,No,Alex Sales Rep
+ORD00095,05/05/2026,Megan Wilson,Online,3,$134.79,10%,$363.93,Delivered,No,Alex Sales Rep
+ORD00096,11/28/2025,John Smith,Mobile App,4,$38.01,0%,$152.04,Cancelled,No,Jamie Account Manager
+ORD00097,07/22/2026,Emily Clark,Online,5,$62.71,0%,$313.55,Delivered,Yes,Jamie Account Manager
+ORD00098,01/06/2026,Michael Brown,Online,1,$153.95,20%,$123.16,Delivered,No,Alex Sales Rep
+ORD00099,11/15/2025,Sarah Walker,Retail Store,3,$45.56,0%,$136.68,Delivered,No,Jamie Account Manager
+ORD00100,10/07/2025,David Miller,Retail Store,3,$123.41,0%,$370.23,Cancelled,No,Alex Sales Rep
+ORD00101,05/29/2026,Jessica Young,Online,5,$69.26,0%,$346.30,Shipped,No,Jamie Account Manager
+ORD00102,10/24/2025,Daniel Moore,Retail Store,3,$41.08,0%,$123.24,Cancelled,No,Alex Sales Rep
+ORD00103,10/20/2025,Laura Johnson,Retail Store,4,$177.95,0%,$711.80,Delivered,No,Alex Sales Rep
+ORD00104,10/04/2025,James Lewis,Mobile App,2,$40.08,10%,$72.14,Cancelled,No,Alex Sales Rep
+ORD00105,11/02/2025,Olivia Taylor,Mobile App,3,$29.30,0%,$87.90,Delivered,No,Jamie Account Manager
+ORD00106,12/06/2025,Ryan Hall,Online,3,$148.08,0%,$444.24,Shipped,No,Alex Sales Rep
+ORD00107,03/19/2026,Megan Wilson,Mobile App,2,$75.54,20%,$120.86,Delivered,No,Jamie Account Manager
+ORD00108,07/26/2026,John Smith,Retail Store,3,$155.38,10%,$419.53,Delivered,No,Jamie Account Manager
+ORD00109,07/30/2026,Emily Clark,Online,3,$116.48,0%,$349.44,Delivered,No,Jamie Account Manager
+ORD00110,01/31/2026,Michael Brown,Mobile App,5,$34.14,10%,$153.63,Delivered,No,Alex Sales Rep
+ORD00111,01/26/2026,Sarah Walker,Retail Store,5,$126.31,0%,$631.55,Delivered,No,Jamie Account Manager
+ORD00112,11/23/2025,David Miller,Online,2,$154.81,0%,$309.62,Delivered,No,Jamie Account Manager
+ORD00113,03/25/2026,Jessica Young,Online,1,$34.34,20%,$27.47,Delivered,No,Jamie Account Manager
+ORD00114,03/04/2026,Daniel Moore,Mobile App,5,$86.16,0%,$430.80,Delivered,No,Alex Sales Rep
+ORD00115,11/21/2025,Laura Johnson,Retail Store,2,$131.22,0%,$262.44,Delivered,No,Alex Sales Rep
+ORD00116,11/16/2025,James Lewis,Online,1,$15.62,20%,$12.50,Delivered,No,Alex Sales Rep
+ORD00117,07/22/2026,Olivia Taylor,Mobile App,1,$53.55,10%,$48.20,Delivered,No,Alex Sales Rep
+ORD00118,12/09/2025,Ryan Hall,Retail Store,5,$19.98,20%,$79.92,Delivered,No,Alex Sales Rep
+ORD00119,05/16/2026,Megan Wilson,Online,3,$105.96,10%,$286.09,Delivered,No,Alex Sales Rep
+ORD00120,02/09/2026,John Smith,Mobile App,4,$144.98,20%,$463.94,Cancelled,No,Alex Sales Rep
+ORD00121,02/05/2026,Emily Clark,Online,4,$71.89,0%,$287.56,Delivered,Yes,Alex Sales Rep
+ORD00122,06/05/2026,Michael Brown,Retail Store,4,$37.79,0%,$151.16,Delivered,No,Jamie Account Manager
+ORD00123,08/08/2026,Sarah Walker,Online,5,$119.37,0%,$596.85,Delivered,No,Jamie Account Manager
+ORD00124,03/18/2026,David Miller,Retail Store,2,$138.73,0%,$277.46,Delivered,No,Jamie Account Manager
+ORD00125,03/06/2026,Jessica Young,Online,1,$68.44,20%,$54.75,Delivered,No,Jamie Account Manager
+ORD00126,11/02/2025,Daniel Moore,Mobile App,3,$106.64,10%,$287.93,Delivered,No,Jamie Account Manager
+ORD00127,10/10/2025,Laura Johnson,Retail Store,5,$35.17,0%,$175.85,Delivered,No,Alex Sales Rep
+ORD00128,04/13/2026,James Lewis,Online,1,$37.50,10%,$33.75,Delivered,No,Jamie Account Manager
+ORD00129,07/01/2026,Olivia Taylor,Mobile App,5,$48.49,20%,$193.96,Delivered,No,Jamie Account Manager
+ORD00130,01/11/2026,Ryan Hall,Mobile App,5,$54.04,10%,$243.18,Delivered,No,Jamie Account Manager
+ORD00131,04/03/2026,Megan Wilson,Online,4,$176.91,0%,$707.64,Delivered,No,Jamie Account Manager
+ORD00132,12/25/2025,John Smith,Mobile App,2,$32.80,20%,$52.48,Delivered,No,Alex Sales Rep
+ORD00133,06/02/2026,Emily Clark,Mobile App,1,$100.82,0%,$100.82,Delivered,No,Alex Sales Rep
+ORD00134,11/25/2025,Michael Brown,Online,2,$108.11,20%,$172.98,Delivered,No,Alex Sales Rep
+ORD00135,10/20/2025,Sarah Walker,Retail Store,3,$8.80,0%,$26.40,Delivered,No,Jamie Account Manager
+ORD00136,07/10/2026,David Miller,Online,5,$146.17,10%,$657.77,Delivered,Yes,Alex Sales Rep
+ORD00137,01/31/2026,Jessica Young,Mobile App,3,$166.41,10%,$449.31,Delivered,No,Jamie Account Manager
+ORD00138,03/16/2026,Daniel Moore,Mobile App,4,$178.90,10%,$644.04,Delivered,No,Alex Sales Rep
+ORD00139,06/17/2026,Laura Johnson,Mobile App,1,$17.81,20%,$14.25,Delivered,No,Jamie Account Manager
+ORD00140,11/27/2025,James Lewis,Mobile App,3,$153.80,0%,$461.40,Delivered,No,Alex Sales Rep
+ORD00141,06/14/2026,Olivia Taylor,Mobile App,5,$55.93,0%,$279.65,Delivered,No,Jamie Account Manager
+ORD00142,03/25/2026,Ryan Hall,Online,1,$98.27,0%,$98.27,Delivered,No,Jamie Account Manager
+ORD00143,11/09/2025,Megan Wilson,Online,4,$56.63,0%,$226.52,Delivered,No,Jamie Account Manager
+ORD00144,02/09/2026,John Smith,Mobile App,5,$105.00,0%,$525.00,Cancelled,No,Jamie Account Manager
+ORD00145,02/09/2026,Emily Clark,Online,1,$61.59,20%,$49.27,Delivered,No,Jamie Account Manager
+ORD00146,02/25/2026,Michael Brown,Retail Store,5,$90.85,0%,$454.25,Cancelled,No,Alex Sales Rep
+ORD00147,12/14/2025,Sarah Walker,Online,2,$137.29,20%,$219.66,Delivered,No,Alex Sales Rep
+ORD00148,11/20/2025,David Miller,Retail Store,3,$146.45,0%,$439.35,Delivered,No,Alex Sales Rep
+ORD00149,05/11/2026,Jessica Young,Mobile App,2,$91.98,0%,$183.96,Delivered,No,Alex Sales Rep
+ORD00150,10/06/2025,Daniel Moore,Retail Store,2,$18.68,20%,$29.89,Delivered,No,Alex Sales Rep
+ORD00151,02/03/2026,Laura Johnson,Online,5,$158.27,0%,$791.35,Delivered,No,Jamie Account Manager
+ORD00152,05/05/2026,James Lewis,Mobile App,1,$97.15,0%,$97.15,Delivered,No,Alex Sales Rep
+ORD00153,03/23/2026,Olivia Taylor,Mobile App,2,$50.31,10%,$90.56,Delivered,No,Jamie Account Manager
+ORD00154,07/21/2026,Ryan Hall,Online,4,$81.84,20%,$261.89,Delivered,No,Jamie Account Manager
+ORD00155,03/19/2026,Megan Wilson,Retail Store,2,$124.90,0%,$249.80,Delivered,No,Alex Sales Rep
+ORD00156,10/03/2025,John Smith,Online,2,$152.02,0%,$304.04,Delivered,No,Jamie Account Manager
+ORD00157,09/17/2025,Emily Clark,Mobile App,2,$115.08,10%,$207.14,Delivered,No,Alex Sales Rep
+ORD00158,06/04/2026,Michael Brown,Online,3,$43.57,0%,$130.71,Delivered,No,Alex Sales Rep
+ORD00159,04/13/2026,Sarah Walker,Retail Store,5,$57.12,20%,$228.48,Delivered,No,Alex Sales Rep
+ORD00160,10/28/2025,David Miller,Mobile App,4,$35.84,0%,$143.36,Delivered,No,Alex Sales Rep
+ORD00161,03/17/2026,Jessica Young,Retail Store,5,$54.87,0%,$274.35,Delivered,No,Jamie Account Manager
+ORD00162,07/01/2026,Daniel Moore,Mobile App,5,$66.86,0%,$334.30,Delivered,No,Alex Sales Rep
+ORD00163,12/26/2025,Laura Johnson,Retail Store,5,$26.16,20%,$104.64,Delivered,No,Jamie Account Manager
+ORD00164,04/13/2026,James Lewis,Retail Store,5,$26.96,0%,$134.80,Delivered,No,Alex Sales Rep
+ORD00165,04/12/2026,Olivia Taylor,Online,5,$164.42,0%,$822.10,Delivered,No,Jamie Account Manager
+ORD00166,05/23/2026,Ryan Hall,Retail Store,2,$49.70,0%,$99.40,Delivered,No,Alex Sales Rep
+ORD00167,07/24/2026,Megan Wilson,Retail Store,5,$30.67,10%,$138.02,Shipped,No,Alex Sales Rep
+ORD00168,09/04/2025,John Smith,Mobile App,5,$59.31,0%,$296.55,Delivered,No,Alex Sales Rep
+ORD00169,02/17/2026,Emily Clark,Mobile App,3,$97.83,0%,$293.49,Delivered,No,Alex Sales Rep
+ORD00170,12/17/2025,Michael Brown,Online,4,$99.49,0%,$397.96,Delivered,No,Alex Sales Rep
+ORD00171,04/05/2026,Sarah Walker,Online,3,$107.16,10%,$289.33,Shipped,No,Jamie Account Manager
+ORD00172,07/06/2026,David Miller,Retail Store,5,$174.60,10%,$785.70,Cancelled,No,Jamie Account Manager
+ORD00173,11/28/2025,Jessica Young,Retail Store,5,$98.00,0%,$490.00,Delivered,No,Alex Sales Rep
+ORD00174,12/07/2025,Daniel Moore,Online,2,$149.63,20%,$239.41,Returned,Yes,Jamie Account Manager
+ORD00175,11/10/2025,Laura Johnson,Mobile App,3,$12.22,0%,$36.66,Delivered,No,Jamie Account Manager
+ORD00176,12/10/2025,James Lewis,Online,1,$72.72,0%,$72.72,Delivered,No,Jamie Account Manager
+ORD00177,04/10/2026,Olivia Taylor,Online,1,$140.80,20%,$112.64,Delivered,No,Alex Sales Rep
+ORD00178,05/18/2026,Ryan Hall,Retail Store,5,$61.77,0%,$308.85,Delivered,No,Alex Sales Rep
+ORD00179,02/20/2026,Megan Wilson,Online,5,$86.28,0%,$431.40,Delivered,No,Alex Sales Rep
+ORD00180,11/22/2025,John Smith,Retail Store,4,$36.69,0%,$146.76,Delivered,No,Alex Sales Rep
+ORD00181,07/07/2026,Emily Clark,Online,4,$165.58,0%,$662.32,Delivered,No,Alex Sales Rep
+ORD00182,09/28/2025,Michael Brown,Mobile App,2,$126.70,0%,$253.40,Delivered,No,Alex Sales Rep
+ORD00183,08/03/2026,Sarah Walker,Retail Store,4,$153.96,10%,$554.26,Delivered,No,Jamie Account Manager
+ORD00184,08/24/2026,David Miller,Mobile App,1,$38.05,0%,$38.05,Delivered,No,Alex Sales Rep
+ORD00185,06/06/2026,Jessica Young,Retail Store,1,$138.78,0%,$138.78,Delivered,No,Alex Sales Rep
+ORD00186,12/24/2025,Daniel Moore,Online,1,$48.55,0%,$48.55,Delivered,No,Jamie Account Manager
+ORD00187,05/10/2026,Laura Johnson,Mobile App,1,$176.06,0%,$176.06,Delivered,No,Alex Sales Rep
+ORD00188,01/08/2026,James Lewis,Mobile App,3,$127.57,10%,$344.44,Returned,Yes,Alex Sales Rep
+ORD00189,01/13/2026,Olivia Taylor,Online,4,$51.92,20%,$166.14,Delivered,No,Jamie Account Manager
+ORD00190,03/03/2026,Ryan Hall,Mobile App,3,$158.06,0%,$474.18,Delivered,No,Jamie Account Manager
+ORD00191,03/06/2026,Megan Wilson,Mobile App,4,$147.19,0%,$588.76,Delivered,No,Jamie Account Manager
+ORD00192,09/26/2025,John Smith,Online,4,$107.10,10%,$385.56,Delivered,No,Jamie Account Manager
+ORD00193,11/10/2025,Emily Clark,Mobile App,2,$164.52,10%,$296.14,Delivered,No,Jamie Account Manager
+ORD00194,12/31/2025,Michael Brown,Online,5,$146.93,0%,$734.65,Delivered,No,Jamie Account Manager
+ORD00195,06/19/2026,Sarah Walker,Online,1,$105.89,10%,$95.30,Returned,Yes,Jamie Account Manager
+ORD00196,01/29/2026,David Miller,Mobile App,4,$116.35,10%,$418.86,Returned,Yes,Alex Sales Rep
+ORD00197,09/01/2025,Jessica Young,Retail Store,3,$83.01,0%,$249.03,Cancelled,No,Jamie Account Manager
+ORD00198,05/08/2026,Daniel Moore,Retail Store,4,$17.70,10%,$63.72,Delivered,No,Alex Sales Rep
+ORD00199,09/25/2025,Laura Johnson,Retail Store,2,$94.95,0%,$189.90,Delivered,Yes,Alex Sales Rep
+ORD00200,04/21/2026,James Lewis,Retail Store,3,$129.62,10%,$349.97,Delivered,No,Jamie Account Manager
+ORD00201,05/05/2026,Olivia Taylor,Mobile App,3,$126.68,0%,$380.04,Delivered,No,Alex Sales Rep
+ORD00202,02/03/2026,Ryan Hall,Online,3,$65.30,0%,$195.90,Delivered,No,Jamie Account Manager
+ORD00203,06/23/2026,Megan Wilson,Mobile App,4,$58.96,20%,$188.67,Delivered,Yes,Alex Sales Rep
+ORD00204,08/27/2026,John Smith,Retail Store,1,$158.38,20%,$126.70,Delivered,No,Alex Sales Rep
+ORD00205,10/07/2025,Emily Clark,Online,5,$49.09,10%,$220.91,Shipped,No,Alex Sales Rep
+ORD00206,01/08/2026,Michael Brown,Mobile App,3,$82.17,10%,$221.86,Delivered,No,Jamie Account Manager
+ORD00207,03/24/2026,Sarah Walker,Mobile App,4,$71.66,20%,$229.31,Delivered,No,Jamie Account Manager
+ORD00208,07/22/2026,David Miller,Online,3,$90.14,0%,$270.42,Delivered,No,Alex Sales Rep
+ORD00209,05/06/2026,Jessica Young,Retail Store,4,$99.26,20%,$317.63,Shipped,No,Alex Sales Rep
+ORD00210,11/10/2025,Daniel Moore,Mobile App,2,$41.54,10%,$74.77,Delivered,No,Jamie Account Manager
+ORD00211,08/10/2026,Laura Johnson,Retail Store,5,$55.86,10%,$251.37,Delivered,No,Alex Sales Rep
+ORD00212,05/27/2026,James Lewis,Online,2,$101.44,0%,$202.88,Delivered,No,Alex Sales Rep
+ORD00213,11/11/2025,Olivia Taylor,Retail Store,5,$157.80,0%,$789.00,Delivered,No,Alex Sales Rep
+ORD00214,07/21/2026,Ryan Hall,Mobile App,4,$104.44,0%,$417.76,Cancelled,No,Jamie Account Manager
+ORD00215,04/01/2026,Megan Wilson,Retail Store,5,$35.19,0%,$175.95,Delivered,No,Alex Sales Rep
+ORD00216,10/20/2025,John Smith,Mobile App,1,$74.31,0%,$74.31,Delivered,No,Jamie Account Manager
+ORD00217,06/23/2026,Emily Clark,Retail Store,1,$27.61,10%,$24.85,Shipped,No,Alex Sales Rep
+ORD00218,07/01/2026,Michael Brown,Online,4,$8.77,0%,$35.08,Delivered,No,Jamie Account Manager
+ORD00219,09/08/2025,Sarah Walker,Online,5,$32.73,0%,$163.65,Delivered,No,Jamie Account Manager
+ORD00220,01/14/2026,David Miller,Online,5,$114.82,0%,$574.10,Delivered,No,Alex Sales Rep
+ORD00221,05/11/2026,Jessica Young,Online,2,$160.76,20%,$257.22,Delivered,No,Alex Sales Rep
+ORD00222,03/29/2026,Daniel Moore,Online,2,$140.75,20%,$225.20,Delivered,No,Alex Sales Rep
+ORD00223,06/28/2026,Laura Johnson,Online,5,$60.20,10%,$270.90,Delivered,No,Alex Sales Rep
+ORD00224,05/07/2026,James Lewis,Online,5,$147.09,10%,$661.91,Delivered,No,Jamie Account Manager
+ORD00225,05/26/2026,Olivia Taylor,Retail Store,4,$164.00,20%,$524.80,Delivered,No,Jamie Account Manager
+ORD00226,07/05/2026,Ryan Hall,Online,5,$12.88,20%,$51.52,Delivered,No,Jamie Account Manager
+ORD00227,05/04/2026,Megan Wilson,Mobile App,3,$16.67,20%,$40.01,Delivered,No,Alex Sales Rep
+ORD00228,03/06/2026,John Smith,Mobile App,5,$167.19,0%,$835.95,Cancelled,No,Alex Sales Rep
+ORD00229,09/30/2025,Emily Clark,Mobile App,2,$156.37,0%,$312.74,Delivered,No,Jamie Account Manager
+ORD00230,05/20/2026,Michael Brown,Mobile App,2,$73.58,0%,$147.16,Delivered,No,Jamie Account Manager
+ORD00231,03/26/2026,Sarah Walker,Online,2,$94.88,20%,$151.81,Delivered,No,Alex Sales Rep
+ORD00232,11/18/2025,David Miller,Online,2,$146.34,20%,$234.14,Delivered,No,Alex Sales Rep
+ORD00233,10/14/2025,Jessica Young,Mobile App,5,$59.11,0%,$295.55,Delivered,No,Alex Sales Rep
+ORD00234,05/15/2026,Daniel Moore,Online,3,$79.37,20%,$190.49,Delivered,No,Alex Sales Rep
+ORD00235,03/19/2026,Laura Johnson,Retail Store,3,$146.58,20%,$351.79,Delivered,No,Jamie Account Manager
+ORD00236,10/29/2025,James Lewis,Online,5,$145.95,0%,$729.75,Delivered,No,Jamie Account Manager
+ORD00237,04/08/2026,Olivia Taylor,Online,4,$45.80,0%,$183.20,Returned,Yes,Alex Sales Rep
+ORD00238,12/02/2025,Ryan Hall,Mobile App,2,$80.85,0%,$161.70,Delivered,No,Alex Sales Rep
+ORD00239,01/03/2026,Megan Wilson,Mobile App,5,$141.49,0%,$707.45,Cancelled,No,Alex Sales Rep
+ORD00240,07/29/2026,John Smith,Online,2,$9.07,0%,$18.14,Delivered,No,Alex Sales Rep
+ORD00241,03/21/2026,Emily Clark,Online,4,$55.70,0%,$222.80,Shipped,No,Jamie Account Manager
+ORD00242,11/12/2025,Michael Brown,Retail Store,3,$75.56,0%,$226.68,Delivered,No,Alex Sales Rep
+ORD00243,03/23/2026,Sarah Walker,Mobile App,2,$116.24,20%,$185.98,Returned,Yes,Alex Sales Rep
+ORD00244,07/07/2026,David Miller,Mobile App,4,$109.15,20%,$349.28,Returned,Yes,Alex Sales Rep
+ORD00245,10/22/2025,Jessica Young,Online,1,$138.34,20%,$110.67,Cancelled,No,Jamie Account Manager
+ORD00246,09/29/2025,Daniel Moore,Mobile App,1,$142.47,10%,$128.22,Delivered,No,Jamie Account Manager
+ORD00247,07/20/2026,Laura Johnson,Retail Store,5,$135.87,20%,$543.48,Delivered,No,Jamie Account Manager
+ORD00248,08/26/2026,James Lewis,Retail Store,1,$81.71,10%,$73.54,Delivered,No,Alex Sales Rep
+ORD00249,12/13/2025,Olivia Taylor,Retail Store,4,$68.72,0%,$274.88,Delivered,No,Jamie Account Manager
+ORD00250,11/04/2025,Ryan Hall,Mobile App,4,$28.87,0%,$115.48,Delivered,No,Alex Sales Rep
+ORD00251,05/08/2026,Megan Wilson,Retail Store,4,$22.24,20%,$71.17,Delivered,No,Jamie Account Manager
+ORD00252,08/10/2026,John Smith,Retail Store,4,$168.86,10%,$607.90,Shipped,No,Jamie Account Manager
+ORD00253,08/21/2026,Emily Clark,Online,3,$44.80,0%,$134.40,Delivered,No,Alex Sales Rep
+ORD00254,05/28/2026,Michael Brown,Retail Store,2,$50.65,20%,$81.04,Delivered,No,Alex Sales Rep
+ORD00255,06/20/2026,Sarah Walker,Retail Store,2,$97.41,0%,$194.82,Shipped,Yes,Jamie Account Manager
+ORD00256,06/10/2026,David Miller,Retail Store,5,$121.46,0%,$607.30,Delivered,No,Alex Sales Rep
+ORD00257,05/01/2026,Jessica Young,Online,3,$154.20,20%,$370.08,Shipped,No,Jamie Account Manager
+ORD00258,01/24/2026,Daniel Moore,Online,3,$151.77,20%,$364.25,Shipped,No,Jamie Account Manager
+ORD00259,11/30/2025,Laura Johnson,Online,3,$84.30,20%,$202.32,Delivered,No,Alex Sales Rep
+ORD00260,01/29/2026,James Lewis,Retail Store,1,$64.25,10%,$57.83,Delivered,No,Jamie Account Manager
+ORD00261,09/04/2025,Olivia Taylor,Mobile App,2,$163.65,20%,$261.84,Delivered,No,Alex Sales Rep
+ORD00262,03/23/2026,Ryan Hall,Mobile App,4,$118.92,0%,$475.68,Delivered,No,Alex Sales Rep
+ORD00263,08/05/2026,Megan Wilson,Mobile App,2,$179.37,10%,$322.87,Delivered,No,Jamie Account Manager
+ORD00264,06/12/2026,John Smith,Mobile App,5,$130.39,10%,$586.76,Delivered,No,Jamie Account Manager
+ORD00265,07/06/2026,Emily Clark,Retail Store,4,$81.84,0%,$327.36,Delivered,No,Alex Sales Rep
+ORD00266,11/03/2025,Michael Brown,Retail Store,3,$156.89,0%,$470.67,Delivered,No,Jamie Account Manager
+ORD00267,05/10/2026,Sarah Walker,Online,1,$109.35,0%,$109.35,Delivered,No,Alex Sales Rep
+ORD00268,06/13/2026,David Miller,Retail Store,3,$179.25,10%,$483.98,Returned,Yes,Alex Sales Rep
+ORD00269,07/26/2026,Jessica Young,Retail Store,3,$87.01,20%,$208.82,Delivered,No,Alex Sales Rep
+ORD00270,05/16/2026,Daniel Moore,Online,4,$117.91,0%,$471.64,Delivered,No,Alex Sales Rep
+ORD00271,06/21/2026,Laura Johnson,Mobile App,3,$11.03,10%,$29.78,Delivered,No,Jamie Account Manager
+ORD00272,11/18/2025,James Lewis,Mobile App,4,$92.07,20%,$294.62,Delivered,No,Alex Sales Rep
+ORD00273,06/11/2026,Olivia Taylor,Mobile App,1,$135.21,0%,$135.21,Delivered,No,Jamie Account Manager
+ORD00274,10/02/2025,Ryan Hall,Mobile App,4,$112.71,0%,$450.84,Delivered,No,Alex Sales Rep
+ORD00275,11/22/2025,Megan Wilson,Online,4,$14.87,0%,$59.48,Delivered,No,Jamie Account Manager
+ORD00276,06/23/2026,John Smith,Online,4,$147.73,10%,$531.83,Delivered,No,Alex Sales Rep
+ORD00277,04/27/2026,Emily Clark,Online,4,$32.32,0%,$129.28,Delivered,No,Jamie Account Manager
+ORD00278,07/25/2026,Michael Brown,Retail Store,2,$126.81,0%,$253.62,Returned,Yes,Alex Sales Rep
+ORD00279,07/09/2026,Sarah Walker,Mobile App,3,$108.59,0%,$325.77,Shipped,No,Jamie Account Manager
+ORD00280,01/14/2026,David Miller,Mobile App,5,$120.19,20%,$480.76,Delivered,No,Jamie Account Manager
+ORD00281,01/06/2026,Jessica Young,Retail Store,5,$138.99,10%,$625.46,Delivered,No,Alex Sales Rep
+ORD00282,02/05/2026,Daniel Moore,Mobile App,3,$105.72,10%,$285.44,Delivered,No,Jamie Account Manager
+ORD00283,10/12/2025,Laura Johnson,Mobile App,3,$15.14,20%,$36.34,Delivered,No,Jamie Account Manager
+ORD00284,02/24/2026,James Lewis,Online,5,$66.77,20%,$267.08,Shipped,No,Alex Sales Rep
+ORD00285,09/19/2025,Olivia Taylor,Online,4,$121.95,0%,$487.80,Returned,Yes,Jamie Account Manager
+ORD00286,07/12/2026,Ryan Hall,Online,1,$48.66,10%,$43.79,Delivered,No,Alex Sales Rep
+ORD00287,11/25/2025,Megan Wilson,Online,5,$165.18,20%,$660.72,Shipped,No,Alex Sales Rep
+ORD00288,07/01/2026,John Smith,Mobile App,4,$54.42,0%,$217.68,Shipped,No,Jamie Account Manager
+ORD00289,11/24/2025,Emily Clark,Online,1,$174.49,0%,$174.49,Delivered,No,Alex Sales Rep
+ORD00290,07/12/2026,Michael Brown,Retail Store,3,$174.39,10%,$470.85,Delivered,Yes,Alex Sales Rep
+ORD00291,12/07/2025,Sarah Walker,Online,3,$49.96,0%,$149.88,Returned,Yes,Alex Sales Rep
+ORD00292,09/26/2025,David Miller,Retail Store,2,$167.33,10%,$301.19,Delivered,No,Jamie Account Manager
+ORD00293,07/05/2026,Jessica Young,Online,3,$72.17,10%,$194.86,Delivered,No,Alex Sales Rep
+ORD00294,08/31/2026,Daniel Moore,Retail Store,4,$170.56,20%,$545.79,Delivered,No,Jamie Account Manager
+ORD00295,09/25/2025,Laura Johnson,Retail Store,5,$88.01,0%,$440.05,Delivered,No,Alex Sales Rep
+ORD00296,08/24/2026,James Lewis,Retail Store,1,$54.34,0%,$54.34,Delivered,No,Alex Sales Rep
+ORD00297,06/02/2026,Olivia Taylor,Online,4,$76.91,0%,$307.64,Delivered,No,Alex Sales Rep
+ORD00298,12/05/2025,Ryan Hall,Mobile App,2,$55.80,20%,$89.28,Delivered,No,Alex Sales Rep
+ORD00299,07/03/2026,Megan Wilson,Mobile App,2,$84.13,0%,$168.26,Delivered,No,Jamie Account Manager
+ORD00300,04/21/2026,John Smith,Online,5,$147.76,20%,$591.04,Shipped,No,Alex Sales Rep
+ORD00301,06/04/2026,Emily Clark,Online,5,$127.87,10%,$575.42,Returned,Yes,Alex Sales Rep
+ORD00302,12/24/2025,Michael Brown,Mobile App,3,$150.54,20%,$361.30,Delivered,No,Alex Sales Rep
+ORD00303,07/07/2026,Sarah Walker,Mobile App,4,$12.55,20%,$40.16,Delivered,No,Alex Sales Rep
+ORD00304,01/31/2026,David Miller,Mobile App,4,$135.83,0%,$543.32,Returned,Yes,Jamie Account Manager
+ORD00305,03/18/2026,Jessica Young,Retail Store,4,$74.79,0%,$299.16,Delivered,No,Jamie Account Manager
+ORD00306,11/22/2025,Daniel Moore,Online,2,$128.30,0%,$256.60,Delivered,No,Alex Sales Rep
+ORD00307,07/03/2026,Laura Johnson,Retail Store,1,$118.92,0%,$118.92,Shipped,No,Jamie Account Manager
+ORD00308,08/31/2026,James Lewis,Online,3,$82.16,20%,$197.18,Delivered,No,Alex Sales Rep
+ORD00309,08/24/2026,Olivia Taylor,Online,1,$44.10,10%,$39.69,Delivered,No,Alex Sales Rep
+ORD00310,11/05/2025,Ryan Hall,Online,4,$108.75,0%,$435.00,Delivered,No,Jamie Account Manager
+ORD00311,07/30/2026,Megan Wilson,Mobile App,5,$14.20,0%,$71.00,Delivered,No,Jamie Account Manager
+ORD00312,04/09/2026,John Smith,Mobile App,2,$154.80,0%,$309.60,Delivered,No,Jamie Account Manager
+ORD00313,02/27/2026,Emily Clark,Online,5,$61.19,0%,$305.95,Returned,Yes,Alex Sales Rep
+ORD00314,09/18/2025,Michael Brown,Online,2,$18.70,0%,$37.40,Delivered,No,Alex Sales Rep
+ORD00315,01/15/2026,Sarah Walker,Retail Store,1,$100.66,20%,$80.53,Delivered,No,Alex Sales Rep
+ORD00316,02/21/2026,David Miller,Retail Store,3,$20.88,0%,$62.64,Delivered,No,Alex Sales Rep
+ORD00317,08/11/2026,Jessica Young,Mobile App,2,$25.63,0%,$51.26,Delivered,No,Alex Sales Rep
+ORD00318,06/14/2026,Daniel Moore,Mobile App,1,$9.22,10%,$8.30,Delivered,No,Alex Sales Rep
+ORD00319,01/28/2026,Laura Johnson,Retail Store,3,$124.23,0%,$372.69,Delivered,No,Alex Sales Rep
+ORD00320,01/15/2026,James Lewis,Mobile App,3,$67.54,20%,$162.10,Delivered,No,Alex Sales Rep
+ORD00321,04/14/2026,Olivia Taylor,Retail Store,3,$31.52,0%,$94.56,Delivered,No,Alex Sales Rep
+ORD00322,07/06/2026,Ryan Hall,Online,4,$116.18,0%,$464.72,Cancelled,No,Jamie Account Manager
+ORD00323,12/09/2025,Megan Wilson,Retail Store,2,$92.71,20%,$148.34,Delivered,No,Jamie Account Manager
+ORD00324,10/09/2025,John Smith,Mobile App,5,$140.52,0%,$702.60,Delivered,No,Alex Sales Rep
+ORD00325,06/20/2026,Emily Clark,Mobile App,2,$127.12,20%,$203.39,Delivered,No,Alex Sales Rep
+ORD00326,10/26/2025,Michael Brown,Retail Store,1,$86.25,20%,$69.00,Delivered,No,Jamie Account Manager
+ORD00327,12/02/2025,Sarah Walker,Mobile App,4,$34.44,0%,$137.76,Delivered,No,Jamie Account Manager
+ORD00328,12/28/2025,David Miller,Online,5,$109.55,10%,$492.98,Delivered,No,Jamie Account Manager
+ORD00329,08/11/2026,Jessica Young,Online,3,$25.99,20%,$62.38,Delivered,No,Alex Sales Rep
+ORD00330,10/19/2025,Daniel Moore,Mobile App,3,$134.85,20%,$323.64,Delivered,No,Alex Sales Rep
+ORD00331,10/26/2025,Laura Johnson,Online,3,$57.54,10%,$155.36,Delivered,No,Jamie Account Manager
+ORD00332,12/01/2025,James Lewis,Online,3,$126.30,0%,$378.90,Delivered,No,Alex Sales Rep
+ORD00333,06/05/2026,Olivia Taylor,Retail Store,2,$129.35,20%,$206.96,Delivered,No,Alex Sales Rep
+ORD00334,09/13/2025,Ryan Hall,Mobile App,5,$117.26,0%,$586.30,Delivered,No,Jamie Account Manager
+ORD00335,10/15/2025,Megan Wilson,Retail Store,3,$124.66,10%,$336.58,Delivered,No,Alex Sales Rep
+ORD00336,07/18/2026,John Smith,Retail Store,2,$169.48,10%,$305.06,Cancelled,No,Alex Sales Rep
+ORD00337,07/31/2026,Emily Clark,Online,3,$109.78,10%,$296.41,Delivered,No,Alex Sales Rep
+ORD00338,12/18/2025,Michael Brown,Retail Store,2,$47.33,0%,$94.66,Delivered,No,Alex Sales Rep
+ORD00339,01/22/2026,Sarah Walker,Retail Store,1,$84.53,0%,$84.53,Delivered,No,Alex Sales Rep
+ORD00340,11/19/2025,David Miller,Mobile App,2,$144.40,20%,$231.04,Delivered,No,Alex Sales Rep
+ORD00341,02/17/2026,Jessica Young,Retail Store,5,$8.75,20%,$35.00,Delivered,No,Jamie Account Manager
+ORD00342,04/01/2026,Daniel Moore,Online,5,$172.81,10%,$777.65,Cancelled,No,Alex Sales Rep
+ORD00343,11/03/2025,Laura Johnson,Mobile App,1,$153.25,0%,$153.25,Delivered,No,Alex Sales Rep
+ORD00344,10/19/2025,James Lewis,Mobile App,4,$77.07,10%,$277.45,Delivered,No,Jamie Account Manager
+ORD00345,10/21/2025,Olivia Taylor,Retail Store,2,$164.89,0%,$329.78,Returned,Yes,Alex Sales Rep
+ORD00346,12/03/2025,Ryan Hall,Retail Store,5,$164.45,20%,$657.80,Returned,Yes,Jamie Account Manager
+ORD00347,09/25/2025,Megan Wilson,Online,1,$178.28,0%,$178.28,Delivered,No,Alex Sales Rep
+ORD00348,04/10/2026,John Smith,Online,4,$142.17,10%,$511.81,Delivered,No,Jamie Account Manager
+ORD00349,01/10/2026,Emily Clark,Online,4,$130.28,10%,$469.01,Cancelled,No,Jamie Account Manager
+ORD00350,06/01/2026,Michael Brown,Retail Store,5,$102.99,0%,$514.95,Delivered,No,Alex Sales Rep
+ORD00351,08/31/2026,Sarah Walker,Retail Store,2,$47.54,10%,$85.57,Delivered,No,Jamie Account Manager
+ORD00352,08/01/2026,David Miller,Mobile App,5,$64.27,0%,$321.35,Delivered,No,Alex Sales Rep
+ORD00353,01/22/2026,Jessica Young,Mobile App,4,$120.07,0%,$480.28,Delivered,No,Alex Sales Rep
+ORD00354,02/13/2026,Daniel Moore,Mobile App,3,$23.16,20%,$55.58,Delivered,No,Jamie Account Manager
+ORD00355,05/15/2026,Laura Johnson,Retail Store,5,$126.92,0%,$634.60,Delivered,No,Jamie Account Manager
+ORD00356,06/18/2026,James Lewis,Mobile App,4,$126.58,0%,$506.32,Delivered,No,Alex Sales Rep
+ORD00357,04/20/2026,Olivia Taylor,Mobile App,4,$81.22,10%,$292.39,Delivered,No,Jamie Account Manager
+ORD00358,09/07/2025,Ryan Hall,Online,2,$69.54,20%,$111.26,Delivered,No,Jamie Account Manager
+ORD00359,03/22/2026,Megan Wilson,Mobile App,4,$100.56,0%,$402.24,Delivered,No,Alex Sales Rep
+ORD00360,06/05/2026,John Smith,Online,3,$45.55,0%,$136.65,Delivered,Yes,Alex Sales Rep
+ORD00361,04/15/2026,Emily Clark,Online,1,$57.97,0%,$57.97,Delivered,No,Alex Sales Rep
+ORD00362,07/18/2026,Michael Brown,Retail Store,1,$142.53,10%,$128.28,Delivered,No,Alex Sales Rep
+ORD00363,04/21/2026,Sarah Walker,Retail Store,5,$142.98,20%,$571.92,Delivered,No,Jamie Account Manager
+ORD00364,12/25/2025,David Miller,Mobile App,5,$22.64,10%,$101.88,Cancelled,No,Alex Sales Rep
+ORD00365,05/09/2026,Jessica Young,Online,5,$132.63,20%,$530.52,Delivered,No,Alex Sales Rep
+ORD00366,11/23/2025,Daniel Moore,Online,4,$129.19,0%,$516.76,Delivered,No,Jamie Account Manager
+ORD00367,03/22/2026,Laura Johnson,Online,5,$99.29,20%,$397.16,Delivered,No,Jamie Account Manager
+ORD00368,02/06/2026,James Lewis,Retail Store,4,$22.89,10%,$82.40,Delivered,No,Alex Sales Rep
+ORD00369,01/04/2026,Olivia Taylor,Retail Store,2,$157.34,20%,$251.74,Delivered,No,Alex Sales Rep
+ORD00370,07/11/2026,Ryan Hall,Retail Store,5,$110.69,0%,$553.45,Delivered,No,Alex Sales Rep
+ORD00371,04/02/2026,Megan Wilson,Online,3,$170.46,0%,$511.38,Delivered,No,Alex Sales Rep
+ORD00372,02/26/2026,John Smith,Mobile App,3,$63.16,0%,$189.48,Delivered,No,Jamie Account Manager
+ORD00373,05/23/2026,Emily Clark,Retail Store,2,$121.35,10%,$218.43,Delivered,No,Jamie Account Manager
+ORD00374,10/19/2025,Michael Brown,Online,2,$59.48,0%,$118.96,Delivered,No,Jamie Account Manager
+ORD00375,05/14/2026,Sarah Walker,Retail Store,1,$167.26,0%,$167.26,Delivered,No,Alex Sales Rep
+ORD00376,03/25/2026,David Miller,Online,5,$107.83,0%,$539.15,Delivered,No,Jamie Account Manager
+ORD00377,07/24/2026,Jessica Young,Retail Store,4,$14.86,0%,$59.44,Delivered,No,Alex Sales Rep
+ORD00378,10/28/2025,Daniel Moore,Retail Store,3,$127.26,0%,$381.78,Cancelled,No,Jamie Account Manager
+ORD00379,01/26/2026,Laura Johnson,Online,5,$42.86,0%,$214.30,Delivered,No,Alex Sales Rep
+ORD00380,08/31/2026,James Lewis,Retail Store,1,$89.14,20%,$71.31,Delivered,No,Alex Sales Rep
+ORD00381,07/23/2026,Olivia Taylor,Retail Store,4,$38.53,0%,$154.12,Returned,Yes,Alex Sales Rep
+ORD00382,09/28/2025,Ryan Hall,Online,3,$77.23,20%,$185.35,Delivered,No,Jamie Account Manager
+ORD00383,04/30/2026,Megan Wilson,Mobile App,2,$80.33,20%,$128.53,Delivered,No,Jamie Account Manager
+ORD00384,04/11/2026,John Smith,Retail Store,5,$53.23,0%,$266.15,Delivered,No,Jamie Account Manager
+ORD00385,10/10/2025,Emily Clark,Retail Store,3,$164.29,0%,$492.87,Delivered,No,Alex Sales Rep
+ORD00386,01/13/2026,Michael Brown,Online,1,$55.76,0%,$55.76,Delivered,No,Alex Sales Rep
+ORD00387,06/06/2026,Sarah Walker,Mobile App,3,$98.46,0%,$295.38,Delivered,No,Alex Sales Rep
+ORD00388,10/15/2025,David Miller,Mobile App,3,$8.27,0%,$24.81,Delivered,No,Jamie Account Manager
+ORD00389,11/14/2025,Jessica Young,Mobile App,2,$15.64,10%,$28.15,Delivered,No,Jamie Account Manager
+ORD00390,07/15/2026,Daniel Moore,Mobile App,4,$110.82,10%,$398.95,Delivered,No,Jamie Account Manager
+ORD00391,09/16/2025,Laura Johnson,Mobile App,5,$178.96,10%,$805.32,Delivered,No,Alex Sales Rep
+ORD00392,07/29/2026,James Lewis,Online,4,$62.01,0%,$248.04,Returned,Yes,Alex Sales Rep
+ORD00393,10/16/2025,Olivia Taylor,Mobile App,1,$142.33,0%,$142.33,Delivered,No,Alex Sales Rep
+ORD00394,03/28/2026,Ryan Hall,Mobile App,2,$161.48,0%,$322.96,Delivered,No,Jamie Account Manager
+ORD00395,04/02/2026,Megan Wilson,Retail Store,1,$173.28,10%,$155.95,Delivered,No,Alex Sales Rep
+ORD00396,11/12/2025,John Smith,Retail Store,1,$8.77,20%,$7.02,Delivered,No,Alex Sales Rep
+ORD00397,08/28/2026,Emily Clark,Mobile App,4,$131.35,10%,$472.86,Delivered,No,Alex Sales Rep
+ORD00398,03/24/2026,Michael Brown,Mobile App,4,$165.93,0%,$663.72,Delivered,No,Jamie Account Manager
+ORD00399,08/26/2026,Sarah Walker,Retail Store,4,$174.30,0%,$697.20,Delivered,No,Alex Sales Rep
+ORD00400,11/28/2025,David Miller,Mobile App,5,$11.50,20%,$46.00,Delivered,No,Alex Sales Rep
+ORD00401,01/28/2026,Jessica Young,Mobile App,3,$133.27,0%,$399.81,Returned,Yes,Alex Sales Rep
+ORD00402,10/08/2025,Daniel Moore,Mobile App,1,$112.36,10%,$101.12,Cancelled,No,Alex Sales Rep
+ORD00403,08/24/2026,Laura Johnson,Online,1,$85.59,10%,$77.03,Delivered,No,Jamie Account Manager
+ORD00404,11/05/2025,James Lewis,Retail Store,4,$135.36,0%,$541.44,Delivered,No,Alex Sales Rep
+ORD00405,06/23/2026,Olivia Taylor,Mobile App,1,$31.84,10%,$28.66,Delivered,No,Jamie Account Manager
+ORD00406,04/08/2026,Ryan Hall,Mobile App,5,$55.55,0%,$277.75,Delivered,No,Jamie Account Manager
+ORD00407,08/09/2026,Megan Wilson,Mobile App,4,$149.21,0%,$596.84,Delivered,No,Jamie Account Manager
+ORD00408,09/02/2025,John Smith,Online,4,$37.00,20%,$118.40,Cancelled,No,Alex Sales Rep
+ORD00409,06/15/2026,Emily Clark,Retail Store,5,$52.96,20%,$211.84,Delivered,No,Alex Sales Rep
+ORD00410,08/31/2026,Michael Brown,Online,4,$154.15,20%,$493.28,Delivered,No,Alex Sales Rep
+ORD00411,07/28/2026,Sarah Walker,Retail Store,4,$117.06,10%,$421.42,Delivered,No,Jamie Account Manager
+ORD00412,04/17/2026,David Miller,Online,3,$63.69,0%,$191.07,Delivered,No,Alex Sales Rep
+ORD00413,07/18/2026,Jessica Young,Retail Store,4,$15.84,20%,$50.69,Delivered,Yes,Jamie Account Manager
+ORD00414,01/13/2026,Daniel Moore,Mobile App,3,$91.68,0%,$275.04,Delivered,No,Jamie Account Manager
+ORD00415,04/16/2026,Laura Johnson,Retail Store,4,$154.23,20%,$493.54,Delivered,No,Jamie Account Manager
+ORD00416,10/31/2025,James Lewis,Retail Store,5,$89.01,0%,$445.05,Delivered,No,Jamie Account Manager
+ORD00417,12/10/2025,Olivia Taylor,Mobile App,1,$114.12,0%,$114.12,Delivered,No,Jamie Account Manager
+ORD00418,05/01/2026,Ryan Hall,Retail Store,4,$150.43,20%,$481.38,Shipped,No,Alex Sales Rep
+ORD00419,09/08/2025,Megan Wilson,Online,5,$148.30,20%,$593.20,Returned,Yes,Alex Sales Rep
+ORD00420,11/11/2025,John Smith,Mobile App,1,$28.38,0%,$28.38,Delivered,No,Alex Sales Rep
+ORD00421,08/09/2026,Emily Clark,Mobile App,4,$39.74,20%,$127.17,Delivered,No,Jamie Account Manager
+ORD00422,11/23/2025,Michael Brown,Online,2,$146.41,0%,$292.82,Delivered,No,Jamie Account Manager
+ORD00423,08/20/2026,Sarah Walker,Retail Store,4,$119.58,0%,$478.32,Delivered,No,Alex Sales Rep
+ORD00424,01/22/2026,David Miller,Retail Store,3,$27.14,0%,$81.42,Delivered,No,Alex Sales Rep
+ORD00425,10/16/2025,Jessica Young,Mobile App,5,$127.44,0%,$637.20,Delivered,No,Alex Sales Rep
+ORD00426,12/27/2025,Daniel Moore,Retail Store,1,$148.92,0%,$148.92,Delivered,No,Alex Sales Rep
+ORD00427,11/07/2025,Laura Johnson,Retail Store,2,$111.50,10%,$200.70,Cancelled,No,Jamie Account Manager
+ORD00428,01/22/2026,James Lewis,Mobile App,1,$38.97,10%,$35.07,Delivered,No,Jamie Account Manager
+ORD00429,04/21/2026,Olivia Taylor,Online,4,$159.50,0%,$638.00,Delivered,No,Jamie Account Manager
+ORD00430,04/23/2026,Ryan Hall,Retail Store,5,$105.76,10%,$475.92,Delivered,No,Jamie Account Manager
+ORD00431,05/14/2026,Megan Wilson,Mobile App,4,$101.73,0%,$406.92,Delivered,No,Jamie Account Manager
+ORD00432,07/16/2026,John Smith,Online,3,$150.28,20%,$360.67,Delivered,No,Alex Sales Rep
+ORD00433,12/18/2025,Emily Clark,Mobile App,5,$24.57,20%,$98.28,Delivered,No,Alex Sales Rep
+ORD00434,04/16/2026,Michael Brown,Retail Store,1,$122.26,20%,$97.81,Shipped,No,Jamie Account Manager
+ORD00435,05/31/2026,Sarah Walker,Retail Store,2,$154.98,0%,$309.96,Cancelled,No,Alex Sales Rep
+ORD00436,10/18/2025,David Miller,Retail Store,3,$128.74,0%,$386.22,Delivered,No,Jamie Account Manager
+ORD00437,10/18/2025,Jessica Young,Mobile App,2,$156.18,0%,$312.36,Delivered,No,Jamie Account Manager
+ORD00438,04/12/2026,Daniel Moore,Online,3,$83.59,20%,$200.62,Cancelled,No,Jamie Account Manager
+ORD00439,01/21/2026,Laura Johnson,Online,2,$179.41,0%,$358.82,Delivered,No,Alex Sales Rep
+ORD00440,03/14/2026,James Lewis,Retail Store,2,$40.86,20%,$65.38,Delivered,No,Jamie Account Manager
+ORD00441,08/01/2026,Olivia Taylor,Mobile App,2,$118.93,0%,$237.86,Delivered,No,Alex Sales Rep
+ORD00442,01/28/2026,Ryan Hall,Retail Store,4,$171.90,20%,$550.08,Returned,Yes,Alex Sales Rep
+ORD00443,05/22/2026,Megan Wilson,Retail Store,1,$125.33,20%,$100.26,Returned,Yes,Alex Sales Rep
+ORD00444,08/31/2026,John Smith,Online,2,$141.17,10%,$254.11,Delivered,No,Alex Sales Rep
+ORD00445,04/28/2026,Emily Clark,Retail Store,4,$84.91,0%,$339.64,Delivered,No,Alex Sales Rep
+ORD00446,03/13/2026,Michael Brown,Online,5,$173.24,0%,$866.20,Delivered,No,Alex Sales Rep
+ORD00447,09/04/2025,Sarah Walker,Mobile App,1,$28.68,10%,$25.81,Delivered,No,Jamie Account Manager
+ORD00448,07/13/2026,David Miller,Retail Store,2,$115.77,0%,$231.54,Delivered,No,Jamie Account Manager
+ORD00449,04/20/2026,Jessica Young,Retail Store,1,$168.79,10%,$151.91,Delivered,No,Alex Sales Rep
+ORD00450,09/10/2025,Daniel Moore,Mobile App,1,$97.84,0%,$97.84,Delivered,No,Jamie Account Manager
+ORD00451,09/25/2025,Laura Johnson,Online,3,$13.40,20%,$32.16,Delivered,No,Alex Sales Rep
+ORD00452,07/01/2026,James Lewis,Retail Store,2,$155.73,0%,$311.46,Delivered,No,Alex Sales Rep
+ORD00453,03/17/2026,Olivia Taylor,Retail Store,5,$159.54,10%,$717.93,Cancelled,No,Alex Sales Rep
+ORD00454,10/01/2025,Ryan Hall,Retail Store,5,$175.85,10%,$791.33,Delivered,No,Jamie Account Manager
+ORD00455,01/18/2026,Megan Wilson,Online,4,$106.05,20%,$339.36,Delivered,Yes,Alex Sales Rep
+ORD00456,10/26/2025,John Smith,Mobile App,1,$154.35,20%,$123.48,Delivered,No,Jamie Account Manager
+ORD00457,09/20/2025,Emily Clark,Retail Store,1,$14.32,0%,$14.32,Delivered,No,Alex Sales Rep
+ORD00458,06/27/2026,Michael Brown,Mobile App,5,$162.80,10%,$732.60,Cancelled,No,Jamie Account Manager
+ORD00459,08/01/2026,Sarah Walker,Online,4,$145.16,10%,$522.58,Cancelled,No,Jamie Account Manager
+ORD00460,04/24/2026,David Miller,Mobile App,1,$84.40,10%,$75.96,Delivered,No,Jamie Account Manager
+ORD00461,12/18/2025,Jessica Young,Mobile App,4,$129.83,0%,$519.32,Returned,Yes,Jamie Account Manager
+ORD00462,02/28/2026,Daniel Moore,Retail Store,3,$114.18,10%,$308.29,Delivered,No,Jamie Account Manager
+ORD00463,01/16/2026,Laura Johnson,Online,3,$86.62,10%,$233.87,Delivered,No,Alex Sales Rep
+ORD00464,09/21/2025,James Lewis,Retail Store,2,$176.33,20%,$282.13,Delivered,No,Alex Sales Rep
+ORD00465,09/04/2025,Olivia Taylor,Retail Store,1,$63.06,10%,$56.75,Delivered,No,Jamie Account Manager
+ORD00466,01/29/2026,Ryan Hall,Mobile App,2,$147.21,10%,$264.98,Delivered,No,Alex Sales Rep
+ORD00467,12/19/2025,Megan Wilson,Retail Store,1,$114.78,0%,$114.78,Delivered,No,Jamie Account Manager
+ORD00468,06/27/2026,John Smith,Retail Store,4,$18.98,20%,$60.74,Delivered,No,Alex Sales Rep
+ORD00469,07/03/2026,Emily Clark,Mobile App,5,$140.23,0%,$701.15,Cancelled,No,Jamie Account Manager
+ORD00470,07/13/2026,Michael Brown,Retail Store,2,$21.59,0%,$43.18,Delivered,No,Jamie Account Manager
+ORD00471,01/15/2026,Sarah Walker,Retail Store,5,$165.37,10%,$744.17,Delivered,No,Alex Sales Rep
+ORD00472,03/30/2026,David Miller,Retail Store,2,$106.38,0%,$212.76,Delivered,No,Jamie Account Manager
+ORD00473,03/06/2026,Jessica Young,Online,3,$136.19,0%,$408.57,Delivered,No,Jamie Account Manager
+ORD00474,02/08/2026,Daniel Moore,Mobile App,1,$135.90,0%,$135.90,Returned,Yes,Alex Sales Rep
+ORD00475,02/28/2026,Laura Johnson,Online,3,$53.10,20%,$127.44,Delivered,No,Jamie Account Manager
+ORD00476,02/01/2026,James Lewis,Mobile App,3,$134.66,0%,$403.98,Delivered,No,Alex Sales Rep
+ORD00477,05/12/2026,Olivia Taylor,Online,5,$113.44,10%,$510.48,Delivered,No,Jamie Account Manager
+ORD00478,12/26/2025,Ryan Hall,Retail Store,4,$139.43,10%,$501.95,Delivered,No,Alex Sales Rep
+ORD00479,08/01/2026,Megan Wilson,Mobile App,3,$143.92,0%,$431.76,Delivered,No,Jamie Account Manager
+ORD00480,06/29/2026,John Smith,Online,2,$155.73,0%,$311.46,Delivered,No,Jamie Account Manager
+ORD00481,03/11/2026,Emily Clark,Mobile App,1,$147.08,0%,$147.08,Shipped,No,Jamie Account Manager
+ORD00482,02/01/2026,Michael Brown,Mobile App,1,$135.86,20%,$108.69,Returned,Yes,Alex Sales Rep
+ORD00483,10/05/2025,Sarah Walker,Mobile App,4,$141.22,0%,$564.88,Shipped,No,Alex Sales Rep
+ORD00484,01/15/2026,David Miller,Mobile App,2,$157.28,20%,$251.65,Delivered,No,Jamie Account Manager
+ORD00485,12/27/2025,Jessica Young,Mobile App,5,$146.39,10%,$658.76,Delivered,No,Alex Sales Rep
+ORD00486,10/09/2025,Daniel Moore,Mobile App,2,$24.08,10%,$43.34,Delivered,No,Jamie Account Manager
+ORD00487,04/10/2026,Laura Johnson,Mobile App,4,$115.60,0%,$462.40,Delivered,No,Alex Sales Rep
+ORD00488,07/26/2026,James Lewis,Retail Store,3,$141.61,20%,$339.86,Delivered,No,Alex Sales Rep
+ORD00489,06/05/2026,Olivia Taylor,Mobile App,3,$119.87,20%,$287.69,Shipped,No,Alex Sales Rep
+ORD00490,08/31/2026,Ryan Hall,Online,1,$41.10,20%,$32.88,Delivered,No,Jamie Account Manager
+ORD00491,11/29/2025,Megan Wilson,Mobile App,3,$57.24,0%,$171.72,Delivered,No,Alex Sales Rep
+ORD00492,05/12/2026,John Smith,Online,3,$158.54,10%,$428.06,Cancelled,No,Jamie Account Manager
+ORD00493,02/03/2026,Emily Clark,Mobile App,4,$63.93,20%,$204.58,Delivered,No,Jamie Account Manager
+ORD00494,08/15/2026,Michael Brown,Online,2,$153.73,10%,$276.71,Shipped,No,Alex Sales Rep
+ORD00495,12/16/2025,Sarah Walker,Online,3,$129.85,10%,$350.60,Delivered,No,Alex Sales Rep
+ORD00496,12/13/2025,David Miller,Mobile App,4,$169.04,10%,$608.54,Shipped,No,Alex Sales Rep
+ORD00497,10/10/2025,Jessica Young,Online,2,$159.92,0%,$319.84,Delivered,No,Jamie Account Manager
+ORD00498,01/21/2026,Daniel Moore,Mobile App,1,$160.05,0%,$160.05,Delivered,No,Alex Sales Rep
+ORD00499,11/08/2025,Laura Johnson,Mobile App,4,$55.20,20%,$176.64,Delivered,No,Alex Sales Rep
+ORD00500,04/21/2026,James Lewis,Online,5,$128.90,0%,$644.50,Delivered,No,Jamie Account Manager
+ORD00501,04/03/2026,Olivia Taylor,Retail Store,1,$150.02,0%,$150.02,Delivered,No,Alex Sales Rep
+ORD00502,06/02/2026,Ryan Hall,Online,3,$171.52,10%,$463.10,Delivered,No,Alex Sales Rep
+ORD00503,12/14/2025,Megan Wilson,Retail Store,2,$73.04,0%,$146.08,Delivered,No,Alex Sales Rep
+ORD00504,04/29/2026,John Smith,Online,2,$22.86,0%,$45.72,Delivered,No,Alex Sales Rep
+ORD00505,02/28/2026,Emily Clark,Online,4,$169.15,0%,$676.60,Delivered,Yes,Alex Sales Rep
+ORD00506,10/03/2025,Michael Brown,Retail Store,2,$175.48,20%,$280.77,Delivered,No,Alex Sales Rep
+ORD00507,08/19/2026,Sarah Walker,Online,4,$92.35,20%,$295.52,Delivered,No,Alex Sales Rep
+ORD00508,07/28/2026,David Miller,Retail Store,3,$154.09,10%,$416.04,Delivered,No,Alex Sales Rep
+ORD00509,06/24/2026,Jessica Young,Mobile App,4,$17.18,20%,$54.98,Delivered,No,Jamie Account Manager
+ORD00510,11/13/2025,Daniel Moore,Online,4,$114.84,0%,$459.36,Cancelled,No,Alex Sales Rep
+ORD00511,02/16/2026,Laura Johnson,Retail Store,1,$58.57,10%,$52.71,Delivered,No,Jamie Account Manager
+ORD00512,02/07/2026,James Lewis,Online,4,$121.58,0%,$486.32,Delivered,No,Jamie Account Manager
+ORD00513,08/14/2026,Olivia Taylor,Mobile App,3,$140.12,0%,$420.36,Delivered,No,Jamie Account Manager
+ORD00514,05/08/2026,Ryan Hall,Retail Store,1,$111.39,0%,$111.39,Shipped,No,Jamie Account Manager
+ORD00515,07/20/2026,Megan Wilson,Mobile App,4,$145.39,0%,$581.56,Delivered,No,Alex Sales Rep
+ORD00516,11/04/2025,John Smith,Online,5,$103.85,0%,$519.25,Delivered,No,Alex Sales Rep
+ORD00517,09/18/2025,Emily Clark,Online,1,$86.27,20%,$69.02,Delivered,No,Alex Sales Rep
+ORD00518,06/28/2026,Michael Brown,Mobile App,2,$109.36,10%,$196.85,Delivered,No,Jamie Account Manager
+ORD00519,10/08/2025,Sarah Walker,Online,3,$177.14,20%,$425.14,Shipped,No,Alex Sales Rep
+ORD00520,06/10/2026,David Miller,Online,3,$58.06,0%,$174.18,Delivered,No,Alex Sales Rep
+ORD00521,09/21/2025,Jessica Young,Mobile App,1,$142.20,0%,$142.20,Delivered,No,Jamie Account Manager
+ORD00522,11/27/2025,Daniel Moore,Online,2,$17.77,10%,$31.99,Delivered,No,Alex Sales Rep
+ORD00523,07/29/2026,Laura Johnson,Retail Store,1,$103.54,0%,$103.54,Returned,Yes,Jamie Account Manager
+ORD00524,12/18/2025,James Lewis,Retail Store,1,$97.09,0%,$97.09,Delivered,No,Jamie Account Manager
+ORD00525,10/28/2025,Olivia Taylor,Mobile App,1,$169.48,0%,$169.48,Delivered,No,Alex Sales Rep
+ORD00526,02/17/2026,Ryan Hall,Online,5,$85.16,10%,$383.22,Delivered,No,Jamie Account Manager
+ORD00527,11/29/2025,Megan Wilson,Online,4,$162.15,0%,$648.60,Delivered,No,Jamie Account Manager
+ORD00528,04/25/2026,John Smith,Mobile App,2,$101.99,20%,$163.18,Delivered,No,Jamie Account Manager
+ORD00529,04/02/2026,Emily Clark,Retail Store,5,$64.11,0%,$320.55,Delivered,No,Jamie Account Manager
+ORD00530,04/27/2026,Michael Brown,Mobile App,2,$19.78,20%,$31.65,Cancelled,No,Jamie Account Manager
+ORD00531,12/01/2025,Sarah Walker,Retail Store,3,$14.37,10%,$38.80,Delivered,No,Jamie Account Manager
+ORD00532,09/01/2025,David Miller,Mobile App,5,$63.57,0%,$317.85,Delivered,No,Jamie Account Manager
+ORD00533,11/23/2025,Jessica Young,Online,5,$69.70,10%,$313.65,Delivered,No,Alex Sales Rep
+ORD00534,07/10/2026,Daniel Moore,Mobile App,3,$167.46,20%,$401.90,Delivered,No,Alex Sales Rep
+ORD00535,12/19/2025,Laura Johnson,Retail Store,2,$26.32,10%,$47.38,Cancelled,No,Jamie Account Manager
+ORD00536,01/02/2026,James Lewis,Retail Store,2,$67.89,0%,$135.78,Delivered,No,Alex Sales Rep
+ORD00537,01/08/2026,Olivia Taylor,Online,3,$65.79,0%,$197.37,Returned,Yes,Alex Sales Rep
+ORD00538,03/22/2026,Ryan Hall,Retail Store,1,$159.98,10%,$143.98,Shipped,No,Jamie Account Manager
+ORD00539,02/06/2026,Megan Wilson,Retail Store,5,$66.86,0%,$334.30,Delivered,No,Jamie Account Manager
+ORD00540,02/11/2026,John Smith,Online,5,$74.06,0%,$370.30,Cancelled,No,Alex Sales Rep
+ORD00541,08/29/2026,Emily Clark,Retail Store,3,$133.04,20%,$319.30,Cancelled,No,Alex Sales Rep
+ORD00542,11/24/2025,Michael Brown,Online,4,$105.56,20%,$337.79,Delivered,No,Jamie Account Manager
+ORD00543,01/27/2026,Sarah Walker,Mobile App,3,$164.92,0%,$494.76,Shipped,No,Alex Sales Rep
+ORD00544,07/22/2026,David Miller,Online,2,$75.13,0%,$150.26,Shipped,No,Alex Sales Rep
+ORD00545,05/17/2026,Jessica Young,Online,1,$47.65,0%,$47.65,Delivered,No,Alex Sales Rep
+ORD00546,06/28/2026,Daniel Moore,Online,1,$29.00,0%,$29.00,Delivered,No,Alex Sales Rep
+ORD00547,01/04/2026,Laura Johnson,Retail Store,3,$50.49,0%,$151.47,Cancelled,No,Jamie Account Manager
+ORD00548,07/26/2026,James Lewis,Online,5,$131.19,20%,$524.76,Cancelled,No,Jamie Account Manager
+ORD00549,06/04/2026,Olivia Taylor,Mobile App,5,$170.25,10%,$766.13,Delivered,No,Jamie Account Manager
+ORD00550,09/22/2025,Ryan Hall,Retail Store,2,$21.23,10%,$38.21,Delivered,No,Jamie Account Manager
+ORD00551,06/17/2026,Megan Wilson,Retail Store,5,$114.06,0%,$570.30,Returned,Yes,Alex Sales Rep
+ORD00552,02/06/2026,John Smith,Retail Store,2,$77.06,0%,$154.12,Delivered,No,Jamie Account Manager
+ORD00553,12/23/2025,Emily Clark,Retail Store,1,$126.75,20%,$101.40,Shipped,No,Jamie Account Manager
+ORD00554,03/26/2026,Michael Brown,Online,5,$57.34,10%,$258.03,Delivered,Yes,Jamie Account Manager
+ORD00555,08/22/2026,Sarah Walker,Retail Store,4,$135.90,0%,$543.60,Delivered,No,Alex Sales Rep
+ORD00556,02/10/2026,David Miller,Retail Store,3,$138.84,0%,$416.52,Cancelled,Yes,Alex Sales Rep
+ORD00557,02/28/2026,Jessica Young,Online,5,$80.77,20%,$323.08,Delivered,No,Alex Sales Rep
+ORD00558,11/12/2025,Daniel Moore,Retail Store,3,$113.72,10%,$307.04,Delivered,No,Alex Sales Rep
+ORD00559,11/26/2025,Laura Johnson,Mobile App,4,$116.83,20%,$373.86,Delivered,No,Jamie Account Manager
+ORD00560,08/03/2026,James Lewis,Online,4,$32.08,0%,$128.32,Cancelled,No,Alex Sales Rep
+ORD00561,06/25/2026,Olivia Taylor,Mobile App,1,$142.12,20%,$113.70,Delivered,No,Alex Sales Rep
+ORD00562,08/18/2026,Ryan Hall,Online,1,$72.83,20%,$58.26,Delivered,No,Alex Sales Rep
+ORD00563,08/16/2026,Megan Wilson,Online,1,$173.52,20%,$138.82,Delivered,No,Alex Sales Rep
+ORD00564,01/29/2026,John Smith,Retail Store,1,$150.85,10%,$135.77,Returned,Yes,Alex Sales Rep
+ORD00565,09/02/2025,Emily Clark,Online,3,$113.11,20%,$271.46,Delivered,No,Jamie Account Manager
+ORD00566,03/04/2026,Michael Brown,Online,3,$65.76,0%,$197.28,Delivered,No,Alex Sales Rep
+ORD00567,07/22/2026,Sarah Walker,Retail Store,5,$25.02,0%,$125.10,Delivered,No,Jamie Account Manager
+ORD00568,07/25/2026,David Miller,Retail Store,5,$54.37,10%,$244.67,Delivered,No,Alex Sales Rep
+ORD00569,10/20/2025,Jessica Young,Retail Store,5,$123.01,0%,$615.05,Delivered,No,Alex Sales Rep
+ORD00570,08/03/2026,Daniel Moore,Online,3,$73.41,20%,$176.18,Delivered,No,Jamie Account Manager
+ORD00571,05/04/2026,Laura Johnson,Online,3,$15.26,10%,$41.20,Delivered,No,Alex Sales Rep
+ORD00572,01/29/2026,James Lewis,Retail Store,3,$43.25,0%,$129.75,Delivered,No,Alex Sales Rep
+ORD00573,05/26/2026,Olivia Taylor,Mobile App,4,$157.09,0%,$628.36,Delivered,No,Alex Sales Rep
+ORD00574,03/28/2026,Ryan Hall,Mobile App,4,$176.80,0%,$707.20,Delivered,No,Jamie Account Manager
+ORD00575,05/16/2026,Megan Wilson,Retail Store,2,$24.21,0%,$48.42,Delivered,No,Alex Sales Rep
+ORD00576,02/03/2026,John Smith,Mobile App,5,$100.83,0%,$504.15,Delivered,No,Jamie Account Manager
+ORD00577,06/11/2026,Emily Clark,Retail Store,2,$96.00,0%,$192.00,Delivered,No,Alex Sales Rep
+ORD00578,06/07/2026,Michael Brown,Online,4,$67.76,0%,$271.04,Delivered,No,Alex Sales Rep
+ORD00579,09/24/2025,Sarah Walker,Online,2,$91.45,20%,$146.32,Delivered,No,Alex Sales Rep
+ORD00580,09/18/2025,David Miller,Online,2,$85.49,10%,$153.88,Delivered,No,Jamie Account Manager
+ORD00581,04/26/2026,Jessica Young,Mobile App,3,$106.01,0%,$318.03,Shipped,No,Jamie Account Manager
+ORD00582,05/11/2026,Daniel Moore,Mobile App,2,$120.04,10%,$216.07,Delivered,No,Jamie Account Manager
+ORD00583,01/17/2026,Laura Johnson,Retail Store,5,$82.52,20%,$330.08,Cancelled,No,Jamie Account Manager
+ORD00584,11/06/2025,James Lewis,Retail Store,5,$30.06,0%,$150.30,Delivered,No,Alex Sales Rep
+ORD00585,03/23/2026,Olivia Taylor,Retail Store,4,$28.24,20%,$90.37,Delivered,No,Jamie Account Manager
+ORD00586,10/15/2025,Ryan Hall,Mobile App,1,$16.34,0%,$16.34,Delivered,No,Alex Sales Rep
+ORD00587,05/08/2026,Megan Wilson,Retail Store,3,$150.68,0%,$452.04,Delivered,No,Jamie Account Manager
+ORD00588,11/19/2025,John Smith,Online,1,$55.86,20%,$44.69,Delivered,No,Jamie Account Manager
+ORD00589,11/19/2025,Emily Clark,Mobile App,5,$130.00,20%,$520.00,Cancelled,No,Jamie Account Manager
+ORD00590,04/21/2026,Michael Brown,Online,2,$148.19,10%,$266.74,Delivered,No,Jamie Account Manager
+ORD00591,08/09/2026,Sarah Walker,Online,3,$123.24,10%,$332.75,Delivered,No,Alex Sales Rep
+ORD00592,01/17/2026,David Miller,Retail Store,2,$46.19,0%,$92.38,Delivered,No,Jamie Account Manager
+ORD00593,03/01/2026,Jessica Young,Retail Store,1,$177.39,0%,$177.39,Cancelled,No,Jamie Account Manager
+ORD00594,11/17/2025,Daniel Moore,Retail Store,2,$58.66,10%,$105.59,Delivered,No,Alex Sales Rep
+ORD00595,12/16/2025,Laura Johnson,Retail Store,4,$55.90,20%,$178.88,Delivered,No,Alex Sales Rep
+ORD00596,03/19/2026,James Lewis,Retail Store,2,$157.24,0%,$314.48,Delivered,No,Jamie Account Manager
+ORD00597,03/26/2026,Olivia Taylor,Mobile App,5,$45.87,10%,$206.42,Delivered,No,Jamie Account Manager
+ORD00598,09/30/2025,Ryan Hall,Retail Store,3,$107.45,10%,$290.12,Delivered,No,Alex Sales Rep
+ORD00599,11/21/2025,Megan Wilson,Online,1,$134.29,10%,$120.86,Delivered,No,Alex Sales Rep
+ORD00600,10/03/2025,John Smith,Mobile App,2,$117.29,10%,$211.12,Delivered,No,Alex Sales Rep
+ORD00601,01/29/2026,Emily Clark,Retail Store,5,$78.81,0%,$394.05,Delivered,No,Jamie Account Manager
+ORD00602,01/29/2026,Michael Brown,Mobile App,1,$159.84,0%,$159.84,Delivered,No,Alex Sales Rep
+ORD00603,10/27/2025,Sarah Walker,Retail Store,2,$82.13,20%,$131.41,Delivered,No,Jamie Account Manager
+ORD00604,05/30/2026,David Miller,Mobile App,4,$70.36,0%,$281.44,Delivered,No,Alex Sales Rep
+ORD00605,11/02/2025,Jessica Young,Online,1,$23.99,20%,$19.19,Delivered,No,Jamie Account Manager
+ORD00606,01/19/2026,Daniel Moore,Mobile App,4,$98.10,0%,$392.40,Cancelled,No,Alex Sales Rep
+ORD00607,09/09/2025,Laura Johnson,Retail Store,5,$76.68,0%,$383.40,Delivered,No,Alex Sales Rep
+ORD00608,11/11/2025,James Lewis,Retail Store,3,$179.88,20%,$431.71,Delivered,No,Jamie Account Manager
+ORD00609,03/15/2026,Olivia Taylor,Mobile App,3,$149.70,20%,$359.28,Delivered,No,Jamie Account Manager
+ORD00610,08/12/2026,Ryan Hall,Retail Store,3,$71.00,10%,$191.70,Delivered,No,Jamie Account Manager
+ORD00611,02/14/2026,Megan Wilson,Retail Store,4,$102.61,0%,$410.44,Delivered,No,Alex Sales Rep
+ORD00612,02/12/2026,John Smith,Online,4,$179.28,0%,$717.12,Delivered,No,Alex Sales Rep
+ORD00613,03/21/2026,Emily Clark,Online,4,$27.99,10%,$100.76,Delivered,No,Jamie Account Manager
+ORD00614,06/21/2026,Michael Brown,Online,3,$133.41,0%,$400.23,Delivered,No,Alex Sales Rep
+ORD00615,05/15/2026,Sarah Walker,Online,4,$70.08,0%,$280.32,Delivered,No,Jamie Account Manager
+ORD00616,12/10/2025,David Miller,Mobile App,1,$178.98,10%,$161.08,Delivered,No,Alex Sales Rep
+ORD00617,10/30/2025,Jessica Young,Retail Store,1,$127.17,20%,$101.74,Delivered,Yes,Jamie Account Manager
+ORD00618,09/10/2025,Daniel Moore,Online,1,$95.38,10%,$85.84,Delivered,No,Jamie Account Manager
+ORD00619,04/09/2026,Laura Johnson,Online,3,$92.75,20%,$222.60,Returned,Yes,Alex Sales Rep
+ORD00620,07/06/2026,James Lewis,Mobile App,4,$30.21,0%,$120.84,Delivered,No,Alex Sales Rep
+ORD00621,11/24/2025,Olivia Taylor,Retail Store,3,$88.65,10%,$239.36,Delivered,No,Jamie Account Manager
+ORD00622,03/03/2026,Ryan Hall,Retail Store,3,$30.40,0%,$91.20,Delivered,No,Alex Sales Rep
+ORD00623,02/28/2026,Megan Wilson,Retail Store,2,$132.65,10%,$238.77,Delivered,Yes,Jamie Account Manager
+ORD00624,04/07/2026,John Smith,Online,4,$99.46,20%,$318.27,Delivered,No,Alex Sales Rep
+ORD00625,10/17/2025,Emily Clark,Mobile App,1,$141.09,0%,$141.09,Delivered,No,Alex Sales Rep
+ORD00626,12/20/2025,Michael Brown,Mobile App,2,$113.48,10%,$204.26,Returned,Yes,Alex Sales Rep
+ORD00627,12/05/2025,Sarah Walker,Retail Store,1,$24.93,10%,$22.44,Delivered,No,Jamie Account Manager
+ORD00628,03/27/2026,David Miller,Retail Store,3,$105.96,10%,$286.09,Delivered,No,Alex Sales Rep
+ORD00629,01/09/2026,Jessica Young,Online,1,$13.49,0%,$13.49,Delivered,No,Alex Sales Rep
+ORD00630,03/23/2026,Daniel Moore,Online,4,$28.37,0%,$113.48,Delivered,No,Jamie Account Manager
+ORD00631,10/18/2025,Laura Johnson,Online,3,$87.66,0%,$262.98,Returned,Yes,Jamie Account Manager
+ORD00632,03/09/2026,James Lewis,Retail Store,5,$78.02,0%,$390.10,Shipped,No,Alex Sales Rep
+ORD00633,07/11/2026,Olivia Taylor,Retail Store,4,$49.38,0%,$197.52,Shipped,No,Jamie Account Manager
+ORD00634,10/20/2025,Ryan Hall,Retail Store,5,$124.71,20%,$498.84,Returned,Yes,Jamie Account Manager
+ORD00635,02/11/2026,Megan Wilson,Retail Store,4,$151.40,20%,$484.48,Delivered,No,Jamie Account Manager
+ORD00636,10/17/2025,John Smith,Mobile App,2,$169.96,20%,$271.94,Delivered,No,Jamie Account Manager
+ORD00637,08/12/2026,Emily Clark,Mobile App,2,$163.46,0%,$326.92,Delivered,No,Jamie Account Manager
+ORD00638,06/28/2026,Michael Brown,Online,4,$15.98,0%,$63.92,Delivered,No,Alex Sales Rep
+ORD00639,11/14/2025,Sarah Walker,Retail Store,2,$72.15,20%,$115.44,Shipped,No,Jamie Account Manager
+ORD00640,04/02/2026,David Miller,Retail Store,5,$167.79,20%,$671.16,Delivered,No,Jamie Account Manager
+ORD00641,12/30/2025,Jessica Young,Online,2,$29.65,10%,$53.37,Returned,Yes,Jamie Account Manager
+ORD00642,06/28/2026,Daniel Moore,Online,1,$141.09,0%,$141.09,Shipped,No,Jamie Account Manager
+ORD00643,06/18/2026,Laura Johnson,Online,4,$105.18,20%,$336.58,Delivered,No,Jamie Account Manager
+ORD00644,07/19/2026,James Lewis,Mobile App,5,$60.35,20%,$241.40,Delivered,No,Alex Sales Rep
+ORD00645,11/28/2025,Olivia Taylor,Online,1,$46.96,20%,$37.57,Delivered,No,Alex Sales Rep
+ORD00646,10/20/2025,Ryan Hall,Retail Store,3,$102.14,10%,$275.78,Shipped,No,Alex Sales Rep
+ORD00647,12/29/2025,Megan Wilson,Mobile App,1,$35.84,0%,$35.84,Delivered,No,Alex Sales Rep
+ORD00648,12/11/2025,John Smith,Retail Store,2,$50.65,20%,$81.04,Delivered,Yes,Alex Sales Rep
+ORD00649,02/19/2026,Emily Clark,Mobile App,2,$37.09,10%,$66.76,Delivered,No,Jamie Account Manager
+ORD00650,09/01/2025,Michael Brown,Mobile App,1,$149.78,0%,$149.78,Delivered,No,Alex Sales Rep
+ORD00651,02/10/2026,Sarah Walker,Mobile App,2,$101.19,20%,$161.90,Delivered,No,Alex Sales Rep
+ORD00652,07/01/2026,David Miller,Mobile App,5,$113.32,0%,$566.60,Delivered,No,Jamie Account Manager
+ORD00653,05/21/2026,Jessica Young,Mobile App,1,$144.39,0%,$144.39,Delivered,No,Alex Sales Rep
+ORD00654,04/24/2026,Daniel Moore,Retail Store,5,$133.52,10%,$600.84,Delivered,No,Alex Sales Rep
+ORD00655,10/03/2025,Laura Johnson,Online,4,$46.68,0%,$186.72,Delivered,No,Alex Sales Rep
+ORD00656,01/20/2026,James Lewis,Mobile App,5,$21.24,10%,$95.58,Delivered,No,Alex Sales Rep
+ORD00657,10/15/2025,Olivia Taylor,Mobile App,1,$113.93,0%,$113.93,Delivered,No,Alex Sales Rep
+ORD00658,04/30/2026,Ryan Hall,Mobile App,1,$152.06,0%,$152.06,Delivered,No,Jamie Account Manager
+ORD00659,09/12/2025,Megan Wilson,Retail Store,2,$16.95,0%,$33.90,Delivered,No,Jamie Account Manager
+ORD00660,08/13/2026,John Smith,Retail Store,1,$155.69,0%,$155.69,Returned,Yes,Jamie Account Manager
+ORD00661,07/18/2026,Emily Clark,Retail Store,1,$30.63,0%,$30.63,Shipped,No,Jamie Account Manager
+ORD00662,05/16/2026,Michael Brown,Online,3,$11.14,10%,$30.08,Returned,Yes,Jamie Account Manager
+ORD00663,04/26/2026,Sarah Walker,Retail Store,4,$149.70,10%,$538.92,Delivered,No,Alex Sales Rep
+ORD00664,10/19/2025,David Miller,Mobile App,4,$93.47,10%,$336.49,Delivered,No,Alex Sales Rep
+ORD00665,07/28/2026,Jessica Young,Retail Store,2,$54.12,10%,$97.42,Delivered,No,Jamie Account Manager
+ORD00666,12/12/2025,Daniel Moore,Mobile App,2,$160.54,0%,$321.08,Returned,Yes,Jamie Account Manager
+ORD00667,03/24/2026,Laura Johnson,Mobile App,2,$65.83,20%,$105.33,Cancelled,No,Jamie Account Manager
+ORD00668,09/25/2025,James Lewis,Online,4,$66.27,0%,$265.08,Delivered,No,Jamie Account Manager
+ORD00669,05/07/2026,Olivia Taylor,Retail Store,1,$114.22,0%,$114.22,Delivered,No,Jamie Account Manager
+ORD00670,07/27/2026,Ryan Hall,Retail Store,5,$66.54,0%,$332.70,Delivered,No,Jamie Account Manager
+ORD00671,04/28/2026,Megan Wilson,Mobile App,4,$105.93,10%,$381.35,Delivered,No,Alex Sales Rep
+ORD00672,08/20/2026,John Smith,Mobile App,2,$165.06,20%,$264.10,Delivered,No,Jamie Account Manager
+ORD00673,05/04/2026,Emily Clark,Online,4,$21.93,20%,$70.18,Delivered,No,Jamie Account Manager
+ORD00674,01/23/2026,Michael Brown,Online,4,$164.10,0%,$656.40,Shipped,No,Jamie Account Manager
+ORD00675,04/04/2026,Sarah Walker,Retail Store,5,$163.57,0%,$817.85,Shipped,No,Jamie Account Manager
+ORD00676,09/21/2025,David Miller,Online,3,$73.11,20%,$175.46,Delivered,Yes,Jamie Account Manager
+ORD00677,11/09/2025,Jessica Young,Retail Store,2,$49.04,10%,$88.27,Delivered,No,Jamie Account Manager
+ORD00678,10/26/2025,Daniel Moore,Retail Store,4,$86.36,10%,$310.90,Delivered,No,Alex Sales Rep
+ORD00679,10/20/2025,Laura Johnson,Online,4,$124.75,0%,$499.00,Delivered,No,Alex Sales Rep
+ORD00680,02/23/2026,James Lewis,Retail Store,1,$15.50,0%,$15.50,Delivered,No,Jamie Account Manager
+ORD00681,09/04/2025,Olivia Taylor,Retail Store,3,$175.17,10%,$472.96,Delivered,No,Jamie Account Manager
+ORD00682,02/11/2026,Ryan Hall,Retail Store,5,$144.33,0%,$721.65,Delivered,No,Jamie Account Manager
+ORD00683,06/05/2026,Megan Wilson,Online,1,$71.14,20%,$56.91,Delivered,No,Jamie Account Manager
+ORD00684,04/26/2026,John Smith,Retail Store,4,$71.46,0%,$285.84,Delivered,No,Alex Sales Rep
+ORD00685,11/19/2025,Emily Clark,Online,1,$127.71,10%,$114.94,Delivered,No,Jamie Account Manager
+ORD00686,06/07/2026,Michael Brown,Mobile App,1,$41.98,10%,$37.78,Delivered,No,Jamie Account Manager
+ORD00687,06/20/2026,Sarah Walker,Retail Store,3,$133.58,0%,$400.74,Delivered,No,Jamie Account Manager
+ORD00688,02/11/2026,David Miller,Retail Store,2,$112.82,20%,$180.51,Returned,Yes,Alex Sales Rep
+ORD00689,05/31/2026,Jessica Young,Mobile App,5,$82.09,0%,$410.45,Delivered,No,Alex Sales Rep
+ORD00690,02/25/2026,Daniel Moore,Online,1,$132.23,0%,$132.23,Delivered,No,Alex Sales Rep
+ORD00691,07/31/2026,Laura Johnson,Retail Store,1,$85.88,0%,$85.88,Returned,Yes,Alex Sales Rep
+ORD00692,11/28/2025,James Lewis,Retail Store,5,$76.30,20%,$305.20,Delivered,No,Alex Sales Rep
+ORD00693,02/13/2026,Olivia Taylor,Online,3,$165.89,0%,$497.67,Delivered,No,Alex Sales Rep
+ORD00694,11/19/2025,Ryan Hall,Mobile App,4,$173.70,0%,$694.80,Returned,Yes,Jamie Account Manager
+ORD00695,05/18/2026,Megan Wilson,Retail Store,4,$96.34,0%,$385.36,Delivered,No,Jamie Account Manager
+ORD00696,04/12/2026,John Smith,Online,4,$100.39,10%,$361.40,Delivered,No,Jamie Account Manager
+ORD00697,03/10/2026,Emily Clark,Online,4,$91.88,20%,$294.02,Shipped,No,Alex Sales Rep
+ORD00698,08/21/2026,Michael Brown,Retail Store,1,$57.02,20%,$45.62,Delivered,No,Alex Sales Rep
+ORD00699,09/22/2025,Sarah Walker,Retail Store,2,$158.88,0%,$317.76,Returned,Yes,Jamie Account Manager
+ORD00700,07/07/2026,David Miller,Mobile App,1,$159.92,0%,$159.92,Cancelled,No,Alex Sales Rep
+ORD00701,06/17/2026,Jessica Young,Online,4,$25.47,10%,$91.69,Delivered,No,Jamie Account Manager
+ORD00702,10/24/2025,Daniel Moore,Online,2,$95.63,0%,$191.26,Delivered,No,Alex Sales Rep
+ORD00703,12/29/2025,Laura Johnson,Retail Store,4,$47.50,10%,$171.00,Delivered,No,Jamie Account Manager
+ORD00704,02/19/2026,James Lewis,Retail Store,5,$8.25,10%,$37.13,Delivered,No,Jamie Account Manager
+ORD00705,04/16/2026,Olivia Taylor,Mobile App,4,$116.73,0%,$466.92,Delivered,No,Jamie Account Manager
+ORD00706,12/26/2025,Ryan Hall,Mobile App,1,$33.94,0%,$33.94,Delivered,No,Jamie Account Manager
+ORD00707,06/20/2026,Megan Wilson,Online,3,$126.02,0%,$378.06,Delivered,Yes,Jamie Account Manager
+ORD00708,12/28/2025,John Smith,Retail Store,1,$76.38,0%,$76.38,Delivered,No,Jamie Account Manager
+ORD00709,02/07/2026,Emily Clark,Online,1,$165.87,0%,$165.87,Delivered,No,Alex Sales Rep
+ORD00710,11/05/2025,Michael Brown,Online,4,$161.44,10%,$581.18,Delivered,Yes,Jamie Account Manager
+ORD00711,06/11/2026,Sarah Walker,Mobile App,2,$58.62,0%,$117.24,Delivered,No,Jamie Account Manager
+ORD00712,07/10/2026,David Miller,Mobile App,5,$100.70,20%,$402.80,Delivered,No,Alex Sales Rep
+ORD00713,08/05/2026,Jessica Young,Online,5,$159.18,20%,$636.72,Cancelled,No,Alex Sales Rep
+ORD00714,11/27/2025,Daniel Moore,Retail Store,2,$44.86,0%,$89.72,Delivered,No,Alex Sales Rep
+ORD00715,07/04/2026,Laura Johnson,Online,4,$116.84,0%,$467.36,Delivered,No,Alex Sales Rep
+ORD00716,03/16/2026,James Lewis,Mobile App,5,$131.81,0%,$659.05,Delivered,No,Jamie Account Manager
+ORD00717,02/02/2026,Olivia Taylor,Retail Store,4,$99.78,10%,$359.21,Delivered,No,Jamie Account Manager
+ORD00718,06/19/2026,Ryan Hall,Online,2,$90.68,0%,$181.36,Delivered,No,Alex Sales Rep
+ORD00719,03/21/2026,Megan Wilson,Online,2,$173.91,10%,$313.04,Cancelled,No,Alex Sales Rep
+ORD00720,12/11/2025,John Smith,Retail Store,1,$146.70,0%,$146.70,Delivered,No,Alex Sales Rep
+ORD00721,11/12/2025,Emily Clark,Retail Store,4,$102.67,0%,$410.68,Delivered,No,Jamie Account Manager
+ORD00722,04/30/2026,Michael Brown,Mobile App,1,$84.56,20%,$67.65,Delivered,No,Alex Sales Rep
+ORD00723,04/22/2026,Sarah Walker,Mobile App,1,$93.68,0%,$93.68,Delivered,No,Alex Sales Rep
+ORD00724,12/03/2025,David Miller,Mobile App,4,$150.85,0%,$603.40,Returned,Yes,Jamie Account Manager
+ORD00725,09/25/2025,Jessica Young,Retail Store,5,$165.04,10%,$742.68,Delivered,No,Jamie Account Manager
+ORD00726,12/06/2025,Daniel Moore,Mobile App,2,$159.62,0%,$319.24,Delivered,No,Alex Sales Rep
+ORD00727,01/10/2026,Laura Johnson,Retail Store,3,$21.83,10%,$58.94,Shipped,No,Jamie Account Manager
+ORD00728,11/19/2025,James Lewis,Retail Store,2,$38.19,0%,$76.38,Delivered,No,Alex Sales Rep
+ORD00729,03/24/2026,Olivia Taylor,Online,5,$73.90,10%,$332.55,Delivered,No,Alex Sales Rep
+ORD00730,03/23/2026,Ryan Hall,Retail Store,3,$162.59,10%,$438.99,Delivered,No,Alex Sales Rep
+ORD00731,04/30/2026,Megan Wilson,Mobile App,4,$167.98,10%,$604.73,Shipped,No,Alex Sales Rep
+ORD00732,12/01/2025,John Smith,Retail Store,4,$165.78,0%,$663.12,Delivered,No,Alex Sales Rep
+ORD00733,01/22/2026,Emily Clark,Retail Store,1,$76.58,20%,$61.26,Returned,Yes,Jamie Account Manager
+ORD00734,03/20/2026,Michael Brown,Online,3,$62.09,10%,$167.64,Delivered,No,Jamie Account Manager
+ORD00735,08/01/2026,Sarah Walker,Mobile App,1,$161.34,10%,$145.21,Delivered,No,Alex Sales Rep
+ORD00736,06/30/2026,David Miller,Retail Store,2,$110.05,0%,$220.10,Cancelled,No,Jamie Account Manager
+ORD00737,07/06/2026,Jessica Young,Retail Store,5,$141.58,0%,$707.90,Delivered,No,Jamie Account Manager
+ORD00738,02/04/2026,Daniel Moore,Mobile App,4,$104.56,0%,$418.24,Delivered,No,Alex Sales Rep
+ORD00739,01/19/2026,Laura Johnson,Mobile App,3,$153.18,0%,$459.54,Delivered,No,Jamie Account Manager
+ORD00740,08/18/2026,James Lewis,Online,5,$10.33,0%,$51.65,Delivered,No,Alex Sales Rep
+ORD00741,06/22/2026,Olivia Taylor,Mobile App,1,$157.90,0%,$157.90,Delivered,No,Jamie Account Manager
+ORD00742,08/20/2026,Ryan Hall,Online,2,$19.54,10%,$35.17,Delivered,No,Alex Sales Rep
+ORD00743,08/01/2026,Megan Wilson,Retail Store,4,$116.65,10%,$419.94,Delivered,No,Jamie Account Manager
+ORD00744,07/22/2026,John Smith,Mobile App,4,$42.91,0%,$171.64,Delivered,No,Alex Sales Rep
+ORD00745,09/09/2025,Emily Clark,Online,3,$132.34,10%,$357.32,Delivered,No,Alex Sales Rep
+ORD00746,01/14/2026,Michael Brown,Online,2,$104.94,20%,$167.90,Cancelled,No,Alex Sales Rep
+ORD00747,05/12/2026,Sarah Walker,Online,5,$104.65,20%,$418.60,Returned,Yes,Alex Sales Rep
+ORD00748,06/09/2026,David Miller,Retail Store,3,$19.79,0%,$59.37,Delivered,No,Alex Sales Rep
+ORD00749,12/13/2025,Jessica Young,Mobile App,3,$37.22,0%,$111.66,Delivered,No,Jamie Account Manager
+ORD00750,03/13/2026,Daniel Moore,Mobile App,4,$159.41,0%,$637.64,Delivered,No,Jamie Account Manager
+ORD00751,03/31/2026,Laura Johnson,Online,1,$107.54,10%,$96.79,Delivered,No,Jamie Account Manager
+ORD00752,03/13/2026,James Lewis,Mobile App,4,$130.42,0%,$521.68,Delivered,No,Jamie Account Manager
+ORD00753,12/08/2025,Olivia Taylor,Online,5,$109.56,0%,$547.80,Delivered,No,Alex Sales Rep
+ORD00754,08/19/2026,Ryan Hall,Online,3,$125.83,10%,$339.74,Delivered,No,Jamie Account Manager
+ORD00755,11/30/2025,Megan Wilson,Retail Store,4,$142.80,10%,$514.08,Delivered,No,Jamie Account Manager
+ORD00756,05/08/2026,John Smith,Online,3,$107.28,0%,$321.84,Delivered,No,Jamie Account Manager
+ORD00757,12/15/2025,Emily Clark,Retail Store,5,$178.66,20%,$714.64,Delivered,No,Alex Sales Rep
+ORD00758,11/25/2025,Michael Brown,Mobile App,3,$126.27,0%,$378.81,Delivered,No,Alex Sales Rep
+ORD00759,08/19/2026,Sarah Walker,Retail Store,3,$112.23,0%,$336.69,Delivered,No,Jamie Account Manager
+ORD00760,01/15/2026,David Miller,Mobile App,4,$48.95,0%,$195.80,Delivered,No,Jamie Account Manager
+ORD00761,02/15/2026,Jessica Young,Mobile App,1,$10.06,0%,$10.06,Delivered,No,Alex Sales Rep
+ORD00762,11/01/2025,Daniel Moore,Mobile App,4,$9.03,20%,$28.90,Delivered,No,Alex Sales Rep
+ORD00763,06/22/2026,Laura Johnson,Online,1,$11.82,20%,$9.46,Delivered,No,Alex Sales Rep
+ORD00764,10/25/2025,James Lewis,Mobile App,5,$61.19,10%,$275.36,Delivered,No,Alex Sales Rep
+ORD00765,12/03/2025,Olivia Taylor,Mobile App,2,$108.07,10%,$194.53,Delivered,No,Jamie Account Manager
+ORD00766,04/29/2026,Ryan Hall,Mobile App,3,$22.60,10%,$61.02,Cancelled,No,Jamie Account Manager
+ORD00767,05/02/2026,Megan Wilson,Retail Store,3,$31.91,0%,$95.73,Delivered,Yes,Jamie Account Manager
+ORD00768,08/22/2026,John Smith,Mobile App,2,$160.38,10%,$288.68,Delivered,No,Jamie Account Manager
+ORD00769,06/06/2026,Emily Clark,Mobile App,4,$84.56,0%,$338.24,Delivered,No,Alex Sales Rep
+ORD00770,07/11/2026,Michael Brown,Online,1,$23.06,10%,$20.75,Delivered,No,Alex Sales Rep
+ORD00771,03/19/2026,Sarah Walker,Retail Store,3,$111.21,10%,$300.27,Delivered,No,Jamie Account Manager
+ORD00772,07/12/2026,David Miller,Mobile App,2,$29.17,10%,$52.51,Delivered,No,Jamie Account Manager
+ORD00773,02/07/2026,Jessica Young,Mobile App,1,$128.68,0%,$128.68,Delivered,No,Jamie Account Manager
+ORD00774,01/06/2026,Daniel Moore,Online,1,$32.92,0%,$32.92,Delivered,No,Alex Sales Rep
+ORD00775,08/29/2026,Laura Johnson,Retail Store,1,$146.82,10%,$132.14,Delivered,No,Jamie Account Manager
+ORD00776,07/22/2026,James Lewis,Mobile App,1,$167.49,20%,$133.99,Delivered,No,Alex Sales Rep
+ORD00777,12/04/2025,Olivia Taylor,Online,4,$18.60,10%,$66.96,Delivered,Yes,Alex Sales Rep
+ORD00778,05/23/2026,Ryan Hall,Retail Store,1,$10.57,0%,$10.57,Shipped,No,Jamie Account Manager
+ORD00779,07/27/2026,Megan Wilson,Retail Store,1,$69.36,0%,$69.36,Delivered,No,Jamie Account Manager
+ORD00780,08/20/2026,John Smith,Mobile App,2,$178.85,20%,$286.16,Delivered,No,Alex Sales Rep
+ORD00781,11/10/2025,Emily Clark,Online,1,$49.46,10%,$44.51,Delivered,No,Jamie Account Manager
+ORD00782,11/13/2025,Michael Brown,Retail Store,1,$165.17,20%,$132.14,Cancelled,No,Jamie Account Manager
+ORD00783,07/19/2026,Sarah Walker,Online,2,$168.42,20%,$269.47,Delivered,No,Jamie Account Manager
+ORD00784,02/25/2026,David Miller,Mobile App,1,$160.58,0%,$160.58,Delivered,No,Jamie Account Manager
+ORD00785,06/13/2026,Jessica Young,Online,4,$100.50,20%,$321.60,Delivered,No,Jamie Account Manager
+ORD00786,02/21/2026,Daniel Moore,Mobile App,5,$95.65,10%,$430.43,Shipped,No,Jamie Account Manager
+ORD00787,07/20/2026,Laura Johnson,Retail Store,4,$135.25,20%,$432.80,Delivered,Yes,Jamie Account Manager
+ORD00788,08/05/2026,James Lewis,Mobile App,2,$148.84,10%,$267.91,Delivered,No,Jamie Account Manager
+ORD00789,08/29/2026,Olivia Taylor,Retail Store,2,$69.86,0%,$139.72,Returned,Yes,Alex Sales Rep
+ORD00790,03/20/2026,Ryan Hall,Mobile App,1,$116.79,20%,$93.43,Delivered,No,Alex Sales Rep
+ORD00791,03/28/2026,Megan Wilson,Retail Store,1,$60.29,20%,$48.23,Delivered,No,Alex Sales Rep
+ORD00792,12/04/2025,John Smith,Retail Store,5,$148.15,20%,$592.60,Delivered,No,Jamie Account Manager
+ORD00793,04/15/2026,Emily Clark,Online,2,$105.00,10%,$189.00,Delivered,No,Jamie Account Manager
+ORD00794,01/20/2026,Michael Brown,Retail Store,1,$40.12,0%,$40.12,Delivered,No,Alex Sales Rep
+ORD00795,01/18/2026,Sarah Walker,Online,4,$41.47,10%,$149.29,Delivered,No,Jamie Account Manager
+ORD00796,01/16/2026,David Miller,Online,5,$62.38,20%,$249.52,Delivered,No,Jamie Account Manager
+ORD00797,08/01/2026,Jessica Young,Mobile App,2,$65.77,10%,$118.39,Delivered,No,Alex Sales Rep
+ORD00798,06/30/2026,Daniel Moore,Online,5,$22.14,10%,$99.63,Shipped,No,Alex Sales Rep
+ORD00799,11/29/2025,Laura Johnson,Mobile App,1,$147.78,0%,$147.78,Delivered,No,Alex Sales Rep
+ORD00800,12/05/2025,James Lewis,Retail Store,5,$47.69,0%,$238.45,Delivered,No,Jamie Account Manager
+ORD00801,11/03/2025,Olivia Taylor,Mobile App,1,$63.60,10%,$57.24,Delivered,No,Jamie Account Manager
+ORD00802,11/16/2025,Ryan Hall,Mobile App,1,$119.93,20%,$95.94,Delivered,No,Alex Sales Rep
+ORD00803,08/09/2026,Megan Wilson,Retail Store,5,$102.58,10%,$461.61,Delivered,No,Jamie Account Manager
+ORD00804,03/13/2026,John Smith,Online,1,$169.22,0%,$169.22,Cancelled,No,Jamie Account Manager
+ORD00805,12/04/2025,Emily Clark,Online,5,$46.07,10%,$207.32,Delivered,No,Alex Sales Rep
+ORD00806,09/04/2025,Michael Brown,Online,1,$24.34,20%,$19.47,Delivered,No,Alex Sales Rep
+ORD00807,05/14/2026,Sarah Walker,Mobile App,1,$114.48,10%,$103.03,Returned,Yes,Jamie Account Manager
+ORD00808,11/18/2025,David Miller,Retail Store,5,$46.15,0%,$230.75,Delivered,No,Jamie Account Manager
+ORD00809,07/28/2026,Jessica Young,Retail Store,5,$47.96,0%,$239.80,Delivered,No,Alex Sales Rep
+ORD00810,11/25/2025,Daniel Moore,Mobile App,1,$26.21,0%,$26.21,Delivered,No,Jamie Account Manager
+ORD00811,07/21/2026,Laura Johnson,Online,3,$121.41,0%,$364.23,Delivered,Yes,Jamie Account Manager
+ORD00812,09/16/2025,James Lewis,Retail Store,3,$45.50,10%,$122.85,Shipped,No,Jamie Account Manager
+ORD00813,11/29/2025,Olivia Taylor,Mobile App,5,$33.30,0%,$166.50,Returned,Yes,Jamie Account Manager
+ORD00814,02/05/2026,Ryan Hall,Retail Store,5,$88.80,20%,$355.20,Delivered,No,Jamie Account Manager
+ORD00815,06/22/2026,Megan Wilson,Mobile App,3,$174.51,20%,$418.82,Shipped,No,Alex Sales Rep
+ORD00816,01/31/2026,John Smith,Mobile App,2,$121.48,0%,$242.96,Delivered,No,Alex Sales Rep
+ORD00817,02/13/2026,Emily Clark,Mobile App,5,$120.59,0%,$602.95,Returned,Yes,Alex Sales Rep
+ORD00818,01/29/2026,Michael Brown,Mobile App,3,$18.51,0%,$55.53,Delivered,No,Jamie Account Manager
+ORD00819,02/08/2026,Sarah Walker,Online,1,$20.63,0%,$20.63,Delivered,No,Alex Sales Rep
+ORD00820,09/12/2025,David Miller,Online,4,$11.62,10%,$41.83,Delivered,No,Alex Sales Rep
+ORD00821,10/16/2025,Jessica Young,Online,3,$40.18,0%,$120.54,Shipped,No,Alex Sales Rep
+ORD00822,11/24/2025,Daniel Moore,Mobile App,1,$24.89,0%,$24.89,Delivered,No,Alex Sales Rep
+ORD00823,04/08/2026,Laura Johnson,Retail Store,2,$158.51,0%,$317.02,Delivered,No,Jamie Account Manager
+ORD00824,02/12/2026,James Lewis,Online,2,$56.82,0%,$113.64,Cancelled,No,Alex Sales Rep
+ORD00825,09/09/2025,Olivia Taylor,Online,2,$87.32,0%,$174.64,Delivered,No,Jamie Account Manager
+ORD00826,11/01/2025,Ryan Hall,Retail Store,2,$154.07,10%,$277.33,Delivered,No,Alex Sales Rep
+ORD00827,03/11/2026,Megan Wilson,Retail Store,1,$110.25,20%,$88.20,Delivered,No,Alex Sales Rep
+ORD00828,06/01/2026,John Smith,Online,3,$89.24,0%,$267.72,Returned,Yes,Alex Sales Rep
+ORD00829,01/07/2026,Emily Clark,Retail Store,1,$71.66,0%,$71.66,Delivered,No,Alex Sales Rep
+ORD00830,05/10/2026,Michael Brown,Mobile App,1,$169.97,20%,$135.98,Shipped,No,Jamie Account Manager
+ORD00831,05/31/2026,Sarah Walker,Mobile App,3,$40.95,0%,$122.85,Delivered,No,Jamie Account Manager
+ORD00832,05/12/2026,David Miller,Mobile App,2,$150.55,20%,$240.88,Delivered,No,Alex Sales Rep
+ORD00833,10/25/2025,Jessica Young,Mobile App,4,$133.07,0%,$532.28,Delivered,No,Alex Sales Rep
+ORD00834,09/04/2025,Daniel Moore,Retail Store,5,$115.90,0%,$579.50,Delivered,No,Alex Sales Rep
+ORD00835,08/24/2026,Laura Johnson,Mobile App,4,$53.31,0%,$213.24,Delivered,No,Alex Sales Rep
+ORD00836,04/01/2026,James Lewis,Mobile App,5,$143.71,10%,$646.70,Delivered,No,Alex Sales Rep
+ORD00837,05/16/2026,Olivia Taylor,Retail Store,4,$153.62,0%,$614.48,Cancelled,No,Alex Sales Rep
+ORD00838,08/19/2026,Ryan Hall,Mobile App,1,$17.83,0%,$17.83,Cancelled,No,Alex Sales Rep
+ORD00839,05/08/2026,Megan Wilson,Retail Store,1,$151.03,10%,$135.93,Delivered,No,Alex Sales Rep
+ORD00840,06/16/2026,John Smith,Online,4,$174.52,0%,$698.08,Delivered,No,Alex Sales Rep
+ORD00841,05/11/2026,Emily Clark,Retail Store,2,$134.53,0%,$269.06,Shipped,No,Jamie Account Manager
+ORD00842,07/13/2026,Michael Brown,Mobile App,4,$25.16,0%,$100.64,Delivered,No,Alex Sales Rep
+ORD00843,08/10/2026,Sarah Walker,Mobile App,5,$69.11,20%,$276.44,Returned,Yes,Alex Sales Rep
+ORD00844,05/16/2026,David Miller,Mobile App,2,$108.21,10%,$194.78,Delivered,No,Alex Sales Rep
+ORD00845,12/13/2025,Jessica Young,Retail Store,5,$119.82,20%,$479.28,Delivered,No,Jamie Account Manager
+ORD00846,07/12/2026,Daniel Moore,Retail Store,3,$108.81,20%,$261.14,Returned,Yes,Alex Sales Rep
+ORD00847,11/06/2025,Laura Johnson,Retail Store,1,$136.26,10%,$122.63,Shipped,No,Alex Sales Rep
+ORD00848,01/14/2026,James Lewis,Online,3,$113.66,0%,$340.98,Delivered,No,Alex Sales Rep
+ORD00849,10/19/2025,Olivia Taylor,Online,1,$24.06,10%,$21.65,Delivered,No,Alex Sales Rep
+ORD00850,07/14/2026,Ryan Hall,Retail Store,1,$46.08,20%,$36.86,Cancelled,No,Jamie Account Manager
+ORD00851,12/28/2025,Megan Wilson,Mobile App,2,$145.23,20%,$232.37,Delivered,No,Alex Sales Rep
+ORD00852,03/01/2026,John Smith,Mobile App,4,$103.54,0%,$414.16,Delivered,No,Alex Sales Rep
+ORD00853,01/24/2026,Emily Clark,Retail Store,1,$84.14,20%,$67.31,Delivered,No,Alex Sales Rep
+ORD00854,06/17/2026,Michael Brown,Retail Store,5,$86.02,0%,$430.10,Delivered,No,Alex Sales Rep
+ORD00855,01/25/2026,Sarah Walker,Mobile App,3,$108.08,0%,$324.24,Delivered,No,Alex Sales Rep
+ORD00856,11/20/2025,David Miller,Retail Store,2,$29.17,0%,$58.34,Delivered,No,Jamie Account Manager
+ORD00857,11/20/2025,Jessica Young,Retail Store,5,$166.44,0%,$832.20,Shipped,No,Alex Sales Rep
+ORD00858,10/01/2025,Daniel Moore,Retail Store,4,$71.63,0%,$286.52,Delivered,No,Alex Sales Rep
+ORD00859,06/13/2026,Laura Johnson,Retail Store,5,$95.75,10%,$430.88,Cancelled,No,Alex Sales Rep
+ORD00860,01/01/2026,James Lewis,Retail Store,3,$132.50,20%,$318.00,Delivered,No,Alex Sales Rep
+ORD00861,12/24/2025,Olivia Taylor,Online,5,$135.59,0%,$677.95,Delivered,No,Alex Sales Rep
+ORD00862,09/15/2025,Ryan Hall,Mobile App,1,$90.38,20%,$72.30,Delivered,No,Alex Sales Rep
+ORD00863,12/01/2025,Megan Wilson,Retail Store,5,$135.15,10%,$608.18,Delivered,Yes,Alex Sales Rep
+ORD00864,01/19/2026,John Smith,Mobile App,4,$23.93,0%,$95.72,Delivered,No,Jamie Account Manager
+ORD00865,05/03/2026,Emily Clark,Online,5,$60.47,0%,$302.35,Delivered,No,Jamie Account Manager
+ORD00866,10/06/2025,Michael Brown,Retail Store,1,$158.82,10%,$142.94,Delivered,No,Jamie Account Manager
+ORD00867,06/10/2026,Sarah Walker,Retail Store,2,$83.70,0%,$167.40,Delivered,No,Alex Sales Rep
+ORD00868,11/29/2025,David Miller,Retail Store,5,$12.18,10%,$54.81,Delivered,No,Alex Sales Rep
+ORD00869,02/02/2026,Jessica Young,Retail Store,4,$167.21,0%,$668.84,Delivered,No,Jamie Account Manager
+ORD00870,06/02/2026,Daniel Moore,Online,3,$84.27,0%,$252.81,Delivered,No,Alex Sales Rep
+ORD00871,08/29/2026,Laura Johnson,Mobile App,5,$24.43,20%,$97.72,Delivered,No,Jamie Account Manager
+ORD00872,09/01/2025,James Lewis,Online,5,$142.89,10%,$643.01,Delivered,No,Jamie Account Manager
+ORD00873,06/27/2026,Olivia Taylor,Retail Store,5,$167.38,20%,$669.52,Shipped,No,Jamie Account Manager
+ORD00874,01/17/2026,Ryan Hall,Online,2,$92.60,10%,$166.68,Returned,Yes,Jamie Account Manager
+ORD00875,04/03/2026,Megan Wilson,Retail Store,5,$132.20,0%,$661.00,Delivered,No,Alex Sales Rep
+ORD00876,12/09/2025,John Smith,Mobile App,3,$157.38,10%,$424.93,Delivered,No,Jamie Account Manager
+ORD00877,09/30/2025,Emily Clark,Mobile App,2,$129.53,20%,$207.25,Delivered,No,Alex Sales Rep
+ORD00878,10/27/2025,Michael Brown,Online,3,$157.21,0%,$471.63,Shipped,No,Alex Sales Rep
+ORD00879,02/09/2026,Sarah Walker,Retail Store,5,$44.29,20%,$177.16,Delivered,No,Jamie Account Manager
+ORD00880,11/04/2025,David Miller,Online,5,$51.56,0%,$257.80,Delivered,No,Jamie Account Manager
+ORD00881,12/17/2025,Jessica Young,Mobile App,1,$149.24,10%,$134.32,Delivered,No,Alex Sales Rep
+ORD00882,09/03/2025,Daniel Moore,Mobile App,2,$116.65,20%,$186.64,Delivered,No,Alex Sales Rep
+ORD00883,10/26/2025,Laura Johnson,Retail Store,5,$56.80,0%,$284.00,Returned,Yes,Jamie Account Manager
+ORD00884,09/23/2025,James Lewis,Mobile App,4,$140.21,20%,$448.67,Delivered,No,Jamie Account Manager
+ORD00885,04/04/2026,Olivia Taylor,Mobile App,2,$119.66,0%,$239.32,Delivered,No,Jamie Account Manager
+ORD00886,03/17/2026,Ryan Hall,Mobile App,5,$155.84,0%,$779.20,Delivered,No,Alex Sales Rep
+ORD00887,02/04/2026,Megan Wilson,Retail Store,3,$57.49,0%,$172.47,Delivered,No,Jamie Account Manager
+ORD00888,03/03/2026,John Smith,Online,3,$103.57,0%,$310.71,Shipped,No,Jamie Account Manager
+ORD00889,10/05/2025,Emily Clark,Mobile App,1,$125.75,0%,$125.75,Delivered,No,Jamie Account Manager
+ORD00890,06/08/2026,Michael Brown,Retail Store,1,$178.64,0%,$178.64,Delivered,No,Alex Sales Rep
+ORD00891,10/31/2025,Sarah Walker,Online,2,$147.35,10%,$265.23,Delivered,No,Jamie Account Manager
+ORD00892,10/10/2025,David Miller,Online,4,$172.56,0%,$690.24,Delivered,No,Alex Sales Rep
+ORD00893,11/07/2025,Jessica Young,Mobile App,5,$104.10,20%,$416.40,Delivered,No,Jamie Account Manager
+ORD00894,09/02/2025,Daniel Moore,Online,1,$176.46,20%,$141.17,Delivered,Yes,Alex Sales Rep
+ORD00895,05/09/2026,Laura Johnson,Online,5,$55.01,10%,$247.55,Delivered,Yes,Jamie Account Manager
+ORD00896,08/19/2026,James Lewis,Mobile App,5,$157.46,0%,$787.30,Delivered,No,Jamie Account Manager
+ORD00897,01/31/2026,Olivia Taylor,Mobile App,1,$123.81,0%,$123.81,Delivered,No,Jamie Account Manager
+ORD00898,09/14/2025,Ryan Hall,Mobile App,2,$54.61,10%,$98.30,Delivered,No,Jamie Account Manager
+ORD00899,09/10/2025,Megan Wilson,Retail Store,3,$100.00,20%,$240.00,Delivered,No,Alex Sales Rep

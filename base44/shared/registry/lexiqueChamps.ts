@@ -112,6 +112,10 @@ export const REGLES: Regle[] = [
   R("line_id", ["Order"], [["ligne", "line", "row", "transaction"], ID], ["client", "customer", "produit", "product"], COMMANDE),
   // Sans colonne « commande », le numero de transaction / vente / ticket EST le numero de commande.
   R("order_id", ["Order"], [["transaction", "vente", "sale", "ticket", "recu", "receipt"], ID], ["ligne", "line", "client", "customer", "produit", "product"], undefined, COMMANDE),
+  // Factures et mandats de services : « Invoice # », « Mandate No », « No facture »
+  // (jeux generes, 25 sept. : la feuille de factures devenait des Clients).
+  R("order_id", ["Order"], [["invoice", "facture", "mandat", "mandate", "engagement", "contrat", "contract"]], ["date", "client", "customer", "montant", "amount", "total", "statut", "status", "ligne", "line"]),
+  R("total", ["Order"], [["honoraire", "fee", "billed", "invoiced"]], ["cout", "cost", "unitaire", "unit", "taxe", "tax", "date", "statut", "status"]),
   R("line_id", ["Order"], [["ligne", "line", "row"], ID], ["client", "customer", "produit", "product", "commande", "order"]),
   R("date", ["Order"], [COMMANDE, DATE]),
   // Horodatage d'achat (« order_purchase_timestamp ») : la date de la commande, jamais celle de livraison.
@@ -246,7 +250,7 @@ export const REGLES: Regle[] = [
   R("warehouse_name", ["Inventory"], [["entrepot", "depot", "warehouse"], ["nom", "name", "libelle"]]),
   // Une colonne « succursale » a partout un champ ou atterrir : sinon elle
   // restait dans original_data, invisible aux calculs (rapport, lot 1.3).
-  R("warehouse_name", ["Inventory"], [["succursale", "magasin", "boutique", "store", "site", "emplacement", "branch"]], ID),
+  R("warehouse_name", ["Inventory"], [["succursale", "magasin", "boutique", "store", "site", "emplacement", "branch", "entrepot", "depot", "warehouse"]], ID),
   R("branch", ["Transaction"], [["succursale", "magasin", "boutique", "store", "agence", "branch", "site", "emplacement", "location"]], ID),
   R("location_id", ["Asset"], [["succursale", "magasin", "boutique", "store", "agence", "branch", "site", "emplacement", "location", "lieu"]], ID),
   R("reserved_qty", ["Inventory"], [["reserve", "reservee", "reserved", "allocated"]]),
