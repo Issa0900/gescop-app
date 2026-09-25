@@ -32,14 +32,22 @@ def num(v):
     if v is None or v == "": return 0.0
     return float(v)
 
-def feuille(wb, nom):
+def feuille(wb, nom, ignorer_prefixe="TOTAL"):
     ws = wb[nom]
     rows = list(ws.iter_rows(values_only=True))
-    tete = [str(h).strip() if h is not None else "" for h in rows[0]]
+    idx_tete = 0
+    for idx, r in enumerate(rows):
+        non_vides = [c for c in r if c is not None and str(c).strip() != ""]
+        if len(non_vides) >= 3:
+            idx_tete = idx
+            break
+    tete = [str(h).strip() if h is not None else "" for h in rows[idx_tete]]
     out = []
-    for r in rows[1:]:
+    for r in rows[idx_tete + 1:]:
         if r is None or all(c is None or str(c).strip() == "" for c in r): continue
-        out.append({tete[i]: r[i] for i in range(len(tete)) if tete[i]})
+        prem = str(r[0] or "").strip().upper()
+        if ignorer_prefixe and prem.startswith(ignorer_prefixe): continue
+        out.append({tete[i]: r[i] for i in range(len(tete)) if i < len(r) and tete[i]})
     return out
 
 def derniere_photo(rows, produit, entrepot, date):
@@ -134,7 +142,30 @@ def gescop():
         solde(num(dernier["Solde de clôture"])),
     ]})
 
-for fn in [xplorer_3mois, simulation_3ans, gescop]: fn()
+# ------------------------------------------------------------ Nordik Plein Air (7 feuilles, en-têtes avec titres)
+def nordik():
+    f = "Nordik_PleinAir_Donnees_Complet_2026.xlsx"
+    wb = load_workbook(os.path.join(DEMO, f), read_only=True, data_only=True)
+    F = lambda n: feuille(wb, n)
+    inv, crm, mkt, emp, sup = F("Stocks & Inventaire"), F("Clients (CRM)"), F("Marketing"), F("Employés & RH"), F("Fournisseurs")
+    val_cout = sum(num(r["Qté en Stock"]) * num(r["Coût Unitaire ($)"]) for r in inv)
+    val_vente = sum(num(r["Qté en Stock"]) * num(r["Prix Vente ($)"]) for r in inv)
+    pts = sum(num(r["Points Fidélité"]) for r in crm)
+    budget = sum(num(r["Budget (CAD)"]) for r in mkt)
+    clics = sum(num(r["Clics"]) for r in mkt)
+    succursales = len(set(r["Succursale"] for r in emp if r.get("Succursale")))
+    VERITE.append({"fichier": f, "controles": [
+        kpi("inventory_value_total", arr(val_cout), "valeur stock au coût"),
+        somme("Inventory", "inventory_value", val_cout, "valeur stock coût"),
+        somme("Inventory", "sale_value", val_vente, "valeur stock vente"),
+        somme("Customer", "loyalty_points", pts, "points fidélité"),
+        somme("Campaign", "budget", budget, "budget marketing"),
+        somme("Campaign", "clicks", clics, "clics marketing"),
+        distincts("Employee", "branch", succursales),
+        lignes("Supplier", len(sup)),
+    ]})
+
+for fn in [xplorer_3mois, simulation_3ans, gescop, nordik]: fn()
 with open(os.path.join(ICI, "verite_demo_modules.json"), "w", encoding="utf-8") as fh:
     json.dump(VERITE, fh, ensure_ascii=False, indent=1)
 print(sum(len(v["controles"]) for v in VERITE), "contrôles pour", len(VERITE), "fichiers")

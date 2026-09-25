@@ -320,5 +320,62 @@
     "attendu": 1301574.5
    }
   ]
+ },
+ {
+  "fichier": "Nordik_PleinAir_Donnees_Complet_2026.xlsx",
+  "controles": [
+   {
+    "type": "kpi",
+    "id": "inventory_value_total",
+    "attendu": 51495.0,
+    "note": "valeur stock au coût"
+   },
+   {
+    "type": "somme",
+    "entite": "Inventory",
+    "champ": "inventory_value",
+    "attendu": 51495.0,
+    "note": "valeur stock coût"
+   },
+   {
+    "type": "somme",
+    "entite": "Inventory",
+    "champ": "sale_value",
+    "attendu": 117049.82,
+    "note": "valeur stock vente"
+   },
+   {
+    "type": "somme",
+    "entite": "Customer",
+    "champ": "loyalty_points",
+    "attendu": 96950.0,
+    "note": "points fidélité"
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "budget",
+    "attendu": 23300.0,
+    "note": "budget marketing"
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "clicks",
+    "attendu": 29450.0,
+    "note": "clics marketing"
+   },
+   {
+    "type": "distincts",
+    "entite": "Employee",
+    "champ": "branch",
+    "attendu": 8
+   },
+   {
+    "type": "lignes",
+    "entite": "Supplier",
+    "attendu": 7
+   }
+  ]
  }
 ]
