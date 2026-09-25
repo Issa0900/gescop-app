@@ -60,13 +60,74 @@ const RUPTURE_STATUSES = ["rupture", "proche_rupture"];
  * number from the same rows. A setting that only moves one screen is worse than
  * no setting: it makes the app contradict itself.
  *
+/**
+ * Agrémente l'inventaire multi-entrepôts :
+ * Pour chaque couple (produit, entrepôt/localisation), retient le relevé le plus récent,
+ * puis somme le stock de clôture et la valeur d'inventaire sur l'ensemble des entrepôts par SKU.
+ */
+export function aggregateLatestInventory(inventory) {
+  const dernierParEntrepot = new Map();
+  for (const i of inventory || []) {
+    const pid = i.product_id || i.id_product || i.sku || i.product_code;
+    if (!pid) continue;
+    const wid = i.warehouse_id || i.warehouse || i.location_id || i.location || i.succursale || i.store || "default";
+    const cle = `${pid}|${wid}`;
+    const d = dateReferenceInventaire ? dateReferenceInventaire(i) : (i.date || i.reference_date || "");
+    const prec = dernierParEntrepot.get(cle);
+    if (!prec || d >= prec.d) {
+      dernierParEntrepot.set(cle, { d, row: i });
+    }
+  }
+
+  const parProduit = new Map();
+  for (const { row, d } of dernierParEntrepot.values()) {
+    const pid = row.product_id || row.id_product || row.sku || row.product_code;
+    const stockVal = Number(row.closing_stock != null ? row.closing_stock : (row.qte_en_stock != null ? row.qte_en_stock : (row.inventory_level != null ? row.inventory_level : 0))) || 0;
+    const invVal = Number(row.inventory_value) || 0;
+
+    if (!parProduit.has(pid)) {
+      parProduit.set(pid, {
+        ...row,
+        product_id: pid,
+        closing_stock: stockVal,
+        inventory_value: invVal,
+        _dateRef: d,
+        _warehouses: [row],
+      });
+    } else {
+      const agg = parProduit.get(pid);
+      agg.closing_stock += stockVal;
+      agg.inventory_value += invVal;
+      agg._warehouses.push(row);
+      if (d > agg._dateRef) {
+        agg._dateRef = d;
+        agg.date = row.date;
+      }
+      if (row.stock_status === "rupture") agg.stock_status = "rupture";
+      else if (row.stock_status === "faible" && agg.stock_status !== "rupture") agg.stock_status = "faible";
+    }
+  }
+
+  return Array.from(parProduit.values());
+}
+
+/**
+ * THE single stock-alert computation for the whole app.
+ *
+ * The user-defined threshold used to live on the Produits page alone. Every
+ * other screen counted shortages straight from the imported `stock_status`, so
+ * lowering the threshold changed the Produits list while the KPI "Alertes
+ * rupture", the Opérations score and the alert centre kept showing a different
+ * number from the same rows. A setting that only moves one screen is worse than
+ * no setting: it makes the app contradict itself.
+ *
  * A product is in shortage when EITHER the imported status says so, OR its
  * recorded stock is at/under the threshold the user chose. Both signals matter:
  * the status carries what the source system concluded, the threshold carries
  * what this business considers too low.
  */
 export function computeStockAlerts(products, inventory, settings, orders) {
-  const latestInv = latestByKey(inventory || [], "product_id", dateReferenceInventaire);
+  const latestInv = aggregateLatestInventory(inventory || []);
   const invByProduct = {};
   latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
 

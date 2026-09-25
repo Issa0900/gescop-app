@@ -39,13 +39,23 @@ const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v)
  * reconstruit a l'import (quantite x prix).
  */
 export function montantHT(r) {
+  const tr = num(r.total_revenue);
+  if (tr !== null && Number.isFinite(tr)) return tr;
   const st = num(r.subtotal);
-  if (st !== null && Number.isFinite(st)) return st;
+  const disc = num(r.discount) || 0;
   const tot = num(r.total);
   const tax = num(r.tax);
-  if (tot !== null && Number.isFinite(tot)) return tax !== null && Number.isFinite(tax) ? tot - tax : tot;
-  const tr = num(r.total_revenue);
-  return tr !== null ? tr : NaN;
+  if (st !== null && Number.isFinite(st)) {
+    if (tot !== null && Number.isFinite(tot) && tax !== null && Number.isFinite(tax)) {
+      if (Math.abs(st + tax - tot) < 0.05) return st;
+    }
+    return st - disc;
+  }
+  if (tot !== null && Number.isFinite(tot)) {
+    const net = tax !== null && Number.isFinite(tax) ? tot - tax : tot;
+    return net - disc;
+  }
+  return NaN;
 }
 
 /**
@@ -140,13 +150,46 @@ export function transactionsDepensesDejaSaisies(records) {
     const cle = `${String(r.date || "").slice(0, 10)}|${Math.abs(Number(r.amount) || 0).toFixed(2)}`;
     dispo.set(cle, (dispo.get(cle) || 0) + 1);
   }
+
+  const payrollParMois = new Map();
+  const payrollItems = new Map();
+  for (const r of records) {
+    if (r._entity !== "Payroll") continue;
+    const cost = Number(r.total_cost ?? r.employer_cost ?? r.regular_pay) || 0;
+    const m = String(r.period || r.date || "").slice(0, 7);
+    if (m) payrollParMois.set(m, (payrollParMois.get(m) || 0) + cost);
+    const d = String(r.period || r.date || "").slice(0, 10);
+    const cle = `${d}|${Math.abs(cost).toFixed(2)}`;
+    payrollItems.set(cle, (payrollItems.get(cle) || 0) + 1);
+  }
+
   const out = new Set();
-  if (dispo.size === 0) return out;
+  if (dispo.size === 0 && payrollItems.size === 0 && payrollParMois.size === 0) return out;
   for (const r of records) {
     if (r._entity !== "Transaction" || !estDepense(r)) continue;
     const m = Math.abs(Number(r.amount) || 0);
-    const cle = `${String(r.date || "").slice(0, 10)}|${m.toFixed(2)}`;
-    if ((dispo.get(cle) || 0) > 0) { dispo.set(cle, dispo.get(cle) - 1); out.add(r); }
+    const dateStr = String(r.date || "").slice(0, 10);
+    const cle = `${dateStr}|${m.toFixed(2)}`;
+    if ((dispo.get(cle) || 0) > 0) {
+      dispo.set(cle, dispo.get(cle) - 1);
+      out.add(r);
+      continue;
+    }
+    if ((payrollItems.get(cle) || 0) > 0) {
+      payrollItems.set(cle, payrollItems.get(cle) - 1);
+      out.add(r);
+      continue;
+    }
+    const mois = dateStr.slice(0, 7);
+    const libelle = `${r.category || ""} ${r.description || ""}`.toLowerCase();
+    const estTransactionPaie = /paie|salaire|payroll|remunerat/i.test(libelle);
+    if (estTransactionPaie && payrollParMois.has(mois)) {
+      const totMois = payrollParMois.get(mois);
+      if (Math.abs(m - totMois) < 1.0 || estTransactionPaie) {
+        out.add(r);
+        continue;
+      }
+    }
   }
   return out;
 }

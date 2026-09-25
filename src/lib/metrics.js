@@ -72,16 +72,31 @@ export function marginDeltaPoints(currPct, prevPct) {
 export function productMarginPct(p) {
   if (!p) return null;
   const raw = p.gross_margin != null ? Number(p.gross_margin) : null;
+  const cost = Number(p.purchase_cost ?? p.unit_cost) || 0;
+  const price = Number(p.selling_price ?? p.unit_price) || 0;
+
+  if (price > 0 && cost > 0) {
+    const marginDollar = price - cost;
+    const marginRatePct = (marginDollar / price) * 100;
+    if (raw !== null && Number.isFinite(raw) && raw !== 0) {
+      if (raw >= -1 && raw <= 1) {
+        return raw * 100;
+      }
+      // Si la valeur dépasse 100 % ou correspond au profit brut en dollars (price - cost),
+      // il s'agit d'un montant en $ issu de l'export qu'il faut ramener au taux de marge.
+      if (raw > 100 || Math.abs(raw - marginDollar) < 1.0) {
+        return marginRatePct;
+      }
+      return raw;
+    }
+    return marginRatePct;
+  }
+
   if (raw !== null && Number.isFinite(raw) && raw !== 0) {
     if (raw >= -1 && raw <= 1) {
       return raw * 100;
     }
     return raw;
-  }
-  const cost = Number(p.purchase_cost ?? p.unit_cost) || 0;
-  const price = Number(p.selling_price ?? p.unit_price) || 0;
-  if (price > 0 && cost > 0) {
-    return ((price - cost) / price) * 100;
   }
   return raw !== null && Number.isFinite(raw) ? raw : null;
 }

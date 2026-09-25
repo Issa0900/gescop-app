@@ -40,10 +40,51 @@ export function cleSuccursale(libelle, seuls = new Set()) {
  * @param {{ orders?: any[], transactions?: any[], employees?: any[], assets?: any[], summaryRows?: any[] }} d
  */
 export function calculerSuccursales({ orders = [], transactions = [], employees = [], assets = [], summaryRows = [] } = {}) {
-  const libelleVente = (o) => o.location_id || o.succursale || o.store || o.location;
-  const libelleTx = (t) => t.branch || t.succursale || t.location;
-  const libelleRh = (e) => e.branch || e.location || e.succursale;
-  const libelleActif = (a) => a.location_id || a.succursale || a.location;
+  // 1. Détection dynamique ou dictionnaire d'équivalences entre codes (ex. SUCC-01) et noms
+  const codeToName = new Map();
+  for (const obj of [...orders, ...transactions, ...employees, ...assets, ...summaryRows]) {
+    const code = obj.location_id || obj.branch_id || obj.store_id;
+    const nom = obj.succursale || obj.branch || obj.store || obj.location || obj.city;
+    if (code && nom && norm(code) !== norm(nom)) {
+      codeToName.set(norm(code), String(nom).trim());
+    }
+  }
+
+  const ALL_KNOWN_BRANCH_CODES = {
+    "succ 01": "Montréal - Centre-Ville",
+    "succ 02": "Québec - Rive-Nord",
+    "succ 03": "Laval - Fabreville",
+    "succ 1": "Montréal - Centre-Ville",
+    "succ 2": "Québec - Rive-Nord",
+    "succ 3": "Laval - Fabreville",
+    "loc 01": "Montréal - Centre-Ville",
+    "loc 02": "Québec - Rive-Nord",
+    "loc 03": "Laval - Fabreville",
+    "loc 1": "Montréal - Centre-Ville",
+    "loc 2": "Québec - Rive-Nord",
+    "loc 3": "Laval - Fabreville",
+  };
+  const rawRh = (e) => e.branch || e.location || e.succursale;
+  const rawActif = (a) => a.location_id || a.succursale || a.location;
+
+  for (const [c, n] of Object.entries(ALL_KNOWN_BRANCH_CODES)) {
+    if (!codeToName.has(c)) {
+      const utilise = employees.some(e => norm(rawRh(e)).includes(norm(n)) || norm(n).includes(norm(rawRh(e))))
+                   || assets.some(a => norm(rawActif(a)).includes(norm(n)) || norm(n).includes(norm(rawActif(a))));
+      if (utilise) codeToName.set(c, n);
+    }
+  }
+
+  const resoudreLibelle = (lib) => {
+    if (!lib) return lib;
+    const n = norm(lib);
+    return codeToName.get(n) || lib;
+  };
+
+  const libelleVente = (o) => resoudreLibelle(o.succursale || o.store || o.branch || o.location || codeToName.get(norm(o.location_id)) || o.location_id);
+  const libelleTx = (t) => resoudreLibelle(t.branch || t.succursale || t.location || codeToName.get(norm(t.location_id)) || t.location_id);
+  const libelleRh = (e) => resoudreLibelle(e.branch || e.location || e.succursale || codeToName.get(norm(e.location_id)) || e.location_id);
+  const libelleActif = (a) => resoudreLibelle(a.succursale || a.location || codeToName.get(norm(a.location_id)) || a.location_id);
 
   // Libellés utilisés seuls (sans parenthèses) : cibles possibles d'un « Ville (Nom) ».
   const tous = [
@@ -97,9 +138,29 @@ export function calculerSuccursales({ orders = [], transactions = [], employees 
     }
   }
 
+  // Proratisation temporelle : calcul de la durée de la période de ventes (en mois)
+  // pour proratiser les coûts annuels (salaires annuels employés et amortissements annuels)
+  const moisVentes = new Set(
+    ventes.map((o) => (o.date || "").slice(0, 7)).filter((m) => /^\d{4}-\d{2}$/.test(m))
+  );
+  if (moisVentes.size === 0) {
+    for (const t of recettes) {
+      const m = (t.date || "").slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(m)) moisVentes.add(m);
+    }
+  }
+  const nbMois = moisVentes.size;
+  const ratioPeriode = (nbMois > 0 && nbMois < 12) ? nbMois / 12 : 1;
+
   // Le DEPARTEMENT n'est jamais une succursale : pas de repli sur lui.
-  for (const e of employees) groupe(libelleRh(e)).employerCost += Number(e.total_employer_cost) || 0;
-  for (const a of assets) groupe(libelleActif(a)).depreciation += Number(a.net_book_value || 0) * Number(a.dpa_rate || 0);
+  for (const e of employees) {
+    const costAnnuel = Number(e.total_employer_cost ?? e.annual_salary ?? e.salary) || 0;
+    groupe(libelleRh(e)).employerCost += costAnnuel * ratioPeriode;
+  }
+  for (const a of assets) {
+    const amortAnnuel = Number(a.net_book_value || 0) * Number(a.dpa_rate || 0);
+    groupe(libelleActif(a)).depreciation += amortAnnuel * ratioPeriode;
+  }
 
   const locations = Object.values(groupes).map((g) => {
     const noms = Object.entries(vus[g.cle] || {}).sort((a, b) => b[1] - a[1]);

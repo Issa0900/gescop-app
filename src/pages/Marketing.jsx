@@ -68,6 +68,7 @@ export default function Marketing() {
   // Shown only when at least one campaign actually carries a CPC, so an
   // import without it doesn't get a column full of dashes.
   const hasCpc = columnPresent(campaigns, "cpc");
+  const hasDates = (campaigns || []).some((c) => c.start_date || c.end_date);
 
   // Acquisitions measured on the customer file. The current month is excluded:
   // it is partial and would read as a collapse in acquisition.
@@ -110,15 +111,25 @@ export default function Marketing() {
     conversions: v.conversions,
   }));
 
-  // Monthly trend from daily
+  // Monthly trend from daily, or fallback to dated campaigns
   const byMonth = {};
-  daily.forEach((d) => {
-    const m = (d.date || "").slice(0, 7);
-    if (!m) return;
-    if (!byMonth[m]) byMonth[m] = { spend: 0, revenue: 0 };
-    byMonth[m].spend += num(d.spend);
-    byMonth[m].revenue += num(d.revenue);
-  });
+  if (Array.isArray(daily) && daily.length > 0) {
+    daily.forEach((d) => {
+      const m = (d.date || "").slice(0, 7);
+      if (!m) return;
+      if (!byMonth[m]) byMonth[m] = { spend: 0, revenue: 0 };
+      byMonth[m].spend += num(d.spend);
+      byMonth[m].revenue += num(d.revenue);
+    });
+  } else {
+    (campaigns || []).forEach((c) => {
+      const m = (c.start_date || c.end_date || "").slice(0, 7);
+      if (!m) return;
+      if (!byMonth[m]) byMonth[m] = { spend: 0, revenue: 0 };
+      byMonth[m].spend += num(c.spend || c.budget);
+      byMonth[m].revenue += num(c.revenue);
+    });
+  }
   const trendData = Object.entries(byMonth).sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-FENETRE_MOIS).map(([m, v]) => ({
     mois: m,
     dépenses: Math.round(v.spend),
@@ -141,6 +152,11 @@ export default function Marketing() {
   const campaignColumns = [
     { key: "campaign_name", header: "Campagne", searchValue: (c) => c.campaign_name || "", sortValue: (c) => c.campaign_name || "", render: (c) => <span className="block max-w-[180px] truncate" title={c.campaign_name}>{c.campaign_name}</span> },
     { key: "channel", header: "Canal", render: (c) => <span className="text-muted-foreground">{libelleCode(c.channel)}</span> },
+    ...(hasDates ? [{
+      key: "period",
+      header: "Période",
+      render: (c) => (c.start_date || c.end_date ? `${c.start_date || "…"} → ${c.end_date || "…"}` : "-"),
+    }] : []),
     { key: "budget", header: "Budget", align: "right", sortValue: (c) => Number(c.budget) || 0, render: (c) => formatCAD(c.budget || 0) },
     { key: "spend", header: "Dépenses", align: "right", sortValue: (c) => c._spend, render: (c) => formatCAD(c._spend) },
     { key: "revenue", header: "Revenus", align: "right", sortValue: (c) => c._revenue, render: (c) => formatCAD(c._revenue) },

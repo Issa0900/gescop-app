@@ -57,7 +57,7 @@ export const KPI_REGISTRY = Object.freeze({
     // alone.
     calculate: (deps) => {
       const txnRevenue = deps.income_amount != null ? deps.income_amount
-        : deps.transaction_amount != null ? deps.transaction_amount
+        : (deps.revenue == null && deps.transaction_amount != null) ? deps.transaction_amount
         : null;
       if (txnRevenue == null && deps.revenue == null) return null;
       // Une transaction qui encaisse une commande deja importee est le MEME
@@ -90,10 +90,13 @@ export const KPI_REGISTRY = Object.freeze({
     // existed, however small.
     calculate: (deps) => {
       if (deps.expense_amount == null && deps.operating_expense == null) return null;
-      // Meme regle que le CA : une transaction de depense qui repete une
-      // depense deja importee (meme date, meme montant) n'est comptee qu'une fois.
-      const doublon = deps.expense_amount != null && deps.operating_expense != null ? depensesDejaSaisies(deps._records || []) : 0;
-      return Math.max(0, (deps.expense_amount || 0) - doublon) + (deps.operating_expense || 0);
+      // Dédoublonnage des dépenses avec les factures et la paie déjà saisies
+      const doublon = deps.expense_amount != null ? depensesDejaSaisies(deps._records || []) : 0;
+      const netTxn = Math.max(0, (deps.expense_amount || 0) - doublon);
+      if (deps.operating_expense == null) {
+        return (deps.expense_amount != null && netTxn === 0 && doublon > 0) ? 0 : (netTxn || null);
+      }
+      return netTxn + (deps.operating_expense || 0);
     }
   },
 

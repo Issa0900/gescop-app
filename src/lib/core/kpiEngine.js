@@ -425,6 +425,13 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
         if (st.includes("attente") || st.includes("pending") || st.includes("annul") || st.includes("draft")) {
            return false;
         }
+        const typ = String(r.type || "").toLowerCase();
+        if (targetSemantic.semanticType === "revenue" && ["expense", "sortie", "debit", "depense", "decaissement", "charge"].includes(typ)) {
+          return false;
+        }
+        if (targetSemantic.semanticType === "expense" && ["income", "entree", "credit", "revenu", "encaissement"].includes(typ)) {
+          return false;
+        }
       }
       return true;
     });

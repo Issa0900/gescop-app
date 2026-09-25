@@ -12,7 +12,7 @@ import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { FENETRE_MOIS, moisLisible } from "@/lib/graphiques";
-import { preparerPeriodes, kpisParFenetre, serieMensuelle } from "@/lib/core/kpiPeriodes";
+import { preparerPeriodes, kpisParFenetre, serieMensuelle, decalerMois } from "@/lib/core/kpiPeriodes";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/lib/AuthContext";
 import { useObservations } from "@/hooks/useObservations";
@@ -307,10 +307,21 @@ export default function Kpis() {
       // One shared churn definition (status only - "a_risque" is not churn).
       const churn = churnStats(customers, orders);
       const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
-      const newCustomers = lastVal(custMonthly);
-      const prevNewCustomers = prevVal(custMonthly);
       const lastEntry = custMonthly.length > 0 ? custMonthly[custMonthly.length - 1] : null;
-      const moisNom = lastEntry?.month ? moisLisible(lastEntry.month) : "mois";
+      const moisCible = fen.dernierMois || lastEntry?.month;
+      let newCustomers = 0;
+      let prevNewCustomers = 0;
+      if (moisCible) {
+        const entry = custMonthly.find((e) => e.month === moisCible);
+        newCustomers = entry ? entry.val : 0;
+        const precMois = decalerMois(moisCible, -1);
+        const prevEntry = custMonthly.find((e) => e.month === precMois);
+        prevNewCustomers = prevEntry ? prevEntry.val : 0;
+      } else {
+        newCustomers = lastVal(custMonthly);
+        prevNewCustomers = prevVal(custMonthly);
+      }
+      const moisNom = moisCible ? moisLisible(moisCible) : "mois";
       // Revenue per customer: the numerator covers every buyer, so the
       // denominator must too. Dividing all-customer revenue by ACTIVE customers
       // only was inflating this by 1/(share of active) - 2x at 50% churn.

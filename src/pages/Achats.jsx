@@ -9,6 +9,7 @@ import BadgeStatus from "@/components/ui/BadgeStatus";
 import { formatCAD, formatNumber, formatPct } from "@/lib/utils";
 import { Truck, AlertTriangle, PackageCheck, Timer } from "lucide-react";
 import { fetchAll } from "@/lib/fetchAll";
+import { productMarginPct } from "@/lib/metrics";
 
 const statusLabels = { recu: "Reçu", en_cours: "En cours", retard: "En retard", annule: "Annulé" };
 const supplierStatusLabels = { actif: "Actif", inactif: "Inactif", problematique: "Problématique" };
@@ -60,7 +61,8 @@ export default function Achats() {
   const hasPurchaseVolume = (suppliers || []).some((s) => s.purchase_volume != null && Number(s.purchase_volume) > 0);
 
   const total = purchases?.length || 0;
-  const late = (purchases || []).filter((p) => p.status === "retard").length;
+  const isLate = (p) => p.status === "retard" || (Number(p.delay_days) > 0) || (Number(p.jours_retard) > 0);
+  const late = (purchases || []).filter(isLate).length;
   const received = (purchases || []).filter((p) => p.status === "recu").length;
   const delaySamples = (purchases || []).filter((p) => p.delay_days !== null && p.delay_days !== undefined);
   const avgDelay = delaySamples.length > 0
@@ -102,32 +104,61 @@ export default function Achats() {
       key: "status",
       header: "Statut",
       sortValue: (p) => p.status || "",
-      render: (p) => (
-        <BadgeStatus status={p.status === "recu" ? "good" : p.status === "en_cours" ? "info" : p.status === "retard" ? "critical" : "neutral"}>
-          {statusLabels[p.status] || p.status || "-"}
-        </BadgeStatus>
-      ),
+      render: (p) => {
+        const enRetard = isLate(p);
+        const st = enRetard ? "retard" : p.status;
+        return (
+          <BadgeStatus status={st === "recu" ? "good" : st === "en_cours" ? "info" : st === "retard" ? "critical" : "neutral"}>
+            {statusLabels[st] || st || "-"}
+          </BadgeStatus>
+        );
+      },
     },
   ];
 
-  const customsRows = (inventory || []).filter((i) => i.origin_country || i.customs_code).map((inv) => {
-    const sup = (suppliers || []).find((s) => s.supplier_id === inv.supplier_id);
-    const prod = (products || []).find((p) => p.product_id === inv.product_id);
-    let riskScore = 0;
-    if (inv.origin_country && String(inv.origin_country).toLowerCase() !== "ca" && String(inv.origin_country).toLowerCase() !== "canada") riskScore += 1;
-    if (sup && sup.country && String(sup.country).toLowerCase() !== "ca" && String(sup.country).toLowerCase() !== "canada") riskScore += 1;
-    if (prod && prod.gross_margin < 20) riskScore += 1; // Faible marge = plus sensible aux tarifs douaniers
-    const riskLabel = riskScore >= 2 ? "Élevé" : riskScore === 1 ? "Moyen" : "Faible";
-    const riskStatus = riskScore >= 2 ? "critical" : riskScore === 1 ? "warning" : "good";
-    return { ...inv, _sup: sup, _prod: prod, _riskScore: riskScore, _riskLabel: riskLabel, _riskStatus: riskStatus };
-  });
+  const seenCustoms = new Set();
+  const customsRows = (inventory || [])
+    .filter((inv) => {
+      const pid = inv.product_id || inv.id;
+      if (!pid || seenCustoms.has(pid)) return false;
+      const prod = (products || []).find((p) => p.product_id === pid);
+      if (inv.origin_country || inv.customs_code || prod?.origin_country || prod?.customs_code) {
+        seenCustoms.add(pid);
+        return true;
+      }
+      return false;
+    })
+    .map((inv) => {
+      const prod = (products || []).find((p) => p.product_id === (inv.product_id || inv.id));
+      const sup = (suppliers || []).find((s) => s.supplier_id === (inv.supplier_id || prod?.supplier_id));
+      const originCountry = inv.origin_country || prod?.origin_country || sup?.country;
+      const customsCode = inv.customs_code || prod?.customs_code;
+      const margin = prod ? productMarginPct(prod) : null;
+      let riskScore = 0;
+      if (originCountry && String(originCountry).toLowerCase() !== "ca" && String(originCountry).toLowerCase() !== "canada") riskScore += 1;
+      if (sup && sup.country && String(sup.country).toLowerCase() !== "ca" && String(sup.country).toLowerCase() !== "canada") riskScore += 1;
+      if (margin !== null && margin < 20) riskScore += 1; // Faible marge = plus sensible aux tarifs douaniers
+      const riskLabel = riskScore >= 2 ? "Élevé" : riskScore === 1 ? "Moyen" : "Faible";
+      const riskStatus = riskScore >= 2 ? "critical" : riskScore === 1 ? "warning" : "good";
+      return {
+        ...inv,
+        _customsCode: customsCode,
+        _originCountry: originCountry,
+        _sup: sup,
+        _prod: prod,
+        _margin: margin,
+        _riskScore: riskScore,
+        _riskLabel: riskLabel,
+        _riskStatus: riskStatus,
+      };
+    });
 
   const customsColumns = [
     { key: "product_id", header: "SKU / Produit", render: (inv) => inv.product_id },
-    { key: "customs_code", header: "Code Douanier", render: (inv) => inv.customs_code || "-" },
-    { key: "origin_country", header: "Origine", render: (inv) => inv.origin_country || "-" },
+    { key: "customs_code", header: "Code Douanier", render: (inv) => inv._customsCode || "-" },
+    { key: "origin_country", header: "Origine", render: (inv) => inv._originCountry || "-" },
     { key: "supplier", header: "Fournisseur (Pays)", sortValue: (inv) => inv._sup?.supplier_name || inv._sup?.supplier_id || "", render: (inv) => inv._sup ? `${inv._sup.supplier_name || inv._sup.supplier_id} (${inv._sup.country || "-"})` : "-" },
-    { key: "gross_margin", header: "Marge brute", align: "right", sortValue: (inv) => inv._prod?.gross_margin ?? -1, render: (inv) => inv._prod?.gross_margin != null ? formatPct(inv._prod.gross_margin, 0) : "-" },
+    { key: "gross_margin", header: "Marge brute", align: "right", sortValue: (inv) => inv._margin ?? -1, render: (inv) => inv._margin != null ? formatPct(inv._margin, 0) : "-" },
     {
       key: "risk",
       header: "Niveau de Risque",

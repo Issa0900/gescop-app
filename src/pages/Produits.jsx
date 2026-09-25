@@ -10,7 +10,7 @@ import ProductSalesTrend from "@/components/produits/ProductSalesTrend";
 import ProductFilters from "@/components/produits/ProductFilters";
 import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
 import { useCompany } from "@/hooks/useCompany";
-import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
+import { getStockAlertSettings, isStockAlert, computeStockAlerts, aggregateLatestInventory } from "@/lib/stockAlerts";
 import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
 import { validSalesOrders, columnPresent, productMarginPct } from "@/lib/metrics";
 import DataErrorState from "@/components/DataErrorState";
@@ -238,7 +238,7 @@ export default function Produits() {
   }));
 
   const stockDist = {};
-  const latestInventory = latestByKey(inventory || [], "product_id", dateReferenceInventaire);
+  const latestInventory = aggregateLatestInventory(inventory || []);
   latestInventory.forEach((i) => {
     const s = i.stock_status || "non_precise";
     stockDist[s] = (stockDist[s] || 0) + 1;
