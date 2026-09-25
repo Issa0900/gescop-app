@@ -251,17 +251,17 @@ export default function Clients() {
       render: (it) => {
         const neg = it.sentiment === "negatif" || it.sentiment === "tres_negatif";
         const pos = it.sentiment === "positif";
-        return <BadgeStatus status={neg ? "critical" : pos ? "good" : "neutral"}>{it.sentiment || "-"}</BadgeStatus>;
+        return <BadgeStatus status={neg ? "critical" : pos ? "good" : "neutral"}>{it.sentiment || "Non renseigné"}</BadgeStatus>;
       },
     },
-    { key: "resolved", header: "Résolu", sortValue: (it) => (it.resolved === true ? 1 : it.resolved === false ? 0 : -1), render: (it) => it.resolved === true ? "Oui" : it.resolved === false ? "Non" : "-" },
+    { key: "resolved", header: "Résolu", sortValue: (it) => (it.resolved === true ? 1 : it.resolved === false ? 0 : -1), render: (it) => it.resolved === true ? "Oui" : it.resolved === false ? "Non" : "Non renseigné" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
-        <p className="mt-1 text-muted-foreground">Segmentation, concentration, churn et valeur vie client.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Vos clients</h1>
+        <p className="mt-1 text-muted-foreground">Suivez vos ventes, votre panier moyen et la fidélité de votre clientèle.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -271,16 +271,16 @@ export default function Clients() {
             "who has stopped buying lately". Only the second one can improve. */}
         <StatCard
           label="Clients perdus (cumul)"
-          value={churnRate === null ? "-" : `${churnRate}%`}
+          value={churnRate === null ? "Non mesuré" : `${churnRate}%`}
           sublabel={churn.statusMeasured
             ? `${churn.churned} sur ${churn.total} depuis le début${hasChurnRisk ? ` · ${churn.atRisk} à risque` : ""}`
-            : "statut client jamais renseigné"}
+            : "statut client non renseigné"}
           icon={UserMinus}
           accent={churnRate > 20 ? "bg-red-50 text-red-600" : "bg-muted text-muted-foreground"}
         />
         <StatCard
           label={`Inactifs depuis ${churn.inactiveMonths} mois`}
-          value={churn.behaviourRate !== null ? `${Math.round(churn.behaviourRate)}%` : "-"}
+          value={churn.behaviourRate !== null ? `${Math.round(churn.behaviourRate)}%` : "Non mesuré"}
           sublabel={churn.measurable
             ? `${churn.lapsed} sur ${churn.buyers} clients ayant déjà commandé`
             : "historique de commandes absent"}

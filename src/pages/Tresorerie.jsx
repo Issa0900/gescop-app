@@ -89,15 +89,15 @@ export default function Tresorerie() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Trésorerie</h1>
-        <p className="mt-1 text-muted-foreground">Position de trésorerie, flux net, coûts salariaux et abonnements récurrents.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Votre trésorerie</h1>
+        <p className="mt-1 text-muted-foreground">Suivez vos flux réels, encaissements, décaissements et réserve disponible.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Trésorerie actuelle" value={montant(currentCash)} sublabel={`au ${latestRow?.date || "-"}`} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Flux net moyen / mois" value={montant(avgNet)} sublabel={`moyenne sur ${moisFlux} mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Coût paie / mois" value={montant(avgMonthlyPayroll)} sublabel={`moyenne sur ${seriePaie.length} mois`} icon={RefreshCw} />
-        <StatCard label="Abonnements/mois" value={montant(recurringTotal)} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Trésorerie disponible" value={montant(currentCash)} sublabel={latestRow?.date ? `au ${latestRow.date}` : "période récente"} icon={Wallet} accent={currentCash < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Flux net mensuel moyen" value={montant(avgNet)} sublabel={`moyenne sur ${moisFlux} mois complets`} icon={avgNet >= 0 ? TrendingUp : TrendingDown} accent={avgNet < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Masse salariale moyenne" value={montant(avgMonthlyPayroll)} sublabel={`moyenne sur ${seriePaie.length} mois`} icon={RefreshCw} />
+        <StatCard label="Charges récurrentes" value={montant(recurringTotal)} sublabel={`moyenne sur ${recDiv} mois`} icon={RefreshCw} accent={recurringTotal > 0 && currentCash > 0 && recurringTotal > currentCash * 0.15 ? "bg-red-50 text-red-600" : recurringTotal > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">

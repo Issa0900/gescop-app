@@ -332,24 +332,24 @@ export default function Produits() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Produits & Inventaire</h1>
-        <p className="mt-1 text-muted-foreground">Performance produits, marges, rotation de stock et alertes d'inventaire.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Vos stocks et produits</h1>
+        <p className="mt-1 text-muted-foreground">Où votre stock est-il immobilisé ? Suivez vos marges, rotations et alertes de réapprovisionnement.</p>
         {usingInventoryFallback && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Aucune donnée de catalogue produit importée : cette liste et les marges sont dérivées de vos données de stock (inventaire).
+            Données dérivées du relevé d'inventaire disponible.
           </p>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total produits" value={total.toLocaleString()} icon={Package} />
-        <StatCard label="Faible marge (<15%)" value={lowMargin.length} sublabel={`marge moyenne ${formatPct(avgMargin)}`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
+        <StatCard label="Total références" value={total.toLocaleString()} icon={Package} />
+        <StatCard label="Marge inférieure à 15 %" value={lowMargin.length} sublabel={`marge moyenne ${formatPct(avgMargin)}`} icon={DollarSign} accent={lowMargin.length > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"} />
         <StatCard
           label="Stock dormant"
           value={dormantCount}
           sublabel={stock.dormancyFromRotation
             ? `aucune vente depuis ${stock.dormantMonths} mois · sur ${stock.tracked} suivis`
-            : "historique de commandes absent - rotation non mesurable"}
+            : "historique de commandes absent · rotation non mesurable"}
           icon={Boxes}
           accent={dormantCount > 0 ? "bg-amber-50 text-amber-600" : "bg-muted text-muted-foreground"}
         />
@@ -447,8 +447,8 @@ export default function Produits() {
               )}
               {sansDateReelle.length > 0 && (
                 <span className="block text-xs text-amber-700">
-                  Inventaire importé le {dateImportInventaire ? new Date(dateImportInventaire).toLocaleDateString("fr-CA", { timeZone: "UTC" }) : "—"} — date réelle non fournie
-                  ({sansDateReelle.length} produit(s)). Les ventes postérieures à l'inventaire ne peuvent pas en être déduites.
+                  Inventaire importé le {dateImportInventaire ? new Date(dateImportInventaire).toLocaleDateString("fr-CA", { timeZone: "UTC" }) : "date inconnue"} (date réelle non fournie,{" "}
+                  {sansDateReelle.length} produit(s)). Les ventes postérieures à l'inventaire ne peuvent pas en être déduites.
                 </span>
               )}
             </p>

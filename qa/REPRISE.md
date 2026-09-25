@@ -56,7 +56,9 @@ Banc DEMO sur quelques fichiers : `node tests/banc/lancer-demo.cjs demo-modules 
 
 - **Revenu des campagnes dans total_revenue (Résolu - commit 458dc62)** : exclu de `total_revenue` (règle comptable : CA = ventes uniquement). L'attribution marketing reste sur `campaign_revenue` pour le ROAS.
 - **C5 (Résolu - commit 8402371)** : dédoublonnage appliqué dès l'analyse ; `valid_rows` égale désormais exactement `rows_written`, et les doublons sont tracés dans `quality.duplicate_rows`.
-- **Refonte SaaS des 3 rapports GESCOP (Résolu)** : Quotidien (SURVEILLER), Hebdomadaire (COMPRENDRE), Mensuel (PILOTER « Rapport Vitrine » 12 sections), implémentés dans `DailyReportView`, `WeeklyReportView`, `MonthlyReportView`, `ReportTypeCard` et `ReportViewer`.
+- **Refonte SaaS des 3 rapports GESCOP (Résolu - commit abe5f9e)** : Quotidien (SURVEILLER), Hebdomadaire (COMPRENDRE), Mensuel (PILOTER « Rapport Vitrine » 12 sections), implémentés dans `DailyReportView`, `WeeklyReportView`, `MonthlyReportView`, `ReportTypeCard` et `ReportViewer`.
+- **Charte rédactionnelle & Style de voix GESCOP (Résolu)** : création de `docs/STYLE-REDACTIONNEL.md` et harmonisation du ton (Sujet → Donnée → Interprétation, rigueur `[FAIT]` / `[CALCUL]`, boutons à verbe d'action unique, vocabulaire financier rigoureux) sur l'ensemble de l'application.
+- **Cartes KPI professionnelles et suppression des tirets (Résolu)** : suppression de tous les tirets bruts (`"-"`, `"——"`) au profit du statut explicite « Non mesuré », remplacement de l'icône de stabilité par `ArrowRight`, pills stylisées et masquage des unités sur valeur absente.
 
 ## Points restants
 

@@ -1,21 +1,30 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
-const trendIcon = { up: TrendingUp, down: TrendingDown, stable: Minus };
+import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
 
 export default function KpiCard({ kpi, domainColor }) {
-  const TIcon = trendIcon[kpi.trend] || Minus;
-  // La couleur dit si l'evolution est BONNE, pas si le chiffre monte : des
-  // charges en baisse sont une bonne nouvelle (elles s'affichaient en rouge).
+  const isUp = kpi.trend === "up";
+  const isDown = kpi.trend === "down";
+
+  // La couleur dit si l'évolution est favorable pour la gestion :
+  // des charges en baisse sont une bonne nouvelle (lowerIsBetter).
   const bonne = (hausse) => (kpi.lowerIsBetter ? !hausse : hausse);
-  const ton = (hausse) => (bonne(hausse) ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400");
-  const trendColor = kpi.trend === "up" ? ton(true) : kpi.trend === "down" ? ton(false) : "text-muted-foreground";
+  const trendStyle = isUp
+    ? bonne(true)
+      ? "text-emerald-700 bg-emerald-500/10 dark:text-emerald-400"
+      : "text-red-700 bg-red-500/10 dark:text-red-400"
+    : isDown
+    ? bonne(false)
+      ? "text-emerald-700 bg-emerald-500/10 dark:text-emerald-400"
+      : "text-red-700 bg-red-500/10 dark:text-red-400"
+    : "text-muted-foreground bg-muted/60";
+
+  const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : ArrowRight;
+
   const numeric = typeof kpi.value === "number" && Number.isFinite(kpi.value);
+  const hasValue = kpi.value !== null && kpi.value !== undefined && kpi.value !== "-";
   const pct = kpi.target > 0 && numeric ? Math.round((kpi.value / kpi.target) * 100) : null;
-  // An indicator that is ITSELF a percentage (margin, churn, conversion) moves
-  // in POINTS. Showing "+100%" for a margin going from 2% to 4% overstated a
-  // two-point move as a doubling.
   const isPctUnit = (kpi.unit || "").trim() === "%";
+
   const prevDelta = numeric && kpi.previous != null && kpi.previous !== 0 && !isPctUnit
     ? ((kpi.value - kpi.previous) / Math.abs(kpi.previous)) * 100
     : null;
@@ -24,47 +33,90 @@ export default function KpiCard({ kpi, domainColor }) {
     : null;
 
   return (
-    <div className="animate-slide-up rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{kpi.name}</p>
-        <div className="flex items-center gap-1.5">
-          {kpi.statut === "partiel" && (
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300" title="Calculé avec une partie seulement des sources nécessaires">Partiel</span>
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30">
+      <div>
+        {/* En-tête : Nom de l'indicateur + Badges */}
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground leading-snug">
+            {kpi.name}
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {kpi.statut === "partiel" && (
+              <span
+                className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300"
+                title="Calculé avec une partie des sources disponibles"
+              >
+                Partiel
+              </span>
+            )}
+            {kpi.previous != null && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${trendStyle}`}>
+                <TrendIcon className="h-3 w-3" />
+                {pointDelta != null
+                  ? `${pointDelta >= 0 ? "+" : ""}${(Math.round(pointDelta * 10) / 10).toLocaleString("fr-CA")} pt`
+                  : prevDelta != null
+                  ? `${prevDelta >= 0 ? "+" : ""}${Math.round(prevDelta).toLocaleString("fr-CA")} %`
+                  : "Stable"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Valeur principale */}
+        <div className="mt-3 flex items-baseline gap-1.5">
+          {hasValue ? (
+            <>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                {numeric ? kpi.value.toLocaleString("fr-CA") : String(kpi.value)}
+              </span>
+              {kpi.unit && (
+                <span className="text-sm font-bold text-muted-foreground">
+                  {kpi.unit}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-sm font-semibold text-muted-foreground/80 py-1">
+              Non mesuré
+            </span>
           )}
-          <TIcon className={`h-4 w-4 ${trendColor}`} aria-label={kpi.trend === "up" ? "en hausse" : kpi.trend === "down" ? "en baisse" : "stable"} />
         </div>
-      </div>
-      <p className="mt-2 text-2xl font-bold tracking-tight">
-        {kpi.value != null ? (numeric ? kpi.value.toLocaleString("fr-CA") : String(kpi.value)) : "-"}
-        <span className="ml-1 text-sm font-normal text-muted-foreground">{kpi.unit || ""}</span>
-      </p>
-      {/* Base et limites du chiffre (hors taxes, partiel...) : un chiffre juste
-          mais mal compris reste une mauvaise decision. */}
-      {kpi.note && <p className="mt-1 text-xs text-muted-foreground">{kpi.note}</p>}
-      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        {pointDelta != null ? (
-          <span className={ton(pointDelta >= 0)}>
-            {pointDelta >= 0 ? "+" : ""}{(Math.round(pointDelta * 10) / 10).toLocaleString("fr-CA")} pt vs période précédente
-          </span>
-        ) : prevDelta != null ? (
-          <span className={ton(prevDelta >= 0)}>
-            {prevDelta >= 0 ? "+" : ""}{Math.round(prevDelta).toLocaleString("fr-CA")} % vs période précédente
-          </span>
-        ) : kpi.target > 0 ? (
-          <span>Cible: {kpi.target.toLocaleString("fr-CA")} {kpi.unit || ""}</span>
-        ) : (
-          <span>&nbsp;</span>
+
+        {/* Note contextuelle */}
+        {kpi.note && (
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+            {kpi.note}
+          </p>
         )}
-        {pct != null && <span>{pct} % de l'objectif</span>}
       </div>
-      {pct != null && (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, pct)}%`, backgroundColor: domainColor || "#2563eb" }}
-          />
-        </div>
-      )}
+
+      {/* Pied de carte : Cible ou référence */}
+      <div className="mt-4 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+        {kpi.target > 0 ? (
+          <div>
+            <div className="flex items-center justify-between text-xs">
+              <span>Cible : {kpi.target.toLocaleString("fr-CA")} {kpi.unit || ""}</span>
+              {pct != null && <span className="font-semibold text-foreground">{pct} %</span>}
+            </div>
+            {pct != null && (
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, pct)}%`, backgroundColor: domainColor || "#10b981" }}
+                />
+              </div>
+            )}
+          </div>
+        ) : kpi.previous != null ? (
+          <span className="text-muted-foreground">
+            Période précédente : {kpi.previous.toLocaleString("fr-CA")} {kpi.unit || ""}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/70">
+            {hasValue ? "Période courante" : "En attente de données"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

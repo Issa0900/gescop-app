@@ -67,15 +67,15 @@ export default function Finance() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Finance</h1>
-        <p className="mt-1 text-muted-foreground">Rentabilité sur toute la période importée : chiffre d'affaires, charges et résultat.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Votre rentabilité</h1>
+        <p className="mt-1 text-muted-foreground">Suivez vos marges, résultats et structure de coûts sur la période analysée.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Chiffre d'affaires" value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
         <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={detailCharges ? `dont ${detailCharges}` : undefined} />
-        <StatCard label="Résultat Net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel="CA − charges totales" icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Marge Nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
+        <StatCard label="Résultat net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel="CA − charges totales" icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Marge nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">

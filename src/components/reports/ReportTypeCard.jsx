@@ -1,19 +1,19 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, Sun, CalendarDays, CalendarRange, Check, Sparkles } from "lucide-react";
+import { Loader2, Calendar, Sun, CalendarDays, CalendarRange, Check, FileText } from "lucide-react";
 
 const config = {
   quotidien: {
     icon: Sun,
     tag: "SURVEILLER",
     tagColor: "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-800",
-    label: "Rapport Quotidien",
-    subtitle: "Scan en < 2 min pour le dirigeant",
+    label: "Rapport quotidien",
+    subtitle: "Les éléments qui méritent votre attention aujourd'hui.",
     bullets: [
-      "État général & situation immédiate",
-      "4 KPI essentiels (CA, Marge, Trésorerie, Stock)",
-      "Points d'attention & alertes sans détour",
-      "Jauge de fiabilité des données unifiée",
+      "État général et indicateurs clés",
+      "Points d'attention et écarts notables",
+      "Actions prioritaires à examiner",
+      "Indicateur de fiabilité des données",
     ],
     gradient: "from-blue-500/10 via-blue-500/5 to-card",
     accent: "text-blue-600",
@@ -23,13 +23,13 @@ const config = {
     icon: CalendarRange,
     tag: "COMPRENDRE",
     tagColor: "bg-violet-500/10 text-violet-600 border-violet-200 dark:border-violet-800",
-    label: "Rapport Hebdomadaire",
-    subtitle: "Passer de la surveillance à la compréhension",
+    label: "Rapport hebdomadaire",
+    subtitle: "Les principales évolutions de la semaine et leurs facteurs associés.",
     bullets: [
-      "Comparaisons Semaine / Semaine (S/S)",
-      "Courbes d'évolution des 5 dernières semaines",
-      "Bilan croisé : Ce qui s'améliore vs dégrade",
-      "Diagnostic [FAIT] / [CALCUL] / [FACTEUR]",
+      "Comparaison semaine contre semaine",
+      "Évolution observée sur 5 semaines",
+      "Ce qui s'améliore et ce qui recule",
+      "Diagnostic factuel : faits, calculs, facteurs",
     ],
     gradient: "from-violet-500/10 via-violet-500/5 to-card",
     accent: "text-violet-600",
@@ -38,15 +38,15 @@ const config = {
   mensuel: {
     icon: CalendarDays,
     tag: "PILOTER",
-    badgeExtra: "Rapport Vitrine",
+    badgeExtra: "Dossier de référence",
     tagColor: "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800",
-    label: "Rapport Mensuel",
-    subtitle: "Dossier exécutif complet (Banque, CA, Associés)",
+    label: "Rapport mensuel",
+    subtitle: "Une vue complète de la rentabilité, des tendances et des points à examiner.",
     bullets: [
-      "Couverture prestige & Executive Brief 4 piliers",
-      "Vue 4 quadrants & analyse transversale causale",
-      "Intelligence GESCOP & simulateur 'Et si...'",
-      "Plan d'action tabulaire & audit de fiabilité",
+      "Synthèse exécutive et 4 piliers de gestion",
+      "Décomposition financière et flux transversaux",
+      "Facteurs observés et simulation de scénarios",
+      "Plan d'action structuré et audit des sources",
     ],
     gradient: "from-emerald-500/10 via-emerald-500/5 to-card",
     accent: "text-emerald-600",
@@ -70,8 +70,8 @@ export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
             {cfg.tag}
           </span>
           {cfg.badgeExtra && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500/15 to-emerald-500/15 border border-amber-300/40 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
-              <Sparkles className="h-3 w-3 text-amber-500" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/40 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+              <FileText className="h-3 w-3 text-emerald-600" />
               {cfg.badgeExtra}
             </span>
           )}
@@ -84,7 +84,7 @@ export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
           </div>
           <div>
             <h3 className="text-base font-bold tracking-tight text-foreground">{cfg.label}</h3>
-            <p className="text-xs text-muted-foreground">{cfg.subtitle}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{cfg.subtitle}</p>
           </div>
         </div>
 
@@ -101,7 +101,7 @@ export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
         </div>
       </div>
 
-      {/* Button */}
+      {/* Button with clear verb */}
       <Button
         size="sm"
         className="mt-5 w-full shadow-sm"
@@ -116,7 +116,7 @@ export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
         ) : (
           <>
             <Calendar className="mr-2 h-4 w-4" />
-            Générer ce rapport
+            Générer le rapport
           </>
         )}
       </Button>

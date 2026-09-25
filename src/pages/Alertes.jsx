@@ -106,11 +106,11 @@ export default function Alertes() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Centre d'alertes</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Points d'attention</h1>
         <p className="mt-1 text-muted-foreground">
           {criticalCount > 0
-            ? `${criticalCount} alerte${criticalCount > 1 ? "s" : ""} critique${criticalCount > 1 ? "s" : ""} sur ${alerts.length} au total.`
-            : `${alerts.length} alerte${alerts.length > 1 ? "s" : ""}, aucune critique.`}
+            ? `${criticalCount} point${criticalCount > 1 ? "s" : ""} prioritaire${criticalCount > 1 ? "s" : ""} sur ${alerts.length} au total.`
+            : `${alerts.length} point${alerts.length > 1 ? "s" : ""} d'attention répertorié${alerts.length > 1 ? "s" : ""}.`}
         </p>
       </div>
 

@@ -148,9 +148,9 @@ export default function Insights() {
     return (
       <EmptyState
         icon={Brain}
-        title="Aucun insight pour le moment"
-        description="Lancez une analyse pour que GESCOP détecte les anomalies, évalue les risques et génère des recommandations structurées."
-        action={<Button asChild><Link to="/"><Sparkles className="mr-2 h-4 w-4" /> Aller au tableau de bord</Link></Button>}
+        title="Aucun constat disponible"
+        description="Lancez une analyse pour faire émerger les facteurs observés, les variations notables et les points à examiner."
+        action={<Button asChild><Link to="/"><Sparkles className="mr-2 h-4 w-4" /> Consulter le tableau de bord</Link></Button>}
       />
     );
   }
@@ -160,10 +160,10 @@ export default function Insights() {
       <div>
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">Insights</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ce que vos données révèlent</h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chaque insight suit la chaîne : fait observé → analyse → impact financier → niveau de confiance → action recommandée.
+          Chaque constat relie un fait mesuré, les facteurs associés observés et les points à examiner.
         </p>
       </div>
 

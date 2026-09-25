@@ -502,7 +502,7 @@ export default function Dashboard() {
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicateurs clés</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <KpiCard label="Trésorerie"
-                value={(cashflow?.length || 0) > 0 ? `${Math.round(computed.latestCash).toLocaleString("fr-CA")} $` : "—"}
+                value={(cashflow?.length || 0) > 0 ? `${Math.round(computed.latestCash).toLocaleString("fr-CA")} $` : null}
                 change={(cashflow?.length || 0) > 1 ? `${formatPct(Math.abs(computed.cashTrend))}` : null}
                 changeDir={computed.cashTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.cash)}
@@ -510,7 +510,7 @@ export default function Dashboard() {
                 statusLabel={(cashflow?.length || 0) > 0 ? (computed.latestCash > 0 ? "Bon" : "Critique") : "Non mesuré"}
                 onClick={() => navigate("/tresorerie")} />
               <KpiCard label="Chiffre d'affaires"
-                value={computed.totalIncome != null ? `${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $` : "—"}
+                value={computed.totalIncome != null ? `${Math.round(computed.totalIncome).toLocaleString("fr-CA")} $` : null}
                 change={computed.totalIncome != null && computed.monthlyData.revenue.length > 1 ? `${formatPct(Math.abs(computed.revTrend))}` : null}
                 changeDir={computed.revTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.revenue)}
@@ -519,7 +519,7 @@ export default function Dashboard() {
                 note={(orders?.length || 0) > 0 ? noteBaseCA(orders) : null}
                 onClick={() => navigate("/kpis")} />
               <KpiCard label="Marge nette"
-                value={computed.marginPct != null ? `${formatPct(computed.marginPct)}` : "—"}
+                value={computed.marginPct != null ? `${formatPct(computed.marginPct)}` : null}
                 change={computed.marginPct != null && computed.marginTrend != null ? `${Math.abs(computed.marginTrend).toFixed(1).replace(".", ",")} pt` : null}
                 changeDir={computed.marginTrend >= 0 ? "up" : "down"}
                 sparkline={computed.spark(computed.monthlyData.margin)}
@@ -556,7 +556,7 @@ export default function Dashboard() {
             <TabsContent value="operations" className="space-y-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard label="Coûts opérationnels" lowerIsBetter
-                  value={computed.totalExpenseAmount != null ? `${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $` : "—"}
+                  value={computed.totalExpenseAmount != null ? `${Math.round(computed.totalExpenseAmount).toLocaleString("fr-CA")} $` : null}
                   change={(expenseRecords?.length || 0) > 1 ? `${formatPct(Math.abs(computed.costTrend))}` : null}
                   changeDir={computed.costTrend >= 0 ? "up" : "down"}
                   sparkline={computed.spark(computed.monthlyData.costs)}
@@ -564,7 +564,7 @@ export default function Dashboard() {
                   statusLabel={computed.totalExpenseAmount != null ? (computed.costTrend > 5 ? "Attention" : "Stable") : "Non mesuré"}
                   onClick={() => navigate("/tresorerie")} />
                 <KpiCard label="Clients actifs"
-                  value={computed.activeCustomers != null ? computed.activeCustomers.toLocaleString("fr-CA") : "—"}
+                  value={computed.activeCustomers != null ? computed.activeCustomers.toLocaleString("fr-CA") : null}
                   change={(customers?.length || 0) > 1 ? `${formatPct(Math.abs(computed.clientTrend))}` : null}
                   changeDir={computed.clientTrend >= 0 ? "up" : "down"}
                   sparkline={computed.spark(computed.monthlyData.clients)}
@@ -572,7 +572,7 @@ export default function Dashboard() {
                   statusLabel={computed.activeCustomers != null ? (computed.clientTrend >= 0 ? "Bon" : "Attention") : "Non mesuré"}
                   onClick={() => navigate("/clients")} />
                 <KpiCard label="Panier moyen"
-                  value={(orders?.length || 0) > 0 && computed.aov > 0 ? `${computed.aov.toFixed(2)} $` : "—"}
+                  value={(orders?.length || 0) > 0 && computed.aov > 0 ? `${computed.aov.toFixed(2)} $` : null}
                   change={(orders?.length || 0) > 1 ? `${formatPct(Math.abs(computed.aovTrend))}` : null}
                   changeDir={computed.aovTrend >= 0 ? "up" : "down"}
                   sparkline={computed.spark(computed.aovMonthly)}
@@ -581,7 +581,7 @@ export default function Dashboard() {
                   note={(orders?.length || 0) > 0 ? noteBaseCA(orders) : null}
                   onClick={() => navigate("/clients")} />
                 <KpiCard label="Sentiment Client"
-                  value={computed.customerSentiment != null ? `${computed.customerSentiment.toFixed(1)}/10` : "—"}
+                  value={computed.customerSentiment != null ? `${computed.customerSentiment.toFixed(1)}/10` : null}
                   change={null} changeDir="stable"
                   sparkline={[]}
                   status={computed.customerSentiment != null ? (computed.customerSentiment >= 7 ? "good" : computed.customerSentiment <= 4 ? "critical" : "warning") : "unmeasured"}

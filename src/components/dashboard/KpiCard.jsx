@@ -1,9 +1,8 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Sparkline({ data: brut, color = "hsl(var(--primary))" }) {
-  // Un mois non mesure n'est pas un zero : il est retire du trace.
   const data = (brut || []).filter((v) => Number.isFinite(v));
   if (data.length < 2) return null;
   const max = Math.max(...data);
@@ -20,8 +19,6 @@ function Sparkline({ data: brut, color = "hsl(var(--primary))" }) {
   const maxIdx = data.indexOf(max);
   const minIdx = data.indexOf(min);
   return (
-    // preserveAspectRatio="none" étire le tracé sans étirer les marqueurs :
-    // vectorEffect="non-scaling-stroke" garde leur rayon/épaisseur constants.
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full">
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
@@ -53,9 +50,8 @@ function Sparkline({ data: brut, color = "hsl(var(--primary))" }) {
   );
 }
 
-const trendIcons = { up: TrendingUp, down: TrendingDown, stable: Minus };
-// La couleur dit si l'evolution est BONNE : des couts en hausse sont en rouge,
-// en baisse en vert (lowerIsBetter), l'inverse pour le chiffre d'affaires.
+const trendIcons = { up: TrendingUp, down: TrendingDown, stable: ArrowRight };
+
 const tonTendance = (dir, lowerIsBetter) => {
   if (dir !== "up" && dir !== "down") return "text-muted-foreground";
   const bonne = (dir === "up") !== Boolean(lowerIsBetter);
@@ -71,38 +67,46 @@ const statusStyles = {
 };
 
 export default function KpiCard({ label, value, change, changeDir, sparkline, status, statusLabel, onClick, note, lowerIsBetter }) {
-  const TIcon = trendIcons[changeDir] || Minus;
+  const TIcon = trendIcons[changeDir] || ArrowRight;
   const tc = { color: tonTendance(changeDir, lowerIsBetter) };
+  const hasValue = value !== null && value !== undefined && value !== "-" && value !== "—" && value !== "--";
+  const hasChange = change !== null && change !== undefined && change !== "-" && change !== "—" && change !== "--";
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        "animate-slide-up rounded-xl border border-border bg-card p-5 transition-all duration-300",
+        "animate-slide-up rounded-2xl border border-border bg-card p-5 shadow-xs transition-all duration-200",
         onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20"
       )}
     >
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
         {status && (
-          <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", statusStyles[status] || statusStyles.neutral)}>
+          <span className={cn("rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", statusStyles[status] || statusStyles.neutral)}>
             {statusLabel || status}
           </span>
         )}
       </div>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <p className="text-2xl font-bold tracking-tight">{value}</p>
-        {change && (
-          <span className={cn("flex items-center gap-1 text-xs font-semibold", tc.color)}>
+      <div className="mt-2.5 flex items-baseline justify-between gap-2">
+        {hasValue ? (
+          <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">{value}</p>
+        ) : (
+          <span className="text-sm font-semibold text-muted-foreground/80 py-1">Non mesuré</span>
+        )}
+        {hasChange && (
+          <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold", tc.color)}>
             <TIcon className="h-3 w-3" />
             {change}
           </span>
         )}
       </div>
-      {/* Base et limites du chiffre (hors taxes, devises exclues...). */}
-      {note && <p className="mt-1 text-xs text-muted-foreground">{note}</p>}
-      <div className="mt-3">
-        <Sparkline data={sparkline} />
-      </div>
+      {note && <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{note}</p>}
+      {sparkline && sparkline.length > 1 && (
+        <div className="mt-3">
+          <Sparkline data={sparkline} />
+        </div>
+      )}
     </div>
   );
 }

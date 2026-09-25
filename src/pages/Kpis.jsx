@@ -408,8 +408,8 @@ export default function Kpis() {
     return (
       <EmptyState
         icon={BarChart3}
-        title="Aucun KPI disponible"
-        description="Importez vos données pour voir vos indicateurs clés calculés automatiquement."
+        title="Aucun indicateur disponible"
+        description="Importez vos données pour calculer vos indicateurs de gestion."
       />
     );
   }
@@ -418,16 +418,16 @@ export default function Kpis() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Indicateurs clés (KPI)</h1>
-          <p className="mt-1 text-muted-foreground">Indicateurs calculés en temps réel à partir de vos données, par domaine.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Vos indicateurs de gestion</h1>
+          <p className="mt-1 text-muted-foreground">Suivez les indicateurs qui comptent, calculés directement à partir de vos données.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode((v) => !v)} disabled={allKpis.length === 0}>
             {editMode ? <Check className="mr-1.5 h-4 w-4" /> : <SlidersHorizontal className="mr-1.5 h-4 w-4" />}
-            {editMode ? "Terminé" : "Personnaliser"}
+            {editMode ? "Valider" : "Personnaliser l'affichage"}
           </Button>
           <Button variant="outline" size="sm" onClick={exportKpis} disabled={allKpis.length === 0}>
-            <Download className="mr-1.5 h-4 w-4" /> Exporter CSV
+            <Download className="mr-1.5 h-4 w-4" /> Exporter (CSV)
           </Button>
         </div>
       </div>
@@ -435,8 +435,8 @@ export default function Kpis() {
       {trendData.length > 0 && <KpiTrendChart data={trendData} />}
 
       <div>
-        <h2 className="mb-1 text-lg font-semibold">Vue d'ensemble des domaines</h2>
-        <p className="mb-4 text-sm text-muted-foreground">Du plus faible au plus fort · score sur 100</p>
+        <h2 className="mb-1 text-lg font-semibold">Score de santé par domaine</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Évaluation de 0 à 100, du domaine le plus sous tension au plus solide.</p>
         <DomainScoreList
           domains={Object.entries(domainLabels)
             .filter(([key]) => rtScores[key])

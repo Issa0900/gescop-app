@@ -42,10 +42,7 @@ export default function DomainScoreList({ domains }) {
 
             <div className="flex shrink-0 items-center justify-end gap-2 sm:w-32">
               {d.measured === false ? (
-                <>
-                  <span className="text-lg font-bold tabular-nums text-muted-foreground">-</span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Non mesuré</span>
-                </>
+                <span className="rounded-full bg-muted/80 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">Non mesuré</span>
               ) : (
                 <>
                   <TrendIcon trend={d.trend} />
