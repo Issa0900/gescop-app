@@ -118,6 +118,25 @@ This project is maintained by a swarm of specialized AI experts. When you (the g
   - **Lot 6** : tous les appels `InvokeLLM` utilisent un modèle de `shared/modelesLLM.ts` (`gemini_3_8_flash` remplacé par `gemini_3_flash`) ; Paramètres > Compréhension est calculé depuis les imports et les données (`src/lib/comprehension.js`), plus de texte inventé ; plus de dictionnaire d'exemple enregistré d'office, et `src/lib/dictionnaire.js` fait que les termes ajoutés dans Paramètres sont réellement appliqués par l'import (clé `maps_to` ; `concept` lu pour les anciens) et que l'apprentissage à l'import n'efface plus un dictionnaire en forme liste.
   - **Ouvert** : les deux workflows restent déclarés (sans effet) ; rien de tout cela n'est encore vérifié sur un vrai déploiement (liste de contrôle dans `qa/COMPTE-RENDU.md`).
 
+- **Audit du moteur KPI et contrat de calcul (25 sept. 2026, branche `claude/quirky-curie-xxw5va` sur `correctifs-import-kpi-2026-09`).** Les règles de calcul des 15 KPI critiques sont écrites dans le skill `.claude/skills/gescop-kpi-contract` (avec `scripts/sonde-kpi.mjs`, qui exécute le vrai moteur sur un cas JSON) : **le lire avant de toucher une formule**. Chaque anomalie a son test dans `tests/kpi_contrat.test.js`.
+  - Corrigé :
+    - **ANO-01 :** le statut partiel ou non mesuré suit un KPI jusqu'aux KPI qui en dépendent (`context._statuts`). Avant, une marge nette calculée sans coût des ventes était « mesurée ».
+    - **ANO-02/03 :** EBITDA = CA − coût des ventes − dépenses − paie, avant amortissement. Résultat net = EBITDA − amortissement de la période.
+    - **ANO-04 :** les KPI qui combinent ventes, dépenses et paie se calculent sur la période commune des sources, avec une note sur la carte.
+    - **ANO-05 :** la remise n'est retranchée qu'une fois, et seulement sur preuve, dans le moteur et à l'import.
+    - **ANO-06 :** « inactif » n'est plus compté dans l'effectif. Congé et essai y sont. Les statuts de départ sont conservés à l'import.
+    - **ANO-07 :** ARPC = CA des ventes rattachées à un client / acheteurs distincts.
+    - **ANO-10 :** taux d'amortissement 30 ramené à 0,30.
+    - **ANO-13 :** « Dépenses totales » n'est plus partiel à tort.
+    - **ANO-16 :** `Payroll.period` est ramené à AAAA-MM. Avant, « Janvier 2026 » sortait la paie de toutes les fenêtres.
+  - **Ouvert :**
+    - ANO-15 (P0) : `MonthlyReportView.jsx` affiche 46 montants et pourcentages codés en dur comme s'ils étaient le rapport de l'entreprise.
+    - ANO-11 : le `cash_runway` du registre est faux (non affiché).
+    - BFR et heures supplémentaires : une donnée absente est comptée 0, mais signalée « partiel ».
+    - Aucun KPI OPEX.
+    - `Customer.lifetime_value` porte la clé `ltv`, identique à l'identifiant du KPI.
+    - Modèle temporel V3 : périodes comptables, voir le skill.
+
 Update this section whenever one of these gaps is closed, so it keeps reflecting reality instead of aspiration.
 
 ---

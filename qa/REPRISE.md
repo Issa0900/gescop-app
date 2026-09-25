@@ -23,11 +23,12 @@ Fiche écrite le 25 sept. 2026, à la fin de la session Claude Code. Elle se suf
 
 | Commande | Attendu |
 |---|---|
-| `npm test` | 252/252 |
+| `npm test` | 303/304 (1 ignoré) |
 | `npm run test:banc` | 78/82 (inchangé depuis le début : les 4 restants sont connus, 0 ligne perdue) |
+| `npm run lint` / `npm run typecheck` | 8 et 157 erreurs **déjà présentes** (commits du 24-25 sept.) : ne pas en ajouter |
 | `npm run test:demo` | 77/77, plus les contrôles « module » (84/84 sur 3 classeurs) |
 | `npm run test:vq` | 114/114 |
-| `node tests/banc/lancer-demo.cjs jeux "" sans-ia,ia-fidele,ia-nom,ia-sans-colonnes,ia-decalee` | 450/450 |
+| `node tests/banc/lancer-demo.cjs jeux "" sans-ia,ia-fidele,ia-nom,ia-sans-colonnes,ia-decalee` | 482/485 (11 jeux ; 3 échecs d'import connus : 10 en `ia-decalee`, 11 en `ia-sans-colonnes`) |
 | Deno : `for f in tests/import/*.ts tests/recette/*.ts qa/recette/*.ts; do deno run -A --no-check --sloppy-imports "$f"; done` puis `git checkout deno.lock` | 32/32 |
 | `node tests/banc/lancer-demo.cjs diagnostic` (long, 5 comportements d'IA) | 73/73 par mode |
 
@@ -59,6 +60,10 @@ Banc DEMO sur quelques fichiers : `node tests/banc/lancer-demo.cjs demo-modules 
 - **Refonte SaaS des 3 rapports GESCOP (Résolu - commit abe5f9e)** : Quotidien (SURVEILLER), Hebdomadaire (COMPRENDRE), Mensuel (PILOTER « Rapport Vitrine » 12 sections), implémentés dans `DailyReportView`, `WeeklyReportView`, `MonthlyReportView`, `ReportTypeCard` et `ReportViewer`.
 - **Charte rédactionnelle & Style de voix GESCOP (Résolu)** : création de `docs/STYLE-REDACTIONNEL.md` et harmonisation du ton (Sujet → Donnée → Interprétation, rigueur `[FAIT]` / `[CALCUL]`, boutons à verbe d'action unique, vocabulaire financier rigoureux) sur l'ensemble de l'application.
 - **Cartes KPI professionnelles et suppression des tirets (Résolu)** : suppression de tous les tirets bruts (`"-"`, `"——"`) au profit du statut explicite « Non mesuré », remplacement de l'icône de stabilité par `ArrowRight`, pills stylisées et masquage des unités sur valeur absente.
+
+## Contrat de calcul des KPI (25 sept. 2026)
+
+Avant toute modification d'une formule : lire `.claude/skills/gescop-kpi-contract/SKILL.md` (règles des 15 KPI critiques, méthode de preuve, sonde du moteur). Les anomalies corrigées et ouvertes sont listées dans `AGENTS.md` (« Audit du moteur KPI »). **ANO-15 à traiter en priorité** : le rapport mensuel affiche des chiffres codés en dur.
 
 ## Points restants
 

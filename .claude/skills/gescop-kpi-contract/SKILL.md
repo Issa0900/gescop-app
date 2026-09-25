@@ -12,7 +12,7 @@ Règles de calcul décidées avec Issa (25 sept. 2026) après l'audit du moteur.
 1. **Inconnu n'est pas zéro.** Une donnée absente donne `null` (Non mesuré), jamais `0`. Interdit dans `calculate()` : `deps.x || 0` sur une dépendance qui peut manquer, sauf si le KPI déclare cette dépendance dans `dependancesOptionnelles` ou `sourcesAlternatives` et que l'absence est signalée.
 2. **Le statut suit le chiffre.** Un KPI calculé à partir d'une source partielle (`UNKNOWN`) ou absente (`NOT_MEASURED`) hérite de ce statut, y compris quand cette source est elle-même un KPI calculé dans le même lot (`computeKpiBatch`). Un résultat `null` est toujours `NOT_MEASURED`.
 3. **Une règle générale, jamais un cas de fichier** (voir `qa/REPRISE.md`). Chaque règle doit tenir sur un fichier qu'on n'a jamais vu.
-4. **Même période pour tout ce qu'on combine.** Un KPI qui combine des flux de plusieurs sources (ventes, dépenses, paie) se calcule sur les mois où **toutes** ces sources ont des lignes. Le KPI porte alors `periodeCommune` et la carte le dit (« calculé sur N mois communs »). Aucune proratisation, aucune extrapolation.
+4. **Même période pour tout ce qu'on combine.** Un KPI qui combine des flux de plusieurs sources (ventes, dépenses, paie) déclare `periodeCommune: [entités]` et se calcule, avec ses dépendances, sur l'intersection des **étendues** (premier → dernier mois) de ces sources (`alignerPeriode`, kpiRecords). Étendues disjointes : non mesuré. Une source datée d'un seul mois ne prouve pas sa période (ligne mensuelle ou total annuel ?) : pas de réalignement. Le résultat porte `periodeCommune {debut, fin, mois}` et la carte le dit (`notePeriodeCommune`). Aucune proratisation, aucune extrapolation.
 5. **Mots entiers pour les statuts.** Jamais `status.includes("actif")` : « inactif » le contient.
 
 ## Les 15 KPI critiques
@@ -36,7 +36,18 @@ Règles de calcul décidées avec Issa (25 sept. 2026) après l'audit du moteur.
 | Trésorerie (`cash_closing`) | Dernier solde de clôture par date (page : `latestCashBalance`). Autonomie : `metrics.runwayMonths` (0 si solde ≤ 0). Le `cash_runway` du registre n'est pas affiché : ne pas l'afficher sans le corriger. | aucun relevé |
 | Inventaire (`inventory_value_total`) | Somme, par produit × entrepôt, du dernier relevé, au coût. | aucun relevé valorisé |
 
-Taux d'amortissement : fourni en fraction (0,30) ou en pourcentage (30). Un taux > 1 est un pourcentage et se divise par 100 (`tauxDpa`).
+Taux d'amortissement : fourni en fraction (0,30) ou en pourcentage (30). Un taux > 1 est un pourcentage et se divise par 100 (`tauxDpa`). Amortissement de la période = DPA annuelle × mois civils couverts (`period_months`) / 12.
+
+Montant HT : la même règle existe deux fois, `montantHT` (moteur, `kpiRecords.js`) et `montantHTLigne` (import, `importUtils.ts`, qui la stocke dans `total_revenue`). Les garder identiques ; les tests « ANO-05 » de `tests/kpi_contrat.test.js` vérifient les deux.
+
+## Modèle temporel : état et limites (analyse du 25 sept. 2026)
+
+- **Juste aujourd'hui :** les dates sont converties en ISO à l'import (`parseDate` : US, européen, ISO avec heure, numéro de série Excel, « 25 août 2026 ») et `moisLigne` rejette tout ce qui n'est pas `AAAA-MM`. Aucun mois n'est fabriqué à partir d'un texte. Le grain journalier survit dans les fenêtres : un solde de trésorerie est pris au dernier jour de la fenêtre.
+- **Corrigé (ANO-16) :** `Payroll.period` est un champ texte, désormais ramené à `AAAA-MM` (`periodeMois`). L'empreinte d'une paie normalise la période, donc pas de doublon au réimport.
+- **Limites connues :**
+  - Un horodatage Unix en millisecondes n'est pas lu (ligne en quarantaine, sans valeur inventée).
+  - Les fenêtres sont des mois civils complets (dernier mois, 3 derniers mois, période importée). Il n'existe ni cumul annuel, ni trimestre, ni exercice fiscal avec mois de début, ni plage libre, ni notion de période clôturée.
+- **Cible V3 (à concevoir avec Issa, pas à improviser) :** un objet `Period { debut, fin, grain: "DAY" | "MONTH", cloturee }` produit par un sélecteur (YTD, T1–T4, exercice, plage libre), passé au moteur à la place des chaînes `AAAA-MM`. Le moteur filtrerait les flux par date réelle et prendrait les soldes au dernier jour. `alignerPeriode` et `lignesFenetre` en seraient les premiers consommateurs.
 
 ## Méthode de preuve (obligatoire avant de dire « c'est juste » ou « c'est corrigé »)
 
@@ -56,3 +67,5 @@ Taux d'amortissement : fourni en fraction (0,30) ou en pourcentage (30). Un taux
 - Deux calculs d'autonomie de trésorerie existent (`kpiRegistry.cash_runway` et `metrics.runwayMonths`) : seul le second est juste et affiché.
 - `montantHT` rend `NaN` quand aucun montant n'existe : toujours filtrer par `Number.isFinite`.
 - La LTV (`arpu / churn`) mélange un revenu de période et un taux d'attrition sur toute la base : indicatif seulement.
+- `Customer.lifetime_value` porte la clé canonique `ltv`, identique à l'identifiant du KPI : le moteur trouve le KPI et ne lit jamais le champ (même classe de défaut que l'ancien `payroll_total`). Non corrigé.
+- Une clé canonique ne doit jamais porter le nom d'un KPI du registre.
