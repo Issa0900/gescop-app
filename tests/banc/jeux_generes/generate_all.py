@@ -283,4 +283,201 @@ def j10():
         "Sommaire par succursale avec une ligne « Total consolidé » par mois (à exclure des faits).")
 
 for f in [j01, j02, j03, j04, j05, j06, j07, j08, j09, j10]: f()
+
+# ================================================================ Modules supplémentaires
+# Deuxième passe : chaque module de l'app absent des jeux ci-dessus (produits,
+# achats, fournisseurs, paiements, dépenses, interactions, événements,
+# concurrents, veille, objectifs) est ajouté à au moins deux jeux, sous des
+# formats différents. Graine séparée : les fichiers des jeux ci-dessus ne
+# changent pas.
+M = random.Random(20260926)
+
+def md(debut=D1, fin=D2):
+    return debut + dt.timedelta(days=M.randint(0, (fin - debut).days))
+
+def compte(entite, champ, valeur, n): return {"type": "compte", "entite": entite, "champ": champ, "valeur": valeur, "attendu": n}
+def somme(entite, champ, v): return {"type": "somme", "entite": entite, "champ": champ, "attendu": arr(v)}
+def distincts(entite, champ, n): return {"type": "distincts", "entite": entite, "champ": champ, "attendu": n}
+
+def ajouter(nom, controles, note):
+    d = os.path.join(ICI, nom)
+    p = os.path.join(d, "verite.json")
+    v = json.load(open(p, encoding="utf-8"))
+    v["controles"] += controles
+    v["note"] += " Modules ajoutés : " + note
+    json.dump(v, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return d
+
+# --- Fournisseurs / achats (FR, « ; », décimale virgule) : 01 restaurant
+def m01():
+    d = os.path.join(ICI, "01_restaurant_montreal")
+    four = [("F-01", "Boucherie Saint-Laurent", "Montréal"), ("F-02", "Primeurs du Marché", "Laval"),
+            ("F-03", "Vins Rouge & Blanc", "Montréal"), ("F-04", "Emballages Pro", "Longueuil")]
+    ecrire_csv(d, "fournisseurs.csv", ["No fournisseur", "Raison sociale", "Ville", "Conditions de paiement"],
+               [[f[0], f[1], f[2], M.choice(["Net 30", "Net 15", "Comptant"])] for f in four], sep=";")
+    achats, tot, annules = [], 0.0, 0
+    for k in range(60):
+        f = M.choice(four); q = M.randint(2, 40); pu = arr(M.uniform(3, 60)); t = arr(q * pu)
+        st = M.choice(["Reçu"] * 7 + ["En retard", "Annulé"])
+        if st == "Annulé": annules += 1
+        tot += t
+        achats.append([f"A-{k:03d}", md().strftime("%d/%m/%Y"), f[0], q, fr_montant(pu).replace(" $", ""), fr_montant(t).replace(" $", ""), st])
+    ecrire_csv(d, "achats.csv", ["No achat", "Date", "Fournisseur", "Quantité", "Coût unitaire", "Coût total", "Statut"], achats, sep=";")
+    ajouter("01_restaurant_montreal", [lignes("Supplier", 4), distincts("Supplier", "supplier_name", 4),
+        lignes("Purchase", 60), somme("Purchase", "total_cost", tot), compte("Purchase", "status", "annule", annules)],
+        "fournisseurs et achats (CSV « ; », JJ/MM/AAAA, montants à virgule).")
+
+# --- Paiements et tickets de support (EN, xlsx) : 02 SaaS
+def m02():
+    d = os.path.join(ICI, "02_saas_toronto")
+    pay, tot = [], 0.0
+    for k in range(80):
+        a = arr(M.uniform(49, 2400)); tot += a
+        pay.append([f"PAY-{k:04d}", f"INV-{M.randint(0, 259):04d}", md().isoformat(), a, M.choice(["Credit Card", "ACH", "Wire"]), "Succeeded"])
+    tick, neg, mails = [], 0, 0
+    for k in range(50):
+        ch = M.choice(["Email", "Chat", "Phone"]); se = M.choice(["Positive", "Neutral", "Negative"])
+        neg += se == "Negative"; mails += ch == "Email"
+        tick.append([f"T-{k:03d}", md().isoformat(), f"C-{M.randint(1, 40):03d}", ch, se, M.choice(["Billing", "Bug", "Onboarding"])])
+    ecrire_xlsx(d, "payments_support.xlsx", [
+        ("Payments", ["Payment ID", "Invoice #", "Paid On", "Amount", "Method", "Status"], pay, None),
+        ("Support Tickets", ["Ticket ID", "Opened", "Customer ID", "Channel", "Sentiment", "Subject"], tick, None)])
+    ajouter("02_saas_toronto", [lignes("Payment", 80), somme("Payment", "amount", tot),
+        lignes("Interaction", 50), compte("Interaction", "sentiment", "negatif", neg), compte("Interaction", "channel", "email", mails)],
+        "paiements et tickets de support (xlsx anglais).")
+
+# --- Catalogue produits et fournisseurs avec ESG (FR, xlsx, ligne de titre) : 03 grossiste
+def m03():
+    d = os.path.join(ICI, "03_grossiste_quebec")
+    cats = ["Cuisine", "Maison", "Entretien"]
+    prod, pv = [], 0.0
+    for k in range(40):
+        c = arr(M.uniform(4, 90)); p = arr(c * M.uniform(1.3, 2.2)); pv += p
+        prod.append([f"SKU-{k:04d}", f"Article {k}", M.choice(cats), c, p])
+    four, esg = [], []
+    for k, n in enumerate(["Distribution Nordik", "Atelier Beauce", "Import Pacifique", "Papeterie Mauricie", "Métal Estrie"]):
+        s = M.randint(40, 95); esg.append(s)
+        four.append([f"FR-{k:02d}", n, M.choice(["Québec", "Ontario"]), s])
+    ecrire_xlsx(d, "catalogue.xlsx", [
+        ("Produits", ["Code produit", "Désignation", "Famille", "Prix coûtant", "Prix de vente"], prod, ["Catalogue 2026", "Grossiste Québec"]),
+        ("Fournisseurs", ["Code fournisseur", "Nom du fournisseur", "Province", "Score ESG"], four, None)])
+    ajouter("03_grossiste_quebec", [lignes("Product", 40), somme("Product", "selling_price", pv), distincts("Product", "category", 3),
+        lignes("Supplier", 5), kpi("weighted_esg_score", ["Supplier"], arr(sum(esg) / len(esg)))],
+        "catalogue produits et fournisseurs avec score ESG (xlsx avec titre).")
+
+# --- Dépenses et événements (FR, CSV, sans colonne type) : 04 clinique
+def m04():
+    d = os.path.join(ICI, "04_clinique_sherbrooke")
+    dep, tot = [], 0.0
+    for k in range(45):
+        a = arr(M.uniform(80, 3500)); tot += a
+        dep.append([md().isoformat(), M.choice(["Loyer", "Fournitures médicales", "Assurances", "Logiciels"]), M.choice(["Medisource", "Bell", "Intact"]), a])
+    ecrire_csv(d, "depenses_fournisseurs.csv", ["Date", "Catégorie", "Fournisseur", "Montant"], dep)
+    ev = [[md().isoformat(), t, desc] for t, desc in [("Fermeture", "Fermeture pour rénovation"), ("Ouverture", "Nouvelle salle de physiothérapie"),
+          ("Promotion", "Journée portes ouvertes"), ("Fermeture", "Tempête de verglas")]]
+    ecrire_csv(d, "evenements.csv", ["Date", "Type d'événement", "Description"], ev)
+    ajouter("04_clinique_sherbrooke", [lignes("Expense", 45), kpi("total_expense", ["Expense"], arr(tot)), distincts("Expense", "category", 4),
+        lignes("Event", 4), distincts("Event", "event_type", 3)],
+        "dépenses (sans colonne type) et journal d'événements.")
+
+# --- Produits et avis clients (EN, $, MM/DD/YYYY) : 05 e-commerce
+def m05():
+    d = os.path.join(ICI, "05_ecommerce_us")
+    prod, pv = [], 0.0
+    for k in range(30):
+        c = arr(M.uniform(5, 60)); p = arr(c * M.uniform(1.5, 3)); pv += p
+        prod.append([f"P{k:03d}", f"Item {k}", M.choice(["Home", "Kitchen", "Outdoor"]), us_montant(c), us_montant(p), M.choice(["Active", "Discontinued"])])
+    ecrire_csv(d, "products.csv", ["Product ID", "Product Name", "Category", "Unit Cost", "Retail Price", "Status"], prod)
+    rev, neg = [], 0
+    for k in range(40):
+        s = M.randint(1, 5); se = "Negative" if s <= 2 else "Neutral" if s == 3 else "Positive"; neg += se == "Negative"
+        rev.append([f"R{k:03d}", md().strftime("%m/%d/%Y"), f"CUST-{M.randint(1, 90):04d}", "Online review", se, s])
+    ecrire_csv(d, "customer_reviews.csv", ["Review ID", "Date", "Customer ID", "Type", "Sentiment", "Stars"], rev)
+    ajouter("05_ecommerce_us", [lignes("Product", 30), somme("Product", "selling_price", pv), lignes("Interaction", 40),
+        compte("Interaction", "sentiment", "negatif", neg)],
+        "catalogue produits (montants en $) et avis clients (MM/JJ/AAAA).")
+
+# --- Bons de commande fournisseurs sans colonne de total (FR/EN mêlés, xlsx) : 06 manufacturier
+def m06():
+    d = os.path.join(ICI, "06_manufacturier_drummondville")
+    four = [["SUP-1", "Acier Drummond", "Drummondville", "Net 45"], ["SUP-2", "Plastiques Victo", "Victoriaville", "Net 30"],
+            ["SUP-3", "Boulons Laval", "Laval", "Net 30"]]
+    po, tot = [], 0.0
+    for k in range(50):
+        q = M.randint(10, 500); pu = arr(M.uniform(0.5, 40)); tot += arr(q * pu)
+        dt0 = md(); po.append([f"PO-{k:04d}", dt0.isoformat(), M.choice(four)[0], f"MP-{M.randint(1, 20):02d}", q, pu,
+                               (dt0 + dt.timedelta(days=M.randint(5, 30))).isoformat(), M.choice(["Received", "Pending", "Received"])])
+    ecrire_xlsx(d, "achats_fournisseurs.xlsx", [
+        ("Fournisseurs", ["Supplier ID", "Nom", "Ville", "Payment Terms"], four, None),
+        ("Bons de commande", ["PO Number", "Date commande", "Supplier ID", "Item", "Qty", "Unit Cost", "Expected Delivery", "Statut"], po, None)])
+    ajouter("06_manufacturier_drummondville", [lignes("Supplier", 3), lignes("Purchase", 50),
+        somme("Purchase", "total_cost", tot)],
+        "fournisseurs et bons de commande sans colonne de total (quantité × coût unitaire).")
+
+# --- Concurrents et veille (FR) : 07 agence marketing
+def m07():
+    d = os.path.join(ICI, "07_agence_marketing")
+    conc = [["C1", "Agence Boréale", "Montréal", "Leader", "Supérieur"], ["C2", "Studio Fleuve", "Québec", "Challenger", "Égal"],
+            ["C3", "Pixel Nord", "Sherbrooke", "Niche", "Inférieur"], ["C4", "Média Laurentides", "Saint-Jérôme", "Suiveur", "Égal"]]
+    ecrire_csv(d, "concurrents.csv", ["ID concurrent", "Nom", "Ville", "Position marché", "Positionnement prix"], conc)
+    sig = [["Hausse du taux directeur", "Économie", "Négatif", md().isoformat()], ["Crédit d'impôt numérique prolongé", "Gouvernement", "Positif", md().isoformat()],
+           ["Nouvel entrant en publicité locale", "Concurrence", "Négatif", md().isoformat()], ["Budget pub des PME en hausse", "Marché", "Positif", md().isoformat()],
+           ["Inflation des services", "Économie", "Neutre", md().isoformat()]]
+    ecrire_csv(d, "veille.csv", ["Titre", "Famille", "Impact", "Date"], sig)
+    ajouter("07_agence_marketing", [lignes("Competitor", 4), compte("Competitor", "market_position", "leader", 1),
+        lignes("ExternalSignal", 5), compte("ExternalSignal", "family", "economie", 2), compte("ExternalSignal", "impact", "negatif", 2)],
+        "concurrents et signaux de veille (familles et impacts en français).")
+
+# --- Objectifs et dépenses (FR, « ; ») : 08 boulangerie
+def m08():
+    d = os.path.join(ICI, "08_boulangerie_levis")
+    obj = [["O1", "Ventes", "Chiffre d'affaires mensuel", "45000", "Élevée"], ["O2", "Finance", "Marge brute %", "62", "Moyenne"],
+           ["O3", "Ventes", "Panier moyen", "18,50", "Moyenne"], ["O4", "Clients", "Clients fidèles", "300", "Faible"]]
+    ecrire_csv(d, "objectifs.csv", ["No", "Domaine", "Indicateur", "Cible", "Priorité"], obj, sep=";")
+    dep, tot = [], 0.0
+    for k in range(30):
+        a = arr(M.uniform(40, 1800)); tot += a
+        dep.append([md().strftime("%d/%m/%Y"), M.choice(["Farine", "Électricité", "Emballages"]), fr_montant(a).replace(" $", "")])
+    ecrire_csv(d, "depenses.csv", ["Date", "Poste", "Montant"], dep, sep=";")
+    ajouter("08_boulangerie_levis", [lignes("Goal", 4), somme("Goal", "target", 45000 + 62 + 18.5 + 300), compte("Goal", "domain", "ventes", 2),
+        lignes("Expense", 30), kpi("total_expense", ["Expense"], arr(tot))],
+        "objectifs (cibles à virgule) et dépenses.")
+
+# --- Objectifs, événements et interactions (EN) : 09 cabinet
+def m09():
+    d = os.path.join(ICI, "09_cabinet_conseil")
+    obj = [["G1", "Sales", "Billable revenue", 750000, "High"], ["G2", "Clients", "Active clients", 20, "Medium"], ["G3", "Operations", "Utilization rate", 75, "High"]]
+    ecrire_csv(d, "goals.csv", ["Goal ID", "Domain", "Metric", "Target", "Priority"], obj)
+    ev = [[md().isoformat(), "Conference", "Speaking slot at CPA congress"], [md().isoformat(), "Hiring", "Two senior consultants"],
+          [md().isoformat(), "Conference", "Client summit"]]
+    ecrire_csv(d, "events.csv", ["Date", "Event Type", "Description"], ev)
+    it, tel = [], 0
+    for k in range(25):
+        ch = M.choice(["Phone", "Email"]); tel += ch == "Phone"
+        it.append([f"I-{k:03d}", md().isoformat(), f"CL-{M.randint(0, 14):03d}", ch, M.choice(["Positive", "Neutral"])])
+    ecrire_csv(d, "client_touchpoints.csv", ["Interaction ID", "Date", "Client ID", "Channel", "Sentiment"], it)
+    ajouter("09_cabinet_conseil", [lignes("Goal", 3), somme("Goal", "target", 750000 + 20 + 75), lignes("Event", 3), distincts("Event", "event_type", 2),
+        lignes("Interaction", 25), compte("Interaction", "channel", "telephone", tel)],
+        "objectifs, événements et interactions clients (anglais).")
+
+# --- Concurrents, veille et produits (EN, xlsx) : 10 quincaillerie
+def m10():
+    d = os.path.join(ICI, "10_quincaillerie_trois_rivieres")
+    conc = [["K1", "Home Depot", "Trois-Rivières", "Leader"], ["K2", "Rona", "Trois-Rivières", "Challenger"], ["K3", "BMR Cap", "Cap-de-la-Madeleine", "Follower"]]
+    sig = [["Housing starts slow down", "Economy", "Negative"], ["Renovation tax credit", "Government", "Positive"], ["Lumber prices drop", "Suppliers", "Positive"]]
+    prod, pv = [], 0.0
+    for k in range(25):
+        p = arr(M.uniform(2, 250)); pv += p
+        prod.append([f"Q-{k:04d}", f"Tool {k}", M.choice(["Hardware", "Paint", "Garden"]), p])
+    ecrire_xlsx(d, "marche.xlsx", [
+        ("Competitors", ["Competitor ID", "Name", "City", "Market Position"], conc, None),
+        ("Market Signals", ["Title", "Category", "Impact"], sig, None),
+        ("Products", ["SKU", "Product", "Department", "Selling Price"], prod, None)])
+    ajouter("10_quincaillerie_trois_rivieres", [lignes("Competitor", 3), compte("Competitor", "market_position", "leader", 1),
+        lignes("ExternalSignal", 3), compte("ExternalSignal", "family", "fournisseurs", 1),
+        lignes("Product", 25), somme("Product", "selling_price", pv)],
+        "concurrents, veille et produits (xlsx anglais).")
+
+for f in [m01, m02, m03, m04, m05, m06, m07, m08, m09, m10]: f()
+print("modules supplémentaires ajoutés")
 print("10 jeux générés dans", ICI)

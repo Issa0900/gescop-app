@@ -1,6 +1,6 @@
 {
  "secteur": "Clinique (Sherbrooke)",
- "note": "Aucune colonne type : le sens doit venir de la catégorie (règle du lot 1.2), jamais « positif = revenu ».",
+ "note": "Aucune colonne type : le sens doit venir de la catégorie (règle du lot 1.2), jamais « positif = revenu ». Modules ajoutés : dépenses (sans colonne type) et journal d'événements.",
  "controles": [
   {
    "type": "lignes",
@@ -24,6 +24,37 @@
    ],
    "attendu": 218377.65,
    "lot": ""
+  },
+  {
+   "type": "lignes",
+   "entite": "Expense",
+   "attendu": 45
+  },
+  {
+   "type": "kpi",
+   "id": "total_expense",
+   "entites": [
+    "Expense"
+   ],
+   "attendu": 80111.52,
+   "lot": ""
+  },
+  {
+   "type": "distincts",
+   "entite": "Expense",
+   "champ": "category",
+   "attendu": 4
+  },
+  {
+   "type": "lignes",
+   "entite": "Event",
+   "attendu": 4
+  },
+  {
+   "type": "distincts",
+   "entite": "Event",
+   "champ": "event_type",
+   "attendu": 3
   }
  ]
 }

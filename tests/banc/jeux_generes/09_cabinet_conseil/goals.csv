@@ -1,0 +1,4 @@
+Goal ID,Domain,Metric,Target,Priority
+G1,Sales,Billable revenue,750000,High
+G2,Clients,Active clients,20,Medium
+G3,Operations,Utilization rate,75,High

@@ -1,6 +1,6 @@
 {
  "secteur": "E-commerce (États-Unis)",
- "note": "Montants « $1,234.56 », dates MM/JJ/AAAA, remise en %, Return Flag Yes/No contredit parfois le statut, colonne représentant.",
+ "note": "Montants « $1,234.56 », dates MM/JJ/AAAA, remise en %, Return Flag Yes/No contredit parfois le statut, colonne représentant. Modules ajoutés : catalogue produits (montants en $) et avis clients (MM/JJ/AAAA).",
  "controles": [
   {
    "type": "lignes",
@@ -24,6 +24,29 @@
    ],
    "attendu": 270.4,
    "lot": "panier moyen sur commandes distinctes"
+  },
+  {
+   "type": "lignes",
+   "entite": "Product",
+   "attendu": 30
+  },
+  {
+   "type": "somme",
+   "entite": "Product",
+   "champ": "selling_price",
+   "attendu": 2576.76
+  },
+  {
+   "type": "lignes",
+   "entite": "Interaction",
+   "attendu": 40
+  },
+  {
+   "type": "compte",
+   "entite": "Interaction",
+   "champ": "sentiment",
+   "valeur": "negatif",
+   "attendu": 14
   }
  ]
 }

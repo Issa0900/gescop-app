@@ -1,6 +1,6 @@
 {
  "secteur": "Restaurant (Montréal)",
- "note": "CSV séparé par « ; », décimale virgule, dates JJ/MM/AAAA, type « Recette/Dépense ».",
+ "note": "CSV séparé par « ; », décimale virgule, dates JJ/MM/AAAA, type « Recette/Dépense ». Modules ajoutés : fournisseurs et achats (CSV « ; », JJ/MM/AAAA, montants à virgule).",
  "controles": [
   {
    "type": "kpi",
@@ -47,6 +47,35 @@
    ],
    "attendu": 75832.03,
    "lot": "paie : brut (les pourboires ne sont pas un coût employeur)"
+  },
+  {
+   "type": "lignes",
+   "entite": "Supplier",
+   "attendu": 4
+  },
+  {
+   "type": "distincts",
+   "entite": "Supplier",
+   "champ": "supplier_name",
+   "attendu": 4
+  },
+  {
+   "type": "lignes",
+   "entite": "Purchase",
+   "attendu": 60
+  },
+  {
+   "type": "somme",
+   "entite": "Purchase",
+   "champ": "total_cost",
+   "attendu": 53777.88
+  },
+  {
+   "type": "compte",
+   "entite": "Purchase",
+   "champ": "status",
+   "valeur": "annule",
+   "attendu": 8
   }
  ]
 }

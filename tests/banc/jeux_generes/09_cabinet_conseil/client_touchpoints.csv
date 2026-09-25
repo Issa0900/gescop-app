@@ -1,0 +1,26 @@
+Interaction ID,Date,Client ID,Channel,Sentiment
+I-000,2026-01-15,CL-011,Email,Neutral
+I-001,2026-03-03,CL-004,Email,Positive
+I-002,2026-01-20,CL-006,Phone,Neutral
+I-003,2025-12-19,CL-000,Phone,Neutral
+I-004,2025-11-07,CL-007,Phone,Positive
+I-005,2026-04-25,CL-005,Email,Positive
+I-006,2026-04-08,CL-005,Phone,Neutral
+I-007,2026-06-19,CL-003,Email,Neutral
+I-008,2025-11-29,CL-012,Phone,Positive
+I-009,2025-11-24,CL-011,Phone,Neutral
+I-010,2025-12-24,CL-001,Phone,Neutral
+I-011,2026-02-14,CL-001,Phone,Neutral
+I-012,2026-05-17,CL-006,Email,Neutral
+I-013,2025-12-02,CL-008,Phone,Positive
+I-014,2026-04-18,CL-002,Phone,Positive
+I-015,2026-08-04,CL-002,Email,Positive
+I-016,2025-10-01,CL-001,Phone,Neutral
+I-017,2026-04-03,CL-001,Email,Neutral
+I-018,2025-11-17,CL-009,Email,Neutral
+I-019,2026-06-03,CL-007,Email,Neutral
+I-020,2026-01-12,CL-005,Email,Positive
+I-021,2026-04-15,CL-009,Phone,Neutral
+I-022,2026-02-26,CL-011,Email,Positive
+I-023,2026-05-03,CL-006,Email,Neutral
+I-024,2026-03-03,CL-002,Email,Neutral

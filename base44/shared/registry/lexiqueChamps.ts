@@ -247,6 +247,9 @@ export const REGLES: Regle[] = [
   R("total_cost", ["Purchase"], [COUT, ["total", ...MONTANT]], ["unitaire", "unit", "ttc", ...TAXES_PRECISES]),
   R("status", ["Purchase"], [["statut", "status", "etat"]], ["paiement", "payment"]),
   R("supplier_id", ["Purchase", "Inventory", "Product"], [["fournisseur", "supplier", "vendor"], ID]),
+  // Un achat n'a qu'un champ fournisseur : une colonne « Fournisseur » seule le
+  // designe (achats.csv jugee incomplete, jeux generes du 25 sept.).
+  R("supplier_id", ["Purchase"], [["fournisseur", "supplier", "vendor"]], ["contact", "email", "courriel", "telephone", "phone", "ville", "city", "delai", "condition", "pays", "country"]),
 
   // ── Stocks ──────────────────────────────────────────────────────────────
   R("warehouse_id", ["Inventory"], [["entrepot", "depot", "warehouse", "site"], ID]),
@@ -326,6 +329,40 @@ export const REGLES: Regle[] = [
   R("status", ["Payment"], [["statut", "status", "etat"]]),
   R("amount", ["Payment"], [MONTANT]),
   R("method", ["Payment"], [["mode", "methode", "method", "moyen"]]),
+
+  // ── Modules sans lexique jusqu'ici (jeux generes, 25 sept. 2026) ─────────
+  // Veille : « Titre », « Famille », « Impact » laissaient title et family
+  // (obligatoires) absents : toutes les lignes etaient ecartees.
+  R("title", ["ExternalSignal"], [["titre", "title", "signal", "headline", "intitule", "sujet", "nom", "name"]], ["date", "source", "url", "lien", "link"]),
+  R("family", ["ExternalSignal"], [["famille", "family", "categorie", "category", "theme", "domaine", "domain", "type"]]),
+  R("impact", ["ExternalSignal"], [["impact", "effet", "effect"]]),
+  R("description", ["ExternalSignal", "Event"], [["description", "detail", "details", "resume", "summary"]]),
+  R("relevance_score", ["ExternalSignal"], [["pertinence", "relevance"]]),
+  R("source", ["ExternalSignal"], [["source", "origine"]]),
+  R("url", ["ExternalSignal"], [["url", "lien", "link"]]),
+  // Objectifs : « Indicateur », « Cible », « Domaine » (metric est obligatoire).
+  R("metric", ["Goal"], [["indicateur", "metric", "kpi", "indicator", "mesure", "measure", "objectif", "goal"]], ID),
+  R("goal_id", ["Goal"], [["objectif", "goal"], ID]),
+  R("goal_id", ["Goal"], [["id", "no", "num", "numero", "code", "ref"]], ["indicateur", "metric", "kpi", "cible", "target"]),
+  R("target", ["Goal"], [["cible", "target", "visee"]]),
+  R("current", ["Goal"], [["actuel", "actuelle", "current", "realise", "reel", "actual"]]),
+  R("domain", ["Goal"], [["domaine", "domain", "axe", "area"]]),
+  R("priority", ["Goal"], [["priorite", "priority"]]),
+  R("period", ["Goal"], [["periode", "period", "horizon", "echeance"]]),
+  R("status", ["Goal"], [["statut", "status", "etat"]]),
+  // Interactions : tickets de support, avis, points de contact.
+  R("interaction_id", ["Interaction"], [["interaction", "ticket", "avis", "review", "contact", "touchpoint", "echange", "appel", "call"], ID]),
+  // « Opened », « Ouvert le », « Créé le » : date d'un ticket ou d'un evenement.
+  R("date", ["Interaction", "Event"], [["opened", "ouvert", "ouverture", "created", "cree", "creation", "submitted", "soumis", "reported", "signale", "posted", "publie"]], ["ferme", "closed", "fermeture", "resolution", "resolu", "resolved"]),
+  R("channel", ["Interaction"], [["canal", "channel", "via"]]),
+  R("sentiment", ["Interaction"], [["sentiment", "tonalite", "tone", "humeur"]]),
+  R("type", ["Interaction"], [["type", "nature", "motif"]]),
+  R("subject", ["Interaction"], [["sujet", "subject", "objet", "topic"]]),
+  R("satisfaction_score", ["Interaction"], [["satisfaction", "csat", "note", "rating", "star", "etoile"]]),
+  R("resolved", ["Interaction"], [["resolu", "resolue", "resolved", "ferme", "closed"]]),
+  // Produits : la famille ou le rayon est la categorie.
+  R("category", ["Product"], [["categorie", "category", "famille", "family", "rayon", "department", "departement", "gamme"]], ["sous", "sub"]),
+  R("product_name", ["Product"], [["designation", "libelle", "nom", "name", "produit", "product", "article", "item"]], ID),
 ];
 
 // Libelle d'une ligne (« Designation », « Libelle », « Memo ») : sa description,

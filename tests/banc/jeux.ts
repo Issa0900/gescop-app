@@ -25,6 +25,7 @@ function calculer(c: any, t: Record<string, any[]>): any {
     case "lignes": return (t[c.entite] || []).length;
     case "somme": return Math.round((t[c.entite] || []).reduce((s: number, r: any) => s + (Number(r[c.champ]) || 0), 0) * 100) / 100;
     case "distincts": return new Set((t[c.entite] || []).map((r: any) => r[c.champ]).filter((v: any) => v != null && v !== "")).size;
+    case "compte": return (t[c.entite] || []).filter((r: any) => String(r[c.champ] ?? "") === c.valeur).length;
     case "solde": return soldesTresorerie(t.Cashflow || [], t.Transaction || []).soldeActuel;
     case "clients_rattaches": { const ix = indexClients(t.Customer || []); return (t.Order || []).filter((o) => clientDeCommande(o, ix)).length; }
     default: return `type inconnu ${c.type}`;
@@ -72,7 +73,7 @@ const juste = (app: any, att: any) => (typeof att === "number" ? typeof app === 
       parler();
       const controles = verite.controles.map((c: any) => {
         let app: any; try { app = calculer(c, env.tables); } catch (e: any) { app = `erreur : ${e?.message || e}`; }
-        const id = c.type === "kpi" ? `kpi ${c.id} (${c.entites.join("+")})` : c.type === "lignes" ? `lignes ${c.entite}` : `${c.type} ${c.entite || ""}.${c.champ || ""}`;
+        const id = c.type === "kpi" ? `kpi ${c.id} (${c.entites.join("+")})` : c.type === "lignes" ? `lignes ${c.entite}` : c.type === "compte" ? `compte ${c.entite}.${c.champ} = ${c.valeur}` : `${c.type} ${c.entite || ""}.${c.champ || ""}`;
         return { id, attendu: c.attendu, app, ok: juste(app, c.attendu) };
       });
       if (process.env.DUMP) log(JSON.stringify(plansRegles));

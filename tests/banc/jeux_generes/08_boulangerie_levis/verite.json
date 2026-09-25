@@ -1,6 +1,6 @@
 {
  "secteur": "Boulangerie (Lévis)",
- "note": "Relevé mensuel sans colonne de clôture : le solde doit être reconstitué (lot 2), dates en vraies cellules Excel.",
+ "note": "Relevé mensuel sans colonne de clôture : le solde doit être reconstitué (lot 2), dates en vraies cellules Excel. Modules ajoutés : objectifs (cibles à virgule) et dépenses.",
  "controles": [
   {
    "type": "lignes",
@@ -10,6 +10,38 @@
   {
    "type": "solde",
    "attendu": 35528.87
+  },
+  {
+   "type": "lignes",
+   "entite": "Goal",
+   "attendu": 4
+  },
+  {
+   "type": "somme",
+   "entite": "Goal",
+   "champ": "target",
+   "attendu": 45380.5
+  },
+  {
+   "type": "compte",
+   "entite": "Goal",
+   "champ": "domain",
+   "valeur": "ventes",
+   "attendu": 2
+  },
+  {
+   "type": "lignes",
+   "entite": "Expense",
+   "attendu": 30
+  },
+  {
+   "type": "kpi",
+   "id": "total_expense",
+   "entites": [
+    "Expense"
+   ],
+   "attendu": 28733.98,
+   "lot": ""
   }
  ]
 }

@@ -1,6 +1,6 @@
 {
  "secteur": "Grossiste (Québec)",
- "note": "Deux lignes de titre au-dessus des en-têtes, ligne TOTAL GÉNÉRAL en bas, TPS/TVQ détaillées.",
+ "note": "Deux lignes de titre au-dessus des en-têtes, ligne TOTAL GÉNÉRAL en bas, TPS/TVQ détaillées. Modules ajoutés : catalogue produits et fournisseurs avec score ESG (xlsx avec titre).",
  "controles": [
   {
    "type": "lignes",
@@ -15,6 +15,37 @@
    ],
    "attendu": 389536.45,
    "lot": "CA HT (sous-total), annulées exclues"
+  },
+  {
+   "type": "lignes",
+   "entite": "Product",
+   "attendu": 40
+  },
+  {
+   "type": "somme",
+   "entite": "Product",
+   "champ": "selling_price",
+   "attendu": 3643.56
+  },
+  {
+   "type": "distincts",
+   "entite": "Product",
+   "champ": "category",
+   "attendu": 3
+  },
+  {
+   "type": "lignes",
+   "entite": "Supplier",
+   "attendu": 5
+  },
+  {
+   "type": "kpi",
+   "id": "weighted_esg_score",
+   "entites": [
+    "Supplier"
+   ],
+   "attendu": 78.8,
+   "lot": ""
   }
  ]
 }

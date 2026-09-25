@@ -17,9 +17,14 @@ test("un identifiant que l'import sait déduire ne rend plus le type inéligible
 });
 
 test("un type faible ne remplace pas un type nettement plus plausible mais incomplet", () => {
-  const h = ["nom_objectif", "categorie", "cible", "valeur_actuelle", "echeance"];
+  // Aucune colonne d'indicateur : Goal reste incomplet, et ni Asset ni
+  // Supplier (eligibles mais faibles) ne prennent sa place.
+  const h = ["libelle", "categorie", "cible", "valeur_actuelle", "echeance"];
   assert.equal(choisir(h, "16_objectifs.csv"), null, "pas des immobilisations");
   assert.deepEqual(typeIncomplet(h, "16_objectifs.csv", {}), { entite: "Goal", manquants: ["metric"] });
+  // « nom_objectif » est l'indicateur de l'objectif (lexique, 25 sept.) : la
+  // feuille est alors complete et importee comme objectifs.
+  assert.equal(choisir(["nom_objectif", "categorie", "cible", "valeur_actuelle", "echeance"], "16_objectifs.csv"), "Goal");
 });
 
 test("identifiant fournisseur / concurrent déduit du nom (AUTO-), jamais inventé sans nom", () => {

@@ -1900,6 +1900,13 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "instagram": ["instagram", "meta_ads"], "instagram ads": ["instagram", "meta_ads"],
   "tiktok": ["tiktok"], "tiktok ads": ["tiktok"],
   "email": ["email"], "courriel": ["email"], "courriels": ["email"],
+  // Canaux d'interaction et familles de veille en anglais (jeux generes, 25 sept.).
+  "phone": ["telephone"], "telephone": ["telephone"], "tel": ["telephone"], "call": ["telephone"], "appel": ["telephone"],
+  "live chat": ["chat"], "clavardage": ["chat"], "social": ["reseau_social"], "social media": ["reseau_social"],
+  "reseaux sociaux": ["reseau_social"], "reseau social": ["reseau_social"],
+  "supplier": ["fournisseurs"], "suppliers": ["fournisseurs"], "supply chain": ["fournisseurs"],
+  "consumer": ["consommateurs"], "consumers": ["consommateurs"], "news": ["actualites"],
+  "review": ["avis"], "reviews": ["avis"], "online review": ["avis"], "complaint": ["plainte"],
   "infolettre": ["email"], "infolettres": ["email"], "newsletter": ["email"], "newsletters": ["email"],
   "mailing": ["email"], "mail": ["email"], "e-mail": ["email"],
   "affichage / web": ["display", "web"], "affichage": ["display", "web"],
@@ -2874,6 +2881,13 @@ export function normalizeRow(
   // nom comme reference client (le rapprochement par nom se fait a la lecture,
   // src/lib/rapprochementClients.js) au lieu d'ecarter toutes ses lignes.
   if (entityName === "Interaction" && !r.customer_id && r.customer_name) r.customer_id = r.customer_name;
+
+  // Achat : cout total absent mais quantite et cout unitaire fournis (bons de
+  // commande) : c'est leur produit, pas une valeur inventee (jeux generes).
+  if (entityName === "Purchase" && (r.total_cost === undefined || r.total_cost === null || r.total_cost === "")) {
+    const q = parseNumber(r.quantity), u = parseNumber(r.unit_cost);
+    if (q !== null && u !== null) r.total_cost = Math.round(q * u * 100) / 100;
+  }
 
   // Depense : un montant saisi en negatif (export comptable signe) reste une
   // depense ; le total des charges devenait negatif (jeux generes, 25 sept.).

@@ -474,9 +474,14 @@ export function colonnesAccueillies(entite: string | null | undefined, colonnes:
  * Un autre type ne l'emporte que s'il accueille NETTEMENT plus de colonnes :
  * au moins 3 de plus et une fois et demie autant. Sur un ecart faible, le
  * premier choix est garde (pas de bascule sur une ou deux colonnes).
+ * Sur une petite feuille, l'ecart de 3 est hors d'atteinte : l'autre type
+ * l'emporte aussi quand il accueille TOUTES les colonnes (3 au moins) et le
+ * premier au plus la moitie (« depenses_fournisseurs.csv » lu comme des
+ * fournisseurs d'apres son nom : 2 colonnes sur 4, contre 4 sur 4 en depenses).
  */
-export function typeNettementMeilleur(nAutre: number, nActuel: number): boolean {
-  return nAutre >= nActuel + 3 && nAutre >= 1.5 * nActuel;
+export function typeNettementMeilleur(nAutre: number, nActuel: number, nColonnes = 0): boolean {
+  if (nAutre >= nActuel + 3 && nAutre >= 1.5 * nActuel) return true;
+  return nColonnes >= 3 && nAutre === nColonnes && nActuel * 2 <= nColonnes;
 }
 
 export async function analyserFichier(
@@ -513,7 +518,8 @@ export async function analyserFichier(
   // nettement plus de colonnes, c'est lui qui est retenu, avec ses colonnes.
   const nIA = colonnesAccueillies(verifie.entite, verifie.colonnes);
   const nPreuves = colonnesAccueillies(planDeSecours.entite, planDeSecours.colonnes);
-  if (planDeSecours.entite && verifie.entite !== planDeSecours.entite && typeNettementMeilleur(nPreuves, nIA)) {
+  const nColonnes = planDeSecours.colonnes.filter((c) => String(c.colonne ?? "").trim() !== "").length;
+  if (planDeSecours.entite && verifie.entite !== planDeSecours.entite && typeNettementMeilleur(nPreuves, nIA, nColonnes)) {
     return {
       plan: {
         ...planDeSecours,
@@ -634,8 +640,9 @@ export function planParRegles(
   // la PREMIERE signature trouvee — « ID Client » suffisait a faire d'une
   // feuille de ventes de 18 colonnes une feuille de clients.
   const classement = classerEntites(entetes, nomFichier, companyDictionary);
-  const choix = entiteConnue ? { entite: null, ambigue: false } : choisirEntite(classement);
-  let entite = entiteConnue || choix.entite || detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes) || null;
+  const choix: { entite: string | null; ambigue: boolean; rivale?: string; incomplet?: string } = entiteConnue ? { entite: null, ambigue: false } : choisirEntite(classement);
+  let entite = entiteConnue || choix.entite
+    || (choix.incomplet ? null : detectEntityByHeaders(entetes) || detectEntityByFieldOverlap(entetes)) || null;
   if (!entite && classification.isAggregatedSummary) {
     entite = "ExecutiveSummary";
   }

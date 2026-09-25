@@ -149,7 +149,7 @@ export function typeIncomplet(entetes: string[], nomFichier: string, companyDict
   return c && c.score >= 30 ? { entite: c.entite, manquants: c.manquants || [] } : null;
 }
 
-export function choisirEntite(classement: CandidatEntite[]): { entite: string | null; ambigue: boolean; rivale?: string } {
+export function choisirEntite(classement: CandidatEntite[]): { entite: string | null; ambigue: boolean; rivale?: string; incomplet?: string } {
   const eligibles = classement.filter((c) => c.eligible && c.score >= 20);
   if (eligibles.length === 0) return { entite: null, ambigue: false };
   // Un type nettement plus plausible mais incomplet (champ obligatoire absent)
@@ -157,7 +157,10 @@ export function choisirEntite(classement: CandidatEntite[]): { entite: string | 
   // colonne « metric » devenait des immobilisations (rapport du 25 sept.). La
   // feuille est alors conservee brute, et le champ manquant est dit.
   const meilleurIncomplet = classement.filter((c) => !c.eligible).sort((a, b) => b.score - a.score)[0];
-  if (meilleurIncomplet && meilleurIncomplet.score >= eligibles[0].score + 10) return { entite: null, ambigue: false };
+  // `incomplet` : les detections historiques par en-tetes ne doivent pas
+  // reprendre la main derriere ce refus (tickets de support importes comme
+  // clients, jeux generes du 25 sept.).
+  if (meilleurIncomplet && meilleurIncomplet.score >= eligibles[0].score + 10) return { entite: null, ambigue: false, incomplet: meilleurIncomplet.entite };
   const [premier, second] = eligibles;
   const ambigue = Boolean(second && premier.score - second.score < 10);
   return { entite: premier.entite, ambigue, rivale: ambigue ? second.entite : undefined };

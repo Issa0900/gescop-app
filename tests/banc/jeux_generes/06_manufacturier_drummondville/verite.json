@@ -1,6 +1,6 @@
 {
  "secteur": "Manufacturier (Drummondville)",
- "note": "Stocks par entrepôt, immobilisations avec coût, durée, valeur résiduelle et site.",
+ "note": "Stocks par entrepôt, immobilisations avec coût, durée, valeur résiduelle et site. Modules ajoutés : fournisseurs et bons de commande sans colonne de total (quantité × coût unitaire).",
  "controles": [
   {
    "type": "lignes",
@@ -29,6 +29,22 @@
    "entite": "Inventory",
    "champ": "warehouse_name",
    "attendu": 2
+  },
+  {
+   "type": "lignes",
+   "entite": "Supplier",
+   "attendu": 3
+  },
+  {
+   "type": "lignes",
+   "entite": "Purchase",
+   "attendu": 50
+  },
+  {
+   "type": "somme",
+   "entite": "Purchase",
+   "champ": "total_cost",
+   "attendu": 270298.59
   }
  ]
 }

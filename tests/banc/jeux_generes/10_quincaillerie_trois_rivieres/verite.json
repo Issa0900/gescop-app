@@ -1,6 +1,6 @@
 {
  "secteur": "Quincaillerie (Trois-Rivières)",
- "note": "Sommaire par succursale avec une ligne « Total consolidé » par mois (à exclure des faits).",
+ "note": "Sommaire par succursale avec une ligne « Total consolidé » par mois (à exclure des faits). Modules ajoutés : concurrents, veille et produits (xlsx anglais).",
  "controles": [
   {
    "type": "lignes",
@@ -31,6 +31,41 @@
    "entite": "Employee",
    "champ": "branch",
    "attendu": 2
+  },
+  {
+   "type": "lignes",
+   "entite": "Competitor",
+   "attendu": 3
+  },
+  {
+   "type": "compte",
+   "entite": "Competitor",
+   "champ": "market_position",
+   "valeur": "leader",
+   "attendu": 1
+  },
+  {
+   "type": "lignes",
+   "entite": "ExternalSignal",
+   "attendu": 3
+  },
+  {
+   "type": "compte",
+   "entite": "ExternalSignal",
+   "champ": "family",
+   "valeur": "fournisseurs",
+   "attendu": 1
+  },
+  {
+   "type": "lignes",
+   "entite": "Product",
+   "attendu": 25
+  },
+  {
+   "type": "somme",
+   "entite": "Product",
+   "champ": "selling_price",
+   "attendu": 3217.16
   }
  ]
 }

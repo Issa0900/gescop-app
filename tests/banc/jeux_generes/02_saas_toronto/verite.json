@@ -1,6 +1,6 @@
 {
  "secteur": "SaaS (Toronto)",
- "note": "Classeur anglais 4 feuilles ; factures HT + HST ; statuts Refunded/Void ; dépenses en montants négatifs.",
+ "note": "Classeur anglais 4 feuilles ; factures HT + HST ; statuts Refunded/Void ; dépenses en montants négatifs. Modules ajoutés : paiements et tickets de support (xlsx anglais).",
  "controles": [
   {
    "type": "lignes",
@@ -44,6 +44,36 @@
    ],
    "attendu": 444217.54,
    "lot": "brut + heures sup + prime + part employeur"
+  },
+  {
+   "type": "lignes",
+   "entite": "Payment",
+   "attendu": 80
+  },
+  {
+   "type": "somme",
+   "entite": "Payment",
+   "champ": "amount",
+   "attendu": 104586.3
+  },
+  {
+   "type": "lignes",
+   "entite": "Interaction",
+   "attendu": 50
+  },
+  {
+   "type": "compte",
+   "entite": "Interaction",
+   "champ": "sentiment",
+   "valeur": "negatif",
+   "attendu": 13
+  },
+  {
+   "type": "compte",
+   "entite": "Interaction",
+   "champ": "channel",
+   "valeur": "email",
+   "attendu": 15
   }
  ]
 }

@@ -1,6 +1,6 @@
 {
  "secteur": "Cabinet conseil",
- "note": "Mandats nommant le client par son nom seulement ; en-têtes anglais et français mêlés.",
+ "note": "Mandats nommant le client par son nom seulement ; en-têtes anglais et français mêlés. Modules ajoutés : objectifs, événements et interactions clients (anglais).",
  "controles": [
   {
    "type": "lignes",
@@ -24,6 +24,40 @@
   {
    "type": "clients_rattaches",
    "attendu": 120
+  },
+  {
+   "type": "lignes",
+   "entite": "Goal",
+   "attendu": 3
+  },
+  {
+   "type": "somme",
+   "entite": "Goal",
+   "champ": "target",
+   "attendu": 750095.0
+  },
+  {
+   "type": "lignes",
+   "entite": "Event",
+   "attendu": 3
+  },
+  {
+   "type": "distincts",
+   "entite": "Event",
+   "champ": "event_type",
+   "attendu": 2
+  },
+  {
+   "type": "lignes",
+   "entite": "Interaction",
+   "attendu": 25
+  },
+  {
+   "type": "compte",
+   "entite": "Interaction",
+   "champ": "channel",
+   "valeur": "telephone",
+   "attendu": 12
   }
  ]
 }

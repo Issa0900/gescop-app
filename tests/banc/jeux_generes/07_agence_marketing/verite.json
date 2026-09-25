@@ -1,6 +1,6 @@
 {
  "secteur": "Agence marketing",
- "note": "Campagnes et performance journalière (anglais).",
+ "note": "Campagnes et performance journalière (anglais). Modules ajoutés : concurrents et signaux de veille (familles et impacts en français).",
  "controles": [
   {
    "type": "lignes",
@@ -41,6 +41,37 @@
    ],
    "attendu": 0.8,
    "lot": ""
+  },
+  {
+   "type": "lignes",
+   "entite": "Competitor",
+   "attendu": 4
+  },
+  {
+   "type": "compte",
+   "entite": "Competitor",
+   "champ": "market_position",
+   "valeur": "leader",
+   "attendu": 1
+  },
+  {
+   "type": "lignes",
+   "entite": "ExternalSignal",
+   "attendu": 5
+  },
+  {
+   "type": "compte",
+   "entite": "ExternalSignal",
+   "champ": "family",
+   "valeur": "economie",
+   "attendu": 2
+  },
+  {
+   "type": "compte",
+   "entite": "ExternalSignal",
+   "champ": "impact",
+   "valeur": "negatif",
+   "attendu": 2
   }
  ]
 }
