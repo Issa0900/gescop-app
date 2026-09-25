@@ -4,8 +4,9 @@ import { base44 } from "@/api/base44Client";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { FileText, Trash2, Download, Clock, GitCompareArrows, Database, Activity, MessagesSquare, Radio } from "lucide-react";
+import { FileText, Trash2, Download, Clock, GitCompareArrows, Database, Activity, MessagesSquare, Radio, Presentation } from "lucide-react";
 import { downloadCSV, downloadReportPDF } from "@/lib/exportUtils";
+import { downloadReportPPTX } from "@/lib/exportPptx";
 import ReportTypeCard from "@/components/reports/ReportTypeCard";
 import ReportViewer from "@/components/reports/ReportViewer";
 import { cn } from "@/lib/utils";
@@ -82,7 +83,16 @@ export default function Rapports() {
     }
   };
 
+  const { data: company } = useQuery({
+    queryKey: ["company"],
+    queryFn: async () => {
+      const list = await base44.entities.Company.list("-created_date", 1);
+      return list?.[0] || null;
+    },
+  });
+
   const exportReport = (report) => downloadReportPDF(report);
+  const exportReportPPTX = (report) => downloadReportPPTX(report, company);
 
   const exportReportsList = () => {
     const rows = (reports || []).map((r) => ({
@@ -218,7 +228,7 @@ export default function Rapports() {
 
       {/* Selected report */}
       {selected && (
-        <ReportViewer report={selected} onClose={() => setSelected(null)} onExport={() => exportReport(selected)} />
+        <ReportViewer report={selected} company={company} onClose={() => setSelected(null)} />
       )}
 
       {/* History */}
@@ -251,6 +261,9 @@ export default function Rapports() {
                 </button>
                 <div className="flex items-center gap-1 opacity-60 transition-opacity group-hover:opacity-100">
                   <Button size="sm" variant="ghost" onClick={() => setSelected(r)}>Consulter</Button>
+                  <button onClick={() => exportReportPPTX(r)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" title="Exporter PowerPoint (.pptx)">
+                    <Presentation className="h-4 w-4 text-orange-500" />
+                  </button>
                   <button onClick={() => exportReport(r)} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" title="Exporter PDF">
                     <Download className="h-4 w-4" />
                   </button>
