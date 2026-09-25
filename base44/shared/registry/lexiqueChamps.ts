@@ -143,7 +143,7 @@ export const REGLES: Regle[] = [
   R("return_status", ["Order"], [["retour", "return", "returned", "retourne"]], ["raison", "reason", "motif", "date"]),
   R("employee_id", ["Order"], [["vendeur", "rep", "representant", "seller", "salesperson", "employe", "employee", "agent", "conseiller"], ID]),
   R("province", ["Order", "Customer"], [["province", "state"]], ["id", "code"]),
-  R("channel", ["Order"], [["canal", "channel", "circuit"]]),
+  R("channel", ["Order", "Campaign", "Interaction"], [["canal", "channel", "circuit", "via"]]),
   R("currency", ["Order"], [["devise", "currency", "monnaie"]], ["taux", "rate"]),
   R("location_id", ["Order", "ExecutiveSummary"], [["succursale", "magasin", "store", "boutique", "agence", "branch", "location", "site", "point"]], ["id", "code", "no", "num", "vente", "sale"]),
   R("total_revenue", ["ExecutiveSummary"], [VENTE, ["total", "totale", ...MONTANT, "brut", "net"]], ["cout", "cost"]),
@@ -226,7 +226,7 @@ export const REGLES: Regle[] = [
   R("market_position", ["Competitor"], [["positionnement", "positioning"]], ["prix", "price"]),
   R("event_type", ["Event"], [["type", "categorie", "category", "nature"]], ["impact"]),
   R("payment_terms", ["Supplier", "Purchase"], [["condition", "modalite", "terme", "term"], ["paiement", "payment", "reglement"]]),
-  R("average_delivery_days", ["Supplier"], [["delai", "lead", "delivery", "livraison"], ["livraison", "delivery", "time", "jour", "day", "moyen", "average"]], ["statut", "status"]),
+  R("average_delivery_days", ["Supplier"], [["delai", "lead", "time"], ["livraison", "delivery"]], ["statut", "status"]),
   R("reliability_score", ["Supplier"], [["fiabilite", "reliability"]]),
   R("quality_score", ["Supplier"], [["qualite", "quality"]]),
   R("esg_score", ["Supplier"], [["esg", "rse", "csr"]]),
@@ -302,6 +302,9 @@ export const REGLES: Regle[] = [
   R("revenue", ["Campaign", "CampaignDaily"], [["revenu", "revenue", "ca", "chiffre", "vente"]], ["taux", "rate", "par", "per"]),
   R("campaign_id", ["CampaignDaily"], [["campagne", "campaign"], ID]),
   R("date", ["CampaignDaily"], [DATE, ["record", "releve", "jour", "day", "semaine", "week"]]),
+  R("campaign_name", ["Campaign"], [["campagne", "campaign"]], ID),
+  R("campaign_name", ["Campaign"], [["campagne", "campaign"], ["canal", "channel"]], ID),
+  R("impressions", ["Campaign", "CampaignDaily"], [["impression", "traffic", "trafic", "vue", "view"]]),
   R("cpc", ["CampaignDaily"], [["cpc"]]),
   R("cpc", ["CampaignDaily"], [COUT, ["clic", "click"]]),
 
@@ -419,6 +422,14 @@ function reglesGenerees(): Regle[] {
     if (!sch.properties[champ] || sch.properties.name || !NOMS_OBJETS[cle]) continue;
     const autres = Object.entries(NOMS_OBJETS).filter(([k]) => k !== cle).flatMap(([, v]) => v);
     out.push(R(champ, [ent], [NOMS_LIBELLE], [...ID.filter((x) => x !== "n"), ...autres, "date"]));
+  }
+  // Le nom de l'objet seul désigne aussi son nom sur sa propre entité (« Fournisseur » sur Supplier = supplier_name).
+  for (const [ent, sch] of Object.entries(ENTITY_SCHEMAS_POUR_LEXIQUE())) {
+    const cle = ent.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase());
+    const champ = sch.properties[`${cle}_name`] ? `${cle}_name` : sch.properties.name ? "name" : null;
+    if (!champ || !NOMS_OBJETS[cle]) continue;
+    const autres = Object.entries(NOMS_OBJETS).filter(([k]) => k !== cle).flatMap(([, v]) => v);
+    out.push(R(champ, [ent], [NOMS_OBJETS[cle]], [...ID.filter((x) => x !== "n"), ...autres, "date", "montant", "amount", "total", "cout", "cost"]));
   }
   return out;
 }

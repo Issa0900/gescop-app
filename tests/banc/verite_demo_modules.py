@@ -203,7 +203,30 @@ def simulation_50ans():
         lignes("Supplier", len(four)),
     ]})
 
-for fn in [xplorer_3mois, simulation_3ans, gescop, nordik, simulation_50ans]: fn()
+# ------------------------------------------------------------ Jeu de donnees KPI complet (6 feuilles)
+def kpi_complet():
+    f = "jeu_de_donnees_kpi_complet.xlsx"
+    wb = load_workbook(os.path.join(DEMO, f), read_only=True, data_only=True)
+    F = lambda n: feuille(wb, n)
+    vte, mkt, crm, tre = F("Donnees_Ventes"), F("Donnees_Marketing"), F("Donnees_Clientele"), F("Donnees_Tresorerie")
+    col_ca = [c for c in vte[0].keys() if "Chiffre" in c][0]
+    col_cost = [c for c in vte[0].keys() if "Co" in c][0]
+    ca = sum(num(r[col_ca]) for r in vte)
+    cost = sum(num(r[col_cost]) for r in vte)
+    col_budget = [c for c in mkt[0].keys() if "Budget" in c][0]
+    col_rev = [c for c in mkt[0].keys() if "Ventes" in c][0]
+    col_flux = [c for c in tre[0].keys() if "Flux" in c][0]
+    flux = sum(num(r[col_flux]) for r in tre)
+    VERITE.append({"fichier": f, "controles": [
+        kpi("total_revenue", arr(ca)),
+        kpi("gross_margin_pct", arr((ca - cost) / ca * 100)),
+        somme("Campaign", "budget", sum(num(r[col_budget]) for r in mkt)),
+        somme("Campaign", "revenue", sum(num(r[col_rev]) for r in mkt)),
+        somme("Cashflow", "net_cash_flow", arr(flux)),
+        distincts("Customer", "customer_id", len(crm)),
+    ]})
+
+for fn in [xplorer_3mois, simulation_3ans, gescop, nordik, simulation_50ans, kpi_complet]: fn()
 with open(os.path.join(ICI, "verite_demo_modules.json"), "w", encoding="utf-8") as fh:
     json.dump(VERITE, fh, ensure_ascii=False, indent=1)
 print(sum(len(v["controles"]) for v in VERITE), "contrôles pour", len(VERITE), "fichiers")

@@ -49,6 +49,7 @@ export const EQUIVALENCES_REQUISES: Record<string, Record<string, string[]>> = {
   Interaction: { customer_id: ["customer_name"] },
   Supplier: { supplier_id: ["supplier_name"] },
   Competitor: { competitor_id: ["name"] },
+  Campaign: { campaign_id: ["campaign_name", "channel"] },
 };
 
 const TOUS_LES_CHAMPS = new Set(Object.values(ENTITY_SCHEMAS).flatMap((s) => Object.keys(s.properties)));

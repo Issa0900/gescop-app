@@ -2431,7 +2431,7 @@ function empreinteCourte(texte: string): string {
 // qui n'a jamais existé dans le fichier, on dérive un identifiant de repli à
 // partir de ce que le mapping a effectivement reconnu.
 const FALLBACK_IDENTITY: Record<string, { id: string; name?: string; from: string[] }> = {
-  Campaign: { id: "campaign_id", name: "campaign_name", from: ["channel", "date"] },
+  Campaign: { id: "campaign_id", name: "campaign_name", from: ["campaign_name", "channel", "date"] },
   // Un fichier de fournisseurs ou de concurrents sans colonne identifiant etait
   // rejete en bloc (rapport du 25 sept. : 8 et 5 lignes a 0) ; l'identifiant
   // est deduit du nom, marque AUTO- (il ne prouve jamais un doublon).

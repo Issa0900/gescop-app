@@ -20,6 +20,12 @@ export interface VeriteDemo {
 
 export const VERITE_DEMO: VeriteDemo[] = [
   {
+    fichier: "jeu_de_donnees_kpi_complet.xlsx",
+    note: "Ventes, marketing, clientele, tresorerie.",
+    kpi: { total_revenue: 35150.5, gross_margin_pct: 50.04 },
+    lignes: { Order: 20, Campaign: 10, Customer: 20, Cashflow: 12 },
+  },
+  {
     fichier: "Nordik_PleinAir_Donnees_Complet_2026.xlsx",
     note: "Classeur coherent : prix, couts, clients, vendeurs se recoupent a 100 %. Formules sans valeur calculee.",
     kpi: { total_revenue: 381047.96, gross_margin_pct: 55.17, ebitda: null, avg_employee_cost: null, dso: null, bfr: null, cpc: 0.79 },

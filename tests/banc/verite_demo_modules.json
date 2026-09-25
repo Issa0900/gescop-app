@@ -461,5 +461,49 @@
     "attendu": 10
    }
   ]
+ },
+ {
+  "fichier": "jeu_de_donnees_kpi_complet.xlsx",
+  "controles": [
+   {
+    "type": "kpi",
+    "id": "total_revenue",
+    "attendu": 35150.5,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "gross_margin_pct",
+    "attendu": 50.04,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "budget",
+    "attendu": 22550.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "revenue",
+    "attendu": 95200.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Cashflow",
+    "champ": "net_cash_flow",
+    "attendu": 228000.0,
+    "note": ""
+   },
+   {
+    "type": "distincts",
+    "entite": "Customer",
+    "champ": "customer_id",
+    "attendu": 20
+   }
+  ]
  }
 ]
