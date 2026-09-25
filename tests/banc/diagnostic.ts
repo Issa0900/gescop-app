@@ -21,7 +21,10 @@ declare const require: any;
 declare const process: any;
 const fs = require("fs");
 const path = require("path");
-const DEMO = path.resolve("..", "DEMO");
+// DOSSIER=... pour un autre corpus (ex. ../DEMO/gescop_donnees_test).
+const DEMO = process.env.DOSSIER ? path.resolve(process.env.DOSSIER) : path.resolve("..", "DEMO");
+// KPI affiches par mode quand KPI=1 (utile pour un corpus sans verite terrain).
+const KPI_CLES = ["total_revenue", "total_expense", "net_income", "net_margin_pct", "cash_balance", "payroll_total"];
 
 // ---------------------------------------------------------------------------
 // Comportements d'IA simules. Chacun recoit le plan que trouvent les regles
@@ -226,12 +229,14 @@ function controlerFeuille(r: any, ri: any, tables: Record<string, any[]>, planRe
         };
       });
       const controles: any[] = [];
+      const kpiCles = kpiPage(env.tables);
+      const kpi = Object.fromEntries(KPI_CLES.map((k) => [k, kpiCles[k] ?? null]));
       if (verite) {
         const kpi = kpiPage(env.tables, Object.keys(verite.kpi || {}));
         for (const [k, att] of Object.entries(verite.kpi || {})) controles.push({ id: `kpi ${k}`, attendu: att, app: kpi[k] ?? null, ok: proche(kpi[k] ?? null, att as any) });
         for (const [e, n] of Object.entries(verite.lignes || {})) { const app = (env.tables[e] || []).length; controles.push({ id: `lignes ${e}`, attendu: n, app, ok: app === n }); }
       }
-      rapport.push({ fichier: nom, mode, ms: Date.now() - t0, appelsIA: env.appelsAnalyse, feuilles, controles });
+      rapport.push({ fichier: nom, mode, ms: Date.now() - t0, appelsIA: env.appelsAnalyse, feuilles, controles, kpi });
     }
   }
 
@@ -269,8 +274,9 @@ function controlerFeuille(r: any, ri: any, tables: Record<string, any[]>, planRe
     if (r.erreur) { log(`\n[${r.mode}] ${r.fichier} : ERREUR ${r.erreur}`); continue; }
     const faux = r.controles.filter((c: any) => !c.ok);
     const avec = r.feuilles.filter((f: any) => f.constats.length);
+    if (process.env.KPI) log(`\n[${r.mode}] ${r.fichier}  types ${r.feuilles.map((f: any) => f.type).join(",")}  KPI ${JSON.stringify(r.kpi)}`);
     if (!faux.length && !avec.length) continue;
-    log(`\n[${r.mode}] ${r.fichier}`);
+    if (!process.env.KPI) log(`\n[${r.mode}] ${r.fichier}`);
     for (const f of avec) for (const c of f.constats) log(`   ${c.code} — ${f.feuille.split(" [").pop()?.replace("]", "")} : ${c.detail}`);
     for (const c of faux) log(`   ✗ ${c.id} : app ${c.app}, attendu ${c.attendu}`);
   }
