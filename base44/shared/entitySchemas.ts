@@ -90,7 +90,8 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
   Payroll: {
     properties: {
       payroll_id: S, employee_id: S, period: S, hours: N, regular_pay: N,
-      overtime: N, bonus: N, employer_cost: N, total_cost: N, import_id: S, fingerprint: S, original_data: S,
+      overtime: N, bonus: N, employer_cost: N, total_cost: N, deductions: N, net_pay: N, payment_date: D,
+      import_id: S, fingerprint: S, original_data: S,
     },
     required: ["employee_id", "period"],
   },

@@ -2832,6 +2832,20 @@ export function normalizeRow(
     if (cin !== null || cout !== null) r.net_cash_flow = (cin || 0) - (cout || 0);
   }
 
+  // Paie : le cout d'une fiche de paie (total_cost) est rarement une colonne ;
+  // les fichiers donnent le brut, les heures sup, les primes, la part
+  // employeur. Sans derivation, la masse salariale restait « non mesuree »
+  // malgre 75 fiches importees a 100 % (rapport du 25 sept., lot 3).
+  // Cout employeur = brut + heures sup + primes + charges patronales (les
+  // retenues, payees par l'employe, n'en font pas partie).
+  if (entityName === "Payroll" && (r.total_cost == null || r.total_cost === "")) {
+    const parts = [r.regular_pay, r.overtime, r.bonus, r.employer_cost].map((v) => parseNumber(v));
+    if (parts.some((v) => v !== null)) {
+      r.total_cost = Math.round(parts.reduce((s: number, v) => s + (v || 0), 0) * 100) / 100;
+      trace?.derives.push({ field: "total_cost", motif: "brut + heures sup + primes + part employeur" });
+    }
+  }
+
   // Les exports de campagnes contiennent la dépense, le revenu et les
   // conversions, mais presque jamais le ROAS ni le CAC : sans dérivation, la
   // page Marketing affichait des colonnes vides alors que tout est calculable.

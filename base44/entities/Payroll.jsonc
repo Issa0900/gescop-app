@@ -29,6 +29,19 @@
     "total_cost": {
       "type": "number"
     },
+    "deductions": {
+      "type": "number",
+      "description": "Retenues a la source (impots, cotisations salariales)."
+    },
+    "net_pay": {
+      "type": "number",
+      "description": "Salaire net verse."
+    },
+    "payment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du versement."
+    },
     "import_id": {
       "type": "string"
     },

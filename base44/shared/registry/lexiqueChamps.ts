@@ -202,6 +202,10 @@ export const REGLES: Regle[] = [
   R("employer_cost", ["Payroll"], [["cotisation", "contribution", "charge"], ["employeur", "employer", "patronale", "total"]]),
   R("total_cost", ["Payroll"], [COUT, ["total", "employeur", "employer"]], ["cotisation", "contribution"]),
   R("overtime", ["Payroll"], [["supplementaire", "overtime", "sup"]]),
+  // Retenues, net et date de versement : perdus avant (rapport du 25 sept.).
+  R("deductions", ["Payroll"], [["deduction", "deductions", "retenue", "retenues", "withholding", "withholdings"]]),
+  R("net_pay", ["Payroll"], [["salaire", "salary", "paie", "pay", "remuneration"], ["net", "nette"]]),
+  R("payment_date", ["Payroll"], [DATE, ["paiement", "versement", "payment", "paye", "virement"]]),
 
   // ── Fournisseurs et achats ──────────────────────────────────────────────
   R("supplier_name", ["Supplier"], [["nom", "name", "raison"], ["fournisseur", "supplier", "vendor", "sociale", "prestataire"]]),

@@ -14,6 +14,7 @@
 import { MODES, client, appeler, kpiPage, proche } from "./ia_simulee.ts";
 import { calculerSuccursales } from "../../src/lib/succursales.js";
 import { soldesTresorerie } from "../../src/lib/tresorerie.js";
+import { preparerPeriodes, serieMensuelle } from "../../src/lib/core/kpiPeriodes.js";
 
 declare const require: any;
 declare const process: any;
@@ -75,6 +76,15 @@ export const CONTROLES: Controle[] = [
   },
   // Lot 3 : paie (07_paie.csv, 3 mois)
   { lot: "3", id: "Masse salariale 3 mois (paie)", attendu: 310593.27, calcul: (t) => kpiDe(t, ["Payroll"]).payroll_total },
+  {
+    // Page Tresorerie « Cout paie / mois » : mois complets (juillet et aout ; septembre 2026 est
+    // le mois en cours au moment du rapport). Verite : 103 531,09 $ par mois.
+    lot: "3", id: "Page Trésorerie : paie de juillet 2026", attendu: 103531.09,
+    calcul: (t) => {
+      const serie = serieMensuelle(preparerPeriodes({ payrolls: t.Payroll || [] }, { aujourdhui: new Date("2026-09-25") }), ["payroll_total"]);
+      return serie.find((x: any) => x.month === "2026-07")?.payroll_total ?? null;
+    },
+  },
   // Lot 4 : clients et commandes (03_clients.csv + 11_commandes.csv)
   {
     lot: "4.1", id: "Commandes rattachées à un client connu", attendu: 66,

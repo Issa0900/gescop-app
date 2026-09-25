@@ -226,3 +226,11 @@ Consignes d'Issa : purge d'abord, puis les lots 1 à 5 de `qa/MISSION_CORRECTIFS
 - Trouvé en chemin : le repli de la page sur les transactions (sans relevé de trésorerie) comptait tout montant positif comme une entrée (même défaut que le lot 1) ; il utilise maintenant `classifyTransaction`.
 - Preuves : banc Vert Québec, « Trésorerie actuelle » = 989 095 $ (fin sept. 2026) dans les 4 combinaisons, **y compris sans la colonne de clôture** (reconstitué) ; `tests/tresorerie.test.js` (5 cas).
 - Bancs après le lot 2 : Vert Québec **84/106** ; `npm test`, `test:banc`, `test:demo` : voir le commit (inchangés).
+
+## Lot 3 — Paie
+
+- `base44/shared/importUtils.ts` (`normalizeRow`) : crochet `Payroll` sur le modèle de `Cashflow.net_cash_flow` — sans `total_cost` fourni, coût = brut + heures sup + primes + part employeur (les retenues, payées par l'employé, n'en font pas partie) ; un coût fourni n'est jamais recalculé ; la dérivation est tracée.
+- Trouvé en chemin (le rapport : « seul le salaire brut est retenu ») : `Payroll` gagne `deductions`, `net_pay`, `payment_date` (schéma + lexique) ; les retenues, le net et la date de versement ne sont plus perdus.
+- Les pages RH et Trésorerie donnaient déjà la priorité au KPI `payroll_total` : il est maintenant mesuré (le repli sur les salaires annuels des fiches employés reste le filet quand aucune paie n'est importée).
+- Preuves : banc Vert Québec, masse salariale 3 mois = 310 593,27 $ et paie de juillet 2026 sur la page Trésorerie = 103 531,09 $, dans les 4 combinaisons ; `tests/paie.test.js` (4 cas).
+- Bancs après le lot 3 : Vert Québec **92/110** ; `npm test` 233/233 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76.
