@@ -2744,6 +2744,47 @@ export const SCHEMA_REPONSE = {
 /** Signature minimale attendue : permet de tester sans reseau. */
 export type InvocateurLLM = (args: { prompt: string; response_json_schema: any }) => Promise<any>;
 
+/**
+ * Montant HT d'une ligne de commande, remise deduite UNE fois : le sous-total,
+ * dont la remise n'est retranchee que si la ligne PROUVE qu'il est brut
+ * (quantite x prix, ou sous-total - remise + taxe + livraison = total) ; sinon
+ * total - taxe (un total est apres remise sauf preuve : total - taxe =
+ * quantite x prix) ; sinon quantite x prix - remise. Remise : un taux entre 0
+ * et 1, un montant sinon ; au-dela du montant brut, non appliquee. Meme regle
+ * que `montantHT` (src/lib/core/kpiRecords.js), a garder identiques.
+ */
+export function montantHTLigne(r: Record<string, any>): number | null {
+  const st = parseNumber(r.subtotal), d = parseNumber(r.discount), tot = parseNumber(r.total);
+  const tax = parseNumber(r.tax), q = parseNumber(r.quantity), p = parseNumber(r.unit_price);
+  const ship = parseNumber(r.shipping) ?? 0;
+  const proche = (a: number, b: number) => Math.abs(a - b) < 0.05;
+  const brut = q !== null && p !== null ? q * p : null;
+  let remise = 0;
+  if (d !== null && d > 0) {
+    const base = brut ?? st ?? (tot !== null ? tot - (tax ?? 0) : null);
+    remise = d < 1 ? (base !== null ? base * d : 0) : d;
+    if (brut !== null && remise >= brut) remise = 0;
+  }
+  if (st !== null) {
+    if (remise > 0 && brut !== null) {
+      if (proche(st, brut - remise)) return st;
+      if (proche(st, brut)) return st - remise;
+    }
+    if (tot !== null && tax !== null) {
+      if (proche(st + tax + ship, tot)) return st;
+      if (remise > 0 && proche(st - remise + tax + ship, tot)) return st - remise;
+    }
+    return st;
+  }
+  if (tot !== null) {
+    const net = tot - (tax ?? 0);
+    if (remise > 0 && brut !== null && proche(net, brut) && !proche(net, brut - remise)) return net - remise;
+    return net;
+  }
+  if (brut !== null) return brut - remise;
+  return null;
+}
+
 export function normalizeRow(
   entityName: string,
   row: Record<string, any>,
@@ -3032,26 +3073,11 @@ export function normalizeRow(
     // quantite x prix moins la remise. « Quantite x prix » seul ignorait la
     // remise (GESCOP.xlsx : 585 852 $ au lieu de 575 158 $).
     if (r.total_revenue == null || r.total_revenue === "") {
-      const sousTotal = parseNumber(r.subtotal);
-      const total = parseNumber(r.total);
-      const taxe = parseNumber(r.tax);
-      if (sousTotal !== null) r.total_revenue = sousTotal;
-      else if (total !== null) r.total_revenue = Math.round((total - (taxe ?? 0)) * 100) / 100;
       // Un prix FOURNI egal a 0 (article offert, echantillon) donne une ligne a
       // 0, pas un montant inconnu : sinon le CA entier passait « partiel »
       // (UCI Online Retail : 2 515 lignes a prix 0). Prix absent = inconnu.
-      else if (qty !== null && parseNumber(r.unit_price) !== null) {
-        const brut = qty * price;
-        const remise = parseNumber(r.discount);
-        // Remise : un taux s'il est entre 0 et 1 (0,28), un montant sinon
-        // (100,93 $ sur une ligne de 1 009 $) ; au-dela du montant brut, elle
-        // n'est pas interpretable et n'est pas appliquee.
-        const net = remise === null || remise === 0 ? brut
-          : remise > 0 && remise < 1 ? brut * (1 - remise)
-          : remise >= 1 && remise < brut ? brut - remise
-          : brut;
-        r.total_revenue = Math.round(net * 100) / 100;
-      }
+      const net = montantHTLigne(r);
+      if (net !== null) r.total_revenue = Math.round(net * 100) / 100;
     }
     if (r.total_cost == null || r.total_cost === "") {
       if (qty !== null && cost > 0) r.total_cost = Math.round(qty * cost * 100) / 100;

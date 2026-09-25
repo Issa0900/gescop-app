@@ -113,3 +113,30 @@ test("ANO-10 : un taux d'amortissement donné en pourcentage (30) vaut 0,30", ()
   const k = calcul({ assets: [{ asset_id: "A1", net_book_value: 100000, dpa_rate: 30 }] }, ["dpa_annual_total"]);
   assert.equal(k.dpa_annual_total.v, 30000);
 });
+
+// ── ANO-05 : la remise n'est retranchée qu'une fois, sur preuve ─────────────
+
+import { montantHT } from "../src/lib/core/kpiRecords.js";
+import { normalizeRow } from "../base44/shared/importUtils.ts";
+import { getSchema } from "../base44/shared/entitySchemas.ts";
+
+const cas05 = [
+  ["total après remise (convention), sans sous-total", { total: 1092.5, tax: 142.5, discount: 50 }, 950],
+  ["sous-total net + livraison + taxe = total", { subtotal: 950, discount: 50, tax: 142.5, shipping: 15, total: 1107.5 }, 950],
+  ["sous-total brut prouvé par la taxe et le total", { subtotal: 1000, discount: 50, tax: 142.26, total: 1092.26 }, 950],
+  ["sous-total net prouvé par quantité × prix", { quantity: 2, unit_price: 500, subtotal: 950, discount: 50 }, 950],
+  ["sous-total brut prouvé par quantité × prix", { quantity: 2, unit_price: 500, subtotal: 1000, discount: 50 }, 950],
+  ["total avant remise prouvé par quantité × prix", { quantity: 2, unit_price: 500, total: 1150, tax: 150, discount: 50 }, 950],
+  ["remise en taux sur quantité × prix", { quantity: 2, unit_price: 500, subtotal: 1000, discount: 0.05 }, 950],
+];
+
+for (const [nom, ligne, attendu] of cas05) {
+  test(`ANO-05 moteur : ${nom}`, () => {
+    assert.equal(Math.round(montantHT(ligne) * 100) / 100, attendu);
+  });
+  test(`ANO-05 import : ${nom}`, () => {
+    const props = getSchema("Order").properties;
+    const o = normalizeRow("Order", { order_id: "S-1", date: "2026-06-01", ...ligne }, "i", props);
+    assert.equal(o.total_revenue, attendu);
+  });
+}

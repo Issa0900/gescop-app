@@ -45,26 +45,43 @@ export function tauxDpa(r) {
 }
 
 /**
- * Montant hors taxes d'une ligne de commande : sous-total ; sinon total moins
- * la taxe quand le fichier la fournit ; sinon total ; sinon le montant
- * reconstruit a l'import (quantite x prix).
+ * Montant hors taxes d'une ligne de commande, remise deduite UNE fois.
+ * `total_revenue` s'il existe (calcule a l'import). Sinon le sous-total : la
+ * remise n'en est retranchee que si la ligne PROUVE qu'il est brut (quantite x
+ * prix, ou sous-total - remise + taxe + livraison = total). Sinon total - taxe :
+ * un total est apres remise, sauf preuve contraire (total - taxe = quantite x
+ * prix). Sans preuve, le montant fourni est garde tel quel. Meme regle que
+ * `montantHTLigne` dans base44/shared/importUtils.ts (a garder identiques).
  */
 export function montantHT(r) {
   const tr = num(r.total_revenue);
   if (tr !== null && Number.isFinite(tr)) return tr;
-  const st = num(r.subtotal);
-  const disc = num(r.discount) || 0;
-  const tot = num(r.total);
-  const tax = num(r.tax);
-  if (st !== null && Number.isFinite(st)) {
-    if (tot !== null && Number.isFinite(tot) && tax !== null && Number.isFinite(tax)) {
-      if (Math.abs(st + tax - tot) < 0.05) return st;
-    }
-    return st - disc;
+  const f = (v) => { const n = num(v); return n !== null && Number.isFinite(n) ? n : null; };
+  const st = f(r.subtotal), d = f(r.discount), tot = f(r.total), tax = f(r.tax), q = f(r.quantity), p = f(r.unit_price);
+  const ship = f(r.shipping) ?? 0;
+  const proche = (a, b) => Math.abs(a - b) < 0.05;
+  const brut = q !== null && p !== null ? q * p : null;
+  let remise = 0;
+  if (d !== null && d > 0) {
+    const base = brut ?? st ?? (tot !== null ? tot - (tax ?? 0) : null);
+    remise = d < 1 ? (base !== null ? base * d : 0) : d;
+    if (brut !== null && remise >= brut) remise = 0;
   }
-  if (tot !== null && Number.isFinite(tot)) {
-    const net = tax !== null && Number.isFinite(tax) ? tot - tax : tot;
-    return net - disc;
+  if (st !== null) {
+    if (remise > 0 && brut !== null) {
+      if (proche(st, brut - remise)) return st;
+      if (proche(st, brut)) return st - remise;
+    }
+    if (tot !== null && tax !== null) {
+      if (proche(st + tax + ship, tot)) return st;
+      if (remise > 0 && proche(st - remise + tax + ship, tot)) return st - remise;
+    }
+    return st;
+  }
+  if (tot !== null) {
+    const net = tot - (tax ?? 0);
+    if (remise > 0 && brut !== null && proche(net, brut) && !proche(net, brut - remise)) return net - remise;
+    return net;
   }
   return NaN;
 }
