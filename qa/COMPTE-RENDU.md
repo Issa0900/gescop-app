@@ -173,3 +173,20 @@ Commits sur `correctifs-qa-2026-09` : lot 1, lot 1.3 (suite, après ta réponse)
 - Vérifié en ligne, en lecture seule (fichiers statiques du site, aucun appel à l'API) : aucune occurrence de `PLAYWRIGHT_TEST` dans les scripts publiés ; la page Importer publiée appelle `UploadPrivateFile` et plus `UploadFile` ; la page Paramètres publiée contient le nouveau panneau Dictionnaire.
 - La CLI n'a pas listé les workflows : les deux workflows d'alerte en ligne sont donc probablement inchangés. Sans effet (sans session, `notifyCriticalEvent` répond 401), à supprimer dans l'éditeur Base44 si tu veux.
 - Reste à faire par Issa : la liste de contrôle ci-dessus (points 1 à 7), qui demande d'être connecté ou d'écrire des données.
+
+---
+
+# Mission import/KPI (rapport Vert Québec, 25 sept. 2026) — branche `correctifs-import-kpi-2026-09`
+
+Consignes d'Issa : purge d'abord, puis les lots 1 à 5 de `qa/MISSION_CORRECTIFS_IMPORT_KPI.md` sans arrêt ; `test:robustesse` une seule fois à la fin (long), pas après chaque lot. Rien n'est déployé.
+
+## Lot P — « Tout supprimer » laissait des données
+
+**Constat en ligne (lecture seule, 24 sept.)** : 36 tables sur 38 vides après une purge, mais 1 608 ventes (`Order`) et 6 100 `Observation` restaient, toutes d'un même import dont la fiche avait été supprimée (écrites entre 20 h 31 et 20 h 34 UTC, par le compte d'Issa : pas un problème de droits). L'heure de la purge n'étant enregistrée nulle part, deux causes restaient possibles : un import encore en cours qui continuait d'écrire après la purge, ou une suppression plafonnée par le serveur. Les deux sont corrigées.
+
+- `src/lib/purge.js` (nouveau) : une seule liste des tables purgées (`Payment` ajouté, il était oublié) et des tables conservées exprès (`Company`, `User`, `Invoice`, `Subscription`) ; chaque table est vidée, relue et revidée tant qu'il en reste ; une table en erreur n'arrête plus les suivantes ; bilan exact (« Purge incomplète : il reste des données dans … ») au lieu d'un succès annoncé d'office ; `Import` vidé en premier pour arrêter un import en cours ; score de santé remis à `null` (« non mesuré ») au lieu de 0, et un échec de cette mise à jour est dit.
+- `src/pages/Import.jsx` : « Tout supprimer » bloqué pendant un envoi, une analyse ou un import.
+- `base44/shared/importRows.ts`, `bulkInsert.ts`, `functions/importMultiData` : avant chaque lot de 1 000 lignes et avant les observations, l'import vérifie (`Import.get`) que sa fiche existe encore ; sinon il s'arrête (statut `annule`) sans écrire d'orphelines. Une erreur passagère de lecture ne l'interrompt pas ; seule une absence certaine (404) l'arrête. `reprocessImport` : `get` ajouté au client de simulation.
+- Preuves : `tests/purge.test.js` (5 cas : chaque entité est classée purgée/conservée, suppression plafonnée à 500 par appel répétée jusqu'au vide sur 1 608 + 6 100 lignes, table en panne signalée sans arrêter les autres, table qui ne diminue plus signalée, score à `null`) ; `qa/recette/QA06-import-interrompu.ts` (fiche supprimée avant l'écriture : rien écrit ; après le 1er lot : arrêt à 1 000 sur 2 500, pas d'observations ; fiche présente : 2 500 écrites ; panne passagère : on continue ; 404 : on s'arrête).
+- Reste : une fenêtre de quelques secondes (un lot déjà parti au moment de la purge) peut encore laisser jusqu'à 1 000 lignes ; relancer « Tout supprimer » les enlève, et le bilan le dit. **Les 7 708 lignes orphelines actuellement en ligne** disparaîtront à la première purge une fois ce correctif déployé.
+- Bancs : `npm test` 214/214, `test:banc` 78/82 importées, 0 perdue, 1 « mal lue » (identique avant ce lot, non liée), `test:demo` 76/76, Deno 32/32.

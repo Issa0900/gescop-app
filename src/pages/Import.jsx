@@ -27,6 +27,7 @@ import DoublonsAVerifier from "@/components/import/DoublonsAVerifier";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { supprimerImport, MESSAGE_ALERTES } from "@/lib/supprimerImport";
 import { ajouterTermes, lireDictionnaire } from "@/lib/dictionnaire";
+import { purgerTout } from "@/lib/purge";
 
 const acceptedTypes = ".csv,.xlsx,.xls,.tsv,.pdf";
 
@@ -358,53 +359,38 @@ export default function ImportPage() {
   };
 
   const handlePurgeAll = async () => {
+    // Un import en cours continuerait d'ecrire apres la purge : on attend sa fin.
+    if (uploading || analyzing || processing) {
+      toast({ title: "Un import est en cours", description: "Attendez sa fin avant de tout supprimer.", variant: "destructive" });
+      return;
+    }
     if (!window.confirm("Cela supprimera DÉFINITIVEMENT toutes vos transactions, KPI, anomalies, risques, opportunités et recommandations. Continuer ?")) return;
     try {
       setPurging(true);
-      await base44.entities.Transaction.deleteMany({});
-      await base44.entities.Order.deleteMany({});
-      await base44.entities.Customer.deleteMany({});
-      await base44.entities.Product.deleteMany({});
-      await base44.entities.Inventory.deleteMany({});
-      await base44.entities.Supplier.deleteMany({});
-      await base44.entities.Purchase.deleteMany({});
-      await base44.entities.Campaign.deleteMany({});
-      await base44.entities.CampaignDaily.deleteMany({});
-      await base44.entities.Employee.deleteMany({});
-      await base44.entities.Payroll.deleteMany({});
-      await base44.entities.Expense.deleteMany({});
-      await base44.entities.Cashflow.deleteMany({});
-      await base44.entities.Asset.deleteMany({});
-      await base44.entities.ExecutiveSummary.deleteMany({});
-      await base44.entities.Observation.deleteMany({});
-      await base44.entities.Interaction.deleteMany({});
-      await base44.entities.Competitor.deleteMany({});
-      await base44.entities.Goal.deleteMany({});
-      await base44.entities.Event.deleteMany({});
-      await base44.entities.Kpi.deleteMany({});
-      await base44.entities.Anomaly.deleteMany({});
-      await base44.entities.Risk.deleteMany({});
-      await base44.entities.Opportunity.deleteMany({});
-      await base44.entities.Recommendation.deleteMany({});
-      await base44.entities.Alert.deleteMany({});
-      await base44.entities.Task.deleteMany({});
-      await base44.entities.Decision.deleteMany({});
-      await base44.entities.ExternalSignal.deleteMany({});
-      await base44.entities.Report.deleteMany({});
-      await base44.entities.AnalysisRun.deleteMany({});
-      await base44.entities.ImportIssue.deleteMany({});
-      await base44.entities.Import.deleteMany({});
-      if (company) {
-        await base44.entities.Company.update(company.id, { health_score: 0, dimension_scores: {}, last_analysis_date: null });
-      }
+      // Chaque table est videe, relue et revidee tant qu'il en reste ; le
+      // bilan dit exactement ce qui resterait (src/lib/purge.js).
+      const bilan = await purgerTout(base44.entities, { company });
       qc.invalidateQueries();
-      toast({ title: "Toutes les données ont été purgées" });
+      if (bilan.complet) {
+        toast({
+          title: "Toutes les données ont été purgées",
+          description: bilan.entreprise ? "Le score de santé de la fiche entreprise n'a pas pu être remis à « non mesuré »." : undefined,
+        });
+      } else {
+        toast({
+          title: "Purge incomplète",
+          description: `Il reste des données dans : ${bilan.restantes.join(", ")}. Relancez « Tout supprimer ».`
+            + (Object.keys(bilan.erreurs).length ? ` Erreur : ${Object.values(bilan.erreurs)[0]}` : ""),
+          variant: "destructive",
+        });
+      }
     } catch (e) {
       toast({ title: "Erreur: " + e.message, variant: "destructive" });
     } finally {
       setPurging(false);
     }
   };
+
 
   const onDrop = (e) => {
     e.preventDefault();
@@ -671,7 +657,7 @@ export default function ImportPage() {
               opportunités et recommandations produits par l'analyse. Irréversible.
             </p>
           </div>
-          <Button variant="destructive" onClick={handlePurgeAll} disabled={purging}>
+          <Button variant="destructive" onClick={handlePurgeAll} disabled={purging || uploading || analyzing || processing}>
             {purging ? "Purge en cours…" : "Tout supprimer"}
           </Button>
         </div>

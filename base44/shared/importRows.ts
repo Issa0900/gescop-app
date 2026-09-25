@@ -78,6 +78,24 @@ export interface ResultatReprise {
  * registre (porte ID_ISSUE) ne cree pas de nouvelle entree : son sort est rendu
  * dans `reprises`, pour mettre a jour l'entree existante.
  */
+/**
+ * La fiche de l'import existe-t-elle encore ? Seule une absence certaine
+ * (introuvable) arrete l'import : une erreur passagere ne doit pas l'interrompre.
+ */
+export async function importToujoursPresent(base44: any, importId: string): Promise<boolean> {
+  if (!importId) return true;
+  const e = base44?.entities?.Import;
+  try {
+    // Seul `get` (par identifiant) fait foi ; sans lui, on ne peut pas savoir :
+    // on continue plutot que d'interrompre un import a tort.
+    if (typeof e?.get !== "function") return true;
+    return Boolean(await e.get(importId));
+  } catch (err: any) {
+    const m = String(err?.message || err);
+    return !(err?.status === 404 || err?.response?.status === 404 || /404|not found|introuvable|does not exist/i.test(m));
+  }
+}
+
 export async function traiterLignes(base44: any, o: OptionsTraitement) {
   const { importId, entityName, rows, sourceType, fileLabel, companyDictionary } = o;
   const ecartees = o.ecartees || [];
@@ -325,7 +343,21 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     messages.push(`${duplicateCount} doublon(s) détecté(s) et ignoré(s).`);
   }
 
-  const { created, errors, failed } = await insertRows(base44, entityName, newRows);
+  // Un import dont la fiche a ete supprimee (« Tout supprimer » pendant
+  // l'import) s'arrete : ses lignes suivantes seraient orphelines, invisibles
+  // dans l'historique et impossibles a supprimer une par une (24 sept. 2026 :
+  // 1 608 ventes et 6 100 observations restees apres une purge).
+  const continuer = () => importToujoursPresent(base44, importId);
+  const { created, errors, failed, annule } = await insertRows(base44, entityName, newRows, continuer);
+  if (annule || !(await continuer())) {
+    return {
+      created, status: "annule", quality: 0, quarantined: 0,
+      metrics: { ...metrics, valid_rows: created, ambiguous_fields: [], potential_dimensions: [] },
+      reprises: [] as ResultatReprise[],
+      message: `Import interrompu : sa fiche a été supprimée pendant l'écriture. ${created} ligne(s) écrite(s) avant l'arrêt, le reste n'a pas été écrit.`,
+      rateLimited: false,
+    };
+  }
   for (const f of failed) {
     const source = (f.row as any)[LIGNE_SOURCE] || f.row;
     metrics.quarantined_rows++;

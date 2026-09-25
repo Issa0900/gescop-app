@@ -35,6 +35,7 @@ function clientSimulation(base44: any) {
       const reelle = base44.entities[nom];
       return {
         list: (...a: any[]) => reelle.list(...a),
+        get: (...a: any[]) => reelle.get(...a),
         filter: (...a: any[]) => reelle.filter(...a),
         create: async (r: any) => r,
         bulkCreate: async (rs: any[]) => rs,

@@ -48,8 +48,11 @@ export async function insertRows(
   base44: any,
   entityName: string,
   rows: Record<string, any>[],
-): Promise<{ created: number; quarantined: number; errors: string[]; failed: { row: Record<string, any>; reason: "STORAGE_REJECTED" | "RATE_LIMITED"; error: string }[] }> {
+  // Appele avant chaque lot : false arrete l'ecriture (import supprime entre-temps).
+  continuer?: () => Promise<boolean>,
+): Promise<{ created: number; quarantined: number; errors: string[]; failed: { row: Record<string, any>; reason: "STORAGE_REJECTED" | "RATE_LIMITED"; error: string }[]; annule?: boolean }> {
   let created = 0;
+  let annule = false;
   let quarantined = 0;
   const errors: string[] = [];
   // Chaque ligne non ecrite, avec son motif : le registre de l'import (et le
@@ -114,6 +117,7 @@ export async function insertRows(
   
   for (let i = 0; i < rows.length; i += BATCH) {
     if (aborted) break;
+    if (continuer && !(await continuer())) { annule = true; break; }
     const batch = rows.slice(i, i + BATCH);
     const p = push(batch).finally(() => {
       activePromises = activePromises.filter(prom => prom !== p);
@@ -135,5 +139,5 @@ export async function insertRows(
     if (attempted < rows.length) echec(rows.slice(attempted), "RATE_LIMITED", "non tentée : import interrompu par la limite de débit");
   }
 
-  return { created, quarantined, errors, failed };
+  return { created, quarantined, errors, failed, annule };
 }

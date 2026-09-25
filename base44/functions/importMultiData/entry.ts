@@ -215,7 +215,8 @@ async function importRows(
     importId: importRec.id, entityName, rows, sourceType, fileLabel,
     plan: memoire?.plan || null, companyDictionary, ecartees,
   });
-  await base44.entities.Import.update(importRec.id, champsImport(t));
+  // Fiche supprimee pendant l'import : il n'y a plus rien a mettre a jour.
+  if (t.status !== "annule") await base44.entities.Import.update(importRec.id, champsImport(t));
   return {
     entity: entityName,
     import_id: importRec.id,
