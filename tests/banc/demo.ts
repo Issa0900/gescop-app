@@ -13,6 +13,7 @@ import { KPI_REGISTRY } from "../../src/lib/core/kpiRegistry.js";
 import { VERITE_DEMO } from "./verite_demo.ts";
 import { VERITE_UCI } from "./verite_uci.ts";
 import { runCoherenceChecks } from "../../src/lib/dataAudit.js";
+import { calculerControle, libelleControle } from "./controles.ts";
 
 declare const require: any;
 declare const process: any;
@@ -21,6 +22,12 @@ const path = require("path");
 
 const DEMO = path.resolve("..", "DEMO");
 const TECH = new Set(["Import", "ImportIssue", "Observation", "Company"]);
+// Verite « tous modules » (verite_demo_modules.py, hors moteur) : paie,
+// depenses, achats, stocks, immobilisations, marketing, tresorerie, CRM...
+const MODULES: { fichier: string; controles: any[] }[] = (() => {
+  const p = path.join("tests", "banc", "verite_demo_modules.json");
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : [];
+})();
 
 /** KPI tels que la page Indicateurs les calcule (memes entites, memes observations). */
 function kpiPage(tables: Record<string, any[]>, extra: string[] = []) {
@@ -61,7 +68,8 @@ function proche(app: number | null, attendu: number | null) {
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     const t0 = Date.now();
     const { tables, results, erreur } = await importer(v.fichier, ab);
-    const kpi = kpiPage(tables, Object.keys(v.kpi || {}));
+    const modules = MODULES.find((m) => m.fichier === v.fichier)?.controles || [];
+    const kpi = kpiPage(tables, [...Object.keys(v.kpi || {}), ...modules.filter((c) => c.type === "kpi").map((c) => c.id)]);
     const controles: any[] = [];
     for (const [id, attendu] of Object.entries(v.kpi || {})) {
       const app = kpi[id]?.v ?? null;
@@ -70,6 +78,13 @@ function proche(app: number | null, attendu: number | null) {
     for (const [ent, n] of Object.entries(v.lignes || {})) {
       const app = (tables[ent] || []).length;
       controles.push({ type: "lignes", id: ent, attendu: n, app, ok: app === n });
+    }
+    for (const c of modules) {
+      if (c.type === "lignes" && v.lignes && c.entite in v.lignes) continue;
+      let app: any;
+      try { app = calculerControle(c, tables, (k: any) => kpi[k.id]?.v ?? null); } catch (e: any) { app = `erreur : ${e?.message || e}`; }
+      const ok = typeof c.attendu === "number" && c.type !== "lignes" && c.type !== "compte" && c.type !== "distincts" ? proche(app, c.attendu) : app === c.attendu;
+      controles.push({ type: "module", id: libelleControle(c), attendu: c.attendu, app, ok });
     }
     const motifs: Record<string, number> = {};
     for (const i of tables.ImportIssue || []) motifs[i.reason_code] = (motifs[i.reason_code] || 0) + 1;

@@ -284,3 +284,57 @@ Le diagnostic des 27 fichiers DEMO dans les 5 comportements d'IA a trouvé un é
 - Résultat : **3 028 483,18 $ exact dans les 5 comportements d'IA**.
 
 **Bancs après le lot 5** : Vert Québec **114/114** ; `npm test` 243/243 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76 ; Deno 32/32 ; diagnostic DEMO sous 5 comportements d'IA : Sales_transactions juste partout. **Reste** : `DS01_succursales_6mois.xlsx` perd 6 lignes de sommaire (54/60) quand l'IA répond ; constat C5 (lignes « valides » annoncées à l'analyse avant détection des doublons/conflits à l'écriture) sur 7 feuilles — affichage, présent avant.
+
+---
+
+# Suite de la mission (nuit du 25 sept. 2026) — état d'avancement
+
+Branche `correctifs-import-kpi-2026-09`. **Rien n'est déployé, rien n'est poussé, rien n'a été écrit en production.**
+
+## Ce qui est fait et commité
+
+| Commit | Contenu | Preuve |
+|---|---|---|
+| `7705f13` | DS01 : une seule règle pour les lignes de totaux, avec ou sans IA (« TOTAL CONSOLIDÉ » gardée sans IA, écartée avec). | DEMO 77/77 ; diagnostic 73/73 sous les 5 comportements d'IA |
+| `ba6fd8e` | Banc des 10 jeux générés (`npm run test:jeux`, `tests/banc/jeux_generes/generate_all.py`, valeurs attendues hors moteur) + corrections : Recette/Vente = revenu, dépense négative → montant absolu, Entrepôt → stock, factures et mandats → commandes, Honoraires → total, fournitures = dépense. | jeux 62/82 → 82/82 |
+| `ec20cdb` | Employés : « Succursale » va dans `branch` avec ou sans IA (le lexique et l'alias divergeaient). | jeux 205/205 sous 5 modes d'IA |
+| `bc862a1` | **Tous les modules** : les jeux couvrent maintenant produits, achats, fournisseurs, paiements, dépenses, interactions, événements, concurrents, veille, objectifs. Lexique de la veille, des objectifs, des interactions, catégorie produit ; traductions EN (Phone, Suppliers, News…) ; coût d'achat = quantité × coût unitaire s'il manque ; une feuille au type incomplet n'est plus envoyée vers un type faible (des tickets devenaient 30 faux clients) ; petite feuille : un type qui accueille toutes les colonnes l'emporte sur l'IA. | jeux 146/180 → **450/450** sous 5 modes d'IA ; npm test 252/252 |
+| (ce commit) | **Calculs par module sur les fichiers DEMO** : `tests/banc/verite_demo_modules.py` recalcule hors moteur, feuille par feuille, les chiffres de chaque module ; le banc DEMO les contrôle (`tests/banc/controles.ts`). | 84/84 sur 3 classeurs (voir ci-dessous) |
+
+Non-régression vérifiée après chaque correction : npm test, banc de reconnaissance 78/82 (inchangé depuis le début, 0 ligne perdue), DEMO 77/77, Vert Québec 114/114, Deno 32/32. Le diagnostic DEMO complet sous 5 modes d'IA a été vérifié jusqu'à `ec20cdb` (73/73) ; pour `bc862a1`, il a été arrêté deux fois par manque de mémoire de la machine (tous les autres bancs étaient au vert).
+
+## Calculs par module sur tes fichiers DEMO (demande « applique sur les fichiers dans Demo »)
+
+Vérité recalculée directement depuis les fichiers, avec les règles de l'app écrites dans l'en-tête du script (paie = coût employeur total, dépenses et achats hors taxes, stock = dernière photo par produit et entrepôt au coût, immobilisations = valeur nette, trésorerie = dernier solde de clôture).
+
+| Classeur | Modules contrôlés | Résultat |
+|---|---|---|
+| `GESCOP_Donnees_Test_Xplorer_3Mois.xlsx` | 18 : paie, dépenses, achats, produits, fournisseurs, stocks, clients actifs, interactions (sentiments), employés, trésorerie, campagnes, campagnes journalières, concurrents, veille, objectifs, événements | 30/30 |
+| `Simulation_Entreprise_Quebec_3Ans_Complet.xlsx` | paie (coût employeur), dépenses HT, achats HT, immobilisations (VNC, coût), stocks, clients actifs, employés, produits, fournisseurs, campagnes, dépenses marketing, trésorerie | 25/25 |
+| `GESCOP.xlsx` | dépenses, salaires et coût employeur, valeur des stocks, achats, marketing, score ESG, produits, trésorerie | 29/29 |
+
+Constat en chemin : ma première vérité des stocks de GESCOP.xlsx additionnait toutes les dates (18,6 M$) ; l'app, avec raison, ne garde que la dernière photo par produit et entrepôt (16,35 M$). C'est la vérité qui a été corrigée, pas l'app.
+
+## Ce qui reste à faire (dans l'ordre)
+
+1. **Étendre `verite_demo_modules.py` aux autres classeurs DEMO multi-modules** : `Nordik_PleinAir_Donnees_Complet_2026.xlsx` (7 feuilles avec lignes de titre et formules), `Entreprise_Simulation_50Ans_Canada_QC.xlsx` (7 feuilles, formules sans valeur), `jeu_de_donnees_kpi_complet.xlsx` (ventes, marketing, clientèle, opérations, RH, trésorerie), `GESCOP_Donnees_Test_Xplorer.xlsx`, `GESCOP_Donnees_Test_Xplorer_500.xlsx`, puis les CSV simples (`products.csv`, `purchases.csv`, `sales.csv`, `transactions_v2.csv`, `transactions_test_3mois.xlsx`). Corriger les règles générales pour chaque écart, jamais le fichier.
+2. Relancer le **diagnostic DEMO complet** (`node tests/banc/lancer-demo.cjs diagnostic`) sur l'état actuel : il n'a pas pu finir pour `bc862a1` (mémoire).
+3. `./qa/run-all.sh` (e2e Playwright, lint, typecheck) pour les lots 5 et suivants : pas encore lancé.
+4. `npm run test:robustesse` **une seule fois, à la toute fin** (gros fichier).
+5. Rapport final avant/après (cette section, complétée).
+
+Points ouverts, pas des bogues bloquants :
+- **C5** : l'analyse annonce plus de lignes valides que l'import n'en écrit (les doublons ne sont repérés qu'à l'écriture) : affichage seulement.
+- Le moteur compte le revenu attribué aux campagnes dans `total_revenue` (jeu 07 : 391 851) : question de définition à trancher.
+- `tests/banc/jeux.ts` a sa propre copie des contrôles ; il pourra réutiliser `tests/banc/controles.ts`.
+
+## Commandes utiles pour reprendre
+
+```
+npm test                                   # unitaires (252)
+npm run test:jeux                          # 10 jeux générés, tous modules
+node tests/banc/lancer-demo.cjs jeux "" sans-ia,ia-fidele,ia-nom,ia-sans-colonnes,ia-decalee
+npm run test:demo                          # DEMO : CA, lignes, motifs + calculs par module
+python tests/banc/verite_demo_modules.py   # régénère la vérité par module
+npm run test:vq ; npm run test:banc
+```

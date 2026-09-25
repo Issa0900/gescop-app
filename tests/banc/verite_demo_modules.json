@@ -1,0 +1,324 @@
+[
+ {
+  "fichier": "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx",
+  "controles": [
+   {
+    "type": "lignes",
+    "entite": "Payroll",
+    "attendu": 6
+   },
+   {
+    "type": "kpi",
+    "id": "payroll_total",
+    "attendu": 24024.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Expense",
+    "attendu": 15
+   },
+   {
+    "type": "somme",
+    "entite": "Expense",
+    "champ": "amount",
+    "attendu": 15750.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Purchase",
+    "attendu": 7
+   },
+   {
+    "type": "somme",
+    "entite": "Purchase",
+    "champ": "total_cost",
+    "attendu": 16200.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Product",
+    "attendu": 4
+   },
+   {
+    "type": "somme",
+    "entite": "Product",
+    "champ": "selling_price",
+    "attendu": 704.98,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Supplier",
+    "attendu": 2
+   },
+   {
+    "type": "lignes",
+    "entite": "Inventory",
+    "attendu": 412
+   },
+   {
+    "type": "lignes",
+    "entite": "Customer",
+    "attendu": 24
+   },
+   {
+    "type": "kpi",
+    "id": "active_customers",
+    "attendu": 24,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Interaction",
+    "attendu": 13
+   },
+   {
+    "type": "compte",
+    "entite": "Interaction",
+    "champ": "sentiment",
+    "valeur": "positif",
+    "attendu": 13
+   },
+   {
+    "type": "compte",
+    "entite": "Interaction",
+    "champ": "sentiment",
+    "valeur": "negatif",
+    "attendu": 0
+   },
+   {
+    "type": "lignes",
+    "entite": "Employee",
+    "attendu": 2
+   },
+   {
+    "type": "lignes",
+    "entite": "Cashflow",
+    "attendu": 103
+   },
+   {
+    "type": "solde",
+    "attendu": 74738.24
+   },
+   {
+    "type": "lignes",
+    "entite": "Campaign",
+    "attendu": 2
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "spend",
+    "attendu": 4200.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "CampaignDaily",
+    "attendu": 206
+   },
+   {
+    "type": "somme",
+    "entite": "CampaignDaily",
+    "champ": "spend",
+    "attendu": 4521.72,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Competitor",
+    "attendu": 2
+   },
+   {
+    "type": "compte",
+    "entite": "Competitor",
+    "champ": "market_position",
+    "valeur": "leader",
+    "attendu": 1
+   },
+   {
+    "type": "lignes",
+    "entite": "ExternalSignal",
+    "attendu": 3
+   },
+   {
+    "type": "lignes",
+    "entite": "Goal",
+    "attendu": 2
+   },
+   {
+    "type": "somme",
+    "entite": "Goal",
+    "champ": "target",
+    "attendu": 50.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Event",
+    "attendu": 3
+   }
+  ]
+ },
+ {
+  "fichier": "Simulation_Entreprise_Quebec_3Ans_Complet.xlsx",
+  "controles": [
+   {
+    "type": "kpi",
+    "id": "payroll_total",
+    "attendu": 1947988.16,
+    "note": "coût employeur total"
+   },
+   {
+    "type": "somme",
+    "entite": "Expense",
+    "champ": "amount",
+    "attendu": 500025.79,
+    "note": "hors taxes"
+   },
+   {
+    "type": "somme",
+    "entite": "Purchase",
+    "champ": "total_cost",
+    "attendu": 665139.0,
+    "note": "hors taxes"
+   },
+   {
+    "type": "kpi",
+    "id": "net_book_value_total",
+    "attendu": 813750.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Asset",
+    "champ": "initial_cost",
+    "attendu": 1646000.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Inventory",
+    "attendu": 39
+   },
+   {
+    "type": "kpi",
+    "id": "inventory_value_total",
+    "attendu": 279573.0,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Customer",
+    "attendu": 80
+   },
+   {
+    "type": "kpi",
+    "id": "active_customers",
+    "attendu": 73,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Employee",
+    "attendu": 10
+   },
+   {
+    "type": "lignes",
+    "entite": "Product",
+    "attendu": 15
+   },
+   {
+    "type": "lignes",
+    "entite": "Supplier",
+    "attendu": 8
+   },
+   {
+    "type": "lignes",
+    "entite": "Campaign",
+    "attendu": 11
+   },
+   {
+    "type": "somme",
+    "entite": "Campaign",
+    "champ": "budget",
+    "attendu": 56000.0,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "marketing_spend",
+    "attendu": 45173.69,
+    "note": "coût journalier des campagnes"
+   },
+   {
+    "type": "solde",
+    "attendu": -2457416.06
+   }
+  ]
+ },
+ {
+  "fichier": "GESCOP.xlsx",
+  "controles": [
+   {
+    "type": "kpi",
+    "id": "total_expense",
+    "attendu": 1586527.54,
+    "note": "dépenses seules (aucune transaction)"
+   },
+   {
+    "type": "somme",
+    "entite": "Employee",
+    "champ": "annual_salary",
+    "attendu": 39861653.39,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Employee",
+    "champ": "total_employer_cost",
+    "attendu": 45259718.45,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "inventory_value_total",
+    "attendu": 16347128.18,
+    "note": "valeur au coût, dernière photo par produit et entrepôt (un stock n'est pas un flux)"
+   },
+   {
+    "type": "somme",
+    "entite": "Purchase",
+    "champ": "total_cost",
+    "attendu": 13394232.26,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "marketing_spend",
+    "attendu": 5917810.04,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "weighted_esg_score",
+    "attendu": 75.29,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Product",
+    "champ": "selling_price",
+    "attendu": 173838.38,
+    "note": ""
+   },
+   {
+    "type": "solde",
+    "attendu": 1301574.5
+   }
+  ]
+ }
+]
