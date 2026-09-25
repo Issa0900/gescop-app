@@ -13,6 +13,7 @@
 
 import { MODES, client, appeler, kpiPage, proche } from "./ia_simulee.ts";
 import { calculerSuccursales } from "../../src/lib/succursales.js";
+import { soldesTresorerie } from "../../src/lib/tresorerie.js";
 
 declare const require: any;
 declare const process: any;
@@ -66,6 +67,11 @@ export const CONTROLES: Controle[] = [
       const d = c.at(-1);
       return d?.closing_cash == null ? null : Number(d.closing_cash);
     },
+  },
+  { lot: "2", id: "Page Trésorerie : trésorerie actuelle", attendu: 989095, calcul: (t) => soldesTresorerie(t.Cashflow, t.Transaction).soldeActuel },
+  {
+    lot: "2", id: "Page Trésorerie : solde sans colonne de clôture", attendu: 989095,
+    calcul: (t) => soldesTresorerie((t.Cashflow || []).map(({ closing_cash, ...c }: any) => c), t.Transaction).soldeActuel,
   },
   // Lot 3 : paie (07_paie.csv, 3 mois)
   { lot: "3", id: "Masse salariale 3 mois (paie)", attendu: 310593.27, calcul: (t) => kpiDe(t, ["Payroll"]).payroll_total },

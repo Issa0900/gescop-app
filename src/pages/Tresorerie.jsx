@@ -11,6 +11,7 @@ import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { preparerPeriodes, serieMensuelle } from "@/lib/core/kpiPeriodes";
 import { AXE_MOIS, AXE_MONTANT, GRILLE, INFOBULLE, INFOBULLE_LIGNE, LEGENDE, BARRE, LIGNE, COULEURS, montant, FENETRE_MOIS } from "@/lib/graphiques";
 import { fluxTresorerieMensuels } from "@/lib/metrics";
+import { soldesTresorerie } from "@/lib/tresorerie";
 
 const IDS_TRESORERIE = ["cash_closing"];
 
@@ -38,55 +39,15 @@ export default function Tresorerie() {
 
   const expenseRows = expenses || [];
 
-  // Sorted explicitly rather than trusting the order the API happened to return.
-  // Cashflow is imported one row per day. Showing the last 12 rows meant showing
-  // 12 days labelled as an evolution, so flows are aggregated by month:
-  // in/out are summed, the balance is the month's closing value.
-  const sorted = [...(cashflow || [])].sort((a, b) => ((a.date || "") < (b.date || "") ? -1 : 1));
-  const latestRow = sorted[sorted.length - 1];
-
-  const byMonthCash = {};
-  sorted.forEach((c) => {
-    const m = (c.date || "").slice(0, 7);
-    if (!byMonthCash[m]) {
-      byMonthCash[m] = { in: 0, out: 0, solde: 0, net: 0 };
-    }
-    const flow = Number(c.net_cash_flow) || ((Number(c.cash_in) || 0) - (Number(c.cash_out) || 0));
-    byMonthCash[m].in += Number(c.cash_in) || 0;
-    byMonthCash[m].out += Number(c.cash_out) || 0;
-    byMonthCash[m].net += flow;
-    byMonthCash[m].solde = Number(c.closing_cash) || 0;
-  });
-
-  if ((!cashflow || cashflow.length === 0) && transactions && transactions.length > 0) {
-    const sortedTx = [...transactions].sort((a, b) => ((a.date || "") < (b.date || "") ? -1 : 1));
-    let runningBalance = 0;
-    sortedTx.forEach((t) => {
-      const m = (t.date || "").slice(0, 7);
-      if (!byMonthCash[m]) {
-        byMonthCash[m] = { in: 0, out: 0, solde: 0, net: 0 };
-      }
-      const amt = Number(t.amount) || 0;
-      const type = (t.type || "").toLowerCase();
-      const isInc = ["income", "entree", "credit", "revenu"].includes(type) || amt > 0;
-      const isExp = ["expense", "sortie", "debit", "depense"].includes(type) || amt < 0;
-      const posAmt = Math.abs(amt);
-      if (isInc && !isExp) {
-        byMonthCash[m].in += posAmt;
-        byMonthCash[m].net += posAmt;
-        runningBalance += posAmt;
-      } else {
-        byMonthCash[m].out += posAmt;
-        byMonthCash[m].net -= posAmt;
-        runningBalance -= posAmt;
-      }
-      byMonthCash[m].solde = runningBalance;
-    });
-  }
-
-  const monthsCash = Object.keys(byMonthCash).sort();
-  // Consommation officielle SSOT avec fallback sur le solde calculé
-  const currentCash = engineKpis.get("cash_closing")?.value || (monthsCash.length > 0 ? byMonthCash[monthsCash[monthsCash.length - 1]]?.solde : 0);
+  // Soldes par mois : src/lib/tresorerie.js (teste). Cloture fournie, sinon
+  // ouverture + entrees - sorties ; sans base, « non mesure » (jamais 0 $).
+  // Les flux sont regroupes par mois (un releve par jour sinon).
+  const soldes = soldesTresorerie(cashflow, transactions);
+  const byMonthCash = soldes.parMois;
+  const monthsCash = soldes.mois;
+  const latestRow = soldes.date ? { date: soldes.date } : null;
+  // Le solde du dernier mois fait foi ; le moteur KPI en repli seulement.
+  const currentCash = soldes.soldeActuel ?? engineKpis.get("cash_closing")?.value ?? null;
   // A raw sum over the whole imported history (positive = cash grew) presented
   // as a MONTHLY figure overstated it by the number of months covered, and a
   // stale assumption about the engine's sign convention flipped it negative on
@@ -103,7 +64,7 @@ export default function Tresorerie() {
     entrées: Math.round(byMonthCash[m].in),
     sorties: Math.round(byMonthCash[m].out),
     flux_net: Math.round(byMonthCash[m].net),
-    solde: Math.round(byMonthCash[m].solde),
+    solde: byMonthCash[m].solde === null ? null : Math.round(byMonthCash[m].solde),
   }));
 
   // Payroll and recurring expenses span many months in the import: a raw sum

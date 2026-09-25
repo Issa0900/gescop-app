@@ -252,7 +252,7 @@ export const REGLES: Regle[] = [
   R("cash_in", ["Cashflow"], [["entree", "encaissement", "inflow", "recette", "in"]], ["solde", "balance"]),
   R("cash_out", ["Cashflow"], [["sortie", "decaissement", "outflow", "out"]], ["solde", "balance"]),
   R("opening_cash", ["Cashflow"], [["ouverture", "opening", "initial", "debut", "open"], ["solde", "cash", "tresorerie", "balance", "bank", "banque"]]),
-  R("closing_cash", ["Cashflow"], [["cloture", "closing", "final", "fin", "close"], ["solde", "cash", "tresorerie", "balance", "bank", "banque"]]),
+  R("closing_cash", ["Cashflow"], [["cloture", "closing", "final", "fin", "close", "fermeture"], ["solde", "cash", "tresorerie", "balance", "bank", "banque"]]),
   R("net_cash_flow", ["Cashflow"], [["net"], ["flux", "flow", "cash", "tresorerie"]]),
   R("accounts_receivable", ["Cashflow"], [["creance", "receivable", "compte", "account"], ["client", "customer", "receivable"]]),
   R("accounts_payable", ["Cashflow"], [["dette", "payable", "compte", "account"], ["fournisseur", "supplier", "vendor", "payable"]]),

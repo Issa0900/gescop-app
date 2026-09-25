@@ -218,3 +218,11 @@ Consignes d'Issa : purge d'abord, puis les lots 1 à 5 de `qa/MISSION_CORRECTIFS
 - Reste (lot 4.3) : le nombre de groupes affichés (4 au lieu de 5 attendus : le groupe commun n'apparaît que si des immobilisations « Toutes succursales » sont importées, ce qui dépend du type reconnu — voir la ligne « lignes Asset » avec IA).
 
 **Bancs après le lot 1** : Vert Québec **72/98** (départ 54/90 — 8 contrôles ajoutés pour la page Succursales) ; `npm test` 224/224 ; `test:banc` 78/82, 0 perdue (inchangé) ; `test:demo` 76/76.
+
+## Lot 2 — Trésorerie
+
+- 2.2 (cause) : la colonne « solde_fermeture » n'était pas lue — le lexique (`registry/lexiqueChamps.ts`) connaissait « clôture / closing / final / fin », pas « fermeture ». Ajouté : `closing_cash` est maintenant enregistré (vérifié sur `02_flux_tresorerie.csv`).
+- 2.1 (repli) : calcul des soldes sorti de `src/pages/Tresorerie.jsx` dans `src/lib/tresorerie.js` (testé) : solde de clôture fourni, sinon ouverture + entrées − sorties, l'ouverture manquante reprenant la clôture du mois précédent ; sans aucune base, « non mesuré » (null), jamais 0 $. La variable `latestRow`, calculée mais inutilisée, sert maintenant la date affichée. Le solde du dernier mois fait foi ; le KPI moteur `cash_closing` ne sert qu'en repli.
+- Trouvé en chemin : le repli de la page sur les transactions (sans relevé de trésorerie) comptait tout montant positif comme une entrée (même défaut que le lot 1) ; il utilise maintenant `classifyTransaction`.
+- Preuves : banc Vert Québec, « Trésorerie actuelle » = 989 095 $ (fin sept. 2026) dans les 4 combinaisons, **y compris sans la colonne de clôture** (reconstitué) ; `tests/tresorerie.test.js` (5 cas).
+- Bancs après le lot 2 : Vert Québec **84/106** ; `npm test`, `test:banc`, `test:demo` : voir le commit (inchangés).
