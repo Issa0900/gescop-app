@@ -2,6 +2,8 @@
 **Before doing ANY work on this codebase, you MUST read and understand the OVERARCHING GOAL below.**
 Failure to do so will result in localized fixes that break the global vision.
 
+> **Mission en cours (25 sept. 2026) :** avant toute chose, lis `qa/REPRISE.md` : état de la branche `correctifs-import-kpi-2026-09`, règles d’Issa (ne rien déployer, ne rien pousser, ne rien écrire en production), batterie de non-régression et reste à faire.
+
 ## 🎯 OVERARCHING GOAL (THE "NORTH STAR")
 The ultimate objective of GESCOP is to be a **Universal, Holistic AI Decision-Support System (Outil d'Aide à la Décision Éclairée)**.
 It must be functionally resilient and capable of digesting ANY type of user data (e.g., standard Excel files, legacy ERP exports, international Kaggle datasets in English) — never blocking the user on trivial formatting issues, maximizing data ingestion, translating on the fly.
