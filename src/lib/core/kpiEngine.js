@@ -233,7 +233,18 @@ function _aggregateRawField(canonicalKey, records, fieldSemantics) {
   if (!fourniParUneEntite && records && records.some(r => r && r.observation_type)) {
     const matchingObs = records.filter(r =>
       r.observation_type && (
-        r.concept === canonicalKey || r.concept === `finance.${canonicalKey}` || r.concept === `customer.${canonicalKey}`
+        r.concept === canonicalKey ||
+        r.concept === `finance.${canonicalKey}` ||
+        r.concept === `customer.${canonicalKey}` ||
+        r.concept === `marketing.${canonicalKey}`
+      ) && !(
+        canonicalKey === "revenue" && (
+          r.concept?.startsWith("marketing.") ||
+          r.entity_id === "Campaign" ||
+          r.entity_id === "CampaignDaily" ||
+          r.grain === "campaign" ||
+          r.grain === "campaign_daily"
+        )
       )
     );
     

@@ -185,7 +185,18 @@ export async function traiterLignes(base44: any, o: OptionsTraitement) {
     matchedConcepts = {};
     for (const [col, p] of Object.entries(profile.columns)) {
       const match = matchConcept(p);
-      if (match) matchedConcepts[col] = match;
+      if (match) {
+        if ((entityName === "Campaign" || entityName === "CampaignDaily") && (match.concept === "finance.revenue" || col.toLowerCase().includes("revenue") || col.toLowerCase().includes("revenu"))) {
+          matchedConcepts[col] = {
+            concept: "marketing.campaign_revenue",
+            confidence: match.confidence || 0.9,
+            method: "entite_campagne",
+            requiresValidation: false,
+          };
+        } else {
+          matchedConcepts[col] = match;
+        }
+      }
     }
     grain = detectGrain(profile, matchedConcepts);
   } catch(e) { console.error("Semantic engine failed", e); }

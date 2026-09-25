@@ -253,6 +253,21 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     missingBehavior: "NOT_IMPORTED",
     label: { fr: "Retour sur dépenses publicitaires", en: "Return on ad spend" },
   },
+  "marketing.campaign_revenue": {
+    conceptId: "marketing.campaign_revenue",
+    canonicalKey: "campaign_revenue",
+    kind: "FLOW",
+    criticality: "optional",
+    domains: ["MARKETING"],
+    dataType: "CURRENCY",
+    aggregation: "SUM",
+    lexicon: [
+      "revenu campagne", "revenu des campagnes", "revenus campagnes", "revenu publicite",
+      "campaign revenue", "attributed revenue", "revenu attribue", "ca campagne",
+    ],
+    missingBehavior: "NOT_IMPORTED",
+    label: { fr: "Revenu des campagnes", en: "Campaign revenue" },
+  },
   "customer.count": {
     conceptId: "customer.count",
     canonicalKey: "customer_count",
