@@ -13,6 +13,13 @@
 import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes.js";
 import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA, estVente, montantAvoirs, montantHT, tauxDpa } from "./kpiRecords.js";
 
+// Statut d'employe qui signifie un depart (valeur d'enum « depart » ou texte
+// brut d'un ancien import), lu MOT A MOT : « inactif » contient « actif ».
+const MOTS_DEPART = new Set(["depart", "departed", "inactif", "inactive", "termine", "terminee", "terminated",
+  "left", "former", "retired", "retraite", "resigned", "demission", "demissionnaire", "fired", "licencie", "quitte", "parti", "ancien"]);
+const estStatutDepart = (status) => String(status ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  .split(/[^a-z]+/).some((mot) => MOTS_DEPART.has(mot));
+
 // Amortissement de la periode du calcul : DPA annuelle x mois couverts / 12.
 // 0 sans registre d'immobilisations (rien a amortir).
 const amortissementPeriode = (deps) =>
@@ -171,35 +178,26 @@ export const KPI_REGISTRY = Object.freeze({
     // deps.employee_count_raw was always undefined and every fallback path
     // silently returned 0 headcount even with real employee rows present.
     dependencies: ["employee_count_raw"],
-    // Counts distinct ACTIVE employees from the raw dataset. A record without
-    // an explicit status is considered active; otherwise the status must
-    // contain an "active" marker. Falls back to the raw employee count when no
-    // status information is available at all.
+    // Effectif = employes distincts qui n'ont pas quitte l'entreprise (contrat
+    // KPI, 25 sept 2026). Les fiches Employee font foi ; la paie ne sert que
+    // s'il n'y a aucune fiche (son statut « paye » n'est pas un statut
+    // d'emploi). Seul un statut de DEPART exclut, lu mot a mot : l'ancien
+    // `status.includes("actif")` comptait « inactif » comme actif, excluait
+    // les employes en conge ou en essai, et une paie « payee » ramenait
+    // l'effectif a 0. Sans statut, l'employe est compte.
     calculate: (deps) => {
-      const records = (deps._records || []).filter((r) => r._entity === undefined || r._entity === "Employee" || r._entity === "Payroll");
-      const employees = records.filter(
-        (r) => r.employee_id !== null && r.employee_id !== undefined && String(r.employee_id).trim() !== ""
-      );
-      if (employees.length === 0) return deps.employee_count_raw ?? null;
-
-      const hasStatus = employees.some((r) => r.status !== null && r.status !== undefined && String(r.status).trim() !== "");
-      if (!hasStatus) return deps.employee_count_raw || 0;
-
-      const activeIds = new Set(
-        employees
-          .filter((r) => {
-            const st = String(r.status || "").toLowerCase();
-            return (
-              st.includes("actif") ||
-              st.includes("active") ||
-              st.includes("en poste") ||
-              st.includes("employé") ||
-              st.includes("employee")
-            );
-          })
-          .map((r) => r.employee_id)
-      );
-      return activeIds.size;
+      const avecId = (r) => r.employee_id !== null && r.employee_id !== undefined && String(r.employee_id).trim() !== "";
+      const all = deps._records || [];
+      const fiches = all.filter((r) => (r._entity === undefined || r._entity === "Employee") && avecId(r));
+      const base = fiches.length > 0 ? fiches : all.filter((r) => r._entity === "Payroll" && avecId(r));
+      if (base.length === 0) return deps.employee_count_raw ?? null;
+      const tous = new Set(), partis = new Set();
+      for (const r of base) {
+        const id = String(r.employee_id).trim();
+        tous.add(id);
+        if (fiches.length > 0 && estStatutDepart(r.status)) partis.add(id);
+      }
+      return tous.size - partis.size;
     },
   },
 

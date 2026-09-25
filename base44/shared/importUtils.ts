@@ -1888,9 +1888,13 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
 
   // States
   "new": ["nouveau", "nouvelle"], "seen": ["vu", "lue"], "resolved": ["resolu"], "archived": ["archivee", "archive"],
-  "active": ["active", "actif"], "actif": ["active", "actif"], "inactive": ["inactif", "pause", "terminee"], "inactif": ["inactif", "pause", "terminee"], "lost": ["perdu"], "dormant": ["dormant"], "terminated": ["terminee"],
+  "active": ["active", "actif"], "actif": ["active", "actif"], "inactive": ["inactif", "pause", "terminee", "depart"], "inactif": ["inactif", "pause", "terminee", "depart"], "lost": ["perdu"], "dormant": ["dormant"], "terminated": ["terminee", "depart"],
   "paused": ["pause"], "planned": ["planifiee"], "discontinued": ["discontinue"],
-  "terminee": ["terminee"], "termine": ["terminee"],
+  "terminee": ["terminee", "depart"], "termine": ["terminee", "depart"],
+  // Employe parti : sans ces termes le statut etait efface a l'import, et un
+  // ancien employe comptait dans l'effectif (audit KPI 25 sept 2026, ANO-06).
+  "left": ["depart"], "former": ["depart"], "retired": ["depart"], "retraite": ["depart"], "resigned": ["depart"],
+  "demission": ["depart"], "demissionnaire": ["depart"], "fired": ["depart"], "licencie": ["depart"], "quitte": ["depart"], "parti": ["depart"],
 
   // Channels & Marketing
   "web": ["web", "shopify", "display"],

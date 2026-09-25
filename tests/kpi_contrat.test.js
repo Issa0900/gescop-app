@@ -140,3 +140,39 @@ for (const [nom, ligne, attendu] of cas05) {
     assert.equal(o.total_revenue, attendu);
   });
 }
+
+// ── ANO-06 : effectif = employés qui n'ont pas quitté l'entreprise ──────────
+
+test("ANO-06 : « inactif » et « Inactive » ne comptent pas comme actifs", () => {
+  const employees = [
+    { employee_id: "E1", status: "actif" }, { employee_id: "E2", status: "actif" },
+    { employee_id: "E3", status: "inactif" }, { employee_id: "E4", status: "Inactive" }, { employee_id: "E5", status: "terminé" },
+  ];
+  assert.equal(calcul({ employees }, ["employee_count"]).employee_count.v, 2);
+});
+
+test("ANO-06 : un employé en congé ou en essai fait partie de l'effectif", () => {
+  const employees = [
+    { employee_id: "E1", status: "actif" }, { employee_id: "E2", status: "conge" },
+    { employee_id: "E3", status: "essai" }, { employee_id: "E4", status: "depart" },
+  ];
+  assert.equal(calcul({ employees }, ["employee_count"]).employee_count.v, 3);
+});
+
+test("ANO-06 : fiches sans statut comptées ; la paie ne gonfle pas l'effectif des fiches", () => {
+  const employees = [{ employee_id: "E1" }, { employee_id: "E2" }];
+  const payrolls = [{ employee_id: "E1", period: "2026-01", total_cost: 1 }, { employee_id: "E9", period: "2025-01", total_cost: 1, status: "paye" }];
+  assert.equal(calcul({ employees, payrolls }, ["employee_count"]).employee_count.v, 2);
+  assert.equal(calcul({ payrolls }, ["employee_count"]).employee_count.v, 2, "sans fiche employé, la paie sert de repli");
+  assert.equal(calcul({ orders: [{ order_id: "O1", date: "2026-01-01", total_revenue: 1, employee_id: "V1" }] }, ["employee_count"]).employee_count.v, null);
+});
+
+test("ANO-06 import : un statut de départ est conservé (depart), jamais effacé", () => {
+  const props = getSchema("Employee").properties;
+  for (const s of ["inactif", "Inactive", "Terminé", "Left", "Démissionnaire", "Retraité"]) {
+    assert.equal(normalizeRow("Employee", { employee_id: "E1", status: s }, "i", props).status, "depart", s);
+  }
+  assert.equal(normalizeRow("Employee", { employee_id: "E1", status: "Actif" }, "i", props).status, "actif");
+  const client = getSchema("Customer").properties;
+  assert.equal(normalizeRow("Customer", { customer_id: "C1", status: "inactif" }, "i", client).status, "inactif", "un client inactif reste inactif");
+});
