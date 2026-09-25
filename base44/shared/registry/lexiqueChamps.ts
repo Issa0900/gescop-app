@@ -200,7 +200,10 @@ export const REGLES: Regle[] = [
   R("hourly_rate", ["Employee"], [["taux", "rate", "salaire"], ["horaire", "hourly", "heure"]]),
   R("union_status", ["Employee"], [["syndical", "syndique", "union", "syndicat"]]),
   R("role", ["Employee"], [["role", "poste", "fonction", "title", "job", "titre"]]),
-  R("location", ["Employee"], [["succursale", "emplacement", "location", "site", "lieu", "magasin", "work"]]),
+  // Succursale : meme champ que la table d'alias (branch) ; sinon l'import avec IA
+  // et l'import sans IA rangeaient la meme colonne dans deux champs (jeux generes).
+  R("branch", ["Employee"], [["succursale", "magasin", "boutique", "store", "agence", "branch"]]),
+  R("location", ["Employee"], [["emplacement", "location", "site", "lieu", "work"]]),
   R("last_name", ["Employee"], [["nom"], ["famille", "family"]]),
   R("period", ["Payroll"], [["periode", "period", "mois", "month"]]),
   R("period", ["Payroll"], [DATE, ["paie", "pay", "paye", "versement", "payment"]]),
