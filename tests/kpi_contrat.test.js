@@ -248,3 +248,38 @@ test("ANO-07 : ventes sans aucun client identifié → ARPC non mesuré", () => 
   const orders = [{ order_id: "O1", date: "2026-06-01", total_revenue: 100, status: "completed" }];
   assert.equal(calcul({ orders }, ["arpu"]).arpu.v, null);
 });
+
+// ── ANO-16 : la période d'une paie est lue, pas recopiée comme du texte ─────
+
+import { preparerPeriodes, kpisParFenetre } from "../src/lib/core/kpiPeriodes.js";
+
+test("ANO-16 import : Payroll.period ramené à AAAA-MM (ou date ISO)", () => {
+  const props = getSchema("Payroll").properties;
+  const lu = (period) => normalizeRow("Payroll", { employee_id: "E1", period, total_cost: 1 }, "i", props).period;
+  assert.equal(lu("Janvier 2026"), "2026-01");
+  assert.equal(lu("janv. 2026"), "2026-01");
+  assert.equal(lu("July 2026"), "2026-07");
+  assert.equal(lu("01/2026"), "2026-01");
+  assert.equal(lu("2026/3"), "2026-03");
+  assert.equal(lu("2026-01"), "2026-01");
+  assert.equal(lu("31/01/2026"), "2026-01-31");
+  assert.equal(lu("Période 3"), "Période 3", "illisible : gardé tel quel, jamais inventé");
+});
+
+test("ANO-16 : une paie datée par la date de paiement entre dans les fenêtres mensuelles", () => {
+  const payrolls = [
+    { employee_id: "E1", period: "Période 7", payment_date: "2026-07-31", total_cost: 1000 },
+    { employee_id: "E1", period: "2026-08", total_cost: 1000 },
+  ];
+  const f = kpisParFenetre(preparerPeriodes({ payrolls }, { aujourdhui: new Date("2026-09-15") }), ["payroll_total"]);
+  assert.equal(f.mois.get("payroll_total").value, 1000, "août");
+  assert.equal(f.moisPrec.get("payroll_total").value, 1000, "juillet, lu sur la date de paiement");
+});
+
+test("ANO-16 : une paie importée avant la normalisation garde la même empreinte (pas de doublon au réimport)", async () => {
+  const { generateFingerprint } = await import("../base44/shared/fingerprint.ts");
+  assert.equal(
+    generateFingerprint("Payroll", { employee_id: "E1", period: "Janvier 2026" }),
+    generateFingerprint("Payroll", { employee_id: "E1", period: "2026-01" }),
+  );
+});

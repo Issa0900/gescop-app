@@ -1,3 +1,5 @@
+import { periodeMois } from "./importUtils.ts";
+
 /**
  * L'empreinte repose-t-elle sur un identifiant metier fourni par le fichier ?
  * Seule une telle empreinte PROUVE qu'une repetition est un doublon (meme
@@ -97,7 +99,9 @@ export function generateFingerprint(entityName: string, row: any): string {
     return `Payroll:id:${String(row.payroll_id).trim()}`;
   }
   if (entityName === "Payroll" && row.employee_id && row.period) {
-    return `Payroll:${String(row.employee_id).trim()}:${String(row.period).trim()}`;
+    // Periode normalisee (« Janvier 2026 » = « 2026-01 ») : une paie importee
+    // avant la normalisation de Payroll.period reste reconnue au reimport.
+    return `Payroll:${String(row.employee_id).trim()}:${periodeMois(row.period) ?? String(row.period).trim()}`;
   }
   if (entityName === "Supplier" && row.supplier_id) {
     return `Supplier:${String(row.supplier_id).trim()}`;

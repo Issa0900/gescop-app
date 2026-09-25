@@ -2347,6 +2347,31 @@ export function parseDate(value: any, convention?: ConventionDate | null): strin
   return null;
 }
 
+/**
+ * Periode d'une paie (champ texte) : « Janvier 2026 », « janv. 2026 »,
+ * « July 2026 », « 01/2026 », « 2026/3 » -> « 2026-01 » (mois, sans jour
+ * invente) ; une date complete -> date ISO. Illisible : null (la valeur
+ * d'origine est gardee par l'appelant). Sans cela, la paie restait du texte
+ * et sortait de toutes les fenetres mensuelles des KPI.
+ */
+export function periodeMois(value: any): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const brut = String(value).trim();
+  if (/^\d{4}-\d{2}(-\d{2})?$/.test(brut)) return brut;
+  const s = stripAccents(brut.toLowerCase());
+  const mois = (n: string) => (Number(n) >= 1 && Number(n) <= 12 ? n.padStart(2, "0") : null);
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{4})$/);
+  if (m && mois(m[1])) return `${m[2]}-${mois(m[1])}`;
+  m = s.match(/^(\d{4})[\/\-.](\d{1,2})$/);
+  if (m && mois(m[2])) return `${m[1]}-${mois(m[2])}`;
+  m = s.match(/^([a-z]+)\.?\s+(\d{4})$/);
+  if (m) {
+    const mm = MONTHS_FR[m[1].slice(0, 4)] || MONTHS_FR[m[1].slice(0, 3)];
+    if (mm) return `${m[2]}-${mm}`;
+  }
+  return parseDate(value);
+}
+
 // Coerce a value to the schema property type (date, number, boolean)
 export function coerceType(value: any, prop: any): any {
   if (value === null || value === undefined || value === "") return value;
@@ -2947,6 +2972,13 @@ export function normalizeRow(
   // malgre 75 fiches importees a 100 % (rapport du 25 sept., lot 3).
   // Cout employeur = brut + heures sup + primes + charges patronales (les
   // retenues, payees par l'employe, n'en font pas partie).
+  if (entityName === "Payroll" && r.period != null && r.period !== "") {
+    const p = periodeMois(r.period);
+    if (p && p !== String(r.period).trim()) {
+      r.period = p;
+      trace?.derives.push({ field: "period", motif: "période lue et ramenée au format AAAA-MM" });
+    }
+  }
   if (entityName === "Payroll" && (r.total_cost == null || r.total_cost === "")) {
     const parts = [r.regular_pay, r.overtime, r.bonus, r.employer_cost].map((v) => parseNumber(v));
     if (parts.some((v) => v !== null)) {

@@ -44,12 +44,18 @@ export function notePeriodeCommune(resultat) {
   return `Calculé sur les ${p.mois} mois couverts par toutes les sources (${p.debut} → ${p.fin})`;
 }
 
-/** Mois (AAAA-MM) d'une ligne de flux, ou null. */
+/**
+ * Mois (AAAA-MM) d'une ligne de flux, ou null : le premier champ de date
+ * LISIBLE (une periode de paie illisible, « Periode 3 », laisse la place a la
+ * date de paiement au lieu de sortir la ligne de toutes les fenetres).
+ */
 export function moisLigne(r) {
-  const brut = r?.date ?? r?.period ?? r?.pay_period ?? r?.order_date;
-  if (brut == null) return null;
-  const m = String(brut).slice(0, 7);
-  return /^\d{4}-\d{2}$/.test(m) ? m : null;
+  for (const brut of [r?.date, r?.period, r?.pay_period, r?.order_date, r?.payment_date]) {
+    if (brut == null) continue;
+    const m = String(brut).slice(0, 7);
+    if (/^\d{4}-\d{2}$/.test(m)) return m;
+  }
+  return null;
 }
 
 /**
