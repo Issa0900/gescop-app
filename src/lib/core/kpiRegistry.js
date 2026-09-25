@@ -81,6 +81,10 @@ export const KPI_REGISTRY = Object.freeze({
     // piece as 0 and the other two (Expense.amount, Transaction context)
     // cover the real sources.
     dependencies: ["expense_amount", "operating_expense"],
+    // Comme total_revenue : chaque dependance est une source possible des
+    // depenses. Une entreprise sans releve bancaire importe n'a pas des
+    // depenses « partielles » pour autant.
+    sourcesAlternatives: true,
     // Same class of bug as total_revenue: expense_amount (Transaction rows)
     // and operating_expense (the separate Expense entity) are two different
     // sources, not alternative readings of the same one — a company can

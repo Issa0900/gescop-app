@@ -40,24 +40,35 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
   /** @type {import("./semanticTypes").KpiStatus} */
   let status = KPI_STATUS.MEASURED;
 
+  // Statut de chaque dependance deja calculee. computeKpiBatch calcule les
+  // dependances avant le KPI et ne met que leur VALEUR dans le contexte : sans
+  // ce registre, un resultat net partiel donnait une marge nette « mesuree ».
+  if (!resolvedDeps._statuts) resolvedDeps._statuts = {};
+  const statuts = resolvedDeps._statuts;
+  // Une dependance optionnelle affine le chiffre quand elle existe (amortissement
+  // d'un registre d'immobilisations) ; son absence ne rend pas le KPI partiel.
+  const optionnelles = new Set(kpiDef.dependancesOptionnelles || []);
+  const requises = kpiDef.dependencies.filter((d) => !optionnelles.has(d));
+
   let unavailableDeps = 0;
   for (const depId of kpiDef.dependencies) {
+    let depStatus;
     if (resolvedDeps[depId] === undefined) {
-      // Need to compute this dependency
       const depResult = computeKpi({ kpiId: depId, records, fieldSemantics, context: resolvedDeps });
-
       resolvedDeps[depId] = depResult.value;
+      statuts[depId] = depResult.status;
+      depStatus = depResult.status;
 
-      // Merge sources and quality
       lineageSources.push(...depResult.sources);
       if (Number.isFinite(depResult.qualityScore)) lowestQuality = Math.min(lowestQuality, depResult.qualityScore);
-
-      // Propagate status
-      if (depResult.status === KPI_STATUS.NOT_MEASURED) {
-        unavailableDeps += 1;
-      } else if (depResult.status === KPI_STATUS.UNKNOWN && status === KPI_STATUS.MEASURED) {
-        status = KPI_STATUS.UNKNOWN;
-      }
+    } else {
+      depStatus = statuts[depId];
+    }
+    if (optionnelles.has(depId)) continue;
+    if (depStatus === KPI_STATUS.NOT_MEASURED || depStatus === KPI_STATUS.INVALID) {
+      unavailableDeps += 1;
+    } else if (depStatus === KPI_STATUS.UNKNOWN && status === KPI_STATUS.MEASURED) {
+      status = KPI_STATUS.UNKNOWN;
     }
   }
   // A KPI is only NOT_MEASURED when EVERY dependency is. Many KPIs list several
@@ -67,7 +78,7 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
   // any single alternative is missing skipped that fallback entirely and
   // silently produced a fake 0 (e.g. Finance page showing "0 $" of revenue
   // while transaction_amount had the real, available total).
-  if (kpiDef.dependencies.length > 0 && unavailableDeps === kpiDef.dependencies.length) {
+  if (requises.length > 0 && unavailableDeps === requises.length) {
     status = KPI_STATUS.NOT_MEASURED;
   } else if (unavailableDeps > 0 && status === KPI_STATUS.MEASURED && !kpiDef.sourcesAlternatives) {
     // Des sources ALTERNATIVES (commandes OU transactions) : l'absence de l'une
@@ -97,8 +108,10 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
         value = null;
       } else if (value === 0 && status === KPI_STATUS.MEASURED) {
         status = KPI_STATUS.VALID_ZERO;
-      } else if (value === null && status === KPI_STATUS.MEASURED) {
-        // La formule dit « non mesurable » : le statut doit le dire aussi.
+      } else if (value === null || value === undefined) {
+        // La formule dit « non mesurable » : le statut doit le dire aussi, meme
+        // si une source etait partielle (sinon « Partiel » + « Non mesure »).
+        value = null;
         status = KPI_STATUS.NOT_MEASURED;
       }
     } catch (e) {
@@ -186,12 +199,14 @@ export function computeKpiBatch(kpiIds, records, fieldSemantics) {
   const context = determineTemporalContext(records);
   context._records = records; // Permet aux KPI complexes de filtrer sémantiquement
   context._semantics = fieldSemantics;
+  context._statuts = {};
 
   const results = new Map();
 
   for (const id of orderedIds) {
     const result = computeKpi({ kpiId: id, records, fieldSemantics, context });
     context[id] = result.value;
+    context._statuts[id] = result.status;
     
     // Only return the ones explicitly requested
     if (kpiIds.includes(id)) {
