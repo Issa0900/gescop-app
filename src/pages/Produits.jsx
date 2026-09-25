@@ -12,7 +12,7 @@ import StockThresholdSettings from "@/components/produits/StockThresholdSettings
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert, computeStockAlerts } from "@/lib/stockAlerts";
 import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
-import { validSalesOrders, columnPresent } from "@/lib/metrics";
+import { validSalesOrders, columnPresent, productMarginPct } from "@/lib/metrics";
 import DataErrorState from "@/components/DataErrorState";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -64,6 +64,11 @@ function deriveProductsFromInventory(inventory) {
     .map((i) => {
       const cost = Number(i.unit_cost) || 0;
       const price = Number(i.selling_price) || 0;
+      const margin = productMarginPct({
+        gross_margin: i.gross_margin,
+        purchase_cost: cost,
+        selling_price: price,
+      });
       return {
         id: i.id,
         product_id: i.product_id,
@@ -72,7 +77,7 @@ function deriveProductsFromInventory(inventory) {
         supplier_id: i.supplier_id || null,
         purchase_cost: cost,
         selling_price: price,
-        gross_margin: price > 0 ? ((price - cost) / price) * 100 : 0,
+        gross_margin: margin !== null ? margin : 0,
         inventory_level: i.closing_stock != null ? Number(i.closing_stock) : (i.qte_en_stock != null ? Number(i.qte_en_stock) : (i.inventory_level != null ? Number(i.inventory_level) : null)),
         reorder_point: i.reorder_point != null ? Number(i.reorder_point) : null,
         status: i.stock_status || null,
@@ -101,10 +106,14 @@ export default function Produits() {
   // normaliser l'identifiant : selon la page ouverte en premier, les produits
   // arrivaient avec ou sans product_id.
   const { data: donnees, isLoading: chargement, isError: erreurDonnees, refetch: recharger } = useDonneesKpi();
-  const productsRaw = useMemo(() => (donnees.products || []).map((p) => ({
-    ...p,
-    product_id: p.product_id || p.id || p.sku || p.code,
-  })), [donnees.products]);
+  const productsRaw = useMemo(() => (donnees.products || []).map((p) => {
+    const margin = productMarginPct(p);
+    return {
+      ...p,
+      product_id: p.product_id || p.id || p.sku || p.code,
+      gross_margin: margin !== null ? margin : (Number(p.gross_margin) || 0),
+    };
+  }), [donnees.products]);
   const inventory = useMemo(() => (donnees.inventory || []).map((i) => ({
     ...i,
     product_id: i.product_id || i.id_product || i.sku || i.product_code,
@@ -299,7 +308,7 @@ export default function Produits() {
       align: "right",
       sortValue: (p) => Number(p.gross_margin) || 0,
       render: (p) => (
-        <span className={(p.gross_margin || 0) < 15 ? "font-medium text-red-600" : ""}>{formatPct(p.gross_margin || 0, 0)}</span>
+        <span className={(p.gross_margin || 0) < 15 ? "font-medium text-red-600" : ""}>{formatPct(p.gross_margin || 0, 1)}</span>
       ),
     },
     { key: "_totalSales", header: "Unités vendues", align: "right", sortValue: (p) => p._totalSales || 0, render: (p) => formatNumber(p._totalSales || 0) },

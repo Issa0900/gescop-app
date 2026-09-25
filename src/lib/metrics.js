@@ -62,6 +62,31 @@ export function marginDeltaPoints(currPct, prevPct) {
   return currPct - prevPct;
 }
 
+/**
+ * Taux de marge brute d'un produit en POURCENTAGE (ex: 41.4 pour 41,4 %).
+ * Gère automatiquement :
+ *  1. Les ratios décimaux issus d'Excel (ex: 0.4139 converti en 41.39 %).
+ *  2. Les marges déjà exprimées en % (ex: 41.39 conservé tel quel).
+ *  3. Le repli sur le calcul direct (prix de vente - coût d'achat) / prix si la marge est absente.
+ */
+export function productMarginPct(p) {
+  if (!p) return null;
+  const raw = p.gross_margin != null ? Number(p.gross_margin) : null;
+  if (raw !== null && Number.isFinite(raw) && raw !== 0) {
+    if (raw >= -1 && raw <= 1) {
+      return raw * 100;
+    }
+    return raw;
+  }
+  const cost = Number(p.purchase_cost ?? p.unit_cost) || 0;
+  const price = Number(p.selling_price ?? p.unit_price) || 0;
+  if (price > 0 && cost > 0) {
+    return ((price - cost) / price) * 100;
+  }
+  return raw !== null && Number.isFinite(raw) ? raw : null;
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Trésorerie                                                          */
 /* ------------------------------------------------------------------ */

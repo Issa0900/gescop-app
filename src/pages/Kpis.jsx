@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
-import { FENETRE_MOIS } from "@/lib/graphiques";
+import { FENETRE_MOIS, moisLisible } from "@/lib/graphiques";
 import { preparerPeriodes, kpisParFenetre, serieMensuelle } from "@/lib/core/kpiPeriodes";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/lib/AuthContext";
@@ -38,6 +38,7 @@ import {
   previousRoasWindow,
   anyColumnPresent,
   isRefundedOrder,
+  productMarginPct,
 } from "@/lib/metrics";
 
 const IDS_FENETRES = ["total_revenue", "total_charges", "net_margin_pct", "order_revenue", "order_count", "aov"];
@@ -282,8 +283,12 @@ export default function Kpis() {
       // imported stock_status alone and never moved when the user changed their
       // threshold, so the two screens disagreed on the same rows.
       const stock = computeStockAlerts(products, inventory, stockSettings, orders);
-      const avgMargin = (products || []).length > 0
-        ? (products || []).reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / (products || []).length
+      const prods = (products && products.length > 0) ? products : (inventory || []);
+      const margins = prods
+        .map((p) => productMarginPct(p))
+        .filter((m) => m !== null && Number.isFinite(m));
+      const avgMargin = margins.length > 0
+        ? margins.reduce((s, m) => s + m, 0) / margins.length
         : 0;
 
       result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
@@ -304,6 +309,8 @@ export default function Kpis() {
       const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
       const newCustomers = lastVal(custMonthly);
       const prevNewCustomers = prevVal(custMonthly);
+      const lastEntry = custMonthly.length > 0 ? custMonthly[custMonthly.length - 1] : null;
+      const moisNom = lastEntry?.month ? moisLisible(lastEntry.month) : "mois";
       // Revenue per customer: the numerator covers every buyer, so the
       // denominator must too. Dividing all-customer revenue by ACTIVE customers
       // only was inflating this by 1/(share of active) - 2x at 50% churn.
@@ -329,7 +336,7 @@ export default function Kpis() {
       if (churn.atRisk > 0) {
         result.push({ name: "Clients actifs à risque", domain: "clients", value: churn.atRisk, previous: null, trend: "stable", unit: "" });
       }
-      result.push({ name: "Nouveaux clients (mois)", domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
+      result.push({ name: `Nouveaux clients (${moisNom})`, domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
       if (value.avgRevenue !== null) {
         result.push({ name: "Revenu moyen par client", domain: "clients", value: Math.round(value.avgRevenue), previous: null, trend: "stable", unit: "$" });
       }

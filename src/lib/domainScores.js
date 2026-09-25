@@ -68,11 +68,17 @@ function computeDomainScoresBrut(data) {
   const revMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.income }));
   const expMonthly = financialMonthly.map((p) => ({ month: p.month, val: p.expense }));
 
+  // Vérifier si des dépenses/charges sont réellement mesurées : une absence
+  // de données de dépenses ne doit jamais être assimilée à 0 $ de charges
+  // produisant une marge artificielle de 100 % (règle absolue de non-invention).
+  const anyCharges = financialMonthly.some((p) => p.chargesMesurees);
   const hasHistory3 = revMonthly.length >= 3;
-  const recentMargin = hasHistory3
-    ? aggregateMarginPct(revMonthly, expMonthly, 3)
-    : (revMonthly.length > 0 ? aggregateMarginPct(revMonthly, expMonthly, revMonthly.length) : null);
-  const priorMargin = hasHistory3 ? previousMarginPct(revMonthly, expMonthly, 3) : null;
+  const recentMargin = anyCharges
+    ? (hasHistory3
+        ? aggregateMarginPct(revMonthly, expMonthly, 3)
+        : (revMonthly.length > 0 ? aggregateMarginPct(revMonthly, expMonthly, revMonthly.length) : null))
+    : null;
+  const priorMargin = (anyCharges && hasHistory3) ? previousMarginPct(revMonthly, expMonthly, 3) : null;
   // Margin moves in POINTS. A 2%→4% move is +2 points, not +100%.
   const marginDelta = marginDeltaPoints(recentMargin, priorMargin);
 
@@ -95,9 +101,11 @@ function computeDomainScoresBrut(data) {
     explanation:
       recentMargin !== null
         ? `Marge ${recentMargin.toFixed(0)} % (${hasHistory3 ? "3 mois" : `${revMonthly.length} mois`})`
-        : revMonthly.length === 0
-          ? "Aucune donnée financière importée"
-          : "Historique insuffisant",
+        : !anyCharges && revMonthly.length > 0
+          ? "Dépenses d'exploitation non mesurées"
+          : revMonthly.length === 0
+            ? "Aucune donnée financière importée"
+            : "Historique insuffisant",
   };
 
   // === TRÉSORERIE - runway on NET burn, not gross expenses ===
@@ -228,9 +236,10 @@ function computeDomainScoresBrut(data) {
   const stock = computeStockAlerts(products, inventory, getStockAlertSettings(company), orders);
   const trackedCount = stock.tracked;
   const dormantCount = stock.dormantCount;
-  const ruptureCount = stock.alertCount;
+  const alertCount = stock.alertCount;
+  const outOfStockCount = stock.outOfStockCount || 0;
   const lowCount = stock.lowStockCount;
-  const issueRatio = trackedCount > 0 ? (dormantCount + ruptureCount) / trackedCount : 0;
+  const issueRatio = trackedCount > 0 ? (dormantCount + alertCount) / trackedCount : 0;
 
   let opsScore;
   if (trackedCount === 0) opsScore = 50;
@@ -238,6 +247,18 @@ function computeDomainScoresBrut(data) {
   else if (issueRatio < 0.1) opsScore = 68;
   else if (issueRatio < 0.25) opsScore = 48;
   else opsScore = 28;
+
+  let opsExplanation = "";
+  if (trackedCount > 0) {
+    if (outOfStockCount > 0) {
+      opsExplanation = `${outOfStockCount} rupture${outOfStockCount > 1 ? "s" : ""}${alertCount > outOfStockCount ? ` · ${alertCount - outOfStockCount} à réapprovisionner` : ""} · ${dormantCount} dormant${dormantCount > 1 ? "s" : ""}`;
+    } else if (alertCount > 0) {
+      opsExplanation = `${alertCount} à réapprovisionner · ${dormantCount} dormant${dormantCount > 1 ? "s" : ""}`;
+    } else {
+      opsExplanation = `0 alerte stock · ${dormantCount} dormant${dormantCount > 1 ? "s" : ""}`;
+    }
+  }
+
   scores.operations = {
     // measured=false : aucune donnee pour ce domaine. Le score neutre de 50
     // qui suit n'est qu'un repli d'affichage et NE DOIT PAS entrer dans la
@@ -245,8 +266,8 @@ function computeDomainScoresBrut(data) {
     measured: trackedCount > 0,
     score: clamp(opsScore),
     trend: "stable",
-    explanation: trackedCount > 0 ? `${ruptureCount} ruptures · ${dormantCount} dormants` : "",
-    details: { trackedCount, dormantCount, ruptureCount, lowCount },
+    explanation: opsExplanation,
+    details: { trackedCount, dormantCount, alertCount, outOfStockCount, lowCount },
   };
 
   // === CLIENTS - single churn definition + acquisition trend ===

@@ -136,8 +136,8 @@ export function computeStockAlerts(products, inventory, settings, orders) {
     // Tells the UI whether dormancy could be measured at all.
     dormancyFromRotation: recentlySold !== null,
     // Shortage severity, for alerts that need to separate "out" from "nearly out".
-    outOfStockCount: rows.filter((r) => r.status === "rupture").length,
-    lowStockCount: rows.filter((r) => r.inAlert && r.status !== "rupture").length,
+    outOfStockCount: rows.filter((r) => r.status === "rupture" || (Number.isFinite(r.stock) && r.stock <= 0)).length,
+    lowStockCount: rows.filter((r) => r.inAlert && r.status !== "rupture" && (!Number.isFinite(r.stock) || r.stock > 0)).length,
   };
 }
 
