@@ -1,0 +1,48 @@
+{
+  "secteur": "Commerce de détail — Électronique grand public",
+  "note": "CA = somme des sous-totaux (hors TPS/TVQ) des lignes de commandes au statut Complétée uniquement.",
+  "controles": [
+    {
+      "type": "lignes",
+      "entite": "Product",
+      "attendu": 23
+    },
+    {
+      "type": "lignes",
+      "entite": "Customer",
+      "attendu": 120
+    },
+    {
+      "type": "lignes",
+      "entite": "Order",
+      "attendu": 365,
+      "note": "toutes les lignes de commandes sont importees et conservees (Complétée, Retournée, Annulée) : aucune ligne n'est perdue a l'import, l'exclusion des retours/annulations se fait au niveau du calcul du CA, pas du stockage"
+    },
+    {
+      "type": "somme",
+      "entite": "Order",
+      "champ": "subtotal",
+      "attendu": 265300.74,
+      "note": "somme brute de toutes les lignes stockees (sans filtre de statut) ; le controle kpi total_revenue ci-dessous verifie le CA net, qui exclut Retournee/Annulee"
+    },
+    {
+      "type": "kpi",
+      "id": "total_revenue",
+      "entites": ["Order"],
+      "attendu": 252521.01,
+      "note": "CA = somme des sous-totaux des lignes au statut Complétée uniquement (Retournée/Annulée exclues par commandeHorsCA)"
+    },
+    {
+      "type": "somme",
+      "entite": "Inventory",
+      "champ": "inventory_value",
+      "attendu": 1134552.0
+    },
+    {
+      "type": "distincts",
+      "entite": "Order",
+      "champ": "succursale",
+      "attendu": 5
+    }
+  ]
+}

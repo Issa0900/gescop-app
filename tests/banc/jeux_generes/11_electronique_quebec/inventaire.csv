@@ -1,0 +1,116 @@
+Date inventaire,Succursale,SKU,Produit,Catégorie,Qté en stock,Coût unitaire,Prix de vente
+2026-08-31,Montréal - Centre-Ville,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,35,620.0,999.99
+2026-08-31,Montréal - Centre-Ville,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,45,540.0,899.99
+2026-08-31,Montréal - Centre-Ville,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,15,310.0,549.99
+2026-08-31,Montréal - Centre-Ville,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,8,480.0,799.99
+2026-08-31,Montréal - Centre-Ville,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,5,390.0,649.99
+2026-08-31,Montréal - Centre-Ville,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,8,950.0,1449.99
+2026-08-31,Montréal - Centre-Ville,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,39,720.0,1099.99
+2026-08-31,Montréal - Centre-Ville,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,41,610.0,949.99
+2026-08-31,Montréal - Centre-Ville,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,36,180.0,279.99
+2026-08-31,Montréal - Centre-Ville,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,190.0,329.99
+2026-08-31,Montréal - Centre-Ville,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,34,210.0,349.99
+2026-08-31,Montréal - Centre-Ville,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,7,340.0,549.99
+2026-08-31,Montréal - Centre-Ville,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,17,1180.0,1799.99
+2026-08-31,Montréal - Centre-Ville,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,25,640.0,999.99
+2026-08-31,Montréal - Centre-Ville,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,5,85.0,149.99
+2026-08-31,Montréal - Centre-Ville,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,45,430.0,649.99
+2026-08-31,Montréal - Centre-Ville,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,25,420.0,629.99
+2026-08-31,Montréal - Centre-Ville,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,39,260.0,399.99
+2026-08-31,Montréal - Centre-Ville,TAB-IPD-APL,iPad 10e génération,Tablettes,36,340.0,549.99
+2026-08-31,Montréal - Centre-Ville,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,44,140.0,229.99
+2026-08-31,Montréal - Centre-Ville,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,19,15.0,34.99
+2026-08-31,Montréal - Centre-Ville,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,39,12.0,39.99
+2026-08-31,Montréal - Centre-Ville,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,22,6.0,19.99
+2026-08-31,Laval - Carrefour,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,34,620.0,999.99
+2026-08-31,Laval - Carrefour,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,36,540.0,899.99
+2026-08-31,Laval - Carrefour,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,14,310.0,549.99
+2026-08-31,Laval - Carrefour,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,35,480.0,799.99
+2026-08-31,Laval - Carrefour,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,32,390.0,649.99
+2026-08-31,Laval - Carrefour,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,27,950.0,1449.99
+2026-08-31,Laval - Carrefour,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,45,720.0,1099.99
+2026-08-31,Laval - Carrefour,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,6,610.0,949.99
+2026-08-31,Laval - Carrefour,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,3,180.0,279.99
+2026-08-31,Laval - Carrefour,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,26,190.0,329.99
+2026-08-31,Laval - Carrefour,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,29,210.0,349.99
+2026-08-31,Laval - Carrefour,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,27,340.0,549.99
+2026-08-31,Laval - Carrefour,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,20,1180.0,1799.99
+2026-08-31,Laval - Carrefour,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,11,640.0,999.99
+2026-08-31,Laval - Carrefour,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,32,85.0,149.99
+2026-08-31,Laval - Carrefour,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,13,430.0,649.99
+2026-08-31,Laval - Carrefour,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,13,420.0,629.99
+2026-08-31,Laval - Carrefour,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,13,260.0,399.99
+2026-08-31,Laval - Carrefour,TAB-IPD-APL,iPad 10e génération,Tablettes,21,340.0,549.99
+2026-08-31,Laval - Carrefour,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,5,140.0,229.99
+2026-08-31,Laval - Carrefour,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,8,15.0,34.99
+2026-08-31,Laval - Carrefour,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,42,12.0,39.99
+2026-08-31,Laval - Carrefour,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,39,6.0,19.99
+2026-08-31,Québec - Sainte-Foy,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,29,620.0,999.99
+2026-08-31,Québec - Sainte-Foy,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,32,540.0,899.99
+2026-08-31,Québec - Sainte-Foy,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,2,310.0,549.99
+2026-08-31,Québec - Sainte-Foy,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,39,480.0,799.99
+2026-08-31,Québec - Sainte-Foy,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,20,390.0,649.99
+2026-08-31,Québec - Sainte-Foy,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,44,950.0,1449.99
+2026-08-31,Québec - Sainte-Foy,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,37,720.0,1099.99
+2026-08-31,Québec - Sainte-Foy,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,39,610.0,949.99
+2026-08-31,Québec - Sainte-Foy,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,23,180.0,279.99
+2026-08-31,Québec - Sainte-Foy,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,19,190.0,329.99
+2026-08-31,Québec - Sainte-Foy,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,42,210.0,349.99
+2026-08-31,Québec - Sainte-Foy,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,30,340.0,549.99
+2026-08-31,Québec - Sainte-Foy,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,2,1180.0,1799.99
+2026-08-31,Québec - Sainte-Foy,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,5,640.0,999.99
+2026-08-31,Québec - Sainte-Foy,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,27,85.0,149.99
+2026-08-31,Québec - Sainte-Foy,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,10,430.0,649.99
+2026-08-31,Québec - Sainte-Foy,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,28,420.0,629.99
+2026-08-31,Québec - Sainte-Foy,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,45,260.0,399.99
+2026-08-31,Québec - Sainte-Foy,TAB-IPD-APL,iPad 10e génération,Tablettes,10,340.0,549.99
+2026-08-31,Québec - Sainte-Foy,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,13,140.0,229.99
+2026-08-31,Québec - Sainte-Foy,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,33,15.0,34.99
+2026-08-31,Québec - Sainte-Foy,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,10,12.0,39.99
+2026-08-31,Québec - Sainte-Foy,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,37,6.0,19.99
+2026-08-31,Gatineau - Les Promenades,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,28,620.0,999.99
+2026-08-31,Gatineau - Les Promenades,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,36,540.0,899.99
+2026-08-31,Gatineau - Les Promenades,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,8,310.0,549.99
+2026-08-31,Gatineau - Les Promenades,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,43,480.0,799.99
+2026-08-31,Gatineau - Les Promenades,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,38,390.0,649.99
+2026-08-31,Gatineau - Les Promenades,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,24,950.0,1449.99
+2026-08-31,Gatineau - Les Promenades,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,11,720.0,1099.99
+2026-08-31,Gatineau - Les Promenades,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,40,610.0,949.99
+2026-08-31,Gatineau - Les Promenades,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,5,180.0,279.99
+2026-08-31,Gatineau - Les Promenades,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,7,190.0,329.99
+2026-08-31,Gatineau - Les Promenades,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,36,210.0,349.99
+2026-08-31,Gatineau - Les Promenades,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,25,340.0,549.99
+2026-08-31,Gatineau - Les Promenades,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,45,1180.0,1799.99
+2026-08-31,Gatineau - Les Promenades,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,10,640.0,999.99
+2026-08-31,Gatineau - Les Promenades,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,35,85.0,149.99
+2026-08-31,Gatineau - Les Promenades,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,36,430.0,649.99
+2026-08-31,Gatineau - Les Promenades,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,20,420.0,629.99
+2026-08-31,Gatineau - Les Promenades,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,10,260.0,399.99
+2026-08-31,Gatineau - Les Promenades,TAB-IPD-APL,iPad 10e génération,Tablettes,11,340.0,549.99
+2026-08-31,Gatineau - Les Promenades,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,22,140.0,229.99
+2026-08-31,Gatineau - Les Promenades,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,31,15.0,34.99
+2026-08-31,Gatineau - Les Promenades,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,42,12.0,39.99
+2026-08-31,Gatineau - Les Promenades,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,31,6.0,19.99
+2026-08-31,Sherbrooke - Plaza,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,28,620.0,999.99
+2026-08-31,Sherbrooke - Plaza,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,39,540.0,899.99
+2026-08-31,Sherbrooke - Plaza,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,22,310.0,549.99
+2026-08-31,Sherbrooke - Plaza,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,480.0,799.99
+2026-08-31,Sherbrooke - Plaza,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,31,390.0,649.99
+2026-08-31,Sherbrooke - Plaza,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,35,950.0,1449.99
+2026-08-31,Sherbrooke - Plaza,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,37,720.0,1099.99
+2026-08-31,Sherbrooke - Plaza,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,28,610.0,949.99
+2026-08-31,Sherbrooke - Plaza,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,44,180.0,279.99
+2026-08-31,Sherbrooke - Plaza,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,37,190.0,329.99
+2026-08-31,Sherbrooke - Plaza,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,3,210.0,349.99
+2026-08-31,Sherbrooke - Plaza,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,19,340.0,549.99
+2026-08-31,Sherbrooke - Plaza,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,15,1180.0,1799.99
+2026-08-31,Sherbrooke - Plaza,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,25,640.0,999.99
+2026-08-31,Sherbrooke - Plaza,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,30,85.0,149.99
+2026-08-31,Sherbrooke - Plaza,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,12,430.0,649.99
+2026-08-31,Sherbrooke - Plaza,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,11,420.0,629.99
+2026-08-31,Sherbrooke - Plaza,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,39,260.0,399.99
+2026-08-31,Sherbrooke - Plaza,TAB-IPD-APL,iPad 10e génération,Tablettes,20,340.0,549.99
+2026-08-31,Sherbrooke - Plaza,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,25,140.0,229.99
+2026-08-31,Sherbrooke - Plaza,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,42,15.0,34.99
+2026-08-31,Sherbrooke - Plaza,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,14,12.0,39.99
+2026-08-31,Sherbrooke - Plaza,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,24,6.0,19.99

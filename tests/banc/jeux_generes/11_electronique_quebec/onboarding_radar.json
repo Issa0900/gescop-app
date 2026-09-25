@@ -1,0 +1,38 @@
+{
+  "_note": "Configuration d'onboarding (profil Company) pour tester le Radar (scanExternalRadar) sur le secteur commerce de détail électronique. Le radar exige company.sector renseigné (base44/functions/scanExternalRadar/entry.ts) ; les autres champs enrichissent la pertinence des signaux trouvés (marché, prix concurrents, technologie, économie).",
+
+  "company": {
+    "name": "ÉlectroPlus Québec",
+    "trade_name": "ÉlectroPlus",
+    "website": "https://electroplus-qc.example.com",
+    "sector": "Commerce de détail — Électronique grand public",
+    "subsector": "Téléviseurs, informatique, téléphonie, électroménagers",
+    "location": "Montréal, Québec, Canada",
+    "employee_count": 85,
+    "business_model": "Vente au détail en succursales physiques et en ligne (click-and-collect)",
+    "products": "Téléviseurs, ordinateurs portables, téléphones intelligents, audio, électroménagers, consoles et jeux vidéo, tablettes, accessoires",
+    "services": "Installation à domicile, garanties prolongées, financement à l'achat, service après-vente",
+    "clientele": "Particuliers grand public et petites entreprises, principalement 25-55 ans, région du Québec",
+    "suppliers": "Samsung Canada, LG Electronics, Sony Canada, Apple Canada, Dell Canada, HP Canada, Bose, Anker, distributeurs régionaux",
+    "revenue": 8500000,
+    "currency": "CAD",
+    "language": "fr",
+    "creation_year": 2016,
+    "target_markets": ["Québec", "Ontario"],
+    "monitored_domains": ["market", "competitors", "commercial", "tech", "economy"],
+    "objectives": [
+      "Améliorer la marge sur les téléviseurs face à la pression des prix en ligne",
+      "Réduire les ruptures de stock sur les produits à forte rotation",
+      "Suivre l'impact des taux d'intérêt sur les ventes financées"
+    ]
+  },
+
+  "competitors": [
+    { "name": "Best Buy Canada", "notes": "Principal concurrent national, présence en ligne forte" },
+    { "name": "Costco Électronique", "notes": "Concurrent sur téléviseurs et électroménagers, prix agressifs" },
+    { "name": "Amazon.ca", "notes": "Concurrence en ligne, livraison rapide" },
+    { "name": "Bureau en Gros", "notes": "Chevauchement sur informatique et accessoires" }
+  ],
+
+  "_comment_utilisation": "Créer d'abord l'enregistrement Company avec ces champs (page Paramètres > Profil de l'entreprise, ou via l'import du dictionnaire d'entreprise), puis ajouter les concurrents dans Paramètres > Concurrents (CompetitorsManager). Une fois company.sector rempli, le bouton 'Lancer le radar' sur la page Radar devient actif et interroge le web (add_context_from_internet=true) pour trouver des signaux réels sur ce secteur et ces concurrents."
+}

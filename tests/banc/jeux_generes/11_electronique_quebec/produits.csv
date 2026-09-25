@@ -1,0 +1,24 @@
+SKU,Nom du produit,Catégorie,Sous-catégorie,Statut,Coût unitaire,Prix de vente
+TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,QLED,actif,620.0,999.99
+TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,UHD,actif,540.0,899.99
+TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,Smart TV,actif,310.0,549.99
+PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,Milieu de gamme,actif,480.0,799.99
+PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,Entrée de gamme,actif,390.0,649.99
+PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,Haut de gamme,actif,950.0,1449.99
+TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,Premium,actif,720.0,1099.99
+TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,Premium,actif,610.0,949.99
+TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,Milieu de gamme,actif,180.0,279.99
+AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,Casques,actif,190.0,329.99
+AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,Écouteurs,actif,210.0,349.99
+AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,Barres de son,actif,340.0,549.99
+ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,Réfrigération,actif,1180.0,1799.99
+ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,Buanderie,actif,640.0,999.99
+ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,Cuisine,actif,85.0,149.99
+JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,Consoles,actif,430.0,649.99
+JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,Consoles,actif,420.0,629.99
+JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,Consoles,actif,260.0,399.99
+TAB-IPD-APL,iPad 10e génération,Tablettes,Grand public,actif,340.0,549.99
+TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,Entrée de gamme,actif,140.0,229.99
+ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,Chargement,actif,15.0,34.99
+ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,Protection,actif,12.0,39.99
+ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,Câblage,actif,6.0,19.99

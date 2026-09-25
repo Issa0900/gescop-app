@@ -1,0 +1,366 @@
+No commande,No ligne,Date,No client,Succursale,Ville,SKU,Produit,Catégorie,Quantité,Prix unitaire,Sous-total,TPS,TVQ,Total,Mode de paiement,Canal,Statut
+CMD-20260001,L1,2026-05-19,CL0006,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Financement,En ligne,Complétée
+CMD-20260001,L2,2026-05-19,CL0006,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Financement,En ligne,Complétée
+CMD-20260002,L1,2026-03-16,CL0115,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,2,899.99,1799.98,90.0,179.55,2069.53,Carte de crédit,En ligne,Complétée
+CMD-20260002,L2,2026-03-16,CL0115,Québec - Sainte-Foy,Québec,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de crédit,En ligne,Complétée
+CMD-20260003,L1,2026-04-13,CL0020,Laval - Carrefour,Laval,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de crédit,Magasin,Complétée
+CMD-20260004,L1,2026-06-30,CL0045,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de crédit,Magasin,Complétée
+CMD-20260005,L1,2026-08-10,CL0070,Sherbrooke - Plaza,Sherbrooke,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de débit,En ligne,Complétée
+CMD-20260005,L2,2026-08-10,CL0070,Sherbrooke - Plaza,Sherbrooke,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260006,L1,2026-05-01,CL0068,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Comptant,En ligne,Complétée
+CMD-20260007,L1,2026-03-25,CL0029,Québec - Sainte-Foy,Québec,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Comptant,Magasin,Complétée
+CMD-20260008,L1,2026-03-26,CL0099,Montréal - Centre-Ville,Montréal,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de crédit,Magasin,Complétée
+CMD-20260008,L2,2026-03-26,CL0099,Montréal - Centre-Ville,Montréal,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Carte de crédit,Magasin,Complétée
+CMD-20260009,L1,2026-04-15,CL0101,Gatineau - Les Promenades,Gatineau,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260010,L1,2026-04-26,CL0098,Sherbrooke - Plaza,Sherbrooke,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,2,1799.99,3599.98,180.0,359.1,4139.08,Carte de crédit,En ligne,Complétée
+CMD-20260010,L2,2026-04-26,CL0098,Sherbrooke - Plaza,Sherbrooke,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260010,L3,2026-04-26,CL0098,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,2,649.99,1299.98,65.0,129.67,1494.65,Carte de crédit,En ligne,Complétée
+CMD-20260011,L1,2026-03-18,CL0087,Laval - Carrefour,Laval,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,2,1449.99,2899.98,145.0,289.27,3334.25,Carte de débit,En ligne,Complétée
+CMD-20260011,L2,2026-03-18,CL0087,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de débit,En ligne,Complétée
+CMD-20260012,L1,2026-05-06,CL0070,Sherbrooke - Plaza,Sherbrooke,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Financement,En ligne,Complétée
+CMD-20260012,L2,2026-05-06,CL0070,Sherbrooke - Plaza,Sherbrooke,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,2,149.99,299.98,15.0,29.92,344.9,Financement,En ligne,Complétée
+CMD-20260012,L3,2026-05-06,CL0070,Sherbrooke - Plaza,Sherbrooke,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Financement,En ligne,Complétée
+CMD-20260013,L1,2026-04-26,CL0120,Laval - Carrefour,Laval,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de débit,En ligne,Complétée
+CMD-20260014,L1,2026-05-21,CL0053,Gatineau - Les Promenades,Gatineau,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de crédit,Magasin,Complétée
+CMD-20260014,L2,2026-05-21,CL0053,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260015,L1,2026-04-23,CL0074,Montréal - Centre-Ville,Montréal,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,Magasin,Complétée
+CMD-20260016,L1,2026-03-02,CL0044,Montréal - Centre-Ville,Montréal,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Comptant,En ligne,Complétée
+CMD-20260016,L2,2026-03-02,CL0044,Montréal - Centre-Ville,Montréal,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Comptant,En ligne,Complétée
+CMD-20260017,L1,2026-03-04,CL0112,Québec - Sainte-Foy,Québec,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,En ligne,Complétée
+CMD-20260018,L1,2026-03-13,CL0094,Sherbrooke - Plaza,Sherbrooke,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Comptant,Magasin,Complétée
+CMD-20260019,L1,2026-08-31,CL0113,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260019,L2,2026-08-31,CL0113,Gatineau - Les Promenades,Gatineau,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,En ligne,Complétée
+CMD-20260020,L1,2026-03-15,CL0006,Québec - Sainte-Foy,Québec,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de débit,En ligne,Complétée
+CMD-20260021,L1,2026-06-07,CL0104,Montréal - Centre-Ville,Montréal,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Comptant,Magasin,Complétée
+CMD-20260022,L1,2026-08-08,CL0084,Sherbrooke - Plaza,Sherbrooke,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Carte de crédit,Magasin,Complétée
+CMD-20260022,L2,2026-08-08,CL0084,Sherbrooke - Plaza,Sherbrooke,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,Magasin,Complétée
+CMD-20260023,L1,2026-08-04,CL0022,Sherbrooke - Plaza,Sherbrooke,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Carte de crédit,En ligne,Complétée
+CMD-20260023,L2,2026-08-04,CL0022,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de crédit,En ligne,Complétée
+CMD-20260024,L1,2026-07-21,CL0052,Sherbrooke - Plaza,Sherbrooke,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Financement,Magasin,Complétée
+CMD-20260025,L1,2026-07-22,CL0034,Laval - Carrefour,Laval,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de crédit,En ligne,Complétée
+CMD-20260026,L1,2026-05-21,CL0065,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Financement,En ligne,Complétée
+CMD-20260027,L1,2026-06-04,CL0092,Sherbrooke - Plaza,Sherbrooke,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de débit,En ligne,Complétée
+CMD-20260027,L2,2026-06-04,CL0092,Sherbrooke - Plaza,Sherbrooke,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de débit,En ligne,Complétée
+CMD-20260028,L1,2026-06-04,CL0033,Québec - Sainte-Foy,Québec,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,En ligne,Complétée
+CMD-20260028,L2,2026-06-04,CL0033,Québec - Sainte-Foy,Québec,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,2,649.99,1299.98,65.0,129.67,1494.65,Financement,En ligne,Complétée
+CMD-20260028,L3,2026-06-04,CL0033,Québec - Sainte-Foy,Québec,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Financement,En ligne,Complétée
+CMD-20260029,L1,2026-04-20,CL0106,Sherbrooke - Plaza,Sherbrooke,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de débit,Magasin,Complétée
+CMD-20260030,L1,2026-08-09,CL0066,Québec - Sainte-Foy,Québec,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Carte de débit,En ligne,Complétée
+CMD-20260030,L2,2026-08-09,CL0066,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de débit,En ligne,Complétée
+CMD-20260031,L1,2026-06-06,CL0085,Québec - Sainte-Foy,Québec,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Carte de débit,Magasin,Complétée
+CMD-20260032,L1,2026-07-24,CL0010,Gatineau - Les Promenades,Gatineau,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Complétée
+CMD-20260032,L2,2026-07-24,CL0010,Gatineau - Les Promenades,Gatineau,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,2,399.99,799.98,40.0,79.8,919.78,Comptant,Magasin,Complétée
+CMD-20260033,L1,2026-03-12,CL0010,Sherbrooke - Plaza,Sherbrooke,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,2,799.99,1599.98,80.0,159.6,1839.58,Carte de débit,En ligne,Complétée
+CMD-20260034,L1,2026-05-28,CL0098,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,2,549.99,1099.98,55.0,109.72,1264.7,Carte de débit,En ligne,Complétée
+CMD-20260035,L1,2026-03-30,CL0081,Sherbrooke - Plaza,Sherbrooke,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Financement,Magasin,Complétée
+CMD-20260035,L2,2026-03-30,CL0081,Sherbrooke - Plaza,Sherbrooke,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,Magasin,Complétée
+CMD-20260036,L1,2026-07-17,CL0001,Montréal - Centre-Ville,Montréal,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,En ligne,Complétée
+CMD-20260037,L1,2026-04-27,CL0051,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,Magasin,Complétée
+CMD-20260038,L1,2026-06-11,CL0091,Québec - Sainte-Foy,Québec,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Financement,En ligne,Complétée
+CMD-20260038,L2,2026-06-11,CL0091,Québec - Sainte-Foy,Québec,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Financement,En ligne,Complétée
+CMD-20260038,L3,2026-06-11,CL0091,Québec - Sainte-Foy,Québec,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Financement,En ligne,Complétée
+CMD-20260039,L1,2026-04-21,CL0044,Gatineau - Les Promenades,Gatineau,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Comptant,En ligne,Complétée
+CMD-20260040,L1,2026-08-13,CL0045,Laval - Carrefour,Laval,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de crédit,Magasin,Complétée
+CMD-20260041,L1,2026-07-09,CL0074,Montréal - Centre-Ville,Montréal,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,2,799.99,1599.98,80.0,159.6,1839.58,Financement,Magasin,Complétée
+CMD-20260042,L1,2026-04-04,CL0081,Laval - Carrefour,Laval,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,2,549.99,1099.98,55.0,109.72,1264.7,Carte de crédit,Magasin,Complétée
+CMD-20260043,L1,2026-08-31,CL0077,Laval - Carrefour,Laval,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,Magasin,Complétée
+CMD-20260043,L2,2026-08-31,CL0077,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de débit,Magasin,Complétée
+CMD-20260043,L3,2026-08-31,CL0077,Laval - Carrefour,Laval,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de débit,Magasin,Complétée
+CMD-20260044,L1,2026-06-06,CL0082,Laval - Carrefour,Laval,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Retournée
+CMD-20260045,L1,2026-07-03,CL0072,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,Magasin,Complétée
+CMD-20260046,L1,2026-04-23,CL0053,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,Magasin,Complétée
+CMD-20260047,L1,2026-07-02,CL0030,Québec - Sainte-Foy,Québec,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Financement,En ligne,Complétée
+CMD-20260048,L1,2026-05-12,CL0095,Laval - Carrefour,Laval,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Comptant,Magasin,Complétée
+CMD-20260049,L1,2026-04-25,CL0023,Québec - Sainte-Foy,Québec,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Comptant,En ligne,Complétée
+CMD-20260049,L2,2026-04-25,CL0023,Québec - Sainte-Foy,Québec,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Comptant,En ligne,Complétée
+CMD-20260050,L1,2026-05-24,CL0076,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,2,329.99,659.98,33.0,65.83,758.81,Carte de crédit,Magasin,Complétée
+CMD-20260051,L1,2026-04-19,CL0058,Gatineau - Les Promenades,Gatineau,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260051,L2,2026-04-19,CL0058,Gatineau - Les Promenades,Gatineau,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Comptant,En ligne,Complétée
+CMD-20260052,L1,2026-08-31,CL0113,Sherbrooke - Plaza,Sherbrooke,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de crédit,Magasin,Complétée
+CMD-20260052,L2,2026-08-31,CL0113,Sherbrooke - Plaza,Sherbrooke,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Carte de crédit,Magasin,Complétée
+CMD-20260052,L3,2026-08-31,CL0113,Sherbrooke - Plaza,Sherbrooke,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260053,L1,2026-04-01,CL0058,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,En ligne,Complétée
+CMD-20260054,L1,2026-05-09,CL0055,Gatineau - Les Promenades,Gatineau,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,2,34.99,69.98,3.5,6.98,80.46,Comptant,En ligne,Complétée
+CMD-20260054,L2,2026-05-09,CL0055,Gatineau - Les Promenades,Gatineau,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Comptant,En ligne,Complétée
+CMD-20260055,L1,2026-07-11,CL0081,Laval - Carrefour,Laval,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,2,649.99,1299.98,65.0,129.67,1494.65,Carte de débit,Magasin,Complétée
+CMD-20260056,L1,2026-08-19,CL0082,Montréal - Centre-Ville,Montréal,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de débit,Magasin,Complétée
+CMD-20260056,L2,2026-08-19,CL0082,Montréal - Centre-Ville,Montréal,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de débit,Magasin,Complétée
+CMD-20260057,L1,2026-05-23,CL0055,Sherbrooke - Plaza,Sherbrooke,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,Magasin,Complétée
+CMD-20260057,L2,2026-05-23,CL0055,Sherbrooke - Plaza,Sherbrooke,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Comptant,Magasin,Complétée
+CMD-20260058,L1,2026-07-28,CL0063,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,En ligne,Complétée
+CMD-20260059,L1,2026-04-30,CL0006,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260059,L2,2026-04-30,CL0006,Gatineau - Les Promenades,Gatineau,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Carte de crédit,Magasin,Complétée
+CMD-20260060,L1,2026-06-15,CL0086,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260061,L1,2026-05-02,CL0035,Montréal - Centre-Ville,Montréal,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Financement,Magasin,Complétée
+CMD-20260062,L1,2026-06-05,CL0117,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,En ligne,Complétée
+CMD-20260062,L2,2026-06-05,CL0117,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,2,34.99,69.98,3.5,6.98,80.46,Comptant,En ligne,Complétée
+CMD-20260063,L1,2026-05-01,CL0082,Laval - Carrefour,Laval,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260063,L2,2026-05-01,CL0082,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Carte de crédit,Magasin,Complétée
+CMD-20260064,L1,2026-07-06,CL0116,Gatineau - Les Promenades,Gatineau,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Carte de débit,En ligne,Complétée
+CMD-20260065,L1,2026-08-08,CL0063,Sherbrooke - Plaza,Sherbrooke,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,Magasin,Complétée
+CMD-20260066,L1,2026-03-26,CL0022,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Complétée
+CMD-20260067,L1,2026-04-10,CL0046,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,2,949.99,1899.98,95.0,189.52,2184.5,Financement,Magasin,Complétée
+CMD-20260067,L2,2026-04-10,CL0046,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Financement,Magasin,Complétée
+CMD-20260068,L1,2026-08-05,CL0066,Sherbrooke - Plaza,Sherbrooke,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de débit,En ligne,Complétée
+CMD-20260068,L2,2026-08-05,CL0066,Sherbrooke - Plaza,Sherbrooke,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,En ligne,Complétée
+CMD-20260069,L1,2026-03-05,CL0004,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,En ligne,Complétée
+CMD-20260070,L1,2026-04-28,CL0108,Montréal - Centre-Ville,Montréal,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de débit,Magasin,Complétée
+CMD-20260071,L1,2026-07-17,CL0015,Sherbrooke - Plaza,Sherbrooke,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Financement,En ligne,Complétée
+CMD-20260072,L1,2026-06-27,CL0026,Gatineau - Les Promenades,Gatineau,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Comptant,En ligne,Complétée
+CMD-20260073,L1,2026-03-09,CL0090,Gatineau - Les Promenades,Gatineau,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de débit,En ligne,Complétée
+CMD-20260074,L1,2026-06-18,CL0113,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Carte de crédit,Magasin,Retournée
+CMD-20260075,L1,2026-03-23,CL0073,Montréal - Centre-Ville,Montréal,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de crédit,En ligne,Complétée
+CMD-20260075,L2,2026-03-23,CL0073,Montréal - Centre-Ville,Montréal,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,2,629.99,1259.98,63.0,125.68,1448.66,Carte de crédit,En ligne,Complétée
+CMD-20260076,L1,2026-04-09,CL0030,Laval - Carrefour,Laval,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,En ligne,Complétée
+CMD-20260076,L2,2026-04-09,CL0030,Laval - Carrefour,Laval,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de crédit,En ligne,Complétée
+CMD-20260076,L3,2026-04-09,CL0030,Laval - Carrefour,Laval,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,En ligne,Complétée
+CMD-20260077,L1,2026-05-15,CL0074,Laval - Carrefour,Laval,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de débit,En ligne,Complétée
+CMD-20260078,L1,2026-03-23,CL0009,Montréal - Centre-Ville,Montréal,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,2,799.99,1599.98,80.0,159.6,1839.58,Financement,En ligne,Complétée
+CMD-20260079,L1,2026-08-19,CL0031,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de débit,En ligne,Complétée
+CMD-20260079,L2,2026-08-19,CL0031,Gatineau - Les Promenades,Gatineau,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,En ligne,Complétée
+CMD-20260080,L1,2026-03-02,CL0053,Laval - Carrefour,Laval,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de crédit,Magasin,Complétée
+CMD-20260081,L1,2026-08-03,CL0072,Québec - Sainte-Foy,Québec,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,Magasin,Complétée
+CMD-20260081,L2,2026-08-03,CL0072,Québec - Sainte-Foy,Québec,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260082,L1,2026-04-09,CL0053,Québec - Sainte-Foy,Québec,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Carte de crédit,Magasin,Complétée
+CMD-20260082,L2,2026-04-09,CL0053,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de crédit,Magasin,Complétée
+CMD-20260082,L3,2026-04-09,CL0053,Québec - Sainte-Foy,Québec,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,2,399.99,799.98,40.0,79.8,919.78,Carte de crédit,Magasin,Complétée
+CMD-20260083,L1,2026-07-01,CL0115,Québec - Sainte-Foy,Québec,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Financement,En ligne,Complétée
+CMD-20260083,L2,2026-07-01,CL0115,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,En ligne,Complétée
+CMD-20260084,L1,2026-05-27,CL0093,Gatineau - Les Promenades,Gatineau,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Comptant,Magasin,Complétée
+CMD-20260084,L2,2026-05-27,CL0093,Gatineau - Les Promenades,Gatineau,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Complétée
+CMD-20260085,L1,2026-06-16,CL0099,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260086,L1,2026-06-28,CL0115,Sherbrooke - Plaza,Sherbrooke,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,En ligne,Complétée
+CMD-20260087,L1,2026-05-22,CL0026,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de crédit,Magasin,Complétée
+CMD-20260088,L1,2026-04-19,CL0120,Gatineau - Les Promenades,Gatineau,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,2,1449.99,2899.98,145.0,289.27,3334.25,Comptant,Magasin,Complétée
+CMD-20260089,L1,2026-05-28,CL0093,Montréal - Centre-Ville,Montréal,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,Magasin,Complétée
+CMD-20260090,L1,2026-03-07,CL0038,Laval - Carrefour,Laval,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260091,L1,2026-06-21,CL0007,Gatineau - Les Promenades,Gatineau,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,En ligne,Complétée
+CMD-20260092,L1,2026-04-09,CL0089,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Financement,En ligne,Complétée
+CMD-20260093,L1,2026-06-09,CL0106,Gatineau - Les Promenades,Gatineau,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,2,39.99,79.98,4.0,7.98,91.96,Carte de crédit,En ligne,Complétée
+CMD-20260093,L2,2026-06-09,CL0106,Gatineau - Les Promenades,Gatineau,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de crédit,En ligne,Complétée
+CMD-20260094,L1,2026-08-28,CL0041,Québec - Sainte-Foy,Québec,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de débit,En ligne,Complétée
+CMD-20260094,L2,2026-08-28,CL0041,Québec - Sainte-Foy,Québec,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,En ligne,Complétée
+CMD-20260095,L1,2026-03-22,CL0016,Québec - Sainte-Foy,Québec,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de crédit,En ligne,Annulée
+CMD-20260096,L1,2026-07-24,CL0106,Gatineau - Les Promenades,Gatineau,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Comptant,Magasin,Complétée
+CMD-20260097,L1,2026-06-22,CL0100,Laval - Carrefour,Laval,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de débit,En ligne,Complétée
+CMD-20260097,L2,2026-06-22,CL0100,Laval - Carrefour,Laval,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de débit,En ligne,Complétée
+CMD-20260098,L1,2026-05-14,CL0118,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,En ligne,Retournée
+CMD-20260099,L1,2026-04-20,CL0025,Laval - Carrefour,Laval,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Comptant,Magasin,Complétée
+CMD-20260100,L1,2026-05-23,CL0087,Gatineau - Les Promenades,Gatineau,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Comptant,Magasin,Complétée
+CMD-20260101,L1,2026-04-06,CL0045,Québec - Sainte-Foy,Québec,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,Magasin,Complétée
+CMD-20260101,L2,2026-04-06,CL0045,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,2,549.99,1099.98,55.0,109.72,1264.7,Comptant,Magasin,Complétée
+CMD-20260102,L1,2026-03-20,CL0047,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de débit,Magasin,Complétée
+CMD-20260103,L1,2026-07-14,CL0061,Montréal - Centre-Ville,Montréal,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,2,549.99,1099.98,55.0,109.72,1264.7,Carte de crédit,En ligne,Complétée
+CMD-20260104,L1,2026-05-26,CL0008,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Financement,Magasin,Complétée
+CMD-20260105,L1,2026-05-20,CL0033,Gatineau - Les Promenades,Gatineau,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Financement,Magasin,Retournée
+CMD-20260106,L1,2026-07-22,CL0099,Sherbrooke - Plaza,Sherbrooke,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de débit,En ligne,Complétée
+CMD-20260106,L2,2026-07-22,CL0099,Sherbrooke - Plaza,Sherbrooke,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de débit,En ligne,Complétée
+CMD-20260107,L1,2026-05-03,CL0080,Laval - Carrefour,Laval,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,Magasin,Complétée
+CMD-20260108,L1,2026-03-18,CL0075,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,Magasin,Complétée
+CMD-20260109,L1,2026-04-22,CL0051,Gatineau - Les Promenades,Gatineau,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de crédit,Magasin,Complétée
+CMD-20260109,L2,2026-04-22,CL0051,Gatineau - Les Promenades,Gatineau,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de crédit,Magasin,Complétée
+CMD-20260110,L1,2026-08-09,CL0016,Laval - Carrefour,Laval,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,2,649.99,1299.98,65.0,129.67,1494.65,Carte de débit,En ligne,Complétée
+CMD-20260111,L1,2026-08-11,CL0012,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,En ligne,Complétée
+CMD-20260112,L1,2026-03-05,CL0018,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260112,L2,2026-03-05,CL0018,Québec - Sainte-Foy,Québec,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,Magasin,Complétée
+CMD-20260113,L1,2026-03-20,CL0099,Gatineau - Les Promenades,Gatineau,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Financement,En ligne,Annulée
+CMD-20260114,L1,2026-03-05,CL0047,Laval - Carrefour,Laval,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Comptant,En ligne,Complétée
+CMD-20260115,L1,2026-03-13,CL0105,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Retournée
+CMD-20260116,L1,2026-04-24,CL0041,Québec - Sainte-Foy,Québec,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260116,L2,2026-04-24,CL0041,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,En ligne,Complétée
+CMD-20260117,L1,2026-06-23,CL0115,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,En ligne,Complétée
+CMD-20260118,L1,2026-04-19,CL0012,Québec - Sainte-Foy,Québec,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Annulée
+CMD-20260119,L1,2026-03-28,CL0049,Gatineau - Les Promenades,Gatineau,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,2,649.99,1299.98,65.0,129.67,1494.65,Carte de débit,En ligne,Complétée
+CMD-20260120,L1,2026-05-11,CL0032,Laval - Carrefour,Laval,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Comptant,En ligne,Complétée
+CMD-20260121,L1,2026-07-14,CL0101,Gatineau - Les Promenades,Gatineau,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Financement,En ligne,Complétée
+CMD-20260122,L1,2026-04-14,CL0007,Laval - Carrefour,Laval,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,2,34.99,69.98,3.5,6.98,80.46,Comptant,En ligne,Complétée
+CMD-20260122,L2,2026-04-14,CL0007,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,En ligne,Complétée
+CMD-20260123,L1,2026-06-13,CL0010,Gatineau - Les Promenades,Gatineau,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Comptant,Magasin,Complétée
+CMD-20260124,L1,2026-07-14,CL0070,Montréal - Centre-Ville,Montréal,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de débit,En ligne,Complétée
+CMD-20260125,L1,2026-06-13,CL0087,Laval - Carrefour,Laval,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de débit,En ligne,Complétée
+CMD-20260125,L2,2026-06-13,CL0087,Laval - Carrefour,Laval,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260126,L1,2026-08-30,CL0031,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,Magasin,Complétée
+CMD-20260126,L2,2026-08-30,CL0031,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,2,549.99,1099.98,55.0,109.72,1264.7,Financement,Magasin,Complétée
+CMD-20260127,L1,2026-04-17,CL0050,Sherbrooke - Plaza,Sherbrooke,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Comptant,En ligne,Complétée
+CMD-20260127,L2,2026-04-17,CL0050,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,En ligne,Complétée
+CMD-20260128,L1,2026-07-21,CL0040,Québec - Sainte-Foy,Québec,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,2,34.99,69.98,3.5,6.98,80.46,Financement,Magasin,Complétée
+CMD-20260129,L1,2026-05-15,CL0082,Laval - Carrefour,Laval,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Comptant,Magasin,Complétée
+CMD-20260129,L2,2026-05-15,CL0082,Laval - Carrefour,Laval,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,2,949.99,1899.98,95.0,189.52,2184.5,Comptant,Magasin,Complétée
+CMD-20260130,L1,2026-07-09,CL0092,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Financement,En ligne,Complétée
+CMD-20260130,L2,2026-07-09,CL0092,Québec - Sainte-Foy,Québec,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Financement,En ligne,Complétée
+CMD-20260131,L1,2026-04-21,CL0105,Laval - Carrefour,Laval,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Comptant,En ligne,Complétée
+CMD-20260132,L1,2026-04-12,CL0020,Gatineau - Les Promenades,Gatineau,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Financement,En ligne,Complétée
+CMD-20260133,L1,2026-07-10,CL0105,Gatineau - Les Promenades,Gatineau,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Financement,Magasin,Complétée
+CMD-20260134,L1,2026-08-02,CL0004,Montréal - Centre-Ville,Montréal,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Comptant,En ligne,Complétée
+CMD-20260135,L1,2026-08-30,CL0118,Sherbrooke - Plaza,Sherbrooke,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Financement,Magasin,Complétée
+CMD-20260136,L1,2026-03-04,CL0030,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,2,649.99,1299.98,65.0,129.67,1494.65,Comptant,Magasin,Complétée
+CMD-20260137,L1,2026-08-15,CL0011,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Comptant,En ligne,Complétée
+CMD-20260138,L1,2026-06-14,CL0061,Sherbrooke - Plaza,Sherbrooke,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,Magasin,Complétée
+CMD-20260139,L1,2026-04-25,CL0111,Laval - Carrefour,Laval,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260140,L1,2026-03-15,CL0091,Sherbrooke - Plaza,Sherbrooke,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de crédit,En ligne,Complétée
+CMD-20260140,L2,2026-03-15,CL0091,Sherbrooke - Plaza,Sherbrooke,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,2,999.99,1999.98,100.0,199.5,2299.48,Carte de crédit,En ligne,Complétée
+CMD-20260141,L1,2026-07-19,CL0009,Montréal - Centre-Ville,Montréal,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,2,349.99,699.98,35.0,69.82,804.8,Carte de débit,Magasin,Complétée
+CMD-20260142,L1,2026-08-29,CL0040,Sherbrooke - Plaza,Sherbrooke,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Comptant,Magasin,Complétée
+CMD-20260143,L1,2026-07-04,CL0067,Québec - Sainte-Foy,Québec,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de débit,Magasin,Complétée
+CMD-20260143,L2,2026-07-04,CL0067,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,2,899.99,1799.98,90.0,179.55,2069.53,Carte de débit,Magasin,Complétée
+CMD-20260144,L1,2026-08-31,CL0027,Québec - Sainte-Foy,Québec,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,Magasin,Complétée
+CMD-20260144,L2,2026-08-31,CL0027,Québec - Sainte-Foy,Québec,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,2,799.99,1599.98,80.0,159.6,1839.58,Comptant,Magasin,Complétée
+CMD-20260145,L1,2026-06-18,CL0033,Sherbrooke - Plaza,Sherbrooke,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260145,L2,2026-06-18,CL0033,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,En ligne,Complétée
+CMD-20260146,L1,2026-07-09,CL0028,Montréal - Centre-Ville,Montréal,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,2,549.99,1099.98,55.0,109.72,1264.7,Carte de débit,Magasin,Complétée
+CMD-20260147,L1,2026-05-01,CL0111,Sherbrooke - Plaza,Sherbrooke,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Financement,Magasin,Complétée
+CMD-20260148,L1,2026-04-25,CL0120,Montréal - Centre-Ville,Montréal,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260149,L1,2026-06-23,CL0036,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Carte de crédit,En ligne,Complétée
+CMD-20260150,L1,2026-05-06,CL0016,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de débit,Magasin,Complétée
+CMD-20260151,L1,2026-08-30,CL0011,Sherbrooke - Plaza,Sherbrooke,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,Magasin,Complétée
+CMD-20260151,L2,2026-08-30,CL0011,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260152,L1,2026-07-23,CL0107,Québec - Sainte-Foy,Québec,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,En ligne,Complétée
+CMD-20260153,L1,2026-07-19,CL0077,Laval - Carrefour,Laval,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Financement,Magasin,Retournée
+CMD-20260154,L1,2026-08-09,CL0001,Laval - Carrefour,Laval,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Financement,En ligne,Complétée
+CMD-20260154,L2,2026-08-09,CL0001,Laval - Carrefour,Laval,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Financement,En ligne,Complétée
+CMD-20260155,L1,2026-04-19,CL0067,Laval - Carrefour,Laval,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de crédit,Magasin,Complétée
+CMD-20260155,L2,2026-04-19,CL0067,Laval - Carrefour,Laval,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de crédit,Magasin,Complétée
+CMD-20260156,L1,2026-06-15,CL0013,Québec - Sainte-Foy,Québec,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Comptant,En ligne,Complétée
+CMD-20260157,L1,2026-05-03,CL0074,Laval - Carrefour,Laval,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Carte de débit,Magasin,Complétée
+CMD-20260158,L1,2026-05-28,CL0046,Laval - Carrefour,Laval,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de débit,En ligne,Complétée
+CMD-20260159,L1,2026-03-04,CL0073,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Complétée
+CMD-20260160,L1,2026-08-13,CL0079,Québec - Sainte-Foy,Québec,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Comptant,Magasin,Complétée
+CMD-20260161,L1,2026-08-10,CL0025,Québec - Sainte-Foy,Québec,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Comptant,Magasin,Complétée
+CMD-20260161,L2,2026-08-10,CL0025,Québec - Sainte-Foy,Québec,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Comptant,Magasin,Complétée
+CMD-20260162,L1,2026-06-27,CL0021,Gatineau - Les Promenades,Gatineau,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Financement,Magasin,Complétée
+CMD-20260163,L1,2026-03-30,CL0018,Laval - Carrefour,Laval,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,2,149.99,299.98,15.0,29.92,344.9,Comptant,En ligne,Complétée
+CMD-20260164,L1,2026-06-09,CL0108,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Comptant,Magasin,Complétée
+CMD-20260165,L1,2026-03-05,CL0003,Montréal - Centre-Ville,Montréal,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,Magasin,Complétée
+CMD-20260166,L1,2026-06-05,CL0027,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Financement,Magasin,Complétée
+CMD-20260167,L1,2026-08-04,CL0078,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,2,549.99,1099.98,55.0,109.72,1264.7,Carte de crédit,En ligne,Complétée
+CMD-20260168,L1,2026-08-30,CL0070,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,2,399.99,799.98,40.0,79.8,919.78,Carte de débit,Magasin,Complétée
+CMD-20260169,L1,2026-04-05,CL0112,Québec - Sainte-Foy,Québec,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,2,899.99,1799.98,90.0,179.55,2069.53,Financement,En ligne,Complétée
+CMD-20260170,L1,2026-08-09,CL0001,Gatineau - Les Promenades,Gatineau,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de débit,En ligne,Complétée
+CMD-20260170,L2,2026-08-09,CL0001,Gatineau - Les Promenades,Gatineau,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de débit,En ligne,Complétée
+CMD-20260170,L3,2026-08-09,CL0001,Gatineau - Les Promenades,Gatineau,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de débit,En ligne,Complétée
+CMD-20260171,L1,2026-04-30,CL0024,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Comptant,En ligne,Retournée
+CMD-20260171,L2,2026-04-30,CL0024,Laval - Carrefour,Laval,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Comptant,En ligne,Retournée
+CMD-20260172,L1,2026-05-23,CL0042,Montréal - Centre-Ville,Montréal,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Financement,Magasin,Complétée
+CMD-20260173,L1,2026-07-11,CL0101,Sherbrooke - Plaza,Sherbrooke,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Financement,Magasin,Complétée
+CMD-20260174,L1,2026-08-07,CL0002,Sherbrooke - Plaza,Sherbrooke,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Financement,Magasin,Complétée
+CMD-20260175,L1,2026-04-24,CL0068,Laval - Carrefour,Laval,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260176,L1,2026-08-05,CL0046,Québec - Sainte-Foy,Québec,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,2,549.99,1099.98,55.0,109.72,1264.7,Comptant,En ligne,Complétée
+CMD-20260176,L2,2026-08-05,CL0046,Québec - Sainte-Foy,Québec,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Comptant,En ligne,Complétée
+CMD-20260176,L3,2026-08-05,CL0046,Québec - Sainte-Foy,Québec,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Comptant,En ligne,Complétée
+CMD-20260177,L1,2026-04-03,CL0033,Gatineau - Les Promenades,Gatineau,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,En ligne,Complétée
+CMD-20260178,L1,2026-08-16,CL0001,Montréal - Centre-Ville,Montréal,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260179,L1,2026-08-25,CL0111,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de débit,Magasin,Complétée
+CMD-20260179,L2,2026-08-25,CL0111,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,2,399.99,799.98,40.0,79.8,919.78,Carte de débit,Magasin,Complétée
+CMD-20260180,L1,2026-07-03,CL0113,Laval - Carrefour,Laval,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,2,349.99,699.98,35.0,69.82,804.8,Carte de crédit,Magasin,Complétée
+CMD-20260181,L1,2026-06-17,CL0119,Québec - Sainte-Foy,Québec,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de débit,En ligne,Complétée
+CMD-20260181,L2,2026-06-17,CL0119,Québec - Sainte-Foy,Québec,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260182,L1,2026-08-08,CL0007,Sherbrooke - Plaza,Sherbrooke,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260183,L1,2026-07-30,CL0072,Gatineau - Les Promenades,Gatineau,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,En ligne,Complétée
+CMD-20260184,L1,2026-06-26,CL0105,Gatineau - Les Promenades,Gatineau,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de débit,Magasin,Complétée
+CMD-20260185,L1,2026-07-12,CL0105,Montréal - Centre-Ville,Montréal,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de crédit,Magasin,Complétée
+CMD-20260186,L1,2026-07-10,CL0016,Laval - Carrefour,Laval,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de crédit,Magasin,Complétée
+CMD-20260186,L2,2026-07-10,CL0016,Laval - Carrefour,Laval,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Carte de crédit,Magasin,Complétée
+CMD-20260187,L1,2026-08-30,CL0043,Gatineau - Les Promenades,Gatineau,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Carte de débit,En ligne,Complétée
+CMD-20260188,L1,2026-04-27,CL0106,Gatineau - Les Promenades,Gatineau,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Comptant,En ligne,Complétée
+CMD-20260189,L1,2026-06-14,CL0091,Montréal - Centre-Ville,Montréal,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de débit,Magasin,Complétée
+CMD-20260190,L1,2026-06-13,CL0095,Montréal - Centre-Ville,Montréal,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Financement,En ligne,Complétée
+CMD-20260191,L1,2026-04-24,CL0106,Laval - Carrefour,Laval,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,En ligne,Complétée
+CMD-20260192,L1,2026-06-03,CL0101,Sherbrooke - Plaza,Sherbrooke,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Comptant,En ligne,Complétée
+CMD-20260193,L1,2026-06-27,CL0095,Laval - Carrefour,Laval,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Carte de crédit,En ligne,Complétée
+CMD-20260193,L2,2026-06-27,CL0095,Laval - Carrefour,Laval,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260194,L1,2026-05-18,CL0066,Montréal - Centre-Ville,Montréal,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de crédit,Magasin,Complétée
+CMD-20260194,L2,2026-05-18,CL0066,Montréal - Centre-Ville,Montréal,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de crédit,Magasin,Complétée
+CMD-20260195,L1,2026-08-04,CL0011,Gatineau - Les Promenades,Gatineau,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,1,899.99,899.99,45.0,89.77,1034.76,Carte de débit,En ligne,Complétée
+CMD-20260195,L2,2026-08-04,CL0011,Gatineau - Les Promenades,Gatineau,ACC-CHG-APL,Chargeur mural USB-C Apple,Accessoires,1,34.99,34.99,1.75,3.49,40.23,Carte de débit,En ligne,Complétée
+CMD-20260196,L1,2026-04-28,CL0102,Montréal - Centre-Ville,Montréal,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de crédit,Magasin,Complétée
+CMD-20260197,L1,2026-03-30,CL0036,Laval - Carrefour,Laval,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Comptant,En ligne,Complétée
+CMD-20260198,L1,2026-03-22,CL0116,Sherbrooke - Plaza,Sherbrooke,TAB-IPD-APL,iPad 10e génération,Tablettes,2,549.99,1099.98,55.0,109.72,1264.7,Carte de crédit,Magasin,Complétée
+CMD-20260198,L2,2026-03-22,CL0116,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260199,L1,2026-04-27,CL0007,Québec - Sainte-Foy,Québec,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Comptant,En ligne,Complétée
+CMD-20260200,L1,2026-07-21,CL0077,Sherbrooke - Plaza,Sherbrooke,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de crédit,En ligne,Complétée
+CMD-20260201,L1,2026-06-03,CL0022,Gatineau - Les Promenades,Gatineau,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Financement,Magasin,Complétée
+CMD-20260202,L1,2026-06-29,CL0050,Sherbrooke - Plaza,Sherbrooke,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Comptant,Magasin,Complétée
+CMD-20260203,L1,2026-05-21,CL0003,Québec - Sainte-Foy,Québec,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,2,649.99,1299.98,65.0,129.67,1494.65,Carte de débit,Magasin,Complétée
+CMD-20260204,L1,2026-05-05,CL0088,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,En ligne,Complétée
+CMD-20260205,L1,2026-03-24,CL0099,Gatineau - Les Promenades,Gatineau,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,En ligne,Complétée
+CMD-20260206,L1,2026-06-05,CL0034,Montréal - Centre-Ville,Montréal,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Comptant,En ligne,Annulée
+CMD-20260207,L1,2026-07-24,CL0011,Montréal - Centre-Ville,Montréal,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Comptant,En ligne,Complétée
+CMD-20260208,L1,2026-05-19,CL0082,Québec - Sainte-Foy,Québec,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Financement,Magasin,Complétée
+CMD-20260208,L2,2026-05-19,CL0082,Québec - Sainte-Foy,Québec,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Financement,Magasin,Complétée
+CMD-20260209,L1,2026-08-01,CL0034,Gatineau - Les Promenades,Gatineau,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260210,L1,2026-06-02,CL0102,Québec - Sainte-Foy,Québec,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,Magasin,Complétée
+CMD-20260211,L1,2026-05-01,CL0092,Sherbrooke - Plaza,Sherbrooke,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,En ligne,Complétée
+CMD-20260212,L1,2026-08-13,CL0086,Laval - Carrefour,Laval,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Comptant,Magasin,Complétée
+CMD-20260213,L1,2026-07-26,CL0016,Québec - Sainte-Foy,Québec,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,2,549.99,1099.98,55.0,109.72,1264.7,Comptant,Magasin,Complétée
+CMD-20260214,L1,2026-08-10,CL0055,Gatineau - Les Promenades,Gatineau,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Carte de débit,Magasin,Complétée
+CMD-20260214,L2,2026-08-10,CL0055,Gatineau - Les Promenades,Gatineau,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,2,349.99,699.98,35.0,69.82,804.8,Carte de débit,Magasin,Complétée
+CMD-20260215,L1,2026-04-28,CL0058,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,En ligne,Complétée
+CMD-20260216,L1,2026-08-03,CL0089,Québec - Sainte-Foy,Québec,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Comptant,En ligne,Complétée
+CMD-20260217,L1,2026-05-31,CL0048,Québec - Sainte-Foy,Québec,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,2,229.99,459.98,23.0,45.88,528.86,Financement,Magasin,Complétée
+CMD-20260218,L1,2026-05-24,CL0081,Gatineau - Les Promenades,Gatineau,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Financement,En ligne,Complétée
+CMD-20260219,L1,2026-08-13,CL0112,Laval - Carrefour,Laval,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Comptant,En ligne,Complétée
+CMD-20260220,L1,2026-05-25,CL0021,Laval - Carrefour,Laval,JEU-SW-NIN,Console Nintendo Switch OLED,Consoles et jeux vidéo,1,399.99,399.99,20.0,39.9,459.89,Carte de crédit,En ligne,Complétée
+CMD-20260221,L1,2026-08-20,CL0105,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Carte de crédit,Magasin,Complétée
+CMD-20260221,L2,2026-08-20,CL0105,Sherbrooke - Plaza,Sherbrooke,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260222,L1,2026-05-10,CL0016,Sherbrooke - Plaza,Sherbrooke,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de crédit,En ligne,Retournée
+CMD-20260222,L2,2026-05-10,CL0016,Sherbrooke - Plaza,Sherbrooke,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Carte de crédit,En ligne,Retournée
+CMD-20260223,L1,2026-04-25,CL0012,Sherbrooke - Plaza,Sherbrooke,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,2,39.99,79.98,4.0,7.98,91.96,Comptant,Magasin,Annulée
+CMD-20260223,L2,2026-04-25,CL0012,Sherbrooke - Plaza,Sherbrooke,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Comptant,Magasin,Annulée
+CMD-20260223,L3,2026-04-25,CL0012,Sherbrooke - Plaza,Sherbrooke,TV-65U-LG,Téléviseur LG UHD 65po,Téléviseurs,2,899.99,1799.98,90.0,179.55,2069.53,Comptant,Magasin,Annulée
+CMD-20260224,L1,2026-05-04,CL0079,Québec - Sainte-Foy,Québec,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Financement,Magasin,Complétée
+CMD-20260225,L1,2026-05-13,CL0037,Sherbrooke - Plaza,Sherbrooke,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,En ligne,Complétée
+CMD-20260225,L2,2026-05-13,CL0037,Sherbrooke - Plaza,Sherbrooke,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,1,1099.99,1099.99,55.0,109.72,1264.71,Financement,En ligne,Complétée
+CMD-20260226,L1,2026-05-23,CL0003,Québec - Sainte-Foy,Québec,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Carte de débit,Magasin,Complétée
+CMD-20260227,L1,2026-03-23,CL0020,Québec - Sainte-Foy,Québec,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,En ligne,Complétée
+CMD-20260227,L2,2026-03-23,CL0020,Québec - Sainte-Foy,Québec,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260227,L3,2026-03-23,CL0020,Québec - Sainte-Foy,Québec,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,2,1449.99,2899.98,145.0,289.27,3334.25,Carte de crédit,En ligne,Complétée
+CMD-20260228,L1,2026-05-09,CL0114,Laval - Carrefour,Laval,TAB-TABA-SAM,Samsung Galaxy Tab A9,Tablettes,1,229.99,229.99,11.5,22.94,264.43,Carte de débit,En ligne,Complétée
+CMD-20260228,L2,2026-05-09,CL0114,Laval - Carrefour,Laval,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de débit,En ligne,Complétée
+CMD-20260229,L1,2026-05-23,CL0081,Montréal - Centre-Ville,Montréal,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de crédit,Magasin,Complétée
+CMD-20260230,L1,2026-05-10,CL0007,Sherbrooke - Plaza,Sherbrooke,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Carte de crédit,Magasin,Complétée
+CMD-20260231,L1,2026-05-23,CL0041,Montréal - Centre-Ville,Montréal,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,2,649.99,1299.98,65.0,129.67,1494.65,Financement,En ligne,Complétée
+CMD-20260231,L2,2026-05-23,CL0041,Montréal - Centre-Ville,Montréal,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Financement,En ligne,Complétée
+CMD-20260232,L1,2026-06-01,CL0043,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,2,949.99,1899.98,95.0,189.52,2184.5,Carte de débit,Magasin,Complétée
+CMD-20260233,L1,2026-07-15,CL0014,Montréal - Centre-Ville,Montréal,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Carte de débit,Magasin,Complétée
+CMD-20260234,L1,2026-07-05,CL0008,Montréal - Centre-Ville,Montréal,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Financement,En ligne,Complétée
+CMD-20260235,L1,2026-05-01,CL0023,Laval - Carrefour,Laval,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Carte de débit,En ligne,Complétée
+CMD-20260236,L1,2026-08-09,CL0050,Québec - Sainte-Foy,Québec,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260237,L1,2026-04-02,CL0106,Laval - Carrefour,Laval,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Comptant,En ligne,Complétée
+CMD-20260237,L2,2026-04-02,CL0106,Laval - Carrefour,Laval,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Comptant,En ligne,Complétée
+CMD-20260238,L1,2026-07-05,CL0035,Sherbrooke - Plaza,Sherbrooke,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,2,279.99,559.98,28.0,55.86,643.84,Carte de crédit,Magasin,Complétée
+CMD-20260239,L1,2026-04-08,CL0011,Sherbrooke - Plaza,Sherbrooke,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Comptant,En ligne,Complétée
+CMD-20260239,L2,2026-04-08,CL0011,Sherbrooke - Plaza,Sherbrooke,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260239,L3,2026-04-08,CL0011,Sherbrooke - Plaza,Sherbrooke,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Comptant,En ligne,Complétée
+CMD-20260240,L1,2026-06-10,CL0030,Laval - Carrefour,Laval,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Carte de crédit,En ligne,Annulée
+CMD-20260240,L2,2026-06-10,CL0030,Laval - Carrefour,Laval,PORT-15-DELL,Ordinateur portable Dell Inspiron 15,Ordinateurs portables,1,799.99,799.99,40.0,79.8,919.79,Carte de crédit,En ligne,Annulée
+CMD-20260240,L3,2026-06-10,CL0030,Laval - Carrefour,Laval,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Annulée
+CMD-20260241,L1,2026-05-04,CL0046,Laval - Carrefour,Laval,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Comptant,Magasin,Complétée
+CMD-20260242,L1,2026-06-12,CL0062,Gatineau - Les Promenades,Gatineau,JEU-PS5-SON,Console Sony PlayStation 5,Consoles et jeux vidéo,1,649.99,649.99,32.5,64.84,747.33,Financement,En ligne,Retournée
+CMD-20260242,L2,2026-06-12,CL0062,Gatineau - Les Promenades,Gatineau,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Financement,En ligne,Retournée
+CMD-20260243,L1,2026-03-18,CL0092,Sherbrooke - Plaza,Sherbrooke,ACC-CAB-ANK,Câble USB-C Anker 2m,Accessoires,1,19.99,19.99,1.0,1.99,22.98,Comptant,En ligne,Complétée
+CMD-20260244,L1,2026-05-02,CL0117,Laval - Carrefour,Laval,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,Magasin,Complétée
+CMD-20260244,L2,2026-05-02,CL0117,Laval - Carrefour,Laval,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,2,549.99,1099.98,55.0,109.72,1264.7,Financement,Magasin,Complétée
+CMD-20260245,L1,2026-08-15,CL0040,Montréal - Centre-Ville,Montréal,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Financement,Magasin,Complétée
+CMD-20260245,L2,2026-08-15,CL0040,Montréal - Centre-Ville,Montréal,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Financement,Magasin,Complétée
+CMD-20260245,L3,2026-08-15,CL0040,Montréal - Centre-Ville,Montréal,ACC-ETU-OTB,Étui de protection OtterBox,Accessoires,1,39.99,39.99,2.0,3.99,45.98,Financement,Magasin,Complétée
+CMD-20260246,L1,2026-04-14,CL0091,Sherbrooke - Plaza,Sherbrooke,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Financement,En ligne,Complétée
+CMD-20260247,L1,2026-07-28,CL0079,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Comptant,En ligne,Complétée
+CMD-20260248,L1,2026-04-26,CL0117,Laval - Carrefour,Laval,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Comptant,Magasin,Complétée
+CMD-20260248,L2,2026-04-26,CL0117,Laval - Carrefour,Laval,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Comptant,Magasin,Complétée
+CMD-20260249,L1,2026-08-31,CL0082,Laval - Carrefour,Laval,TAB-IPD-APL,iPad 10e génération,Tablettes,1,549.99,549.99,27.5,54.86,632.35,Carte de débit,En ligne,Complétée
+CMD-20260249,L2,2026-08-31,CL0082,Laval - Carrefour,Laval,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,1,999.99,999.99,50.0,99.75,1149.74,Carte de débit,En ligne,Complétée
+CMD-20260250,L1,2026-05-30,CL0077,Sherbrooke - Plaza,Sherbrooke,PORT-16-APL,MacBook Air 13po M3,Ordinateurs portables,1,1449.99,1449.99,72.5,144.64,1667.13,Financement,Magasin,Complétée
+CMD-20260251,L1,2026-05-07,CL0068,Montréal - Centre-Ville,Montréal,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,En ligne,Complétée
+CMD-20260251,L2,2026-05-07,CL0068,Montréal - Centre-Ville,Montréal,TV-55Q-SAM,Téléviseur Samsung QLED 55po,Téléviseurs,2,999.99,1999.98,100.0,199.5,2299.48,Carte de crédit,En ligne,Complétée
+CMD-20260252,L1,2026-08-26,CL0104,Montréal - Centre-Ville,Montréal,TEL-A15-SAM,Samsung Galaxy A15,Téléphones intelligents,1,279.99,279.99,14.0,27.93,321.92,Financement,Magasin,Complétée
+CMD-20260253,L1,2026-04-05,CL0086,Québec - Sainte-Foy,Québec,ELM-FRI-SAM,Réfrigérateur Samsung 26pi3,Électroménagers,1,1799.99,1799.99,90.0,179.55,2069.54,Carte de débit,Magasin,Complétée
+CMD-20260254,L1,2026-05-27,CL0069,Gatineau - Les Promenades,Gatineau,AUD-QC45-BOS,Casque Bose QuietComfort 45,Audio et casques,1,329.99,329.99,16.5,32.92,379.41,Financement,Magasin,Retournée
+CMD-20260255,L1,2026-07-06,CL0037,Montréal - Centre-Ville,Montréal,PORT-14-HP,Ordinateur portable HP Pavilion 14,Ordinateurs portables,1,649.99,649.99,32.5,64.84,747.33,Financement,Magasin,Annulée
+CMD-20260255,L2,2026-07-06,CL0037,Montréal - Centre-Ville,Montréal,ELM-MIC-PAN,Four à micro-ondes Panasonic,Électroménagers,1,149.99,149.99,7.5,14.96,172.45,Financement,Magasin,Annulée
+CMD-20260256,L1,2026-06-26,CL0096,Gatineau - Les Promenades,Gatineau,AUD-BAR-SAM,Barre de son Samsung HW-Q800,Audio et casques,1,549.99,549.99,27.5,54.86,632.35,Carte de crédit,Magasin,Complétée
+CMD-20260257,L1,2026-05-11,CL0048,Gatineau - Les Promenades,Gatineau,TEL-15-APL,iPhone 15 128Go,Téléphones intelligents,2,1099.99,2199.98,110.0,219.45,2529.43,Financement,En ligne,Complétée
+CMD-20260258,L1,2026-08-07,CL0098,Laval - Carrefour,Laval,ELM-LAV-LG,Laveuse LG à chargement frontal,Électroménagers,1,999.99,999.99,50.0,99.75,1149.74,Carte de crédit,Magasin,Complétée
+CMD-20260259,L1,2026-08-28,CL0079,Québec - Sainte-Foy,Québec,TV-43S-SON,Téléviseur Sony 43po Smart,Téléviseurs,1,549.99,549.99,27.5,54.86,632.35,Comptant,En ligne,Complétée
+CMD-20260259,L2,2026-08-28,CL0079,Québec - Sainte-Foy,Québec,JEU-XSX-MSF,Console Xbox Series X,Consoles et jeux vidéo,1,629.99,629.99,31.5,62.84,724.33,Comptant,En ligne,Complétée
+CMD-20260260,L1,2026-06-16,CL0017,Laval - Carrefour,Laval,TEL-S24-SAM,Samsung Galaxy S24,Téléphones intelligents,1,949.99,949.99,47.5,94.76,1092.25,Carte de crédit,Magasin,Complétée
+CMD-20260260,L2,2026-06-16,CL0017,Laval - Carrefour,Laval,AUD-BUDS-SON,Écouteurs Sony WF-1000XM5,Audio et casques,1,349.99,349.99,17.5,34.91,402.4,Carte de crédit,Magasin,Complétée

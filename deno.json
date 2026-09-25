@@ -1,0 +1,1 @@
+{ "imports": { "@/": "./src/" }, "nodeModulesDir": "none", "unstable": ["sloppy-imports"] }
