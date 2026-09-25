@@ -877,19 +877,27 @@ export const KPI_REGISTRY = Object.freeze({
 
   arpu: {
     id: "arpu",
-    name: { fr: "Revenu Moyen par Utilisateur (ARPU)", en: "ARPU" },
+    name: { fr: "Revenu moyen par client (ARPC)", en: "Average Revenue per Customer" },
     level: KPI_LEVELS.KPI,
     domain: DOMAINS.VENTES,
     semanticType: "ratio",
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: false,
-    dependencies: ["total_revenue", "active_customers"],
+    // ARPC = CA HT des ventes rattachees a un client / clients distincts ayant
+    // achete (contrat KPI, 25 sept 2026). L'ancienne formule divisait le CA
+    // TOTAL (ventes sans client comprises) par les clients au statut CRM
+    // « actif » : 0 $ pour un fichier clients sans vente, et un client
+    // « inactif » qui achetait n'etait pas compte. `revenue` n'est la que pour
+    // le statut (montants absents : non mesure ; devise exclue : partiel).
+    dependencies: ["revenue"],
     calculate: (deps) => {
-      // null (not 0) propagates "unmeasured" from active_customers - an
-      // unfilled Customer.status must not be read as "0 active customers".
-      if (deps.active_customers === null || deps.active_customers === undefined) return null;
-      if (deps.active_customers === 0) return 0;
-      return (deps.total_revenue || 0) / deps.active_customers;
+      const lignes = (deps._records || []).filter((r) => (r._entity === undefined || r._entity === "Order")
+        && !commandeHorsCA(r) && r.customer_id != null && String(r.customer_id).trim() !== "");
+      const acheteurs = new Set(lignes.filter(estVente).map((r) => String(r.customer_id).trim()));
+      if (acheteurs.size === 0) return null;
+      let ca = 0, n = 0;
+      for (const r of lignes) { const m = montantHT(r); if (Number.isFinite(m)) { ca += m; n++; } }
+      return n ? ca / acheteurs.size : null;
     },
   },
 

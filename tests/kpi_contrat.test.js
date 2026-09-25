@@ -218,3 +218,33 @@ test("ANO-04 : aucun mois commun → non mesuré, jamais ventes d'une année moi
   assert.equal(k.net_income.s, "NOT_MEASURED");
   assert.equal(k.rh_expense_ratio.v, null);
 });
+
+// ── ANO-07 : ARPC = CA des ventes rattachées à un client / acheteurs distincts ──
+
+test("ANO-07 : fichier clients seul (aucune vente) → ARPC et LTV non mesurés, jamais 0 $", () => {
+  const customers = [{ customer_id: "C1", status: "actif" }, { customer_id: "C2", status: "actif" }, { customer_id: "C3", status: "inactif" }];
+  const k = calcul({ customers }, ["arpu", "ltv"]);
+  assert.equal(k.arpu.v, null);
+  assert.equal(k.arpu.s, "NOT_MEASURED");
+  assert.equal(k.ltv.v, null);
+});
+
+test("ANO-07 : ARPC sur les acheteurs de la période, quel que soit leur statut CRM", () => {
+  const orders = [
+    { order_id: "O1", date: "2026-06-01", total_revenue: 100, customer_id: "C1", status: "completed" },
+    { order_id: "O2", date: "2026-06-02", total_revenue: 200, customer_id: "C1", status: "completed" },
+    { order_id: "O3", date: "2026-06-03", total_revenue: 300, customer_id: "C2", status: "completed" },
+    { order_id: "O4", date: "2026-06-04", total_revenue: 500, status: "completed" },
+    { order_id: "O5", date: "2026-06-05", total_revenue: 900, customer_id: "C3", status: "cancelled" },
+    { order_id: "O6", date: "2026-06-06", total_revenue: -50, quantity: -1, customer_id: "C1", status: "" },
+  ];
+  const customers = [{ customer_id: "C1", status: "actif" }, { customer_id: "C2", status: "inactif" }, { customer_id: "C9", status: "actif" }];
+  const k = calcul({ orders, customers }, ["arpu"]);
+  assert.equal(k.arpu.v, (100 + 200 + 300 - 50) / 2, "vente sans client, commande annulée et clients sans achat exclus ; avoir déduit");
+  assert.equal(k.arpu.s, "MEASURED");
+});
+
+test("ANO-07 : ventes sans aucun client identifié → ARPC non mesuré", () => {
+  const orders = [{ order_id: "O1", date: "2026-06-01", total_revenue: 100, status: "completed" }];
+  assert.equal(calcul({ orders }, ["arpu"]).arpu.v, null);
+});
