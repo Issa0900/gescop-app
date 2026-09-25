@@ -153,4 +153,43 @@ export const VERITE_DEMO: VeriteDemo[] = [
     note: "Dictionnaire de colonnes : ne doit pas devenir 36 commandes.",
     lignes: { Order: 0 },
   },
+  {
+    fichier: "products.csv",
+    note: "Catalogue de 20 produits en 6 categories.",
+    lignes: { Product: 20 },
+  },
+  {
+    fichier: "transactions_v2.csv",
+    note: "35 transactions d'entreprise (30 ventes pour 14 436,05 $ et 5 charges).",
+    kpi: { total_revenue: 14436.05 },
+    lignes: { Transaction: 35 },
+  },
+  {
+    fichier: "transactions_test_3mois.xlsx",
+    note: "637 transactions sur 3 mois (585 ventes pour 106 261,73 $ et 52 depenses).",
+    kpi: { total_revenue: 106261.73 },
+    lignes: { Transaction: 637 },
+  },
+  {
+    fichier: "sales.csv",
+    note: "1 457 commandes d'articles de confection sans montants financiers.",
+    lignes: { Order: 1457 },
+  },
+  {
+    fichier: "cloth-attributes.csv",
+    note: "Caracteristiques de tissus : aucun schema metier GESCOP ne correspond (quarantaine).",
+    motifs: { UNKNOWN_CONCEPT: 800 },
+  },
+  {
+    fichier: "coat-articles.csv",
+    note: "Catalogue de manteaux sans identifiant produit ni prix : rejete en quarantaine.",
+    lignes: { Product: 0 },
+    motifs: { MISSING_REQUIRED_FIELD: 800 },
+  },
+  {
+    fichier: "purchases.csv",
+    note: "Achats de confection par tailles sans identifiant fournisseur : quarantaine.",
+    lignes: { Purchase: 0 },
+    motifs: { MISSING_REQUIRED_FIELD: 1000 },
+  },
 ];

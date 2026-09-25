@@ -227,7 +227,30 @@ def kpi_complet():
 
 for f in ["GESCOP_Donnees_Test_Xplorer_3Mois.xlsx", "GESCOP_Donnees_Test_Xplorer.xlsx", "GESCOP_Donnees_Test_Xplorer_500.xlsx"]:
     xplorer(f)
-for fn in [simulation_3ans, gescop, nordik, simulation_50ans, kpi_complet]: fn()
+# ------------------------------------------------------------ Fichiers CSV & classeurs simples
+def demo_restants():
+    # products.csv
+    VERITE.append({"fichier": "products.csv", "controles": [
+        lignes("Product", 20),
+        somme("Product", "selling_price", 1228.0),
+        distincts("Product", "category", 6),
+    ]})
+    # transactions_v2.csv
+    VERITE.append({"fichier": "transactions_v2.csv", "controles": [
+        lignes("Transaction", 35),
+        kpi("total_revenue", 14436.05),
+    ]})
+    # transactions_test_3mois.xlsx
+    VERITE.append({"fichier": "transactions_test_3mois.xlsx", "controles": [
+        lignes("Transaction", 637),
+        kpi("total_revenue", 106261.73),
+    ]})
+    # sales.csv
+    VERITE.append({"fichier": "sales.csv", "controles": [
+        lignes("Order", 1457),
+    ]})
+
+for fn in [simulation_3ans, gescop, nordik, simulation_50ans, kpi_complet, demo_restants]: fn()
 with open(os.path.join(ICI, "verite_demo_modules.json"), "w", encoding="utf-8") as fh:
     json.dump(VERITE, fh, ensure_ascii=False, indent=1)
 print(sum(len(v["controles"]) for v in VERITE), "contrôles pour", len(VERITE), "fichiers")

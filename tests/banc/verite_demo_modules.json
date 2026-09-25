@@ -833,5 +833,70 @@
     "attendu": 20
    }
   ]
+ },
+ {
+  "fichier": "products.csv",
+  "controles": [
+   {
+    "type": "lignes",
+    "entite": "Product",
+    "attendu": 20
+   },
+   {
+    "type": "somme",
+    "entite": "Product",
+    "champ": "selling_price",
+    "attendu": 1228.0,
+    "note": ""
+   },
+   {
+    "type": "distincts",
+    "entite": "Product",
+    "champ": "category",
+    "attendu": 6
+   }
+  ]
+ },
+ {
+  "fichier": "transactions_v2.csv",
+  "controles": [
+   {
+    "type": "lignes",
+    "entite": "Transaction",
+    "attendu": 35
+   },
+   {
+    "type": "kpi",
+    "id": "total_revenue",
+    "attendu": 14436.05,
+    "note": ""
+   }
+  ]
+ },
+ {
+  "fichier": "transactions_test_3mois.xlsx",
+  "controles": [
+   {
+    "type": "lignes",
+    "entite": "Transaction",
+    "attendu": 637
+   },
+   {
+    "type": "kpi",
+    "id": "total_revenue",
+    "attendu": 106261.73,
+    "note": ""
+   }
+  ]
+ },
+ {
+  "fichier": "sales.csv",
+  "controles": [
+   {
+    "type": "lignes",
+    "entite": "Order",
+    "attendu": 1457
+   }
+  ]
  }
 ]
