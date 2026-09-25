@@ -9,7 +9,7 @@ import { fetchDelimitedRows, fetchMatrice } from "../../shared/csvParse.ts";
 import { fetchExternalFile } from "../../shared/safeFetch.ts";
 import { urlDeLecture, referenceFichier } from "../../shared/fichierPrive.ts";
 import {
-  analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan,
+  analyserFichier, appliquerPlan, planParRegles, signatureFichier, planSansRattachement, evaluerPlan, memoireDepuisPlans, colonnesAccueillies,
   construireEchantillon, type PlanImport, type LigneEcartee,
 } from "../../shared/importPlan.ts";
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
@@ -21,6 +21,7 @@ import * as XLSX from "npm:xlsx@0.18.5";
 import { MODELE_RAPIDE } from "../../shared/modelesLLM.ts";
 import { calculerFormulesManquantes } from "../../shared/formules.ts";
 import { apprendreDictionnaire } from "../../shared/dictionnaireDonnees.ts";
+import { EQUIVALENCES_REQUISES, typeIncomplet } from "../../shared/core/recognition/preuves.ts";
 
 /**
  * Resolve the target entity for a sheet/file.
@@ -100,7 +101,13 @@ async function planPourFeuille(
     const allMemo = await base44.entities.Import.filter(
       { plan_confirmed: true }, "-created_date", 50,
     );
-    mappingMemory = allMemo.map((m: any) => m.read_plan).filter(Boolean);
+    // Les plans confirmes sont convertis au format que la reconnaissance attend
+    // (MappingMemoryEntry). On lui passait les plans bruts : m.columnName etait
+    // indefini, la reconnaissance semantique plantait (erreur avalee) et TOUS
+    // les imports suivant un premier import confirme perdaient leurs colonnes
+    // reconnues par le sens (rapport du 25 sept., lot 5.3 ; la colonne « client »
+    // des commandes n'etait plus rattachee).
+    mappingMemory = memoireDepuisPlans(allMemo.map((m: any) => m.read_plan));
   } catch {}
 
   // 2. Analyse par l'IA, filet deterministe derriere.
@@ -118,7 +125,11 @@ async function planPourFeuille(
   const entetesNormalisees = entetes.map((h) => String(h).trim());
   // Le plan par regles a deja pese le nom de la feuille parmi ses preuves
   // (preuves.ts) : l'y ecraser remplacerait l'entite sans recalculer ses colonnes.
-  if (res.plan.origine !== "regles" && entiteParNom && entiteCompatible(entiteParNom, entetesNormalisees)) {
+  // Et jamais vers un type qui accueille moins de colonnes que celui retenu :
+  // « Ventes_Transactions » designait Transaction par son nom et perdait
+  // commande, produit, quantite et client (24 sept. 2026).
+  if (res.plan.origine !== "regles" && entiteParNom && entiteCompatible(entiteParNom, entetesNormalisees)
+    && colonnesAccueillies(entiteParNom, res.plan.colonnes) >= colonnesAccueillies(res.plan.entite, res.plan.colonnes)) {
     res.plan.entite = entiteParNom;
     if (entiteParNom === "Transaction") {
       // The semantic recognizer can confuse Transaction.category with type.
@@ -384,6 +395,11 @@ export default async function (req: Request) {
               let mappedCount = 0;
               let quarantinedCount = 0;
               const quarantine: any[] = [];
+              // Apercu : les lignes TELLES QU'ELLES SERONT ENREGISTREES (dates
+              // converties, valeurs traduites). On montrait les valeurs brutes :
+              // une date Excel s'affichait « 45675.83 » sous « Apercu de ce qui
+              // sera enregistre » alors que l'import ecrivait 2025-01-18.
+              const apercuEcrit: Record<string, any>[] = [];
               const properties = getSchema(plan.entite)?.properties || null;
               const required = getSchema(plan.entite)?.required || [];
 
@@ -400,6 +416,10 @@ export default async function (req: Request) {
                   }
                   deriveFallbackIdentity(plan.entite, normalized, i);
                   mappedCount++;
+                  if (apercuEcrit.length < 5) {
+                    const { import_id: _i, original_data: _o, fingerprint: _f, ...visible } = normalized as any;
+                    apercuEcrit.push(visible);
+                  }
 
                   // L'apercu doit annoncer ce que l'import fera vraiment : seule une
                   // ligne a laquelle manque un champ OBLIGATOIRE part en quarantaine.
@@ -435,7 +455,10 @@ export default async function (req: Request) {
               results.push({
                 file_name: label, sheet: nomFeuille, entity: plan.entite,
                 plan, signature: analyse.signature, refus: analyse.refus, analyse_erreur: analyse.erreur,
-                apercu: lecture.rows.slice(0, 5),
+                apercu: apercuEcrit.length ? apercuEcrit : lecture.rows.slice(0, 5),
+                type_incomplet: plan.entite ? undefined : typeIncomplet(
+                  (matrix[plan.ligne_entetes] || []).map((h: any) => String(h ?? "").trim()), label, companyDictionary,
+                ) || undefined,
                 echantillon: construireEchantillon(matrix, 8),
                 rows_read: totalRows,
                 status: "analyse",
@@ -555,7 +578,13 @@ export default async function (req: Request) {
       for (const [nom, schema] of Object.entries(ENTITY_SCHEMAS)) {
         champsParEntite[nom] = Object.keys(schema.properties).filter((c) => c !== "import_id");
       }
-      return Response.json({ results, champs_par_entite: champsParEntite });
+      // Champs obligatoires par type, et ce qui les remplace quand l'import sait
+      // les deduire : l'ecran de confirmation dit ce qui manque AVANT l'import.
+      const requisParEntite: Record<string, { champ: string; equivalents: string[] }[]> = {};
+      for (const [nom, schema] of Object.entries(ENTITY_SCHEMAS)) {
+        requisParEntite[nom] = (schema.required || []).map((champ) => ({ champ, equivalents: EQUIVALENCES_REQUISES[nom]?.[champ] || [] }));
+      }
+      return Response.json({ results, champs_par_entite: champsParEntite, requis_par_entite: requisParEntite });
     }
     return Response.json({ results });
   } catch (error: any) {

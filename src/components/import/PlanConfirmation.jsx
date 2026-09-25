@@ -155,7 +155,59 @@ function BadgeStatut({ evaluation }) {
   );
 }
 
-export default function PlanConfirmation({ analyses, champsParEntite, entityOptions, onConfirmer, onAnnuler, enCours }) {
+/**
+ * Champs obligatoires du type choisi, avec leur etat pour le plan affiche :
+ * present (une colonne y est rattachee), deduit (l'import sait le fabriquer a
+ * partir d'une autre colonne) ou manquant. Dit AVANT l'import : six fichiers
+ * sur dix-huit du rapport du 25 sept. etaient rejetes en bloc sans prevenir.
+ */
+function ChampsObligatoires({ plan, requis, analyse, entityOptions }) {
+  const nomType = (e) => entityOptions.find((o) => o.value === e)?.label || e;
+  const nomChamp = (c) => CHAMP_LABELS[c] || c;
+  if (!plan.entite) {
+    const t = analyse.type_incomplet;
+    if (!t) return null;
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-3" data-testid="type-incomplet">
+        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+        <p>
+          Ce fichier ressemble à « {nomType(t.entite)} », mais il manque le champ obligatoire{t.manquants.length > 1 ? "s" : ""} {t.manquants.map((m) => `« ${nomChamp(m)} »`).join(", ")}.
+          {" "}Choisissez ce type et rattachez une colonne à ce champ, ou ajoutez la colonne au fichier. En l'état, les lignes seront conservées telles quelles, sans être importées.
+        </p>
+      </div>
+    );
+  }
+  const liste = requis?.[plan.entite] || [];
+  if (liste.length === 0) return null;
+  const rattaches = new Set(plan.colonnes.filter((c) => c.champ && !c.exclue).map((c) => c.champ));
+  const etats = liste.map((r) => ({
+    ...r,
+    etat: rattaches.has(r.champ) ? "present" : (r.equivalents || []).some((e) => rattaches.has(e)) ? "deduit" : "manquant",
+  }));
+  const manquants = etats.filter((e) => e.etat === "manquant");
+  return (
+    <div className={cn("rounded-xl border p-4 text-sm", manquants.length ? "border-rose-200 bg-rose-50 text-rose-900" : "border-slate-200 bg-white text-slate-700")} data-testid="champs-obligatoires">
+      <p className="font-semibold">Champs obligatoires pour « {nomType(plan.entite)} »</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {etats.map((e) => (
+          <li key={e.champ} className={cn("rounded-full border px-2.5 py-0.5 text-xs",
+            e.etat === "present" ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : e.etat === "deduit" ? "border-sky-200 bg-sky-50 text-sky-700" : "border-rose-300 bg-white text-rose-700")}>
+            {nomChamp(e.champ)} · {e.etat === "present" ? "trouvé" : e.etat === "deduit" ? "déduit d'une autre colonne" : "manquant"}
+          </li>
+        ))}
+      </ul>
+      {manquants.length > 0 && (
+        <p className="mt-2">
+          Champ obligatoire sans correspondance : {manquants.map((m) => `« ${nomChamp(m.champ)} »`).join(", ")}. Sans lui, les lignes seront conservées en attente dans le registre, pas importées.
+          {" "}Rattachez une colonne à ce champ ci-dessous, ou ajoutez-la au fichier.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function PlanConfirmation({ analyses, champsParEntite, requisParEntite, entityOptions, onConfirmer, onAnnuler, enCours }) {
   // Les plans sont modifiables : c'est l'utilisateur qui a le dernier mot.
   const [plans, setPlans] = useState(() =>
     Object.fromEntries(analyses.map((a) => [a.file_name, a.plan])),
@@ -292,6 +344,8 @@ export default function PlanConfirmation({ analyses, champsParEntite, entityOpti
                   )}
                 </dl>
               </div>
+
+              <ChampsObligatoires plan={plan} requis={requisParEntite} analyse={a} entityOptions={entityOptions} />
 
               {a.quality && (
                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">

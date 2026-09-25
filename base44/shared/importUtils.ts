@@ -1967,6 +1967,27 @@ const ENUM_TRANSLATIONS: Record<string, string[]> = {
   "economique": ["economie"], "macroeconomie": ["economie"], "inflation": ["economie"],
   "taux": ["economie"], "devise": ["economie"], "conjoncture": ["economie"],
   "concurrent": ["concurrence"], "concurrents": ["concurrence"],
+  // Termes anglais du rapport du 25 sept. (regulation/regulatory, economic,
+  // competitive) : absents des deux vocabulaires de family, lignes rejetees.
+  "regulation": ["legal", "gouvernement"], "regulations": ["legal", "gouvernement"],
+  "regulatory": ["legal", "gouvernement"], "government": ["gouvernement", "legal"],
+  "economic": ["economy", "economie"], "economics": ["economy", "economie"],
+  "competitive": ["competitors", "concurrence"], "competitor": ["competitors", "concurrence"],
+  "competitors": ["competitors", "concurrence"],
+  // Indicateurs oui/non (« Return_Flag : Yes/No ») : sans traduction, l'ecriture
+  // perdait la valeur (liste aucun/demande/approuve/refuse) et le controle des
+  // reponses de l'IA retirait la colonne : les retours comptaient dans le CA.
+  "yes": ["approuve", "oui"], "y": ["approuve", "oui"], "true": ["approuve", "oui"],
+  "no": ["aucun", "non"], "n": ["aucun", "non"], "false": ["aucun", "non"],
+  // Canaux de vente anglais usuels (Kaggle, exports Shopify/ERP).
+  "online": ["en_ligne", "web"], "e-commerce": ["en_ligne", "web"], "ecommerce": ["en_ligne", "web"],
+  "retail store": ["magasin", "boutique"], "retail": ["magasin", "boutique"], "in-store": ["magasin", "boutique"],
+  "b2b portal": ["b2b"], "wholesale": ["b2b"],
+  // Les familles anglaises de ExternalSignal.jsonc (celles du radar) n'avaient
+  // pas de traduction vers la liste francaise utilisee a l'import.
+  "market": ["market", "marche"], "markets": ["market", "marche"],
+  "economy": ["economy", "economie"], "tech": ["tech", "actualites"], "technology": ["tech", "actualites"],
+  "commercial": ["commercial", "marche"],
   "competiteur": ["concurrence"], "competition": ["concurrence"],
   "fournisseur": ["fournisseurs"], "approvisionnement": ["fournisseurs"],
   "chaine": ["fournisseurs"], "logistique": ["fournisseurs"], "import": ["fournisseurs"],
@@ -2392,6 +2413,11 @@ function empreinteCourte(texte: string): string {
 // partir de ce que le mapping a effectivement reconnu.
 const FALLBACK_IDENTITY: Record<string, { id: string; name?: string; from: string[] }> = {
   Campaign: { id: "campaign_id", name: "campaign_name", from: ["channel", "date"] },
+  // Un fichier de fournisseurs ou de concurrents sans colonne identifiant etait
+  // rejete en bloc (rapport du 25 sept. : 8 et 5 lignes a 0) ; l'identifiant
+  // est deduit du nom, marque AUTO- (il ne prouve jamais un doublon).
+  Supplier: { id: "supplier_id", from: ["supplier_name"] },
+  Competitor: { id: "competitor_id", from: ["name"] },
 };
 
 export function deriveFallbackIdentity(entityName: string, row: Record<string, any>, index: number): void {
@@ -2831,6 +2857,11 @@ export function normalizeRow(
     const cout = parseNumber(r.cash_out);
     if (cin !== null || cout !== null) r.net_cash_flow = (cin || 0) - (cout || 0);
   }
+
+  // Interaction : un fichier qui ne nomme le client que par son nom garde ce
+  // nom comme reference client (le rapprochement par nom se fait a la lecture,
+  // src/lib/rapprochementClients.js) au lieu d'ecarter toutes ses lignes.
+  if (entityName === "Interaction" && !r.customer_id && r.customer_name) r.customer_id = r.customer_name;
 
   // Paie : le cout d'une fiche de paie (total_cost) est rarement une colonne ;
   // les fichiers donnent le brut, les heures sup, les primes, la part

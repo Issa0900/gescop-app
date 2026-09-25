@@ -156,6 +156,7 @@ export const ENTITY_SCHEMAS: Record<string, { properties: Record<string, any>; r
   },
   Interaction: {
     properties: {
+      customer_name: S,
       interaction_id: S, date: D, customer_id: S,
       channel: E("email", "telephone", "chat", "boutique", "reseau_social"),
       type: E("email", "telephone", "chat", "plainte", "retour", "question", "support", "avis", "remerciement", "reclamation", "autre"),

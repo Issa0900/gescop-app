@@ -444,3 +444,31 @@ test('L — compréhension réelle, dictionnaire sans exemple enregistré', asyn
   expect(nb, 'aucun terme enregistré d\'office').toBe(0);
   for (const e of erreurs) noter({ couche: 'e2e', scenario: 'parametres', route: '/parametres?tab=comprehension', gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
 });
+
+// ─── 13. Import : champs obligatoires dits AVANT l'import (lot 5.1) ──────
+// Rapport du 25 sept. 2026 : 6 fichiers sur 18 rejetés en bloc sans que rien
+// n'annonce le champ manquant. L'écran de confirmation doit le dire.
+test('M — champs obligatoires manquants signalés avant l\'import', async ({ page }) => {
+  const erreurs = surveiller(page);
+  const plan = (entite, colonnes) => ({ entite, ligne_entetes: 0, lignes_ignorees: [], colonnes, confiance: 'moyenne', explication: 'lecture de test', origine: 'regles' });
+  page.__importReply = () => ({
+    results: [
+      { file_name: 'objectifs.csv', entity: 'Goal', status: 'analyse', rows_read: 6, apercu: [],
+        plan: plan('Goal', [{ colonne: 'nom_objectif', champ: null }, { colonne: 'cible', champ: 'target' }]) },
+      { file_name: 'signaux.csv', entity: null, status: 'analyse', rows_read: 6, apercu: [],
+        plan: plan(null, [{ colonne: 'titre', champ: null }]), type_incomplet: { entite: 'ExternalSignal', manquants: ['family'] } },
+    ],
+    champs_par_entite: { Goal: ['goal_id', 'metric', 'target', 'current'], ExternalSignal: ['title', 'family'] },
+    requis_par_entite: { Goal: [{ champ: 'metric', equivalents: [] }], ExternalSignal: [{ champ: 'title', equivalents: [] }, { champ: 'family', equivalents: [] }] },
+  });
+  await fauxBackend(page, RICH);
+  await authentifier(page);
+  await page.goto('/importer');
+  await page.setInputFiles('input[type=file]', path.join(QA, 'fixtures/ventes-quebec.csv'), { timeout: 15000 });
+  const manquant = page.getByTestId('champs-obligatoires').filter({ hasText: /Champ obligatoire sans correspondance/ });
+  await expect(manquant).toBeVisible({ timeout: 15000 });
+  await expect(manquant).toContainText(/« Indicateur »/);
+  await expect(page.getByTestId('type-incomplet')).toContainText(/manque le champ obligatoire/);
+  await page.screenshot({ path: path.join(SHOTS, 'import_champs_obligatoires.png'), fullPage: true }).catch(() => {});
+  for (const e of erreurs) noter({ couche: 'e2e', scenario: 'import', route: '/importer', gravite: e.type === 'exception JS' ? 'critique' : 'mineur', ...e });
+});

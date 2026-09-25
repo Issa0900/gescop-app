@@ -461,6 +461,22 @@ import { construirePrompt, SCHEMA_REPONSE } from "./importUtils.ts";
  * indisponible, lente, ou rend une reponse inutilisable : un import ne doit
  * jamais echouer parce qu'un service tiers est en panne.
  */
+/** Nombre de colonnes du plan dont le champ existe dans l'entite. */
+export function colonnesAccueillies(entite: string | null | undefined, colonnes: { champ?: string | null }[]): number {
+  const props = getSchema(entite || "")?.properties;
+  if (!props) return 0;
+  return (colonnes || []).filter((c) => c?.champ && c.champ in props).length;
+}
+
+/**
+ * Un autre type ne l'emporte que s'il accueille NETTEMENT plus de colonnes :
+ * au moins 3 de plus et une fois et demie autant. Sur un ecart faible, le
+ * premier choix est garde (pas de bascule sur une ou deux colonnes).
+ */
+export function typeNettementMeilleur(nAutre: number, nActuel: number): boolean {
+  return nAutre >= nActuel + 3 && nAutre >= 1.5 * nActuel;
+}
+
 export async function analyserFichier(
   invoquer: InvocateurLLM,
   options: {
@@ -488,11 +504,36 @@ export async function analyserFichier(
   if (!plan) return { plan: planDeSecours, refus, erreur: "plan refuse" };
   const verifie = verifierAvecPreuves(plan, matrix);
 
+  // Le type retenu doit pouvoir accueillir les colonnes. L'IA a lu « Ventes_
+  // Transactions » (commande, ligne, produit, quantite, prix, client, taxes)
+  // comme des Transactions, qui n'ont aucun de ces champs : tout etait perdu
+  // pour les KPI (24 sept. 2026). Si le type trouve par les preuves accueille
+  // nettement plus de colonnes, c'est lui qui est retenu, avec ses colonnes.
+  const nIA = colonnesAccueillies(verifie.entite, verifie.colonnes);
+  const nPreuves = colonnesAccueillies(planDeSecours.entite, planDeSecours.colonnes);
+  if (planDeSecours.entite && verifie.entite !== planDeSecours.entite && typeNettementMeilleur(nPreuves, nIA)) {
+    return {
+      plan: {
+        ...planDeSecours,
+        explication: verifie.explication || planDeSecours.explication,
+        corrections: [
+          `type ${verifie.entite || "(aucun)"} propose par l'analyse remplace par ${planDeSecours.entite} : `
+          + `${nPreuves} colonne(s) y trouvent un champ, contre ${nIA} pour ${verifie.entite || "(aucun)"}.`,
+          ...(planDeSecours.corrections || []),
+        ],
+      },
+      refus,
+    };
+  }
+
   // Fallback: override missing mappings from LLM with our deterministic rules & memory
+  // Seulement vers un champ qui existe dans le type retenu : un champ d'une
+  // autre entite (order_id dans une Transaction) n'a nulle part ou aller.
+  const champsDuType = new Set(Object.keys(getSchema(verifie.entite || "")?.properties || {}));
   for (const col of verifie.colonnes) {
       if (!col.champ) {
           const secCol = planDeSecours.colonnes.find(c => c.colonne === col.colonne);
-          if (secCol && secCol.champ) {
+          if (secCol && secCol.champ && (champsDuType.size === 0 || champsDuType.has(secCol.champ))) {
               col.champ = secCol.champ;
               col.source = secCol.source;
               verifie.corrections.push(`colonne « ${col.colonne} » : rattrapage via memoire/reconnaissance -> ${col.champ}.`);
@@ -698,6 +739,15 @@ export function planParRegles(
           champ = rec.targetField;
        }
        source = "reconnaissance";
+    }
+    // Un concept reconnu qui n'est pas un champ du type retenu (« revenue » pour
+    // une commande, « discount_rate ») etait jete plus loin sans que les
+    // synonymes soient essayes : « Sales_Amount » restait non rattachee a
+    // l'ecran, rattrapee en douce a l'ecriture sans IA, et perdue avec une
+    // reponse de l'IA (CA recalcule sans la remise, +6,8 %, 25 sept. 2026).
+    if (champ && entite && source === "reconnaissance") {
+      const champsDuType = Object.keys(getSchema(entite)?.properties || {});
+      if (!champsDuType.includes(champ) && !champsDuType.includes(adapterChamp(entite, champ))) { champ = null; source = "schema"; }
     }
     
     // 2. Fallback to schema fields so the UI doesn't show 'Ignorer' for valid columns
@@ -1150,4 +1200,33 @@ export function signatureFichier(entetes: any[]): string {
     .filter((h) => h !== "")
     .sort()
     .join("|");
+}
+
+// ---------------------------------------------------------------------------
+// Memoire d'apprentissage croise (lot 5.3, rapport du 25 sept. 2026)
+// ---------------------------------------------------------------------------
+
+const normMemoire = (s: string) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
+
+/**
+ * Plans confirmes -> entrees de memoire au format de la reconnaissance
+ * (MappingMemoryEntry). Seules les colonnes rattachees par un humain sont
+ * apprises : ce sont les vraies corrections ; le reste est deja trouve par les
+ * regles. Tout plan mal forme est ignore.
+ */
+export function memoireDepuisPlans(plans: any[]): any[] {
+  const out: any[] = [];
+  for (const p of plans || []) {
+    if (!p || !Array.isArray(p.colonnes)) continue;
+    const freres = p.colonnes.map((c: any) => normMemoire(c?.colonne)).filter(Boolean).sort().join("|");
+    for (const c of p.colonnes) {
+      if (!c?.champ || c.source !== "humain" || typeof c.colonne !== "string") continue;
+      out.push({
+        columnName: normMemoire(c.colonne), sourceContext: normMemoire(p.entite || ""), siblingSignature: freres,
+        resolvedCanonicalKey: c.champ, resolvedSemanticType: "unknown", confirmedBy: "user",
+        usageCount: 1, lastUsed: new Date().toISOString(), confidence: 0.95,
+      });
+    }
+  }
+  return out;
 }

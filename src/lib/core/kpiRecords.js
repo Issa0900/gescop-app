@@ -21,8 +21,14 @@ export function commandeHorsCA(r) {
   if (Number(r.unit_price) < 0) return true;
   // return_status est un indicateur (« Yes »/« No », « Retourné »...), pas un statut
   // de commande : « Not returned » ne doit pas exclure la ligne.
+  // Quand la commande porte un STATUT, c'est lui qui fait foi (« Completed » avec
+  // un indicateur de retour « Yes » reste une vente ; « Returned » est exclue par
+  // le statut) ; l'indicateur ne decide que pour une commande sans statut.
+  if (String(r.status || "").trim()) return false;
   const ret = String(r.return_status || "").trim().toLowerCase();
-  return /^(yes|oui|true|1|y|retourn|returned|rembours|refunded)/.test(ret);
+  // « approuve » : valeur de la liste return_status pour un retour accepte
+  // (traduction de « Yes » a l'import) ; « demande » n'est pas encore un retour.
+  return /^(yes|oui|true|1|y|retourn|returned|rembours|refunded|approuv)/.test(ret);
 }
 
 const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));

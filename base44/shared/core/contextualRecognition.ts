@@ -268,6 +268,7 @@ function analyzeMemory(
   let just = 'No memory match.';
 
   for (const entry of memory) {
+    if (typeof entry?.columnName !== "string") continue;
     if (entry.columnName === normName) {
       if (entry.sourceContext === normContext && entry.siblingSignature === sig) {
         return { match: entry, score: 1.0, justification: 'Exact match in mapping memory (name + context + siblings).' };

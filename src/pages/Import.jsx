@@ -97,6 +97,7 @@ export default function ImportPage() {
   // rien n'a ete enregistre.
   const [analyses, setAnalyses] = useState(null);
   const [champsParEntite, setChampsParEntite] = useState(null);
+  const [requisParEntite, setRequisParEntite] = useState(null);
   const [fichiersEnvoyes, setFichiersEnvoyes] = useState([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [purging, setPurging] = useState(false);
@@ -152,6 +153,7 @@ export default function ImportPage() {
       }
       setFichiersEnvoyes(uploadedFiles);
       setChampsParEntite(data.champs_par_entite || {});
+      setRequisParEntite(data.requis_par_entite || {});
       setAnalyses(lisibles);
     } catch (e) {
       toast({ title: "Erreur: " + (e.response?.data?.error || e.message), variant: "destructive" });
@@ -477,6 +479,7 @@ export default function ImportPage() {
         <PlanConfirmation
           analyses={analyses}
           champsParEntite={champsParEntite}
+          requisParEntite={requisParEntite}
           entityOptions={ENTITY_OPTIONS}
           onConfirmer={lancerImport}
           onAnnuler={annulerAnalyse}

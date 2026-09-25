@@ -120,9 +120,11 @@ export const REGLES: Regle[] = [
   R("subtotal", ["Order"], [["ht", "subtotal", "hors", "soustotal", "net"]], ["prix", "price", "unitaire", "unit", "marge", "margin", "profit", "benefice", "ttc", "quantite", "quantity", "qte"]),
   R("subtotal", ["Order"], [["sous"], ["total"]], ["ttc"]),
   R("total", ["Order"], [["ttc", "tvac", "taxe_incluse", "gross"]], ["taxe", "tax", "tps", "tvq", "cout", "cost", "unitaire", "unit", "prix", "price"]),
-  R("total", ["Order"], [VENTE, MONTANT], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel"]),
+  // Une personne (« Sales_Representative ») n'est jamais un montant : a egalite avec
+  // « Sales_Amount », aucune des deux colonnes n'etait rattachee (25 sept. 2026).
+  R("total", ["Order"], [VENTE, MONTANT], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel", "representative", "representant", "vendeur", "agent"]),
   // « Sales » seul sur une ligne de vente : son montant.
-  R("total", ["Order"], [["vente", "sale", "ventes"]], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel", "date", "id", "rep", "representant", "person", "quantite", "quantity", "qty", "nombre", "count", "taxe", "tax", "region", "type", "statut", "status"]),
+  R("total", ["Order"], [["vente", "sale", "ventes"]], ["cout", "cost", "unitaire", "unit", "prix", "price", "canal", "channel", "date", "id", "rep", "representant", "representative", "representatives", "vendeur", "vendeuse", "agent", "associate", "manager", "person", "quantite", "quantity", "qty", "nombre", "count", "taxe", "tax", "region", "type", "statut", "status"]),
   R("total_cost", ["Order", "ExecutiveSummary"], [COUT, ["total", ...MONTANT, "marchandise", "produit", "product", "vendu", "sold"]], ["unitaire", "unit", "clic", "click"]),
   R("total_cost", ["Order"], [["cogs", "cmv", "cogs"]]),
   R("unit_cost", ["Order"], [COUT, ["unitaire", "unit", "moyen", "pondere", "pmp"]], ["total"]),
@@ -210,6 +212,12 @@ export const REGLES: Regle[] = [
   // ── Fournisseurs et achats ──────────────────────────────────────────────
   R("supplier_name", ["Supplier"], [["nom", "name", "raison"], ["fournisseur", "supplier", "vendor", "sociale", "prestataire"]]),
   R("supplier_name", ["Supplier"], [["raison"], ["sociale"]]),
+  // Concurrents et evenements du rapport du 25 sept. : « nom_concurrent »,
+  // « zone », « positionnement », « type » n'avaient aucun champ.
+  R("name", ["Competitor"], [["nom", "name", "raison", "libelle"]], ID),
+  R("location", ["Competitor"], [["zone", "ville", "city", "region", "localisation", "location", "territoire"]]),
+  R("market_position", ["Competitor"], [["positionnement", "positioning"]], ["prix", "price"]),
+  R("event_type", ["Event"], [["type", "categorie", "category", "nature"]], ["impact"]),
   R("payment_terms", ["Supplier", "Purchase"], [["condition", "modalite", "terme", "term"], ["paiement", "payment", "reglement"]]),
   R("average_delivery_days", ["Supplier"], [["delai", "lead", "delivery", "livraison"], ["livraison", "delivery", "time", "jour", "day", "moyen", "average"]], ["statut", "status"]),
   R("reliability_score", ["Supplier"], [["fiabilite", "reliability"]]),

@@ -251,3 +251,36 @@ Consignes d'Issa : purge d'abord, puis les lots 1 à 5 de `qa/MISSION_CORRECTIFS
 - Reste : le groupe « Commun » n'apparaît pas quand les immobilisations ne sont pas reconnues (voir lot 5, reconnaissance des types).
 
 **Bancs après le lot 4** : Vert Québec **104/114** ; `npm test` 237/237 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76.
+
+## Lot 5 — Import : dire ce qui manque avant, ne plus rejeter en bloc, mémoire réparée
+
+### 5.3 La mémoire d'import cassait la reconnaissance — corrigé (le plus grave du lot)
+- Cause : `importMultiData` passait les **plans confirmés bruts** comme « mémoire d'apprentissage » à la reconnaissance sémantique, qui attend des entrées `{ columnName, confidence, … }` ; `m.columnName.replace(...)` plantait sur `undefined`, l'erreur était avalée (« falling back to basic mapping ») et **toute la reconnaissance sémantique était coupée pour chaque import suivant le premier import confirmé du compte** — en ligne, pour tous les comptes dès leur 2e fichier. Exemple mesuré : la colonne « client » des commandes était reconnue seule, perdue dès qu'un fichier (même de fournisseurs) avait été importé avant.
+- Correction : `memoireDepuisPlans` (`importPlan.ts`) convertit les plans au bon format et n'apprend que les colonnes corrigées par un humain (l'apprentissage croisé que la fonction promettait, jamais actif) ; les deux moteurs (`mappingDecisionEngine.ts`, `contextualRecognition.ts`) ignorent une entrée mal formée au lieu de planter.
+- Le constat du rapport (« fichier de signaux corrigé traité comme déjà validé ») : la réutilisation d'un plan confirmé par signature est correcte (mêmes colonnes) ; ce qui bloquait était les valeurs de `family` (5.2), réévaluées à chaque import.
+
+### 5.1 Champs obligatoires dits avant l'import — fait
+- Serveur (`importMultiData`, mode analyse) : `requis_par_entite` (champs obligatoires de chaque type et ce qui les remplace quand l'import sait les déduire) ; pour une feuille sans type, `type_incomplet` (type le plus plausible et ses champs manquants, `preuves.ts` `typeIncomplet`).
+- Écran (`PlanConfirmation.jsx`) : encart « Champs obligatoires pour « … » » (trouvé / déduit / manquant), recalculé à chaque changement de colonne ou de type ; message clair quand un champ manque (« les lignes seront conservées en attente dans le registre, pas importées ; rattachez une colonne ou ajoutez-la au fichier ») ; pour une feuille incomplète : « Ce fichier ressemble à « Objectifs », mais il manque le champ obligatoire « Indicateur » ».
+- Preuve : scénario M de l'agent QA (`qa/e2e/agent-qa.spec.js`) — échoue sans la correction, passe avec.
+
+### Ne plus rejeter en bloc (généralisation du 5.1)
+- **Identifiants déductibles** (`preuves.ts`, `EQUIVALENCES_REQUISES` ; `importUtils.ts`, `FALLBACK_IDENTITY`) : un fournisseur ou un concurrent sans colonne identifiant reçoit un identifiant `AUTO-` tiré de son nom (comme les campagnes ; il ne prouve jamais un doublon) ; un actif sans identifiant le tire de sa description ; une interaction qui ne nomme le client que par son nom garde ce nom (nouveau champ `Interaction.customer_name`) — le rapprochement par nom du lot 4 fait le reste. Sans cela, immobilisations (score 85) et interactions (60) n'étaient reconnues par aucune règle.
+- **Choix du type** (`choisirEntite`) : un type nettement plus plausible mais incomplet (10 points d'écart ou plus) ne cède plus la place à un type faible — une feuille d'objectifs sans « metric » devenait des immobilisations ; elle est désormais conservée brute, avec le champ manquant annoncé.
+- **Lexique** : concurrents (nom, zone, positionnement), type d'événement.
+- **Type choisi par l'IA confronté aux preuves** (repris du stash de diagnostic) : si le type trouvé par les règles accueille nettement plus de colonnes (au moins 3 de plus et 1,5 fois autant), il l'emporte, avec la raison affichée ; une colonne n'est plus rattrapée vers un champ qui n'existe pas dans le type retenu ; le renommage par le nom de feuille ne peut plus choisir un type qui accueille moins de colonnes. Diagnostic, classeur Simulation : « IA trompée par le nom » 7/10 → 10/10, plus aucune incohérence.
+- **Aperçu = ce qui sera enregistré** : l'aperçu de l'écran montre les lignes normalisées (dates converties…) — la date Excel « 45675.83 » affichée alors que l'import écrivait 2025-01-18.
+
+### 5.2 Familles de signaux — corrigé
+- `ENUM_TRANSLATIONS` : `regulation`/`regulatory` → gouvernement, `economic` → économie, `competitive`/`competition` → concurrence ; et les familles **anglaises du radar lui-même** (`market`, `economy`, `tech`, `commercial`), absentes de la liste française utilisée à l'import (`entitySchemas.ts`) — la liste de l'énuméré n'est pas modifiée (usages internes du radar préservés).
+
+- Preuves : banc Vert Québec **114/114** (fichiers d'origine et corrigés, sans IA et avec IA) ; `tests/import_lot5.test.js` (6 cas, dont « une mémoire mal formée ne fait plus tomber la reconnaissance », qui plantait avant) ; scénario M.
+
+### Sales_transactions_2022_2025.csv finalisé (diagnostic DEMO sous IA)
+Le diagnostic des 27 fichiers DEMO dans les 5 comportements d'IA a trouvé un écart de la même famille que le +70 % : CA 3 233 803 $ au lieu de 3 028 483 $ (+6,8 %) dès que l'IA répondait. Trois règles générales corrigées :
+- **Indicateurs oui/non et canaux anglais** (`ENUM_TRANSLATIONS`) : « Yes/No » → approuvé/aucun, « Online » → en_ligne, « Retail Store » → magasin, « B2B Portal » → b2b. Sans cela, l'écriture perdait l'indicateur de retour et le contrôle des réponses de l'IA retirait les colonnes.
+- **Le statut fait foi** (`kpiRecords.js`, `commandeHorsCA`) : quand une commande porte un statut, c'est lui qui décide (« Returned », « Cancelled » exclues) ; l'indicateur de retour ne décide que sans statut. Le fichier contient 179 commandes « Completed » marquées « Return_Flag = Yes » : la vérité terrain du 22 sept. les compte comme ventes.
+- **Montants rattachés** (`importPlan.ts`, `lexiqueChamps.ts`) : un concept reconnu qui n'est pas un champ du type (« revenue », « discount_rate » pour une commande) laisse maintenant les synonymes essayer ; et « Sales_Representative » (une personne) n'est plus pris pour un montant de vente — à égalité avec « Sales_Amount », aucune des deux colonnes n'était rattachée. « Sales_Amount » (montant après remise) était ainsi « non rattachée » à l'écran, rattrapée en douce sans IA, et perdue avec l'IA (montant recalculé quantité × prix, sans la remise).
+- Résultat : **3 028 483,18 $ exact dans les 5 comportements d'IA**.
+
+**Bancs après le lot 5** : Vert Québec **114/114** ; `npm test` 243/243 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76 ; Deno 32/32 ; diagnostic DEMO sous 5 comportements d'IA : Sales_transactions juste partout. **Reste** : `DS01_succursales_6mois.xlsx` perd 6 lignes de sommaire (54/60) quand l'IA répond ; constat C5 (lignes « valides » annoncées à l'analyse avant détection des doublons/conflits à l'écriture) sur 7 feuilles — affichage, présent avant.

@@ -35,11 +35,20 @@ export type StatutColonne = "CONFIRMED" | "PROBABLE" | "AMBIGUOUS" | "UNKNOWN";
  * devient order_id sur Order). La detection doit connaitre la meme equivalence,
  * sinon elle juge « impossible » une entite que l'import saurait remplir.
  */
-const EQUIVALENCES_REQUISES: Record<string, Record<string, string[]>> = {
+export const EQUIVALENCES_REQUISES: Record<string, Record<string, string[]>> = {
   Order: { order_id: ["transaction_id", "invoice_id", "numero_facture", "no_facture"] },
   // normalizeRow (crochet Product) et les alias rattachent deja un SKU a product_id.
   Product: { product_id: ["sku", "ugs", "code_produit"] },
   Inventory: { product_id: ["sku", "ugs", "code_produit"] },
+  // Identifiants que l'import sait deduire (normalizeRow / deriveFallbackIdentity) :
+  // leur absence ne rend plus le type ineligible. Sans cela, les immobilisations
+  // (score 85) et les interactions (60) du rapport du 25 sept. n'etaient
+  // reconnues par aucune regle, et une feuille sans identifiant fournisseur ou
+  // concurrent etait rejetee en bloc.
+  Asset: { asset_id: ["description"] },
+  Interaction: { customer_id: ["customer_name"] },
+  Supplier: { supplier_id: ["supplier_name"] },
+  Competitor: { competitor_id: ["name"] },
 };
 
 const TOUS_LES_CHAMPS = new Set(Object.values(ENTITY_SCHEMAS).flatMap((s) => Object.keys(s.properties)));
@@ -129,9 +138,26 @@ export function classerEntites(
  * moins de 10 points est signale (§6) : le plan le montre a l'utilisateur au
  * lieu de trancher en silence.
  */
+/**
+ * Type le plus plausible d'une feuille qu'aucun type ne peut accueillir faute
+ * d'un champ obligatoire : l'ecran d'import le dit AVANT l'import (« ressemble
+ * a des Objectifs, mais la colonne obligatoire metric manque »), au lieu d'un
+ * rejet en bloc constate apres coup (rapport du 25 sept., lot 5.1).
+ */
+export function typeIncomplet(entetes: string[], nomFichier: string, companyDictionary?: Record<string, string>): { entite: string; manquants: string[] } | null {
+  const c = classerEntites(entetes, nomFichier, companyDictionary).filter((x) => !x.eligible).sort((a, b) => b.score - a.score)[0];
+  return c && c.score >= 30 ? { entite: c.entite, manquants: c.manquants || [] } : null;
+}
+
 export function choisirEntite(classement: CandidatEntite[]): { entite: string | null; ambigue: boolean; rivale?: string } {
   const eligibles = classement.filter((c) => c.eligible && c.score >= 20);
   if (eligibles.length === 0) return { entite: null, ambigue: false };
+  // Un type nettement plus plausible mais incomplet (champ obligatoire absent)
+  // ne doit pas ceder la place a un type faible : une feuille d'objectifs sans
+  // colonne « metric » devenait des immobilisations (rapport du 25 sept.). La
+  // feuille est alors conservee brute, et le champ manquant est dit.
+  const meilleurIncomplet = classement.filter((c) => !c.eligible).sort((a, b) => b.score - a.score)[0];
+  if (meilleurIncomplet && meilleurIncomplet.score >= eligibles[0].score + 10) return { entite: null, ambigue: false };
   const [premier, second] = eligibles;
   const ambigue = Boolean(second && premier.score - second.score < 10);
   return { entite: premier.entite, ambigue, rivale: ambigue ? second.entite : undefined };

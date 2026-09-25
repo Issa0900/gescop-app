@@ -67,8 +67,9 @@ export function analyzeColumn(request: ColumnRecognitionRequest): RecognitionRes
 
   // 6. Vérification Mémoire d'apprentissage utilisateur
   const normColForMem = cleanHeader.replace(/[^a-z0-9]/g, "");
+  // Une entree mal formee est ignoree : elle ne doit jamais faire tomber la reconnaissance.
   const memMatch = mappingMemory.find(
-    (m) => m.columnName.replace(/[^a-z0-9]/g, "") === normColForMem && m.confidence >= 0.8
+    (m) => typeof m?.columnName === "string" && m.columnName.replace(/[^a-z0-9]/g, "") === normColForMem && m.confidence >= 0.8
   );
 
   // 7. Résolution d'abréviation

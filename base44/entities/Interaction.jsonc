@@ -9,6 +9,10 @@
       "type": "string",
       "format": "date"
     },
+    "customer_name": {
+      "type": "string",
+      "description": "Nom du client quand le fichier ne donne pas son identifiant."
+    },
     "customer_id": {
       "type": "string"
     },
