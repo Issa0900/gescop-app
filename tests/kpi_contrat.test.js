@@ -176,3 +176,45 @@ test("ANO-06 import : un statut de départ est conservé (depart), jamais effac�
   const client = getSchema("Customer").properties;
   assert.equal(normalizeRow("Customer", { customer_id: "C1", status: "inactif" }, "i", client).status, "inactif", "un client inactif reste inactif");
 });
+
+// ── ANO-04 : ce qui combine plusieurs sources se calcule sur leur période commune ──
+
+const ventesEtPaie = () => {
+  const orders = [], payrolls = [];
+  for (let m = 1; m <= 6; m++) orders.push({ order_id: `O${m}`, date: `2026-0${m}-15`, total_revenue: 60000, cost: 30000, status: "completed" });
+  for (let i = 0; i < 12; i++) {
+    const mois = new Date(Date.UTC(2025, 6 + i, 28)).toISOString().slice(0, 10);
+    payrolls.push({ payroll_id: `P${i}`, period: mois, total_cost: 10000 });
+  }
+  return { orders, payrolls };
+};
+
+test("ANO-04 : 6 mois de ventes, 12 mois de paie → résultat et ratio RH sur les 6 mois communs", () => {
+  const k = calcul(ventesEtPaie(), ["total_revenue", "payroll_total", "net_income", "rh_expense_ratio", "total_charges", "net_margin_pct"]);
+  assert.equal(k.total_revenue.v, 360000, "le CA seul garde sa période");
+  assert.equal(k.payroll_total.v, 120000, "la paie seule garde sa période");
+  assert.equal(k.net_income.v, 360000 - 180000 - 60000);
+  assert.deepEqual(k.net_income.r.periodeCommune, { debut: "2026-01", fin: "2026-06", mois: 6 });
+  assert.equal(Math.round(k.rh_expense_ratio.v * 100) / 100, 16.67);
+  assert.equal(k.total_charges.v, 180000 + 60000, "charges sur la même période que le résultat");
+  assert.equal(k.net_margin_pct.v, (120000 / 360000) * 100);
+});
+
+test("ANO-04 : sources sur la même période → aucun réalignement", () => {
+  const d = ventesEtPaie();
+  d.payrolls = d.payrolls.filter((p) => p.period >= "2026-01");
+  const k = calcul(d, ["net_income"]);
+  assert.equal(k.net_income.v, 120000);
+  assert.equal(k.net_income.r.periodeCommune, undefined);
+});
+
+test("ANO-04 : aucun mois commun → non mesuré, jamais ventes d'une année moins paie d'une autre", () => {
+  const data = {
+    orders: [{ order_id: "O1", date: "2025-03-15", total_revenue: 1000, cost: 100, status: "completed" }],
+    payrolls: [{ payroll_id: "P1", period: "2026-03-31", total_cost: 500 }],
+  };
+  const k = calcul(data, ["net_income", "rh_expense_ratio"]);
+  assert.equal(k.net_income.v, null);
+  assert.equal(k.net_income.s, "NOT_MEASURED");
+  assert.equal(k.rh_expense_ratio.v, null);
+});

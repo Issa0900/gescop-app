@@ -203,6 +203,8 @@ export const KPI_REGISTRY = Object.freeze({
 
   rh_expense_ratio: {
     id: "rh_expense_ratio",
+    // Flux de plusieurs sources : calcule sur leur periode commune (kpiEngine).
+    periodeCommune: ["Order", "Transaction", "Payroll"],
     name: { fr: "Poids Masse Salariale / CA", en: "Payroll to Revenue Ratio" },
     level: KPI_LEVELS.KPI,
     domain: DOMAINS.RH,
@@ -325,6 +327,8 @@ export const KPI_REGISTRY = Object.freeze({
 
   net_income: {
     id: "net_income",
+    // Flux de plusieurs sources : calcule sur leur periode commune (kpiEngine).
+    periodeCommune: ["Order", "Transaction", "Expense", "Payroll"],
     name: { fr: "Résultat net", en: "Net Income" },
     level: KPI_LEVELS.KPI,
     domain: DOMAINS.FINANCE,
@@ -377,6 +381,8 @@ export const KPI_REGISTRY = Object.freeze({
 
   total_charges: {
     id: "total_charges",
+    // Flux de plusieurs sources : calcule sur leur periode commune (kpiEngine).
+    periodeCommune: ["Order", "Transaction", "Expense", "Payroll"],
     name: { fr: "Charges totales", en: "Total Charges" },
     level: KPI_LEVELS.MESURE,
     domain: DOMAINS.FINANCE,
@@ -395,6 +401,8 @@ export const KPI_REGISTRY = Object.freeze({
 
   net_margin_pct: {
     id: "net_margin_pct",
+    // Flux de plusieurs sources : calcule sur leur periode commune (kpiEngine).
+    periodeCommune: ["Order", "Transaction", "Expense", "Payroll"],
     name: { fr: "Marge nette (%)", en: "Net Margin %" },
     level: KPI_LEVELS.KPI,
     domain: DOMAINS.FINANCE,
@@ -411,6 +419,8 @@ export const KPI_REGISTRY = Object.freeze({
 
   ebitda: {
     id: "ebitda",
+    // Flux de plusieurs sources : calcule sur leur periode commune (kpiEngine).
+    periodeCommune: ["Order", "Transaction", "Expense", "Payroll"],
     name: { fr: "EBITDA", en: "EBITDA" },
     level: KPI_LEVELS.KPI,
     domain: DOMAINS.FINANCE,

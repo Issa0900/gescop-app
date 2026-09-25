@@ -34,6 +34,62 @@ export function commandeHorsCA(r) {
 const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
 
 /**
+ * Note d'une carte KPI calculee sur la periode commune de ses sources
+ * (resultat du moteur portant `periodeCommune`), sinon null.
+ */
+export function notePeriodeCommune(resultat) {
+  const p = resultat?.periodeCommune;
+  if (!p) return null;
+  if (!p.mois) return "Non mesuré : les sources (ventes, dépenses, paie) ne couvrent aucun mois en commun";
+  return `Calculé sur les ${p.mois} mois couverts par toutes les sources (${p.debut} → ${p.fin})`;
+}
+
+/** Mois (AAAA-MM) d'une ligne de flux, ou null. */
+export function moisLigne(r) {
+  const brut = r?.date ?? r?.period ?? r?.pay_period ?? r?.order_date;
+  if (brut == null) return null;
+  const m = String(brut).slice(0, 7);
+  return /^\d{4}-\d{2}$/.test(m) ? m : null;
+}
+
+/**
+ * Periode commune a plusieurs sources de flux : l'intersection de l'etendue
+ * (premier -> dernier mois) de chaque entite presente avec des lignes datees.
+ * null quand moins de deux sources ou quand l'intersection couvre deja
+ * toutes les lignes (rien a realigner). { vide: true } quand aucun mois
+ * n'est commun. Sinon { periode, lignes } : les lignes de ces entites hors
+ * periode sont retirees (les lignes non datees et les autres entites restent).
+ */
+export function alignerPeriode(records, entites) {
+  const participantes = new Set(entites);
+  const etendues = new Map();
+  for (const r of records) {
+    if (!participantes.has(r._entity)) continue;
+    const m = moisLigne(r);
+    if (!m) continue;
+    const e = etendues.get(r._entity);
+    if (!e) etendues.set(r._entity, { debut: m, fin: m });
+    else { if (m < e.debut) e.debut = m; if (m > e.fin) e.fin = m; }
+  }
+  if (etendues.size < 2) return null;
+  const debut = [...etendues.values()].reduce((a, e) => (e.debut > a ? e.debut : a), "0000-00");
+  const fin = [...etendues.values()].reduce((a, e) => (e.fin < a ? e.fin : a), "9999-99");
+  if (debut > fin) return { vide: true };
+  // Une source datee d'un seul mois ne prouve pas sa periode (ligne du mois ou
+  // total annuel date en fin d'exercice ?) : pas de realignement sur elle.
+  if ([...etendues.values()].some((e) => e.debut === e.fin)) return null;
+  const dedans = (r) => {
+    if (!participantes.has(r._entity)) return true;
+    const m = moisLigne(r);
+    return m === null || (m >= debut && m <= fin);
+  };
+  if (records.every(dedans)) return null;
+  const [a, b] = [debut, fin].map((m) => m.split("-").map(Number));
+  const mois = (b[0] - a[0]) * 12 + (b[1] - a[1]) + 1;
+  return { periode: { debut, fin, mois }, lignes: records.filter(dedans) };
+}
+
+/**
  * Taux d'amortissement annuel en fraction. Un fichier le donne en fraction
  * (0,30) ou en pourcentage (30) ; un taux annuel ne depasse jamais 100 %, donc
  * au-dessus de 1 c'est un pourcentage. null si absent ou illisible.

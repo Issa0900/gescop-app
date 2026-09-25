@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { noteBaseCA } from "@/lib/core/kpiRecords";
+import { noteBaseCA, notePeriodeCommune } from "@/lib/core/kpiRecords";
 import EmptyState from "@/components/EmptyState";
 import KpiCard from "@/components/kpis/KpiCard";
 import KpiTrendChart from "@/components/kpis/KpiTrendChart";
@@ -119,7 +119,10 @@ export default function Kpis() {
         : "";
       // Statut du moteur : un KPI calcule avec une partie seulement de ses
       // sources (UNKNOWN) est affiche, mais signale comme partiel.
-      const note = result?.status === "UNKNOWN" ? "Partiel : une partie des données nécessaires n'est pas importée" : null;
+      const note = [
+        result?.status === "UNKNOWN" ? "Partiel : une partie des données nécessaires n'est pas importée" : null,
+        notePeriodeCommune(result),
+      ].filter(Boolean).join(" · ") || null;
       return {
         id,
         domain,
@@ -153,12 +156,16 @@ export default function Kpis() {
     };
     // Statut du moteur pour la fenetre affichee : « partiel » quand une partie
     // des sources manque (badge sur la carte, jamais un chiffre presente complet).
-    const statut = (fenetre, id) => (fenetre?.get(id)?.status === "UNKNOWN" ? { statut: "partiel" } : {});
+    const statut = (fenetre, id, noteBase) => {
+      const r = fenetre?.get(id);
+      const note = [noteBase, notePeriodeCommune(r)].filter(Boolean).join(" · ");
+      return { ...(r?.status === "UNKNOWN" ? { statut: "partiel" } : {}), ...(note ? { note } : {}) };
+    };
     const hasFinance = (transactions || []).length > 0 || (orders || []).length > 0 || (executiveSummary || []).length > 0;
     if (hasFinance) {
       pousser("Chiffre d'affaires (mois)", "finance", V(fen.mois, "total_revenue"), V(fen.moisPrec, "total_revenue"), "$", statut(fen.mois, "total_revenue"));
       pousser("Charges totales (mois)", "finance", V(fen.mois, "total_charges"), V(fen.moisPrec, "total_charges"), "$",
-        { note: "Coût des ventes + dépenses + masse salariale", lowerIsBetter: true, ...statut(fen.mois, "total_charges") });
+        { lowerIsBetter: true, ...statut(fen.mois, "total_charges", "Coût des ventes + dépenses + masse salariale (+ amortissement des immobilisations)") });
       pousser("Marge nette (mois)", "finance", V(fen.mois, "net_margin_pct"), V(fen.moisPrec, "net_margin_pct"), "%", statut(fen.mois, "net_margin_pct"));
       if (fen.trim) pousser("Marge nette (3 mois)", "finance", V(fen.trim, "net_margin_pct"), V(fen.trimPrec, "net_margin_pct"), "%", statut(fen.trim, "net_margin_pct"));
       else pousser("Marge nette (période importée)", "finance", V(fen.total, "net_margin_pct"), null, "%", statut(fen.total, "net_margin_pct"));

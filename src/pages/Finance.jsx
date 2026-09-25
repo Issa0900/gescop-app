@@ -14,7 +14,7 @@ import { financialMonthlySeries } from "@/lib/financialData";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import DataErrorState from "@/components/DataErrorState";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
-import { noteBaseCA } from "@/lib/core/kpiRecords";
+import { noteBaseCA, notePeriodeCommune } from "@/lib/core/kpiRecords";
 import PaiementsCard from "@/components/finance/PaiementsCard";
 
 // Chaque carte est un KPI du moteur, et elles s'additionnent : CA - charges
@@ -52,6 +52,9 @@ export default function Finance() {
     netIncome: v("net_income"),
     marginPct: v("net_margin_pct"),
   };
+  // Resultat, charges et marge peuvent porter sur la periode commune des
+  // sources, plus courte que celle du CA : la carte le dit.
+  const periode = notePeriodeCommune(engineKpis.get("net_income"));
   const detailCharges = [
     ["coût des ventes", v("cogs_total")],
     ["dépenses", v("total_expense")],
@@ -73,9 +76,9 @@ export default function Finance() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Chiffre d'affaires" value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
-        <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={detailCharges ? `dont ${detailCharges}` : undefined} />
-        <StatCard label="Résultat net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel="CA − charges totales" icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Marge nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
+        <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={[detailCharges ? `dont ${detailCharges}` : null, notePeriodeCommune(engineKpis.get("total_charges"))].filter(Boolean).join(" · ") || undefined} />
+        <StatCard label="Résultat net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel={periode || "CA − charges totales"} icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label="Marge nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} sublabel={notePeriodeCommune(engineKpis.get("net_margin_pct")) || undefined} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">

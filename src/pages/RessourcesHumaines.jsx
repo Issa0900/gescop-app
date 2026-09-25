@@ -13,6 +13,7 @@ import BadgeStatus from "@/components/ui/BadgeStatus";
 import { columnPresent } from "@/lib/metrics";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { useKpiEngine } from "@/lib/useKpiEngine";
+import { notePeriodeCommune } from "@/lib/core/kpiRecords";
 import { preparerPeriodes, serieMensuelle } from "@/lib/core/kpiPeriodes";
 
 function formatCurrency(val) {
@@ -90,6 +91,7 @@ export default function RessourcesHumaines() {
         payrollSource,
         revPerEmp: v("revenue_per_employee"),
         ratioPct: v("rh_expense_ratio"),
+        ratioNote: notePeriodeCommune(kpis.get("rh_expense_ratio")),
         avgCommission,
       },
       distribution: dist,
@@ -218,6 +220,7 @@ export default function RessourcesHumaines() {
         <StatCard
           label="Masse salariale / CA"
           value={metrics.ratioPct === null ? "Non mesuré" : `${metrics.ratioPct.toFixed(1)} %`}
+          sublabel={metrics.ratioNote || undefined}
           icon={PieChart}
           accent="bg-purple-100 text-purple-600"
         />

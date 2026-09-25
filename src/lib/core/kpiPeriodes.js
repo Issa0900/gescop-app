@@ -10,20 +10,14 @@
 
 import { buildKpiDataset } from "./kpiDataset";
 import { computeKpiBatch } from "./kpiEngine";
+import { moisLigne } from "./kpiRecords";
 
 // Entites datees dont les lignes sont des flux d'une periode. Les autres
 // (clients, produits, employes, campagnes recapitulatives, stock) sont des
 // referentiels : ils entrent dans toutes les fenetres.
 export const ENTITES_FLUX = new Set(["Transaction", "Order", "Expense", "Payroll", "CampaignDaily", "Cashflow", "ExecutiveSummary"]);
 
-const MOIS = /^\d{4}-\d{2}$/;
-
-export function moisDe(r) {
-  const brut = r?.date ?? r?.period ?? r?.pay_period ?? r?.order_date;
-  if (brut == null) return null;
-  const m = String(brut).slice(0, 7);
-  return MOIS.test(m) ? m : null;
-}
+export const moisDe = moisLigne;
 
 const cleMois = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 

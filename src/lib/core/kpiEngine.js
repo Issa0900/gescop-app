@@ -12,7 +12,7 @@ import { buildKpiLineage, buildLineageSource } from "./dataLineage";
 import { computeFieldQuality, isQualitySufficient, filterByConfidence } from "./dataQualityEngine";
 import { getAggregationMethod } from "./fieldSemantic";
 import { resolveContextualField } from "./entityFieldMap";
-import { commandeHorsCA, montantHT } from "./kpiRecords";
+import { commandeHorsCA, montantHT, alignerPeriode } from "./kpiRecords";
 import { KPI_STATUS, ECONOMIC_ROLES, AGGREGATION_METHODS, TEMPORAL_TYPES } from "./semanticTypes";
 
 /**
@@ -31,6 +31,27 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
   if (!kpiDef) {
     // If it's not a registered KPI, assume it's a raw field we just need to aggregate
     return _aggregateRawField(kpiId, records, fieldSemantics);
+  }
+
+  // Un KPI qui combine des flux de plusieurs sources (ventes, depenses, paie)
+  // se calcule sur leur periode commune : 6 mois de ventes moins 12 mois de
+  // paie divisaient le resultat par deux (contrat KPI, 25 sept 2026). Le KPI
+  // et toutes ses dependances sont recalcules sur ces seules lignes.
+  if (kpiDef.periodeCommune && !context._periodeAlignee) {
+    const aligne = alignerPeriode(records, kpiDef.periodeCommune);
+    if (aligne?.vide) {
+      return {
+        ...buildKpiLineage({
+          kpiKey: kpiId, name: kpiDef.name.fr, value: null, unit: kpiDef.dataType,
+          formula: "Aucun mois commun aux sources", sources: [], status: KPI_STATUS.NOT_MEASURED,
+        }),
+        periodeCommune: { debut: null, fin: null, mois: 0 },
+      };
+    }
+    if (aligne) {
+      const res = computeKpiBatch([kpiId], aligne.lignes, fieldSemantics, { _periodeAlignee: true }).get(kpiId);
+      return { ...res, periodeCommune: aligne.periode };
+    }
   }
 
   // 1. Resolve and calculate dependencies
@@ -199,13 +220,14 @@ function determineTemporalContext(records) {
  * 
  * @param {string[]} kpiIds 
  * @param {Array<Object>} records 
- * @param {Map<string, Object>} fieldSemantics 
+ * @param {Map<string, Object>} fieldSemantics
+ * @param {Object} [options] - variables de contexte ajoutees (ex. _periodeAlignee)
  * @returns {Map<string, import("./dataLineage").KpiLineage>}
  */
-export function computeKpiBatch(kpiIds, records, fieldSemantics) {
+export function computeKpiBatch(kpiIds, records, fieldSemantics, options = {}) {
   const orderedIds = sortKpisTopologically(kpiIds);
   // Injection de la temporalité et des données brutes (Phase 3 SSOT)
-  const context = determineTemporalContext(records);
+  const context = { ...determineTemporalContext(records), ...options };
   context._records = records; // Permet aux KPI complexes de filtrer sémantiquement
   context._semantics = fieldSemantics;
   context._statuts = {};
