@@ -8,7 +8,7 @@
 //    parenthèses) et « Siège social » restait un autre groupe ;
 //  - « Toutes succursales » était traité comme une succursale.
 
-import { montantHT, commandeHorsCA, transactionsDejaCommandees } from "./core/kpiRecords";
+import { montantHT, commandeHorsCA, transactionsDejaCommandees, tauxDpa } from "./core/kpiRecords";
 import { isIncome } from "./transactionClassifier";
 
 export const NON_ASSIGNE = "Non assigné";
@@ -158,7 +158,7 @@ export function calculerSuccursales({ orders = [], transactions = [], employees 
     groupe(libelleRh(e)).employerCost += costAnnuel * ratioPeriode;
   }
   for (const a of assets) {
-    const amortAnnuel = Number(a.net_book_value || 0) * Number(a.dpa_rate || 0);
+    const amortAnnuel = Number(a.net_book_value || 0) * (tauxDpa(a) || 0);
     groupe(libelleActif(a)).depreciation += amortAnnuel * ratioPeriode;
   }
 

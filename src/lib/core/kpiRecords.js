@@ -34,6 +34,17 @@ export function commandeHorsCA(r) {
 const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
 
 /**
+ * Taux d'amortissement annuel en fraction. Un fichier le donne en fraction
+ * (0,30) ou en pourcentage (30) ; un taux annuel ne depasse jamais 100 %, donc
+ * au-dessus de 1 c'est un pourcentage. null si absent ou illisible.
+ */
+export function tauxDpa(r) {
+  const t = num(r?.dpa_rate);
+  if (t === null || !Number.isFinite(t) || t < 0) return null;
+  return t > 1 ? t / 100 : t;
+}
+
+/**
  * Montant hors taxes d'une ligne de commande : sous-total ; sinon total moins
  * la taxe quand le fichier la fournit ; sinon total ; sinon le montant
  * reconstruit a l'import (quantite x prix).

@@ -162,14 +162,14 @@ test("Cas 4 - marge brute ($ et %) exacte via le moteur KPI reel", () => {
 // ─────────────────────────────────────────────────────────────────────────
 // CAS 5 — EBITDA (nouveau calcul), moteur reel
 // ─────────────────────────────────────────────────────────────────────────
-test("Cas 5 - EBITDA exact (marge brute - masse salariale - amortissement proratise), different de l'ancien bug (= net_income)", () => {
+// Verite corrigee le 25 sept 2026 (contrat KPI, .claude/skills/gescop-kpi-contract) :
+// ce test attendait EBITDA = marge brute - paie - amortissement. Un EBITDA est
+// par definition AVANT amortissement ; c'est le resultat net qui le retranche.
+// L'amortissement est proratise en mois civils couverts (1 mois ici), comme le
+// P&L par succursale (succursales.js), pas en jours de ventes.
+test("Cas 5 - EBITDA avant amortissement, resultat net apres amortissement proratise", () => {
   const data = {
-    // Memes commandes que le cas 4 : marge brute = 18000 $. Les deux dates
-    // (2026-01-01 et 2026-01-30) donnent une periode de 30 jours au moteur
-    // (determineTemporalContext : ceil(29 jours d'ecart) + 1 = 30) -- c'est
-    // CETTE valeur, pas un mois calendaire fixe, que kpiRegistry utilise pour
-    // proratiser l'amortissement (`dpa_annual_total * (periodDays / 365)`,
-    // jamais `/30`).
+    // Memes commandes que le cas 4 : marge brute = 18000 $, en janvier 2026.
     orders: [
       { order_id: "O1", date: "2026-01-01", subtotal: 30000, total_cost: 20000, status: "completed" },
       { order_id: "O2", date: "2026-01-30", subtotal: 20000, total_cost: 12000, status: "completed" },
@@ -185,28 +185,12 @@ test("Cas 5 - EBITDA exact (marge brute - masse salariale - amortissement prorat
   assert.equal(k.get("payroll_total").value, 8000);
   assert.equal(k.get("dpa_annual_total").value, 3600);
 
-  // period_days reel utilise par le moteur : determineTemporalContext (kpiEngine.js)
-  // calcule ceil(|2026-01-30 - 2026-01-01|) + 1 = ceil(29) + 1 = 30 jours.
-  const periodDays = 30;
-
-  // Calcul manuel EXACT, avec la meme expression et le meme ordre
-  // d'operations que kpiRegistry.js (`gross_margin_amount - payroll_total -
-  // dpa_annual_total * (periodDays / 365)`), pour une egalite bit a bit :
-  // amortissement de la periode = 3600 * (30 / 365) = 295.8904109589041...
-  // EBITDA attendu = 18000 - 8000 - 295.8904109589041... = 9704.109589041096...
-  const amortissementPeriode = 3600 * (periodDays / 365);
-  const ebitdaAttendu = 18000 - 8000 - amortissementPeriode;
-  // Non-approximatif : egalite stricte, pas de tolerance, puisque le calcul
-  // manuel ci-dessus reproduit exactement la meme expression et le meme
-  // ordre d'operations que kpiRegistry.js (ebitdaAttendu ~= 9704.109589041096,
-  // valeur en virgule flottante non arrondie).
-  assert.equal(k.get("ebitda").value, ebitdaAttendu);
-
-  // Preuve que le bug n'est plus la : AVANT le correctif, ebitda = net_income
-  // tel quel (aucun amortissement reintegre). Ici net_income = 50000 - 32000
-  // - 0 (pas de total_expense) - 8000 = 10000. Le nouvel EBITDA (~9704.11)
-  // DOIT differer de ce chiffre.
-  assert.equal(k.get("net_income").value, 10000);
+  // EBITDA = 50000 - 32000 - 0 (aucune depense importee) - 8000 = 10000, partiel
+  // (les depenses ne sont pas fournies).
+  assert.equal(k.get("ebitda").value, 10000);
+  assert.equal(k.get("ebitda").status, "UNKNOWN");
+  // Resultat net = EBITDA - 3600 x 1 mois / 12 = 9700.
+  assert.equal(k.get("net_income").value, 10000 - 3600 / 12);
   assert.notEqual(k.get("ebitda").value, k.get("net_income").value);
 });
 

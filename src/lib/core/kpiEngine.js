@@ -44,7 +44,9 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
   // dependances avant le KPI et ne met que leur VALEUR dans le contexte : sans
   // ce registre, un resultat net partiel donnait une marge nette « mesuree ».
   if (!resolvedDeps._statuts) resolvedDeps._statuts = {};
+  if (!resolvedDeps._sources) resolvedDeps._sources = {};
   const statuts = resolvedDeps._statuts;
+  const sourcesCalculees = resolvedDeps._sources;
   // Une dependance optionnelle affine le chiffre quand elle existe (amortissement
   // d'un registre d'immobilisations) ; son absence ne rend pas le KPI partiel.
   const optionnelles = new Set(kpiDef.dependancesOptionnelles || []);
@@ -57,12 +59,14 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
       const depResult = computeKpi({ kpiId: depId, records, fieldSemantics, context: resolvedDeps });
       resolvedDeps[depId] = depResult.value;
       statuts[depId] = depResult.status;
+      sourcesCalculees[depId] = depResult.sources;
       depStatus = depResult.status;
 
       lineageSources.push(...depResult.sources);
       if (Number.isFinite(depResult.qualityScore)) lowestQuality = Math.min(lowestQuality, depResult.qualityScore);
     } else {
       depStatus = statuts[depId];
+      lineageSources.push(...(sourcesCalculees[depId] || []));
     }
     if (optionnelles.has(depId)) continue;
     if (depStatus === KPI_STATUS.NOT_MEASURED || depStatus === KPI_STATUS.INVALID) {
@@ -175,10 +179,15 @@ function determineTemporalContext(records) {
     const diffTime = Math.abs(maxDate.getTime() - minDate.getTime());
     // Inclusif : +1 jour pour éviter la division par zéro si un seul jour de données
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    // Mois civils couverts, bornes incluses : des ventes le 5 et le 18 d'un
+    // meme mois couvrent 1 mois, pas 14/30 de mois (proratisation annuelle).
+    const period_months = (maxDate.getUTCFullYear() - minDate.getUTCFullYear()) * 12
+      + (maxDate.getUTCMonth() - minDate.getUTCMonth()) + 1;
     return {
       start_date: minDate.toISOString().slice(0, 10),
       end_date: maxDate.toISOString().slice(0, 10),
-      period_days: diffDays
+      period_days: diffDays,
+      period_months,
     };
   }
   
@@ -200,6 +209,7 @@ export function computeKpiBatch(kpiIds, records, fieldSemantics) {
   context._records = records; // Permet aux KPI complexes de filtrer sémantiquement
   context._semantics = fieldSemantics;
   context._statuts = {};
+  context._sources = {};
 
   const results = new Map();
 
@@ -207,6 +217,7 @@ export function computeKpiBatch(kpiIds, records, fieldSemantics) {
     const result = computeKpi({ kpiId: id, records, fieldSemantics, context });
     context[id] = result.value;
     context._statuts[id] = result.status;
+    context._sources[id] = result.sources;
     
     // Only return the ones explicitly requested
     if (kpiIds.includes(id)) {

@@ -11,7 +11,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { DOMAINS, KPI_LEVELS, DATA_TYPES, ECONOMIC_ROLES } from "./semanticTypes.js";
-import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA, estVente, montantAvoirs, montantHT } from "./kpiRecords.js";
+import { recettesDejaCommandees, depensesDejaSaisies, commandeHorsCA, estVente, montantAvoirs, montantHT, tauxDpa } from "./kpiRecords.js";
+
+// Amortissement de la periode du calcul : DPA annuelle x mois couverts / 12.
+// 0 sans registre d'immobilisations (rien a amortir).
+const amortissementPeriode = (deps) =>
+  deps.dpa_annual_total == null ? 0 : deps.dpa_annual_total * ((deps.period_months || 12) / 12);
 
 /**
  * Registry of all computed indicators (KPIs and Measures).
@@ -329,23 +334,16 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RESULT,
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: true,
-    dependencies: ["total_revenue", "total_expense", "cogs", "payroll_total"],
-    // Same principle as gross_margin_amount: no expense data imported is not
-    // the same as zero expenses, and treating it that way used to make net
-    // income equal total_revenue -- a business with real costs looking
-    // artificially 100% profitable the moment its expense data hadn't
-    // arrived yet.
-    // Resultat = CA HT - cout des ventes - depenses - masse salariale. Il ne
-    // retranchait que les depenses : sur GESCOP.xlsx, 321 104 $ de cout des
-    // marchandises disparaissaient du resultat. Sans aucune charge connue, le
-    // resultat n'est pas le CA : non mesurable.
+    // Resultat = EBITDA - amortissement de la periode (contrat KPI, 25 sept
+    // 2026). L'EBITDA porte deja les conditions « non mesurable » (CA absent,
+    // aucune charge d'exploitation). L'amortissement est optionnel : sans
+    // registre d'immobilisations il n'y a rien a amortir, le resultat n'est pas
+    // partiel pour autant. Interets et impots : aucune donnee importee.
+    dependencies: ["ebitda", "dpa_annual_total"],
+    dependancesOptionnelles: ["dpa_annual_total"],
     calculate: (deps) => {
-      if (deps.total_revenue == null) return null;
-      // Le cout des ventes seul ne suffit pas : sans aucune charge
-      // d'exploitation (depenses ou paie), CA - cout n'est que la marge brute,
-      // pas un resultat (Nordik : EBITDA affiche = marge brute).
-      if (deps.total_expense == null && deps.payroll_total == null) return null;
-      return deps.total_revenue - (deps.cogs || 0) - (deps.total_expense || 0) - (deps.payroll_total || 0);
+      if (deps.ebitda == null) return null;
+      return deps.ebitda - amortissementPeriode(deps);
     },
   },
   
@@ -389,10 +387,11 @@ export const KPI_REGISTRY = Object.freeze({
     isAdditive: true,
     // Exactement ce que net_income retranche, avec la meme condition : sans
     // depense ni paie, pas de charges d'exploitation connues -> non mesure.
-    dependencies: ["cogs", "total_expense", "payroll_total"],
+    dependencies: ["cogs", "total_expense", "payroll_total", "dpa_annual_total"],
+    dependancesOptionnelles: ["dpa_annual_total"],
     calculate: (deps) => {
       if (deps.total_expense == null && deps.payroll_total == null) return null;
-      return (deps.cogs || 0) + (deps.total_expense || 0) + (deps.payroll_total || 0);
+      return (deps.cogs || 0) + (deps.total_expense || 0) + (deps.payroll_total || 0) + amortissementPeriode(deps);
     },
   },
 
@@ -421,29 +420,22 @@ export const KPI_REGISTRY = Object.freeze({
     economicRole: ECONOMIC_ROLES.RESULT,
     dataType: DATA_TYPES.CURRENCY,
     isAdditive: true,
-    // Ancien bug : `ebitda = net_income` tel quel, sans jamais reintegrer
-    // l'amortissement (ni les interets, qu'aucune entite n'importe). Un
-    // alias silencieux qui affichait un chiffre FAUX (le resultat net) en le
-    // faisant passer pour l'EBITDA — pire que de ne rien afficher.
-    // Formule retenue (guide_complet_des_kpis_et_analyses_avanc_es.md §8.3) :
-    // EBITDA = Marge Brute - Masse Salariale - Amortissement. `dpa_rate` sur
-    // Asset donne un amortissement ESTIME annuel (dpa_annual_total, deja
-    // utilise ailleurs dans ce fichier) ; on le proratise sur period_days
-    // pour l'aligner sur la periode du rapport. Sans amortissement calculable
-    // (aucun Asset avec net_book_value + dpa_rate importe) ou sans masse
-    // salariale connue, impossible de distinguer un vrai EBITDA du resultat
-    // net : NOT_MEASURED plutot qu'un chiffre invente ou recycle.
-    // Intérêts non réintégrés : aucun champ de charge d'intérêt n'est importé
-    // nulle part dans le registre (verifie) — a ajouter le jour ou une telle
-    // donnée existe.
-    dependencies: ["gross_margin_amount", "payroll_total", "dpa_annual_total"],
+    // EBITDA = CA - cout des ventes - depenses d'exploitation - paie, AVANT
+    // amortissement, interets et impots (contrat KPI, 25 sept 2026).
+    // L'ancienne formule (marge brute - paie - amortissement, reprise du P&L
+    // par succursale du guide §8.3) ignorait loyer et marketing, retranchait
+    // l'amortissement qu'un EBITDA exclut par definition, et n'etait mesuree
+    // qu'avec un registre d'immobilisations : 320 000 $ au lieu de 200 000 $
+    // sur CA 1 M, cout 400 k, loyer 150 k, paie 250 k, amortissement 30 k.
+    // Sans aucune charge d'exploitation (ni depense ni paie), CA - cout n'est
+    // que la marge brute : non mesurable. Un cout des ventes, des depenses ou
+    // une paie absents sont comptes 0 mais rendent l'EBITDA partiel (statut
+    // propage par kpiEngine).
+    dependencies: ["total_revenue", "cogs", "total_expense", "payroll_total"],
     calculate: (deps) => {
-      if (deps.gross_margin_amount == null || deps.payroll_total == null || deps.dpa_annual_total == null) {
-        return null;
-      }
-      const periodDays = deps.period_days || 365;
-      const amortissementPeriode = deps.dpa_annual_total * (periodDays / 365);
-      return deps.gross_margin_amount - deps.payroll_total - amortissementPeriode;
+      if (deps.total_revenue == null) return null;
+      if (deps.total_expense == null && deps.payroll_total == null) return null;
+      return deps.total_revenue - (deps.cogs || 0) - (deps.total_expense || 0) - (deps.payroll_total || 0);
     },
   },
 
@@ -1198,9 +1190,9 @@ export const KPI_REGISTRY = Object.freeze({
     isAdditive: true,
     dependencies: [],
     calculate: (deps) => {
-      const records = (deps._records || []).filter(r => r._entity === "Asset" && r.net_book_value != null && r.dpa_rate != null);
+      const records = (deps._records || []).filter(r => r._entity === "Asset" && r.net_book_value != null && r.net_book_value !== "" && tauxDpa(r) !== null && Number.isFinite(Number(r.net_book_value)));
       if (records.length === 0) return null;
-      return records.reduce((sum, r) => sum + (Number(r.net_book_value) * Number(r.dpa_rate)), 0);
+      return records.reduce((sum, r) => sum + (Number(r.net_book_value) * tauxDpa(r)), 0);
     },
   },
   
