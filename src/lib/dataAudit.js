@@ -2,6 +2,7 @@
 // and metric traceability (formula + source + period + intermediate values).
 // Read-only - it never modifies data, it only reports what the metrics are built on.
 
+import { indexClients, statutClientCommande } from "./rapprochementClients";
 import { avecMontantHT, commandesDistinctes, montantHT } from "./core/kpiRecords";
 import { monthlyAgg, monthlyAggComplete, currentMonthKey, sumLast, sumPrev, latestByKey, meanOf, dateReferenceInventaire } from "@/lib/periods";
 import { financialMonthlySeries } from "@/lib/financialData";
@@ -152,15 +153,22 @@ export function runCoherenceChecks(d) {
   }
 
   // --- Orphan references ---
-  const custIds = new Set(customers.map((c) => c.customer_id));
-  const orphanOrders = customers.length > 0 ? orders.filter((o) => o.customer_id && !custIds.has(o.customer_id)) : [];
+  // Rattachement par identifiant, courriel ou nom (rapprochementClients.js).
+  const indexCli = indexClients(customers);
+  const statuts = customers.length > 0 ? orders.map((o) => statutClientCommande(o, indexCli)) : [];
+  const orphanOrders = orders.filter((_, i) => statuts[i] === "absent");
+  const commandesAmbigues = statuts.filter((s) => s === "ambigu").length;
   if (customers.length === 0 || orders.length === 0) {
     out.push(check("Commandes rattachées à un client existant", "skip", "Clients ou commandes absents."));
   } else {
     out.push(check(
       "Commandes rattachées à un client existant",
-      orphanOrders.length === 0 ? "ok" : "warn",
-      orphanOrders.length === 0 ? `${orders.length} commandes rattachées.` : `${orphanOrders.length} commandes référencent un client absent du fichier clients : elles faussent la LTV et le churn.`,
+      orphanOrders.length === 0 && commandesAmbigues === 0 ? "ok" : "warn",
+      [
+        orphanOrders.length === 0 && commandesAmbigues === 0 ? `${orders.length} commandes rattachées.` : "",
+        orphanOrders.length ? `${orphanOrders.length} commandes référencent un client absent du fichier clients : elles faussent la LTV et le churn.` : "",
+        commandesAmbigues ? `${commandesAmbigues} commandes désignent un nom porté par plusieurs fiches clients : non attribuées (précisez l'identifiant client).` : "",
+      ].filter(Boolean).join(" "),
     ));
   }
 

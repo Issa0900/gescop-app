@@ -234,3 +234,20 @@ Consignes d'Issa : purge d'abord, puis les lots 1 à 5 de `qa/MISSION_CORRECTIFS
 - Les pages RH et Trésorerie donnaient déjà la priorité au KPI `payroll_total` : il est maintenant mesuré (le repli sur les salaires annuels des fiches employés reste le filet quand aucune paie n'est importée).
 - Preuves : banc Vert Québec, masse salariale 3 mois = 310 593,27 $ et paie de juillet 2026 sur la page Trésorerie = 103 531,09 $, dans les 4 combinaisons ; `tests/paie.test.js` (4 cas).
 - Bancs après le lot 3 : Vert Québec **92/110** ; `npm test` 233/233 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76.
+
+## Lot 4 — Clients, commandes, succursales
+
+### 4.1 Commandes rattachées aux clients — corrigé
+- Constat réel (différent de l'hypothèse de la mission) : le fichier de commandes ne donne que le **nom** du client (« Olivier Bélanger »), que le plan range dans `customer_id`, alors que la fiche porte « C001 » ; la page Clients joignait strictement sur `customer_id` : 0 commande et 0 $ pour chaque client.
+- Nouveau `src/lib/rapprochementClients.js`, une seule règle pour la page Clients, l'attrition (`metrics.js`, `churnStats`) et l'audit (`dataAudit.js`) : identifiant, sinon courriel, sinon nom normalisé (« Prénom Nom », « Nom, Prénom », casse, accents, ponctuation). Fait à la lecture, il marche **quel que soit l'ordre des imports** (la mission préférait l'import ; un rapprochement à l'import aurait échoué si les commandes arrivaient avant les clients).
+- **Ne rien inventer** : un nom porté par plusieurs fiches est ambigu et n'est jamais attribué au hasard. C'est le cas dans les données du rapport : **deux fiches « Olivier Caron »** (C001 Sillery et C020 Charlesbourg, même courriel) ; leurs 6 commandes restent non attribuées et l'audit le dit (« 6 commandes désignent un nom porté par plusieurs fiches clients : non attribuées (précisez l'identifiant client) »).
+- Preuves : banc Vert Québec, 60 commandes sur 66 rattachées (0 avant), les 6 ambiguës signalées ; `tests/rapprochement_clients.test.js` (4 cas).
+
+### 4.2 Dénominateurs impossibles (« 1 336 sur 1 491 clients ») — corrigé
+- Cause : `churnStats` comptait comme « clients ayant déjà commandé » tous les identifiants présents dans **toutes** les commandes en base, y compris celles de clients absents du fichier clients (autres imports, restes de purge — cf. lot P : 1 608 commandes orphelines en ligne). Avec un fichier clients, seuls ses clients comptent désormais (via le même rapprochement).
+- Preuve : banc, 22 clients ayant commandé (jamais plus que les 30 clients) ; test « ne dépasse jamais les clients du fichier » avec 50 commandes étrangères.
+
+### 4.3 Libellés de succursale — corrigé au lot 1 (`src/lib/succursales.js`)
+- Reste : le groupe « Commun » n'apparaît pas quand les immobilisations ne sont pas reconnues (voir lot 5, reconnaissance des types).
+
+**Bancs après le lot 4** : Vert Québec **104/114** ; `npm test` 237/237 ; `test:banc` 78/82 (inchangé) ; `test:demo` 76/76.

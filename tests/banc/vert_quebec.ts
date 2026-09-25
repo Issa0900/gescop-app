@@ -15,6 +15,9 @@ import { MODES, client, appeler, kpiPage, proche } from "./ia_simulee.ts";
 import { calculerSuccursales } from "../../src/lib/succursales.js";
 import { soldesTresorerie } from "../../src/lib/tresorerie.js";
 import { preparerPeriodes, serieMensuelle } from "../../src/lib/core/kpiPeriodes.js";
+import { indexClients, clientDeCommande } from "../../src/lib/rapprochementClients.js";
+import { churnStats } from "../../src/lib/metrics.js";
+import { runCoherenceChecks } from "../../src/lib/dataAudit.js";
 
 declare const require: any;
 declare const process: any;
@@ -87,17 +90,23 @@ export const CONTROLES: Controle[] = [
   },
   // Lot 4 : clients et commandes (03_clients.csv + 11_commandes.csv)
   {
-    lot: "4.1", id: "Commandes rattachées à un client connu", attendu: 66,
-    calcul: (t) => {
-      const ids = new Set((t.Customer || []).map((c) => c.customer_id));
-      return (t.Order || []).filter((o) => o.customer_id && ids.has(o.customer_id)).length;
-    },
+    // Page Clients / audit : chaque commande retrouve son client (par identifiant,
+    // courriel ou nom : le fichier de commandes ne donne que le nom).
+    // Verite : 66 commandes, dont 6 au nom d'« Olivier Caron », porte par DEUX fiches
+    // clients (C001 et C020, meme courriel) : non attribuables sans deviner.
+    lot: "4.1", id: "Commandes rattachées à un client connu", attendu: 60,
+    calcul: (t) => { const ix = indexClients(t.Customer || []); return (t.Order || []).filter((o) => clientDeCommande(o, ix)).length; },
   },
   {
-    lot: "4.1", id: "Clients distincts ayant commandé", attendu: 23,
+    // « X sur Y clients ayant déjà commandé » (page Clients, churnStats) : jamais plus que les 30 clients.
+    lot: "4.2", id: "Clients ayant déjà commandé (page Clients)", attendu: 22,
+    calcul: (t) => churnStats(t.Customer || [], t.Order || []).buyers,
+  },
+  {
+    lot: "4.1", id: "Audit : commandes au client ambigu signalées", attendu: true,
     calcul: (t) => {
-      const ids = new Set((t.Customer || []).map((c) => c.customer_id));
-      return new Set((t.Order || []).filter((o) => ids.has(o.customer_id)).map((o) => o.customer_id)).size;
+      const c = runCoherenceChecks({ customers: t.Customer || [], orders: t.Order || [] }).find((x: any) => x.label === "Commandes rattachées à un client existant");
+      return Boolean(c && /6 commandes désignent un nom porté par plusieurs fiches/.test(c.detail));
     },
   },
   // Lignes attendues par entite (verite : nombre de lignes des fichiers)

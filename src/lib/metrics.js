@@ -12,6 +12,7 @@ import { montantHT, commandeHorsCA } from "./core/kpiRecords";
 import { sumLast, sumPrev, meanOf, trendPct } from "@/lib/periods";
 import { computeKpi, computeKpiBatch } from "@/lib/core/kpiEngine";
 import { KPI_REGISTRY, getKpiDefinition, getKpisByDomain } from "@/lib/core/kpiRegistry";
+import { indexClients, clientDeCommande } from "./rapprochementClients";
 
 export {
   computeKpi,
@@ -204,7 +205,14 @@ export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_
   // and it moves when the window moves.
   const months = Math.max(1, Number(inactiveMonths) || DEFAULT_INACTIVE_MONTHS);
   const ord = orders || [];
-  const hasOrders = ord.some((o) => o.customer_id && o.date);
+  // Avec un fichier clients, « clients ayant commande » ne compte que des
+  // clients de ce fichier, retrouves par identifiant, courriel ou nom
+  // (rapprochementClients.js). Sans cela, les commandes de clients absents
+  // (autres imports, restes d'une purge) donnaient « 1 336 sur 1 491 clients »
+  // pour 30 clients reels (rapport du 25 sept., lot 4.2).
+  const indexCli = rows.length > 0 ? indexClients(rows) : null;
+  const clientDe = (o) => (indexCli ? clientDeCommande(o, indexCli) : o.customer_id || null);
+  const hasOrders = ord.some((o) => o.date && clientDe(o));
   let buyers = null;
   let lapsed = null;
   let behaviourRate = null;
@@ -215,11 +223,12 @@ export function churnStats(customers, orders, inactiveMonths = DEFAULT_INACTIVE_
     const boughtRecently = new Set();
     ord.forEach((o) => {
       const m = (o.date || "").slice(0, 7);
-      if (!o.customer_id || !m) return;
-      everBought.add(o.customer_id);
+      const cid = clientDe(o);
+      if (!cid || !m) return;
+      everBought.add(cid);
       // The month in progress counts as recent activity, unlike trend windows:
       // a purchase yesterday obviously means the customer has not lapsed.
-      if (m >= cutoff) boughtRecently.add(o.customer_id);
+      if (m >= cutoff) boughtRecently.add(cid);
     });
     buyers = everBought.size;
     lapsed = [...everBought].filter((id) => !boughtRecently.has(id)).length;

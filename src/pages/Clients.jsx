@@ -13,6 +13,7 @@ import { Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, Cartes
 import { AXE, AXE_MONTANT, GRILLE, INFOBULLE, BARRE_H, COULEURS, couleur, montant, nombre, pourcent, libelleCode } from "@/lib/graphiques";
 import { churnStats, customerValue, columnPresent, validSalesOrders } from "@/lib/metrics";
 import { fetchAll } from "@/lib/fetchAll";
+import { indexClients, cleClientCommande } from "@/lib/rapprochementClients";
 
 // Palette catégorielle validée CVD (ordre fixe, ne jamais réassigner par sens) —
 // voir la skill dataviz : 8 teintes espacées pour rester distinguables en
@@ -70,8 +71,12 @@ export default function Clients() {
   const revByCustomer = {};
   const ordersByCustomer = {};
   const lastOrderByCustomer = {};
+  // Rapprochement par identifiant, courriel ou nom (src/lib/rapprochementClients.js) :
+  // un fichier de commandes qui ne donne que le nom du client rejoint la fiche
+  // « C001 » (rapport du 25 sept. : 0 commande par client sinon).
+  const indexCli = indexClients(customers);
   validSalesOrders(orders).forEach((o) => {
-    const cid = o.customer_id;
+    const cid = cleClientCommande(o, indexCli);
     if (!cid) return;
     revByCustomer[cid] = (revByCustomer[cid] || 0) + (Number.isFinite(montantHT(o)) ? montantHT(o) : 0);
     ordersByCustomer[cid] = (ordersByCustomer[cid] || 0) + 1;
