@@ -69,7 +69,9 @@ function proche(attendu: number, obtenu: number): boolean {
  */
 export function verifierRelations(champsRattaches: Set<string>, lignes: Record<string, any>[]): VerificationRelation[] {
   const out: VerificationRelation[] = [];
+  const aDesTaxes = champsRattaches.has("tax") || champsRattaches.has("tax_federal") || champsRattaches.has("tax_provincial") || champsRattaches.has("subtotal");
   for (const rel of RELATIONS) {
+    if (rel.id === "qte_prix_total" && aDesTaxes) continue;
     if (!champsRattaches.has(rel.resultat) || !rel.termes.every((t) => champsRattaches.has(t))) continue;
     const optionnels = (rel.optionnels || []).filter((o) => champsRattaches.has(o));
     let n = 0;

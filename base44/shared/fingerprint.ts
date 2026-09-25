@@ -59,7 +59,11 @@ export function generateFingerprint(entityName: string, row: any): string {
   // differentes) partageaient l'empreinte commande + produit, et la seconde
   // disparaissait comme « doublon » (Sales_transactions : 163 lignes).
   if (entityName === "Order" && row.line_id !== undefined && row.line_id !== null && String(row.line_id).trim() !== "") {
-    return `Order:ligne:${String(row.line_id).trim()}`;
+    const lId = String(row.line_id).trim();
+    if (row.order_id !== undefined && row.order_id !== null && String(row.order_id).trim() !== "") {
+      return `Order:ligne:${String(row.order_id).trim()}:${lId}`;
+    }
+    return `Order:ligne:${lId}`;
   }
   // Ligne d'article sans identifiant de ligne : commande + produit + contenu
   // (ligne brute si disponible). Deux lignes differentes d'une meme facture ne

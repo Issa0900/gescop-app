@@ -483,7 +483,13 @@ export function rattacherParLexique(entite: string, entetes: string[], dejaPris:
   const out = new Map<string, string>();
   for (const [champ, cols] of candidats) {
     if (cols.length === 1) { out.set(cols[0], champ); continue; }
-    const rang = (e: string) => { const m = motsDe(e); return (m.includes("total") ? 0 : 100) + m.length; };
+    const rang = (e: string) => {
+      const m = motsDe(e);
+      let r = (m.includes("total") ? 0 : 100) + m.length;
+      if (m.includes("net") || m.includes("ht")) r -= 10;
+      if (m.includes("brut")) r += 10;
+      return r;
+    };
     const tries = [...cols].sort((a, b) => rang(a) - rang(b));
     if (rang(tries[0]) < rang(tries[1])) out.set(tries[0], champ);
   }

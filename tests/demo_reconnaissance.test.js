@@ -85,6 +85,18 @@ test("Deux articles d'une meme commande et d'un meme produit, identifiants de li
   assert.equal(res.newCount, 2);
 });
 
+test("Deux commandes differentes ayant les memes numeros de ligne relatifs (L1, L2) : gardees toutes les deux sans conflit", async () => {
+  const client = { entities: new Proxy({}, { get: () => ({ list: async () => [] }) }) };
+  const res = await deduplicateRows(client, "Order", [
+    { order_id: "CMD-1", line_id: "L1", product_id: "P-1", quantity: 1 },
+    { order_id: "CMD-1", line_id: "L2", product_id: "P-2", quantity: 2 },
+    { order_id: "CMD-2", line_id: "L1", product_id: "P-3", quantity: 1 },
+    { order_id: "CMD-2", line_id: "L2", product_id: "P-4", quantity: 1 },
+  ]);
+  assert.equal(res.newCount, 4);
+  assert.equal(res.conflits.length, 0);
+});
+
 test("Un dictionnaire de donnees est reconnu comme tel", () => {
   assert.equal(estDictionnaireDeDonnees(["Column_Name", "Description", "Data_Type", "Example_Value"]), true);
   assert.equal(estDictionnaireDeDonnees(["Champ", "Définition", "Format"]), true);
