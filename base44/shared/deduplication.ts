@@ -114,8 +114,9 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
   contenusParArticle.clear();
   const articlesConnus = new Map<string, { contenu: string; ligne: any }>();
   let page = 0;
-  while (true) {
-    const batch = await base44.entities[entityName].list("-created_date", 500, page * 500);
+  if (typeof base44?.entities?.[entityName]?.list === "function") {
+    while (true) {
+      const batch = await base44.entities[entityName].list("-created_date", 500, page * 500);
     if (!batch || batch.length === 0) break;
     batch.forEach((b: any) => {
       const fp = generateFingerprint(entityName, b) || b.fingerprint;
@@ -143,6 +144,7 @@ export async function deduplicateRows(base44: any, entityName: string, rows: any
     if (batch.length < 500) break;
     page++;
     if (page > 500) break; // Supports up to 250,000 rows
+    }
   }
 
   const newRows: any[] = [];

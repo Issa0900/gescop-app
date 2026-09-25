@@ -15,6 +15,7 @@ import {
 import { insertRows, missingRequired } from "../../shared/bulkInsert.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
 import { traiterLignes, champsImport, conserverFeuilleInconnue } from "../../shared/importRows.ts";
+import { deduplicateRows } from "../../shared/deduplication.ts";
 import { appliquerPreuvesEntreTables, nouveauContexteRelations } from "../../shared/preuvesTables.ts";
 import { getSchema, ENTITY_SCHEMAS } from "../../shared/entitySchemas.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
@@ -394,6 +395,8 @@ export default async function (req: Request) {
               let validCount = 0;
               let mappedCount = 0;
               let quarantinedCount = 0;
+              let duplicateCount = 0;
+              let potentialDuplicateCount = 0;
               const quarantine: any[] = [];
               // Apercu : les lignes TELLES QU'ELLES SERONT ENREGISTREES (dates
               // converties, valeurs traduites). On montrait les valeurs brutes :
@@ -404,6 +407,7 @@ export default async function (req: Request) {
               const required = getSchema(plan.entite)?.required || [];
 
               if (plan.entite && properties) {
+                const validCandidates: any[] = [];
                 for (let i = 0; i < lecture.rows.length; i++) {
                   const row = lecture.rows[i];
                   if (!row || typeof row !== "object" || isSummaryOrTotalRow(row)) continue;
@@ -443,7 +447,36 @@ export default async function (req: Request) {
                       });
                     }
                   } else {
-                    validCount++;
+                    validCandidates.push(normalized);
+                  }
+                }
+
+                // Dédoublonnage et détection des conflits dès l'analyse pour que
+                // valid_rows annonce exactement ce qui sera écrit (règle C5).
+                
+                if (validCandidates.length > 0) {
+                  try {
+                    const dedup = await deduplicateRows(base44, plan.entite, validCandidates);
+                    validCount = dedup.newRows.length;
+                    duplicateCount = dedup.duplicateCount;
+                    potentialDuplicateCount = dedup.potentialDuplicates.length;
+                    quarantinedCount += dedup.conflits.length;
+                    for (const { row } of dedup.conflits) {
+                      if (quarantine.length < 50) {
+                        quarantine.push({
+                          rowIndex: (row as any)[NUMERO_LIGNE] ?? null,
+                          original: (row as any)[LIGNE_BRUTE] || row,
+                          mapped: row,
+                          errors: ["Même identifiant qu'une ligne existante mais valeurs différentes (conflit)"],
+                          reason_code: REASON.CONFLICTING_RECORD,
+                          field: undefined,
+                          review_status: "A_VERIFIER",
+                        });
+                      }
+                    }
+                  } catch (e) {
+                    console.error("Deduplication during analysis failed, fallback to raw candidate count", e);
+                    validCount = validCandidates.length;
                   }
                 }
               }
@@ -467,6 +500,8 @@ export default async function (req: Request) {
                   valid_rows: validCount,
                   total_rows: totalRows,
                   quarantined_rows: quarantinedCount,
+                  duplicate_rows: duplicateCount,
+                  potential_duplicates: potentialDuplicateCount,
                   quarantine_samples: quarantine
                 }
               });
