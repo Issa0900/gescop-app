@@ -50,3 +50,4 @@ tests/banc/resultats/*
 
 # Agent QA : sorties locales de qa/run-all.sh
 qa/out/
+!tests/banc/resultats/vert-quebec-avant.json

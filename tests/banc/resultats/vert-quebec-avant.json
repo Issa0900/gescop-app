@@ -1,0 +1,1188 @@
+{
+ "ok": 54,
+ "total": 90,
+ "resultats": [
+  {
+   "version": "origine",
+   "mode": "sans-ia",
+   "feuilles": [
+    {
+     "fichier": "10_immobilisations.csv",
+     "type": "Asset",
+     "ecrites": 10,
+     "lues": 10,
+     "message": "5 colonne(s) non reconnue(s) et ignorée(s) pour Asset : category, valeur_acquisition, duree_vie_utile_annees, valeur_residuelle, branch. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "11_commandes.csv",
+     "type": "Order",
+     "ecrites": 66,
+     "lues": 66,
+     "message": "Colonnes : 6 confirmée(s) · 1 probable(s) (client)."
+    },
+    {
+     "fichier": "12_campagnes.csv",
+     "type": "Campaign",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "1 colonne(s) non reconnue(s) et ignorée(s) pour Campaign : target. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · channel : valeur(s) non reconnue(s) rangée(s) sous « autre » — « Marketing direct » (1). La valeur d'origine reste dans original_data. · Doublon potentiel détecté — 2 ligne(s) strictement identique(s) à une autre du fichier (ligne(s) 5, 6). Conservée(s) pour préserver les données ; vérification requise avant exclusion."
+    },
+    {
+     "fichier": "13_campagnes_journalieres.csv",
+     "type": "CampaignDaily",
+     "ecrites": 0,
+     "lues": 152,
+     "message": "Lignes écartées : 152 champ obligatoire absent. · 3 colonne(s) non reconnue(s) et ignorée(s) pour CampaignDaily : campaign_name, channel, expense. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : campaign_id · exemple de ligne rejetée : {\"date\":\"2026-04-01\",\"campaign_name\":\"Printemps au jardin\",\"channel\":\"Meta Ads\",\"impressions\":\"1877\",\"clicks\":\"44\",\"expense\":\"90.02\",\"conversions\":\"4\",\"revenu_genere\":\"224.25\"}"
+    },
+    {
+     "fichier": "14_interactions_client.csv",
+     "type": "Interaction",
+     "ecrites": 0,
+     "lues": 25,
+     "message": "Lignes écartées : 25 champ obligatoire absent. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Interaction : full_name, type_interaction, status, satisfaction_sur_5. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : customer_id · exemple de ligne rejetée : {\"id_interaction\":\"INT001\",\"date\":\"2026-08-02\",\"full_name\":\"Olivier Caron\",\"type_interaction\":\"Retour de produit\",\"status\":\"Résolu\",\"satisfaction_sur_5\":\"2\"}"
+    },
+    {
+     "fichier": "15_concurrents.csv",
+     "type": "Competitor",
+     "ecrites": 0,
+     "lues": 5,
+     "message": "Lignes écartées : 5 champ obligatoire absent. · 5 colonne(s) non reconnue(s) et ignorée(s) pour Competitor : nom_concurrent, region, positionnement, part_marche_estimee, prix_moyen_panier. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : competitor_id, name · exemple de ligne rejetée : {\"nom_concurrent\":\"EcoMaison Québec\",\"region\":\"Québec\",\"positionnement\":\"Positionnement milieu de gamme, forte présence en boutique\",\"part_marche_estimee\":\"18%\",\"prix_moyen_panier\":\"42.0\"}"
+    },
+    {
+     "fichier": "16_objectifs.csv",
+     "type": "Goal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Goal : nom_objectif, category, actual_value, echeance. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : metric · exemple de ligne rejetée : {\"nom_objectif\":\"Augmenter le chiffre d'affaires annuel\",\"category\":\"Ventes\",\"target\":\"3200000\",\"actual_value\":\"3520000\",\"echeance\":\"2027-03-31\"}"
+    },
+    {
+     "fichier": "17_evenements.csv",
+     "type": "ExecutiveSummary",
+     "ecrites": 0,
+     "lues": 7,
+     "message": "Lignes écartées : 7 type de feuille non reconnu. · Colonnes : 2 confirmée(s) · 3 inconnue(s), conservée(s) (nom_evenement, type, description) · dimension(s) potentielle(s) : type, description. · 3 colonne(s) non reconnue(s) et ignorée(s) pour ExecutiveSummary : nom_evenement, type, description. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "18_signaux_radar.csv",
+     "type": "ExternalSignal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · 3 colonne(s) non reconnue(s) et ignorée(s) pour ExternalSignal : category, role, impact_estime. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : title, family · exemple de ligne rejetée : {\"date\":\"2026-05-02\",\"source\":\"Recyc-Québec\",\"category\":\"Réglementation\",\"role\":\"Nouvelle réglementation sur les plastiques à usage unique dès 2027\",\"impact_estime\":\"Élevé\"}"
+    },
+    {
+     "fichier": "01_transactions.csv",
+     "type": "Transaction",
+     "ecrites": 268,
+     "lues": 268,
+     "message": "Colonnes : 4 confirmée(s) · 1 probable(s) (type) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "02_flux_tresorerie.csv",
+     "type": "Cashflow",
+     "ecrites": 12,
+     "lues": 12,
+     "message": "Colonnes : 4 confirmée(s) · 1 inconnue(s), conservée(s) (solde_fermeture). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Cashflow : solde_fermeture. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "03_clients.csv",
+     "type": "Customer",
+     "ecrites": 30,
+     "lues": 30,
+     "message": "Colonnes : 7 confirmée(s) · 2 inconnue(s), conservée(s) (telephone, valeur_totale_achats). · 2 colonne(s) non reconnue(s) et ignorée(s) pour Customer : telephone, valeur_totale_achats. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "04_produits.csv",
+     "type": "Product",
+     "ecrites": 24,
+     "lues": 24,
+     "message": "Colonnes : 7 confirmée(s)."
+    },
+    {
+     "fichier": "05_stocks.csv",
+     "type": "Inventory",
+     "ecrites": 72,
+     "lues": 72,
+     "message": "Colonnes : 5 confirmée(s) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "06_employes.csv",
+     "type": "Employee",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "Colonnes : 8 confirmée(s)."
+    },
+    {
+     "fichier": "07_paie.csv",
+     "type": "Payroll",
+     "ecrites": 75,
+     "lues": 75,
+     "message": "Colonnes : 3 confirmée(s) · 4 inconnue(s), conservée(s) (nom, deductions, salaire_net, date_paiement) · dimension(s) potentielle(s) : nom. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Payroll : nom, deductions, salaire_net, date_paiement. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "08_fournisseurs.csv",
+     "type": "Supplier",
+     "ecrites": 0,
+     "lues": 8,
+     "message": "Lignes écartées : 8 champ obligatoire absent. · champs obligatoires absents du fichier : supplier_id · exemple de ligne rejetée : {\"nom_fournisseur\":\"Écolo Distribution QC\",\"categorie_produits\":\"Produits d'entretien écologiques\",\"city\":\"Québec\",\"contact_name\":\"Marie-Josée Fontaine\",\"payment_terms\":\"Net 30\",\"note_fiabilite_sur_5\":\"4.6\"}"
+    },
+    {
+     "fichier": "09_achats.csv",
+     "type": "Expense",
+     "ecrites": 38,
+     "lues": 38,
+     "message": "Colonnes : 4 confirmée(s) · 2 inconnue(s), conservée(s) (numero_achat, statut) · dimension(s) potentielle(s) : statut. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Expense : numero_achat, statut. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    }
+   ],
+   "controles": [
+    {
+     "lot": "1.1",
+     "id": "CA 12 mois (transactions)",
+     "attendu": 3177262.18,
+     "app": 3177262.18,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Charges 12 mois (transactions)",
+     "attendu": 2233167.18,
+     "app": 2233167.18,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Résultat net (transactions)",
+     "attendu": 944095,
+     "app": 944095,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Marge nette % (transactions)",
+     "attendu": 29.71,
+     "app": 29.71,
+     "ok": true
+    },
+    {
+     "lot": "1.3",
+     "id": "CA par succursale (transactions)",
+     "attendu": {
+      "quebec (siege)": 1735444.98,
+      "levis": 866591.47,
+      "trois-rivieres": 575225.73
+     },
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "2",
+     "id": "Solde de trésorerie fin sept. 2026",
+     "attendu": 989095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "3",
+     "id": "Masse salariale 3 mois (paie)",
+     "attendu": 310593.27,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Commandes rattachées à un client connu",
+     "attendu": 66,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Clients distincts ayant commandé",
+     "attendu": 23,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Transaction",
+     "attendu": 268,
+     "app": 268,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Cashflow",
+     "attendu": 12,
+     "app": 12,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Customer",
+     "attendu": 30,
+     "app": 30,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Product",
+     "attendu": 24,
+     "app": 24,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Inventory",
+     "attendu": 72,
+     "app": 72,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Employee",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Payroll",
+     "attendu": 75,
+     "app": 75,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Asset",
+     "attendu": 10,
+     "app": 10,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Order",
+     "attendu": 66,
+     "app": 66,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Interaction",
+     "attendu": 25,
+     "app": 0,
+     "ok": false
+    }
+   ]
+  },
+  {
+   "version": "origine",
+   "mode": "ia-fidele",
+   "feuilles": [
+    {
+     "fichier": "10_immobilisations.csv",
+     "type": "Asset",
+     "ecrites": 0,
+     "lues": 10,
+     "message": "Lignes écartées : 10 champ obligatoire absent. · 7 colonne(s) non reconnue(s) et ignorée(s) pour Asset : nom_actif, valeur_acquisition, duree_vie_utile_annees, valeur_residuelle, methode_amortissement, category, branch. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : asset_id · exemple de ligne rejetée : {\"category\":\"Véhicule\",\"acquisition_date\":\"2022-03-15\",\"branch\":\"Québec (siège)\"}"
+    },
+    {
+     "fichier": "11_commandes.csv",
+     "type": "Order",
+     "ecrites": 66,
+     "lues": 66,
+     "message": "Colonnes : 7 probable(s) (numero_commande, date, client, canal, montant_total, statut…)."
+    },
+    {
+     "fichier": "12_campagnes.csv",
+     "type": "Campaign",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "3 colonne(s) non reconnue(s) et ignorée(s) pour Campaign : date_debut, date_fin, target. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · channel : valeur(s) non reconnue(s) rangée(s) sous « autre » — « Marketing direct » (1). La valeur d'origine reste dans original_data. · Doublon potentiel détecté — 2 ligne(s) strictement identique(s) à une autre du fichier (ligne(s) 5, 6). Conservée(s) pour préserver les données ; vérification requise avant exclusion."
+    },
+    {
+     "fichier": "13_campagnes_journalieres.csv",
+     "type": "CampaignDaily",
+     "ecrites": 0,
+     "lues": 152,
+     "message": "Lignes écartées : 152 champ obligatoire absent. · 4 colonne(s) non reconnue(s) et ignorée(s) pour CampaignDaily : revenu_genere, campaign_name, channel, amount. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : campaign_id · exemple de ligne rejetée : {\"date\":\"2026-04-01\",\"campaign_name\":\"Printemps au jardin\",\"channel\":\"Meta Ads\",\"impressions\":\"1877\",\"clicks\":\"44\",\"amount\":\"90.02\",\"conversions\":\"4\"}"
+    },
+    {
+     "fichier": "14_interactions_client.csv",
+     "type": "Interaction",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "4 colonne(s) non reconnue(s) et ignorée(s) pour Interaction : id_interaction, type_interaction, satisfaction_sur_5, payment_status. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "15_concurrents.csv",
+     "type": "Competitor",
+     "ecrites": 0,
+     "lues": 5,
+     "message": "Lignes écartées : 5 champ obligatoire absent. · 5 colonne(s) non reconnue(s) et ignorée(s) pour Competitor : nom_concurrent, positionnement, part_marche_estimee, prix_moyen_panier, region. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : competitor_id, name · exemple de ligne rejetée : {\"region\":\"Québec\"}"
+    },
+    {
+     "fichier": "16_objectifs.csv",
+     "type": "Goal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Goal : nom_objectif, echeance, category, actual_value. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : metric · exemple de ligne rejetée : {\"category\":\"Ventes\",\"target\":\"3200000\",\"actual_value\":\"3520000\"}"
+    },
+    {
+     "fichier": "17_evenements.csv",
+     "type": "ExecutiveSummary",
+     "ecrites": 0,
+     "lues": 7,
+     "message": "Lignes écartées : 7 type de feuille non reconnu. · Colonnes : 2 probable(s) (date, succursale) · 3 inconnue(s), conservée(s) (nom_evenement, type, description) · dimension(s) potentielle(s) : type, description. · 3 colonne(s) non reconnue(s) et ignorée(s) pour ExecutiveSummary : nom_evenement, type, description. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "18_signaux_radar.csv",
+     "type": "ExternalSignal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · 3 colonne(s) non reconnue(s) et ignorée(s) pour ExternalSignal : impact_estime, category, name. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : title, family · exemple de ligne rejetée : {\"date\":\"2026-05-02\",\"source\":\"Recyc-Québec\",\"category\":\"Réglementation\",\"name\":\"Nouvelle réglementation sur les plastiques à usage unique dès 2027\"}"
+    },
+    {
+     "fichier": "01_transactions.csv",
+     "type": "Transaction",
+     "ecrites": 268,
+     "lues": 268,
+     "message": "Colonnes : 4 probable(s) (date, description, montant, catégorie) · 1 ambiguë(s), non utilisée(s) dans les calculs (type) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · « type » → type retiré : 0/200 valeurs reconnues dans la liste. · « type » → type retiré : 0/200 valeurs reconnues dans la liste. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : type, succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "02_flux_tresorerie.csv",
+     "type": "Cashflow",
+     "ecrites": 12,
+     "lues": 12,
+     "message": "Colonnes : 4 probable(s) (mois, solde_ouverture, encaissements, decaissements) · 1 inconnue(s), conservée(s) (solde_fermeture). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Cashflow : solde_fermeture. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "03_clients.csv",
+     "type": "Customer",
+     "ecrites": 30,
+     "lues": 30,
+     "message": "Colonnes : 7 probable(s) (id_client, nom, type_client, ville, courriel, date_creation…) · 2 inconnue(s), conservée(s) (telephone, valeur_totale_achats). · 2 colonne(s) non reconnue(s) et ignorée(s) pour Customer : telephone, valeur_totale_achats. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "04_produits.csv",
+     "type": "Product",
+     "ecrites": 24,
+     "lues": 24,
+     "message": "Colonnes : 7 probable(s) (sku, nom_produit, categorie, fournisseur, prix_vente, cout_unitaire…)."
+    },
+    {
+     "fichier": "05_stocks.csv",
+     "type": "Inventory",
+     "ecrites": 72,
+     "lues": 72,
+     "message": "Colonnes : 1 confirmée(s) · 4 probable(s) (nom_produit, quantite_en_stock, seuil_reapprovisionnement, date_inventaire) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "06_employes.csv",
+     "type": "Employee",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "Colonnes : 8 probable(s) (id_employe, nom, poste, departement, succursale, date_embauche…)."
+    },
+    {
+     "fichier": "07_paie.csv",
+     "type": "Payroll",
+     "ecrites": 75,
+     "lues": 75,
+     "message": "Colonnes : 1 confirmée(s) · 2 probable(s) (periode, salaire_brut) · 4 inconnue(s), conservée(s) (nom, deductions, salaire_net, date_paiement) · dimension(s) potentielle(s) : nom. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Payroll : nom, deductions, salaire_net, date_paiement. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "08_fournisseurs.csv",
+     "type": "Supplier",
+     "ecrites": 0,
+     "lues": 8,
+     "message": "Lignes écartées : 8 champ obligatoire absent. · 3 colonne(s) non reconnue(s) et ignorée(s) pour Supplier : nom_fournisseur, categorie_produits, note_fiabilite_sur_5. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : supplier_id, supplier_name · exemple de ligne rejetée : {\"city\":\"Québec\",\"contact_name\":\"Marie-Josée Fontaine\",\"payment_terms\":\"Net 30\"}"
+    },
+    {
+     "fichier": "09_achats.csv",
+     "type": "Expense",
+     "ecrites": 38,
+     "lues": 38,
+     "message": "Colonnes : 4 probable(s) (date, fournisseur, description, montant) · 2 inconnue(s), conservée(s) (numero_achat, statut) · dimension(s) potentielle(s) : statut. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Expense : numero_achat, statut. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    }
+   ],
+   "controles": [
+    {
+     "lot": "1.1",
+     "id": "CA 12 mois (transactions)",
+     "attendu": 3177262.18,
+     "app": 5410429.36,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Charges 12 mois (transactions)",
+     "attendu": 2233167.18,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Résultat net (transactions)",
+     "attendu": 944095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Marge nette % (transactions)",
+     "attendu": 29.71,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.3",
+     "id": "CA par succursale (transactions)",
+     "attendu": {
+      "quebec (siege)": 1735444.98,
+      "levis": 866591.47,
+      "trois-rivieres": 575225.73
+     },
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "2",
+     "id": "Solde de trésorerie fin sept. 2026",
+     "attendu": 989095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "3",
+     "id": "Masse salariale 3 mois (paie)",
+     "attendu": 310593.27,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Commandes rattachées à un client connu",
+     "attendu": 66,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Clients distincts ayant commandé",
+     "attendu": 23,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Transaction",
+     "attendu": 268,
+     "app": 268,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Cashflow",
+     "attendu": 12,
+     "app": 12,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Customer",
+     "attendu": 30,
+     "app": 30,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Product",
+     "attendu": 24,
+     "app": 24,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Inventory",
+     "attendu": 72,
+     "app": 72,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Employee",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Payroll",
+     "attendu": 75,
+     "app": 75,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Asset",
+     "attendu": 10,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Order",
+     "attendu": 66,
+     "app": 66,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Interaction",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    }
+   ]
+  },
+  {
+   "version": "corrige",
+   "mode": "sans-ia",
+   "feuilles": [
+    {
+     "fichier": "10_immobilisations.csv",
+     "type": "Asset",
+     "ecrites": 10,
+     "lues": 10,
+     "message": "5 colonne(s) non reconnue(s) et ignorée(s) pour Asset : category, valeur_acquisition, duree_vie_utile_annees, valeur_residuelle, branch. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "11_commandes.csv",
+     "type": "Order",
+     "ecrites": 66,
+     "lues": 66,
+     "message": "Colonnes : 6 confirmée(s) · 1 probable(s) (client)."
+    },
+    {
+     "fichier": "12_campagnes_v2.csv",
+     "type": "Campaign",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "Colonnes : 5 confirmée(s) · 1 probable(s) (canal) · 1 inconnue(s), conservée(s) (objectif). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Campaign : objectif. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · channel : valeur(s) non reconnue(s) rangée(s) sous « autre » — « Marketing direct » (1). La valeur d'origine reste dans original_data."
+    },
+    {
+     "fichier": "13_campagnes_journalieres_v2.csv",
+     "type": "CampaignDaily",
+     "ecrites": 152,
+     "lues": 152,
+     "message": "Type retenu : CampaignDaily, à confirmer — CampaignDaily est presque aussi plausible. · Colonnes : 7 confirmée(s) · 2 inconnue(s), conservée(s) (nom_campagne, canal) · dimension(s) potentielle(s) : nom_campagne, canal. · type Campaign remplace par CampaignDaily : l'identifiant « campaign_id » se repete (6 valeurs distinctes sur 152 lignes), la feuille est une serie et non une liste de Campaign. · 2 colonne(s) non reconnue(s) et ignorée(s) pour CampaignDaily : nom_campagne, canal. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "14_interactions_client.csv",
+     "type": "Interaction",
+     "ecrites": 0,
+     "lues": 25,
+     "message": "Lignes écartées : 25 champ obligatoire absent. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Interaction : full_name, type_interaction, status, satisfaction_sur_5. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : customer_id · exemple de ligne rejetée : {\"id_interaction\":\"INT001\",\"date\":\"2026-08-02\",\"full_name\":\"Olivier Caron\",\"type_interaction\":\"Retour de produit\",\"status\":\"Résolu\",\"satisfaction_sur_5\":\"2\"}"
+    },
+    {
+     "fichier": "15_concurrents_v2.csv",
+     "type": "Competitor",
+     "ecrites": 0,
+     "lues": 5,
+     "message": "Lignes écartées : 5 champ obligatoire absent. · Colonnes : 1 confirmée(s) · 5 inconnue(s), conservée(s) (nom_concurrent, zone, positionnement, part_marche_estimee, prix_moyen_panier). · 5 colonne(s) non reconnue(s) et ignorée(s) pour Competitor : nom_concurrent, zone, positionnement, part_marche_estimee, prix_moyen_panier. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : name · exemple de ligne rejetée : {\"competitor_id\":\"K001\",\"nom_concurrent\":\"EcoMaison Québec\",\"zone\":\"Québec\",\"positionnement\":\"Positionnement milieu de gamme, forte présence en boutique\",\"part_marche_estimee\":\"18%\",\"prix_moyen_panier\":\"42.0\"}"
+    },
+    {
+     "fichier": "16_objectifs_v2.csv",
+     "type": "Goal",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "Colonnes : 2 confirmée(s) · 4 inconnue(s), conservée(s) (nom_objectif, categorie, valeur_actuelle, echeance). · 4 colonne(s) non reconnue(s) et ignorée(s) pour Goal : nom_objectif, categorie, valeur_actuelle, echeance. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "17_evenements_v2.csv",
+     "type": "Event",
+     "ecrites": 7,
+     "lues": 7,
+     "message": "Colonnes : 3 confirmée(s) · 2 inconnue(s), conservée(s) (nom_evenement, succursale) · dimension(s) potentielle(s) : succursale. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Event : nom_evenement, succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "18_signaux_radar_v3.csv",
+     "type": "ExternalSignal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · Colonnes : 3 confirmée(s) · 1 probable(s) (family) · 2 inconnue(s), conservée(s) (categorie, impact_estime) · dimension(s) potentielle(s) : categorie, impact_estime. · 2 colonne(s) non reconnue(s) et ignorée(s) pour ExternalSignal : categorie, impact_estime. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : family · exemple de ligne rejetée : {\"date\":\"2026-05-02\",\"source\":\"Recyc-Québec\",\"categorie\":\"Réglementation\",\"title\":\"Nouvelle réglementation sur les plastiques à usage unique dès 2027\",\"impact_estime\":\"Élevé\",\"family\":\"regulatory\"}"
+    },
+    {
+     "fichier": "01_transactions.csv",
+     "type": "Transaction",
+     "ecrites": 268,
+     "lues": 268,
+     "message": "Colonnes : 4 confirmée(s) · 1 probable(s) (type) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "02_flux_tresorerie.csv",
+     "type": "Cashflow",
+     "ecrites": 12,
+     "lues": 12,
+     "message": "Colonnes : 4 confirmée(s) · 1 inconnue(s), conservée(s) (solde_fermeture). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Cashflow : solde_fermeture. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "03_clients.csv",
+     "type": "Customer",
+     "ecrites": 30,
+     "lues": 30,
+     "message": "Colonnes : 7 confirmée(s) · 2 inconnue(s), conservée(s) (telephone, valeur_totale_achats). · 2 colonne(s) non reconnue(s) et ignorée(s) pour Customer : telephone, valeur_totale_achats. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "04_produits.csv",
+     "type": "Product",
+     "ecrites": 24,
+     "lues": 24,
+     "message": "Colonnes : 7 confirmée(s)."
+    },
+    {
+     "fichier": "05_stocks.csv",
+     "type": "Inventory",
+     "ecrites": 72,
+     "lues": 72,
+     "message": "Colonnes : 5 confirmée(s) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "06_employes.csv",
+     "type": "Employee",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "Colonnes : 8 confirmée(s)."
+    },
+    {
+     "fichier": "07_paie.csv",
+     "type": "Payroll",
+     "ecrites": 75,
+     "lues": 75,
+     "message": "Colonnes : 3 confirmée(s) · 4 inconnue(s), conservée(s) (nom, deductions, salaire_net, date_paiement) · dimension(s) potentielle(s) : nom. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Payroll : nom, deductions, salaire_net, date_paiement. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "08_fournisseurs_v2.csv",
+     "type": "Supplier",
+     "ecrites": 8,
+     "lues": 8,
+     "message": "Colonnes : 7 confirmée(s)."
+    },
+    {
+     "fichier": "09_achats.csv",
+     "type": "Expense",
+     "ecrites": 38,
+     "lues": 38,
+     "message": "Colonnes : 4 confirmée(s) · 2 inconnue(s), conservée(s) (numero_achat, statut) · dimension(s) potentielle(s) : statut. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Expense : numero_achat, statut. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    }
+   ],
+   "controles": [
+    {
+     "lot": "1.1",
+     "id": "CA 12 mois (transactions)",
+     "attendu": 3177262.18,
+     "app": 3177262.18,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Charges 12 mois (transactions)",
+     "attendu": 2233167.18,
+     "app": 2233167.18,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Résultat net (transactions)",
+     "attendu": 944095,
+     "app": 944095,
+     "ok": true
+    },
+    {
+     "lot": "1.1",
+     "id": "Marge nette % (transactions)",
+     "attendu": 29.71,
+     "app": 29.71,
+     "ok": true
+    },
+    {
+     "lot": "1.3",
+     "id": "CA par succursale (transactions)",
+     "attendu": {
+      "quebec (siege)": 1735444.98,
+      "levis": 866591.47,
+      "trois-rivieres": 575225.73
+     },
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "2",
+     "id": "Solde de trésorerie fin sept. 2026",
+     "attendu": 989095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "3",
+     "id": "Masse salariale 3 mois (paie)",
+     "attendu": 310593.27,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Commandes rattachées à un client connu",
+     "attendu": 66,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Clients distincts ayant commandé",
+     "attendu": 23,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Transaction",
+     "attendu": 268,
+     "app": 268,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Cashflow",
+     "attendu": 12,
+     "app": 12,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Customer",
+     "attendu": 30,
+     "app": 30,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Product",
+     "attendu": 24,
+     "app": 24,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Inventory",
+     "attendu": 72,
+     "app": 72,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Employee",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Payroll",
+     "attendu": 75,
+     "app": 75,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Asset",
+     "attendu": 10,
+     "app": 10,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Order",
+     "attendu": 66,
+     "app": 66,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Interaction",
+     "attendu": 25,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "5",
+     "id": "lignes Supplier (fichier corrigé)",
+     "attendu": 8,
+     "app": 8,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Campaign (fichier corrigé)",
+     "attendu": 6,
+     "app": 6,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes CampaignDaily (fichier corrigé)",
+     "attendu": 152,
+     "app": 152,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Competitor (fichier corrigé)",
+     "attendu": 5,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "5",
+     "id": "lignes Goal (fichier corrigé)",
+     "attendu": 6,
+     "app": 6,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Event (fichier corrigé)",
+     "attendu": 7,
+     "app": 7,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes ExternalSignal (fichier corrigé)",
+     "attendu": 6,
+     "app": 0,
+     "ok": false
+    }
+   ]
+  },
+  {
+   "version": "corrige",
+   "mode": "ia-fidele",
+   "feuilles": [
+    {
+     "fichier": "10_immobilisations.csv",
+     "type": "Asset",
+     "ecrites": 0,
+     "lues": 10,
+     "message": "Lignes écartées : 10 champ obligatoire absent. · 7 colonne(s) non reconnue(s) et ignorée(s) pour Asset : nom_actif, valeur_acquisition, duree_vie_utile_annees, valeur_residuelle, methode_amortissement, category, branch. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : asset_id · exemple de ligne rejetée : {\"category\":\"Véhicule\",\"acquisition_date\":\"2022-03-15\",\"branch\":\"Québec (siège)\"}"
+    },
+    {
+     "fichier": "11_commandes.csv",
+     "type": "Order",
+     "ecrites": 66,
+     "lues": 66,
+     "message": "Colonnes : 7 probable(s) (numero_commande, date, client, canal, montant_total, statut…)."
+    },
+    {
+     "fichier": "12_campagnes_v2.csv",
+     "type": "Campaign",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "Colonnes : 6 probable(s) (id_campagne, nom_campagne, canal, date_debut, date_fin, budget) · 1 inconnue(s), conservée(s) (objectif). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Campaign : objectif. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · channel : valeur(s) non reconnue(s) rangée(s) sous « autre » — « Marketing direct » (1). La valeur d'origine reste dans original_data."
+    },
+    {
+     "fichier": "13_campagnes_journalieres_v2.csv",
+     "type": "CampaignDaily",
+     "ecrites": 152,
+     "lues": 152,
+     "message": "Colonnes : 1 confirmée(s) · 6 probable(s) (date, impressions, clics, depense, conversions, revenu_genere) · 2 inconnue(s), conservée(s) (nom_campagne, canal) · dimension(s) potentielle(s) : nom_campagne, canal. · 2 colonne(s) non reconnue(s) et ignorée(s) pour CampaignDaily : nom_campagne, canal. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "14_interactions_client.csv",
+     "type": "Interaction",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "4 colonne(s) non reconnue(s) et ignorée(s) pour Interaction : id_interaction, type_interaction, satisfaction_sur_5, payment_status. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "15_concurrents_v2.csv",
+     "type": "Competitor",
+     "ecrites": 0,
+     "lues": 5,
+     "message": "Lignes écartées : 5 champ obligatoire absent. · Colonnes : 1 probable(s) (id_concurrent) · 5 inconnue(s), conservée(s) (nom_concurrent, zone, positionnement, part_marche_estimee, prix_moyen_panier). · 5 colonne(s) non reconnue(s) et ignorée(s) pour Competitor : nom_concurrent, zone, positionnement, part_marche_estimee, prix_moyen_panier. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : name · exemple de ligne rejetée : {\"competitor_id\":\"K001\"}"
+    },
+    {
+     "fichier": "16_objectifs_v2.csv",
+     "type": "Goal",
+     "ecrites": 6,
+     "lues": 6,
+     "message": "Colonnes : 2 probable(s) (metric, cible) · 4 inconnue(s), conservée(s) (nom_objectif, categorie, valeur_actuelle, echeance). · 4 colonne(s) non reconnue(s) et ignorée(s) pour Goal : nom_objectif, categorie, valeur_actuelle, echeance. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "17_evenements_v2.csv",
+     "type": "Event",
+     "ecrites": 7,
+     "lues": 7,
+     "message": "Colonnes : 3 probable(s) (date, event_type, description) · 2 inconnue(s), conservée(s) (nom_evenement, succursale) · dimension(s) potentielle(s) : succursale. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Event : nom_evenement, succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "18_signaux_radar_v3.csv",
+     "type": "ExternalSignal",
+     "ecrites": 0,
+     "lues": 6,
+     "message": "Lignes écartées : 6 champ obligatoire absent. · Colonnes : 3 probable(s) (date, source, title) · 3 inconnue(s), conservée(s) (categorie, impact_estime, family) · dimension(s) potentielle(s) : categorie, impact_estime, family. · « family » → family retiré : 0/6 valeurs reconnues dans la liste. · 3 colonne(s) non reconnue(s) et ignorée(s) pour ExternalSignal : categorie, impact_estime, family. Leur contenu brut reste conservé dans original_data si besoin de le récupérer. · champs obligatoires absents du fichier : family · exemple de ligne rejetée : {\"date\":\"2026-05-02\",\"source\":\"Recyc-Québec\",\"title\":\"Nouvelle réglementation sur les plastiques à usage unique dès 2027\"}"
+    },
+    {
+     "fichier": "01_transactions.csv",
+     "type": "Transaction",
+     "ecrites": 268,
+     "lues": 268,
+     "message": "Colonnes : 4 probable(s) (date, description, montant, catégorie) · 1 ambiguë(s), non utilisée(s) dans les calculs (type) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · « type » → type retiré : 0/200 valeurs reconnues dans la liste. · « type » → type retiré : 0/200 valeurs reconnues dans la liste. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Transaction : type, succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "02_flux_tresorerie.csv",
+     "type": "Cashflow",
+     "ecrites": 12,
+     "lues": 12,
+     "message": "Colonnes : 4 probable(s) (mois, solde_ouverture, encaissements, decaissements) · 1 inconnue(s), conservée(s) (solde_fermeture). · 1 colonne(s) non reconnue(s) et ignorée(s) pour Cashflow : solde_fermeture. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "03_clients.csv",
+     "type": "Customer",
+     "ecrites": 30,
+     "lues": 30,
+     "message": "Colonnes : 7 probable(s) (id_client, nom, type_client, ville, courriel, date_creation…) · 2 inconnue(s), conservée(s) (telephone, valeur_totale_achats). · 2 colonne(s) non reconnue(s) et ignorée(s) pour Customer : telephone, valeur_totale_achats. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "04_produits.csv",
+     "type": "Product",
+     "ecrites": 24,
+     "lues": 24,
+     "message": "Colonnes : 7 probable(s) (sku, nom_produit, categorie, fournisseur, prix_vente, cout_unitaire…)."
+    },
+    {
+     "fichier": "05_stocks.csv",
+     "type": "Inventory",
+     "ecrites": 72,
+     "lues": 72,
+     "message": "Colonnes : 1 confirmée(s) · 4 probable(s) (nom_produit, quantite_en_stock, seuil_reapprovisionnement, date_inventaire) · 1 inconnue(s), conservée(s) (succursale) · dimension(s) potentielle(s) : succursale. · 1 colonne(s) non reconnue(s) et ignorée(s) pour Inventory : succursale. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "06_employes.csv",
+     "type": "Employee",
+     "ecrites": 25,
+     "lues": 25,
+     "message": "Colonnes : 8 probable(s) (id_employe, nom, poste, departement, succursale, date_embauche…)."
+    },
+    {
+     "fichier": "07_paie.csv",
+     "type": "Payroll",
+     "ecrites": 75,
+     "lues": 75,
+     "message": "Colonnes : 1 confirmée(s) · 2 probable(s) (periode, salaire_brut) · 4 inconnue(s), conservée(s) (nom, deductions, salaire_net, date_paiement) · dimension(s) potentielle(s) : nom. · 4 colonne(s) non reconnue(s) et ignorée(s) pour Payroll : nom, deductions, salaire_net, date_paiement. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    },
+    {
+     "fichier": "08_fournisseurs_v2.csv",
+     "type": "Supplier",
+     "ecrites": 8,
+     "lues": 8,
+     "message": "Colonnes : 7 probable(s) (id_fournisseur, nom_fournisseur, categorie_produits, ville, contact, conditions_paiement…)."
+    },
+    {
+     "fichier": "09_achats.csv",
+     "type": "Expense",
+     "ecrites": 38,
+     "lues": 38,
+     "message": "Colonnes : 4 probable(s) (date, fournisseur, description, montant) · 2 inconnue(s), conservée(s) (numero_achat, statut) · dimension(s) potentielle(s) : statut. · 2 colonne(s) non reconnue(s) et ignorée(s) pour Expense : numero_achat, statut. Leur contenu brut reste conservé dans original_data si besoin de le récupérer."
+    }
+   ],
+   "controles": [
+    {
+     "lot": "1.1",
+     "id": "CA 12 mois (transactions)",
+     "attendu": 3177262.18,
+     "app": 5410429.36,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Charges 12 mois (transactions)",
+     "attendu": 2233167.18,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Résultat net (transactions)",
+     "attendu": 944095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.1",
+     "id": "Marge nette % (transactions)",
+     "attendu": 29.71,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "1.3",
+     "id": "CA par succursale (transactions)",
+     "attendu": {
+      "quebec (siege)": 1735444.98,
+      "levis": 866591.47,
+      "trois-rivieres": 575225.73
+     },
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "2",
+     "id": "Solde de trésorerie fin sept. 2026",
+     "attendu": 989095,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "3",
+     "id": "Masse salariale 3 mois (paie)",
+     "attendu": 310593.27,
+     "app": null,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Commandes rattachées à un client connu",
+     "attendu": 66,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "4.1",
+     "id": "Clients distincts ayant commandé",
+     "attendu": 23,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Transaction",
+     "attendu": 268,
+     "app": 268,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Cashflow",
+     "attendu": 12,
+     "app": 12,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Customer",
+     "attendu": 30,
+     "app": 30,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Product",
+     "attendu": 24,
+     "app": 24,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Inventory",
+     "attendu": 72,
+     "app": 72,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Employee",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Payroll",
+     "attendu": 75,
+     "app": 75,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Asset",
+     "attendu": 10,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "import",
+     "id": "lignes Order",
+     "attendu": 66,
+     "app": 66,
+     "ok": true
+    },
+    {
+     "lot": "import",
+     "id": "lignes Interaction",
+     "attendu": 25,
+     "app": 25,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Supplier (fichier corrigé)",
+     "attendu": 8,
+     "app": 8,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Campaign (fichier corrigé)",
+     "attendu": 6,
+     "app": 6,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes CampaignDaily (fichier corrigé)",
+     "attendu": 152,
+     "app": 152,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Competitor (fichier corrigé)",
+     "attendu": 5,
+     "app": 0,
+     "ok": false
+    },
+    {
+     "lot": "5",
+     "id": "lignes Goal (fichier corrigé)",
+     "attendu": 6,
+     "app": 6,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes Event (fichier corrigé)",
+     "attendu": 7,
+     "app": 7,
+     "ok": true
+    },
+    {
+     "lot": "5",
+     "id": "lignes ExternalSignal (fichier corrigé)",
+     "attendu": 6,
+     "app": 0,
+     "ok": false
+    }
+   ]
+  }
+ ]
+}

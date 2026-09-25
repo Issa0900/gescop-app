@@ -12,7 +12,8 @@ fs.writeFileSync(path.join(build, "sdk-stub.cjs"), "module.exports = { createCli
 
 // « robustesse » comme etiquette lance le banc de robustesse (tests/banc/robustesse.ts).
 // « diagnostic » lance le diagnostic de l'import sous plusieurs comportements d'IA (tests/banc/diagnostic.ts).
-const cible = ["robustesse", "diagnostic"].includes(process.argv[2]) ? process.argv[2] : "demo";
+// « vq » lance le banc du rapport Vert Québec (tests/banc/vert_quebec.ts).
+const cible = process.argv[2] === "vq" ? "vert_quebec" : ["robustesse", "diagnostic"].includes(process.argv[2]) ? process.argv[2] : "demo";
 esbuild.buildSync({
   entryPoints: [`tests/banc/${cible}.ts`],
   bundle: true,

@@ -15,7 +15,8 @@
     "test:banc": "node tests/banc/lancer.cjs",
     "test:demo": "node tests/banc/lancer-demo.cjs",
     "test:robustesse": "node tests/banc/lancer-demo.cjs robustesse",
-    "test:uci": "node tests/banc/lancer-demo.cjs uci"
+    "test:uci": "node tests/banc/lancer-demo.cjs uci",
+    "test:vq": "node tests/banc/lancer-demo.cjs vq"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.48",
