@@ -377,5 +377,89 @@
     "attendu": 7
    }
   ]
+ },
+ {
+  "fichier": "Entreprise_Simulation_50Ans_Canada_QC.xlsx",
+  "controles": [
+   {
+    "type": "kpi",
+    "id": "net_book_value_total",
+    "attendu": 343926.0,
+    "note": "valeur nette comptable"
+   },
+   {
+    "type": "somme",
+    "entite": "Asset",
+    "champ": "initial_cost",
+    "attendu": 1337000.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Asset",
+    "champ": "accumulated_depreciation",
+    "attendu": 993074.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Asset",
+    "champ": "net_book_value",
+    "attendu": 343926.0,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "inventory_value_total",
+    "attendu": 253977.0,
+    "note": "valeur stock au coût"
+   },
+   {
+    "type": "somme",
+    "entite": "Inventory",
+    "champ": "closing_stock",
+    "attendu": 3407.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Employee",
+    "champ": "annual_salary",
+    "attendu": 649837.5,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Employee",
+    "champ": "total_employer_cost",
+    "attendu": 769709.32,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Customer",
+    "champ": "loyalty_points",
+    "attendu": 103420.0,
+    "note": ""
+   },
+   {
+    "type": "somme",
+    "entite": "Customer",
+    "champ": "credit_limit",
+    "attendu": 313000.0,
+    "note": ""
+   },
+   {
+    "type": "kpi",
+    "id": "weighted_esg_score",
+    "attendu": 87.7,
+    "note": ""
+   },
+   {
+    "type": "lignes",
+    "entite": "Supplier",
+    "attendu": 10
+   }
+  ]
  }
 ]

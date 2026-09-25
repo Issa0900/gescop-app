@@ -165,7 +165,45 @@ def nordik():
         lignes("Supplier", len(sup)),
     ]})
 
-for fn in [xplorer_3mois, simulation_3ans, gescop, nordik]: fn()
+# ------------------------------------------------------------ Entreprise Simulation 50 Ans Canada QC (7 feuilles)
+def simulation_50ans():
+    f = "Entreprise_Simulation_50Ans_Canada_QC.xlsx"
+    wb = load_workbook(os.path.join(DEMO, f), read_only=True, data_only=True)
+    F = lambda n: feuille(wb, n)
+    ast, inv, emp, crm, four = F("Registre_Immobilisations_50Ans"), F("Stocks_MultiEntrepots"), F("Employes_RH"), F("Clients_CRM"), F("Fournisseurs")
+    cost_ast = sum(num(r["Cout_Acquisition_Initial_CAD"]) for r in ast)
+    amort_ast = sum(num(r["Amortissement_Cumule_CAD"]) for r in ast)
+    vnc_ast = cost_ast - amort_ast
+    val_inv = sum(num(r["Quantite_En_Stock"]) * num(r["Cout_Moyen_Pondere_CAD"]) for r in inv)
+    qte_stock = sum(num(r["Quantite_En_Stock"]) for r in inv)
+    sal_emp = sum(num(r["Salaire_Base_Annuel_CAD"]) for r in emp)
+    taux = [
+        num(r["Cotisation_RRQ_Patronale"]) + num(r["Cotisation_RQAP_Patronale"]) +
+        num(r["Cotisation_CNESST"]) + num(r["Cotisation_FSS_QC"]) +
+        num(r["Assurance_Collective_Part_Patronale"]) + num(r["Regime_REER_Collectif_Employeur"])
+        for r in emp
+    ]
+    cout_emp = sal_emp + sum(num(r["Salaire_Base_Annuel_CAD"]) * t for r, t in zip(emp, taux))
+    pts_crm = sum(num(r["Solde_Points_Fidelite"]) for r in crm)
+    credit_crm = sum(num(r["Limite_Credit_CAD"]) for r in crm)
+    esg = [num(r["Score_RSE_ESG"]) for r in four if r.get("Score_RSE_ESG") is not None]
+    avg_esg = sum(esg) / len(esg) if esg else 0.0
+    VERITE.append({"fichier": f, "controles": [
+        kpi("net_book_value_total", arr(vnc_ast), "valeur nette comptable"),
+        somme("Asset", "initial_cost", cost_ast),
+        somme("Asset", "accumulated_depreciation", amort_ast),
+        somme("Asset", "net_book_value", vnc_ast),
+        kpi("inventory_value_total", arr(val_inv), "valeur stock au coût"),
+        somme("Inventory", "closing_stock", qte_stock),
+        somme("Employee", "annual_salary", sal_emp),
+        somme("Employee", "total_employer_cost", arr(cout_emp)),
+        somme("Customer", "loyalty_points", pts_crm),
+        somme("Customer", "credit_limit", credit_crm),
+        kpi("weighted_esg_score", arr(avg_esg)),
+        lignes("Supplier", len(four)),
+    ]})
+
+for fn in [xplorer_3mois, simulation_3ans, gescop, nordik, simulation_50ans]: fn()
 with open(os.path.join(ICI, "verite_demo_modules.json"), "w", encoding="utf-8") as fh:
     json.dump(VERITE, fh, ensure_ascii=False, indent=1)
 print(sum(len(v["controles"]) for v in VERITE), "contrôles pour", len(VERITE), "fichiers")
