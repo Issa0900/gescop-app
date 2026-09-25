@@ -52,10 +52,13 @@ Banc DEMO sur quelques fichiers : `node tests/banc/lancer-demo.cjs demo-modules 
 4. `npm run test:robustesse`, une seule fois.
 5. Compléter le **rapport avant/après** dans `qa/COMPTE-RENDU.md`, avec la plus-value en chiffres.
 
-## Points ouverts (à signaler à Issa, pas à trancher seul)
+## Points d'arbitrage tranchés par Issa et appliqués (25 sept. 2026)
 
-- **C5** : l'analyse annonce plus de lignes valides que l'import n'en écrit (les doublons ne sont repérés qu'à l'écriture). C'est de l'affichage seulement.
-- Le revenu attribué aux campagnes est compté dans `total_revenue` (jeu 07 : 391 851) : est-ce voulu ?
+- **Revenu des campagnes dans total_revenue (Résolu - commit 458dc62)** : exclu de `total_revenue` (règle comptable : CA = ventes uniquement). L'attribution marketing reste sur `campaign_revenue` pour le ROAS.
+- **C5 (Résolu - commit 8402371)** : dédoublonnage appliqué dès l'analyse ; `valid_rows` égale désormais exactement `rows_written`, et les doublons sont tracés dans `quality.duplicate_rows`.
+
+## Points restants
+
 - `tests/banc/jeux.ts` a encore sa propre copie des contrôles ; il pourrait réutiliser `tests/banc/controles.ts`.
 - `deno.json` (non suivi, à la racine) sert aux scripts Deno locaux : ne pas le supprimer sans vérifier.
 

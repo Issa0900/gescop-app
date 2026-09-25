@@ -371,9 +371,11 @@ Toutes les étapes du plan ont été exécutées avec succès et vérifiées de 
 | Playwright E2E (`qa/run-all.sh`) | 154/154 | **157/157** | ✓ 100 % |
 | Banc de robustesse (`npm run test:robustesse`) | - | **105/105 variantes, 686/686 contrôles** | ✓ 100 % |
 
-Points ouverts, pas des bogues bloquants :
-- **C5** : l'analyse annonce plus de lignes valides que l'import n'en écrit (les doublons ne sont repérés qu'à l'écriture) : affichage seulement.
-- Le moteur compte le revenu attribué aux campagnes dans `total_revenue` (jeu 07 : 391 851) : question de définition à trancher.
+Points d'arbitrage tranchés et résolus (session du 25 sept. 2026) :
+- **Revenu des campagnes dans total_revenue (Résolu - commit 458dc62)** : conformément au principe comptable de non-double-comptabilisation, `total_revenue` ne comptabilise que les ventes fermes (`Order` + `Transaction`). L'attribution marketing reste isolée sur `campaign_revenue` pour le calcul du ROAS et du ROI. Le concept `marketing.campaign_revenue` a été créé, et un garde-fou strict dans `kpiEngine.js` interdit l'agrégation d'observations de campagnes dans le chiffre d'affaires.
+- **Constat C5 lignes annoncées vs écrites (Résolu - commit 8402371)** : conformément à l'exigence de transparence, le dédoublonnage et la détection des conflits (`deduplicateRows`) sont désormais appliqués dès la phase d'analyse (`mode === "analyser"`). `quality.valid_rows` reflète exactement les lignes uniques à insérer, `quality.duplicate_rows` trace les doublons exclus, et les conflits sont orientés en quarantaine. Le constat C5 est totalement éliminé (0 alerte au diagnostic).
+
+Reste ouvert :
 - `tests/banc/jeux.ts` a sa propre copie des contrôles ; il pourra réutiliser `tests/banc/controles.ts`.
 
 ## Commandes utiles pour reprendre
