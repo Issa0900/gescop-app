@@ -252,13 +252,15 @@ function nombreSelonConvention(valeur: any, convention: ConventionNombre): any {
  * ("TOTAL", "Sous-total", "Cumul") alors que le reste de la ligne est chiffre.
  * Sert de filet quand l'IA ne l'a pas signalee.
  */
-const MOTS_TOTAUX = /^(total|totaux|sous[\s-]?total|cumul|somme|balance|solde\s+final)\b/i;
 
 export function estLigneDeTotaux(row: any[]): boolean {
   const cells = (row || []).map((c) => String(c ?? "").trim());
   const remplies = cells.filter((c) => c !== "");
   if (remplies.length < 2) return false;
-  return MOTS_TOTAUX.test(remplies[0]);
+  // Meme regle que l'import sans IA (isSummaryOrTotalRow) : un premier mot
+  // « total » ne suffit plus a lui seul (« Total Laval » peut etre un nom) ;
+  // cumul et solde final restent des totaux surs.
+  return isSummaryOrTotalRow(row) || /^(cumul|solde\s+final)\b/i.test(remplies[0]);
 }
 
 // ---------------------------------------------------------------------------
@@ -1132,7 +1134,10 @@ export function appliquerPlan(plan: PlanImport, matrix: any[][], journal?: Ligne
     // rien sort de la ligne exploitable, pas des donnees conservees.
     const ligneBrute: Record<string, any> = {};
     entetes.forEach((entete, idx) => { ligneBrute[entete] = brute[idx] ?? ""; });
-    if (ignorees.has(i)) { journal?.push({ ligne: i + 1, motif: "ignoree_par_le_plan", apercu: apercu(), brut: ligneBrute }); continue; }
+    // Une ligne que le plan ecarte PARCE QUE c'est un total est enregistree comme
+    // telle (SUMMARY_ROW), pas comme une simple ligne ignoree : le registre doit
+    // dire la vraie raison.
+    if (ignorees.has(i)) { journal?.push({ ligne: i + 1, motif: isSummaryOrTotalRow(brute) ? "ligne_de_total" : "ignoree_par_le_plan", apercu: apercu(), brut: ligneBrute }); continue; }
     if (isSummaryOrTotalRow(brute)) { journal?.push({ ligne: i + 1, motif: "ligne_de_total", apercu: apercu(), brut: ligneBrute }); continue; }
 
     const obj: Record<string, any> = {};

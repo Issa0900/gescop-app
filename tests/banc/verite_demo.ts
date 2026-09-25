@@ -77,8 +77,13 @@ export const VERITE_DEMO: VeriteDemo[] = [
   },
   {
     fichier: "DS01_succursales_6mois.xlsx",
-    note: "Resume mensuel par succursale (Periode = AAAA-MM).",
-    lignes: { ExecutiveSummary: 60 },
+    // 60 lignes dont 6 « TOTAL CONSOLIDE » (une par mois) : ce ne sont pas des
+    // succursales. Gardees, elles devenaient une 11e succursale et doublaient le
+    // CA de la page Succursales. Verite corrigee le 25 sept. 2026 : 54 faits,
+    // les 6 totaux conserves au registre (SUMMARY_ROW).
+    note: "Resume mensuel par succursale (Periode = AAAA-MM) ; 6 lignes TOTAL CONSOLIDE exclues des faits.",
+    lignes: { ExecutiveSummary: 54 },
+    motifs: { SUMMARY_ROW: 6 },
   },
   {
     fichier: "clean_final_data.csv",

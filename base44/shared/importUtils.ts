@@ -2104,8 +2104,18 @@ export function isSummaryOrTotalRow(rowOrArray: any): boolean {
     "total", "totaux", "totales", "totale", "sous-total", "sous total", "subtotal", "sub-total",
     "total general", "total global", "grand total", "recapitulatif",
   ]);
+  // « Total consolide », « Total general », « Grand total annuel »... : un total
+  // suivi d'un qualificatif de synthese est sur, meme toutes cellules remplies.
+  // Un total suivi d'un autre mot (« Total Laval ») peut etre un nom : il faut
+  // en plus des cellules vides. Meme regle pour l'import avec ou sans IA
+  // (DS01 : « TOTAL CONSOLIDE » gardee sans IA, ecartee avec, 25 sept. 2026).
+  const QUALIFICATIFS = new Set(["consolide", "consolidee", "general", "generale", "global", "globale", "annuel", "annuelle",
+    "mensuel", "mensuelle", "entreprise", "groupe", "cumul", "cumule", "tous", "toutes", "all", "overall", "company", "grand", "final", "finale"]);
   const estTotal = (premiere: string, vides: number, nb: number) => {
     if (LIBELLES_SURS.has(premiere)) return true;
+    const mots = premiere.split(/[^a-z0-9]+/).filter(Boolean);
+    if ((mots[0] === "total" || mots[0] === "totaux" || mots[0] === "grand") && mots.length > 1
+      && mots.slice(1).every((m) => QUALIFICATIFS.has(m) || m === "total" || /^\d{2,4}$/.test(m))) return true;
     const candidat = SUMMARY_KEYWORDS.some((kw) => premiere === kw || premiere.startsWith(kw + " ") || premiere.endsWith(" " + kw));
     return candidat && vides >= Math.max(1, Math.floor(nb * 0.2));
   };
