@@ -68,9 +68,8 @@ def solde(v): return {"type": "solde", "attendu": arr(v)}
 
 VERITE = []
 
-# ------------------------------------------------------------ Xplorer 3 mois (18 feuilles, une par module)
-def xplorer_3mois():
-    f = "GESCOP_Donnees_Test_Xplorer_3Mois.xlsx"
+# ------------------------------------------------------------ Xplorer (18 feuilles, une par module)
+def xplorer(f):
     wb = load_workbook(os.path.join(DEMO, f), read_only=True, data_only=True)
     F = lambda n: feuille(wb, n)
     pay, exp, pur, prod = F("Payroll"), F("Expenses"), F("Purchase"), F("Products")
@@ -226,7 +225,9 @@ def kpi_complet():
         distincts("Customer", "customer_id", len(crm)),
     ]})
 
-for fn in [xplorer_3mois, simulation_3ans, gescop, nordik, simulation_50ans, kpi_complet]: fn()
+for f in ["GESCOP_Donnees_Test_Xplorer_3Mois.xlsx", "GESCOP_Donnees_Test_Xplorer.xlsx", "GESCOP_Donnees_Test_Xplorer_500.xlsx"]:
+    xplorer(f)
+for fn in [simulation_3ans, gescop, nordik, simulation_50ans, kpi_complet]: fn()
 with open(os.path.join(ICI, "verite_demo_modules.json"), "w", encoding="utf-8") as fh:
     json.dump(VERITE, fh, ensure_ascii=False, indent=1)
 print(sum(len(v["controles"]) for v in VERITE), "contrôles pour", len(VERITE), "fichiers")

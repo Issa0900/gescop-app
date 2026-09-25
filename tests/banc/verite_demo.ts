@@ -116,6 +116,28 @@ export const VERITE_DEMO: VeriteDemo[] = [
     kpi: { total_revenue: 65488.24, total_expense: 15750 },
   },
   {
+    fichier: "GESCOP_Donnees_Test_Xplorer.xlsx",
+    note: "Jeu de test compact 18 modules (1 a 5 lignes par feuille).",
+    kpi: { total_revenue: 5749.89, total_expense: 8055 },
+    lignes: {
+      Transaction: 5, Cashflow: 5, Expense: 4, Inventory: 4, Supplier: 2,
+      Product: 4, Purchase: 2, Customer: 4, Employee: 2, Order: 3,
+      Interaction: 2, Payroll: 2, Campaign: 2, CampaignDaily: 2,
+      Competitor: 2, ExternalSignal: 2, Goal: 2, Event: 1,
+    },
+  },
+  {
+    fichier: "GESCOP_Donnees_Test_Xplorer_500.xlsx",
+    note: "Jeu de test complet 18 modules (500 lignes par feuille).",
+    kpi: { total_revenue: 568518.77, total_expense: 996483.6 },
+    lignes: {
+      Transaction: 500, Cashflow: 500, Expense: 500, Inventory: 500, Supplier: 500,
+      Product: 500, Purchase: 500, Customer: 500, Employee: 500, Order: 500,
+      Interaction: 500, Payroll: 500, Campaign: 500, CampaignDaily: 500,
+      Competitor: 500, ExternalSignal: 500, Goal: 500, Event: 500,
+    },
+  },
+  {
     fichier: "GESCOP_Donnees_Test_Xplorer_Succes.xlsx",
     note: "Deux jeux avec les memes identifiants et des valeurs differentes : conflits, pas doublons.",
     motifs: { CONFLICTING_RECORD: 2000 },
