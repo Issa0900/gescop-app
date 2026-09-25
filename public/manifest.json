@@ -1,0 +1,20 @@
+{
+  "short_name": "GESCOP",
+  "name": "GESCOP - Intelligence Décisionnelle & Pilotage",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/gescop-logo.png",
+      "type": "image/png",
+      "sizes": "1024x1024"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F172A",
+  "theme_color": "#2563EB",
+  "display": "standalone"
+}
