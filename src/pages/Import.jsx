@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import ImportProgress from "@/components/import/ImportProgress";
 import PlanConfirmation from "@/components/import/PlanConfirmation";
 import DoublonsAVerifier from "@/components/import/DoublonsAVerifier";
+import ImportHistory, { RepartitionLignes } from "@/components/import/ImportHistory";
 import { motion } from "@/lib/fake-framer-motion.jsx";
 import { supprimerImport, MESSAGE_ALERTES } from "@/lib/supprimerImport";
 import { ajouterTermes, lireDictionnaire } from "@/lib/dictionnaire";
@@ -54,36 +55,6 @@ const ENTITY_OPTIONS = [
   { value: "ExternalSignal", label: "Signaux externes (radar)" },
 ];
 
-/**
- * Ou sont passees les lignes d'un import (directive §20) : chaque ligne du
- * fichier est dans exactement une de ces cases, rien n'est « perdu ».
- */
-function RepartitionLignes({ m, compact = false }) {
-  const parts = [
-    ["valides", m.valid_rows],
-    ["en quarantaine", m.quarantined_rows],
-    ["doublons", m.duplicate_rows],
-    ["totaux exclus", m.summary_rows],
-    ["ignorées", m.ignored_rows],
-    ["conservées brutes", m.unknown_rows],
-    ["récupérées", m.recovered_rows],
-  ].filter(([, n]) => Number(n) > 0);
-  const extras = [];
-  if (m.unknown_fields?.length) extras.push(`${m.unknown_fields.length} colonne(s) non reconnue(s)`);
-  if (m.fallback_values) extras.push(`${m.fallback_values} valeur(s) rangée(s) sous « autre »`);
-  if (m.derived_values) extras.push(`${m.derived_values} identifiant(s) technique(s)`);
-  if (m.anomalous_values) extras.push(`${m.anomalous_values} valeur(s) inhabituelle(s) à vérifier`);
-  if (m.potential_duplicates) extras.push(`${m.potential_duplicates} doublon(s) potentiel(s) conservé(s), à vérifier`);
-  if (m.ambiguous_fields?.length) extras.push(`${m.ambiguous_fields.length} colonne(s) ambiguë(s)`);
-  if (m.potential_dimensions?.length) extras.push(`axes d'analyse possibles : ${m.potential_dimensions.slice(0, 3).join(", ")}`);
-  if (parts.length === 0 && extras.length === 0) return null;
-  const texte = [
-    m.total_rows != null && !compact ? `${m.total_rows} lignes` : null,
-    parts.map(([l, n]) => `${n} ${l}`).join(" · "),
-    compact ? null : extras.join(" · "),
-  ].filter(Boolean).join(" — ");
-  return <span className={`block text-xs font-normal ${compact ? "text-muted-foreground" : "text-slate-600"}`}>{texte}</span>;
-}
 
 export default function ImportPage() {
   const { toast } = useToast();
@@ -109,7 +80,7 @@ export default function ImportPage() {
   const { data: imports, isLoading } = useQuery({
     queryKey: ["imports"],
     queryFn: async () => {
-      const list = await base44.entities.Import.list("-created_date", 20);
+      const list = await base44.entities.Import.list("-created_date", 200);
       return list || [];
     },
   });
@@ -559,95 +530,15 @@ export default function ImportPage() {
         </div>
       </div>
 
-      {/* Import history */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold">Historique des imports</h2>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
-        ) : !imports || imports.length === 0 ? (
-          <EmptyState icon={Download} title="Aucun import" description="Vos imports apparaîtront ici." />
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Fichier</th>
-                  <th className="px-4 py-3 font-medium">Entité</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
-                  <th className="px-4 py-3 font-medium">Lignes</th>
-                  <th className="px-4 py-3 font-medium">Qualité</th>
-                  <th className="px-4 py-3 font-medium">Statut</th>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {imports.map((imp) => (
-                  <tr key={imp.id} className="hover:bg-muted/30">
-                    <td className="max-w-[180px] truncate px-4 py-3 font-medium" title={imp.file_name}>{imp.file_name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{imp.entity_type || "—"}</td>
-                    <td className="px-4 py-3 uppercase text-muted-foreground">{imp.source_type}</td>
-                    <td className="px-4 py-3">
-                      {imp.rows_processed || 0}
-                      {imp.total_rows != null && <span className="text-muted-foreground"> / {imp.total_rows}</span>}
-                      {imp.total_rows != null && <RepartitionLignes m={{ ...imp, valid_rows: imp.rows_processed, quarantined_rows: imp.rows_quarantined }} compact />}
-                    </td>
-                    <td className="px-4 py-3">
-                      {imp.quality_score != null ? `${imp.quality_score}%` : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${
-                        imp.status === "complete" ? "text-emerald-600" : imp.status === "echoue" ? "text-red-600" : "text-amber-600"
-                      }`}>
-                        {imp.status === "complete" && <CheckCircle2 className="h-3.5 w-3.5" />}
-                        {imp.status === "echoue" && <AlertCircle className="h-3.5 w-3.5" />}
-                        {imp.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(imp.created_date).toLocaleDateString("fr-CA")}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                      {Number(imp.potential_duplicates || 0) > 0 && (
-                        <button
-                          onClick={() => setDoublonsDe(imp)}
-                          title="Lignes identiques à une autre du fichier, importées par précaution : exclure ou conserver après vérification"
-                          className="mr-1 inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-amber-700 hover:bg-amber-50"
-                        >
-                          <Copy className="h-3.5 w-3.5" /> Doublons à vérifier ({imp.potential_duplicates})
-                        </button>
-                      )}
-                      {Number(imp.rows_quarantined || 0) > 0 && (
-                        imp.entity_type ? (
-                          <button
-                            onClick={() => handleRetraiter(imp)}
-                            title="Relire les lignes en attente avec ce que l'application sait maintenant (sans réimporter)"
-                            className="mr-1 inline-flex h-8 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-sky-50 hover:text-sky-700"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" /> Retraiter
-                          </button>
-                        ) : (
-                          <Select onValueChange={(val) => handleRetraiter(imp, val)}>
-                            <SelectTrigger className="mr-1 inline-flex h-8 w-44 text-xs" title="Choisir le type de ces lignes conservées pour les intégrer">
-                              <SelectValue placeholder="Intégrer comme…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ENTITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        )
-                      )}
-                      <button onClick={() => handleDelete(imp)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Import history optimisé */}
+      <ImportHistory
+        imports={imports}
+        isLoading={isLoading}
+        onDelete={handleDelete}
+        onRetraiter={handleRetraiter}
+        onDoublons={(imp) => setDoublonsDe(imp)}
+        entityOptions={ENTITY_OPTIONS}
+      />
 
       {/* Danger zone */}
       <div className="rounded-xl border border-red-200 bg-red-50/30 p-5">
