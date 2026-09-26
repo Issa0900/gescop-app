@@ -1,216 +1,8 @@
 import { createFixedClientFromRequest as createClientFromRequest } from "../../shared/client.ts";
 import { buildBusinessContext } from "../../shared/businessContext.ts";
 import { validateStructuredResponse } from "../../shared/decisionEngine.ts";
+import { lireChiffresRapport, blocChiffresRapport, comparaisonDepuisChiffres } from "../../shared/chiffresRapport.ts";
 
-function getPeriodRanges(type, now) {
-  if (type === "quotidien") {
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    const curEnd = new Date(today);
-    curEnd.setHours(23, 59, 59, 999);
-    const prevEnd = new Date(today);
-    prevEnd.setDate(prevEnd.getDate() - 1);
-    prevEnd.setHours(23, 59, 59, 999);
-    const prevStart = new Date(prevEnd);
-    prevStart.setHours(0, 0, 0, 0);
-    return {
-      current: { start: today, end: curEnd, label: today.toLocaleDateString("fr-CA") },
-      previous: { start: prevStart, end: prevEnd, label: prevStart.toLocaleDateString("fr-CA") },
-    };
-  }
-  if (type === "hebdomadaire") {
-    const curEnd = new Date(now);
-    curEnd.setHours(23, 59, 59, 999);
-    const curStart = new Date(curEnd);
-    curStart.setDate(curStart.getDate() - 6);
-    curStart.setHours(0, 0, 0, 0);
-    const prevEnd = new Date(curStart);
-    prevEnd.setDate(prevEnd.getDate() - 1);
-    prevEnd.setHours(23, 59, 59, 999);
-    const prevStart = new Date(prevEnd);
-    prevStart.setDate(prevStart.getDate() - 6);
-    prevStart.setHours(0, 0, 0, 0);
-    return {
-      current: {
-        start: curStart,
-        end: curEnd,
-        label: `${curStart.toLocaleDateString("fr-CA")} → ${curEnd.toLocaleDateString("fr-CA")}`,
-      },
-      previous: {
-        start: prevStart,
-        end: prevEnd,
-        label: `${prevStart.toLocaleDateString("fr-CA")} → ${prevEnd.toLocaleDateString("fr-CA")}`,
-      },
-    };
-  }
-  // mensuel
-  const curEnd = new Date(now);
-  const curStart = new Date(curEnd.getFullYear(), curEnd.getMonth(), 1);
-  const prevEnd = new Date(curStart.getFullYear(), curStart.getMonth(), 0);
-  prevEnd.setHours(23, 59, 59, 999);
-  const prevStart = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), 1);
-  return {
-    current: {
-      start: curStart,
-      end: curEnd,
-      label: curStart.toLocaleDateString("fr-CA", { month: "long", year: "numeric" }),
-    },
-    previous: {
-      start: prevStart,
-      end: prevEnd,
-      label: prevStart.toLocaleDateString("fr-CA", { month: "long", year: "numeric" }),
-    },
-  };
-}
-
-export function computeMetrics(ctx, start, end) {
-  const inRange = (dateStr) => {
-    if (!dateStr) return false;
-    const d = new Date(dateStr);
-    return d >= start && d <= end;
-  };
-
-  const txns = ctx.transactions.filter((t) => inRange(t.date));
-  const incomes = txns.filter((t) => t.type === "income").reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const expenses = txns.filter((t) => t.type === "expense").reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const margin = incomes - expenses;
-  const marginPct = incomes > 0 ? Math.round((margin / incomes) * 100) : 0;
-
-  const orders = ctx.orders.filter((o) => inRange(o.date));
-  const orderCount = orders.length;
-  const orderRevenue = orders.reduce((s, o) => s + (Number(o.total) || Number(o.revenue) || 0), 0);
-  const aov = orderCount > 0 ? Math.round(orderRevenue / orderCount) : 0;
-  const returns = orders.filter((o) => o.return_status && o.return_status !== "aucun");
-  const returnRate = orderCount > 0 ? Math.round((returns.length / orderCount) * 100) : 0;
-
-  const campaigns = ctx.campaigns.filter((c) => inRange(c.start_date) || inRange(c.end_date));
-  const spend = campaigns.reduce((s, c) => s + (Number(c.spend) || 0), 0);
-  const campRevenue = campaigns.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
-  const roas = spend > 0 ? Math.round((campRevenue / spend) * 100) / 100 : 0;
-
-  const newCustomers = ctx.customers.filter((c) => inRange(c.acquisition_date)).length;
-
-  const cf = ctx.cashflow
-    .filter((c) => inRange(c.date))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-  const cash = cf[0] ? Number(cf[0].closing_cash) || 0 : 0;
-
-  return {
-    revenus: incomes,
-    depenses: expenses,
-    marge: margin,
-    margePct: marginPct,
-    commandes: orderCount,
-    revenuCommandes: orderRevenue,
-    panierMoyen: aov,
-    tauxRetour: returnRate,
-    tresorerie: cash,
-    marketing: spend,
-    roas: roas,
-    nouveauxClients: newCustomers,
-    // Which source actually had rows for this period vs. sums over an empty
-    // set that happen to equal 0. Used below so a period with NO transactions
-    // compared against a real previous period reads as "non mesurable", not
-    // as a -100% collapse of the margin.
-    hasData: { finance: txns.length > 0, orders: orderCount > 0, campaigns: campaigns.length > 0, cashflow: cf.length > 0 },
-  };
-}
-
-// Which hasData category each metric depends on, for the comparison below.
-const METRIC_SOURCE = {
-  revenus: "finance", depenses: "finance", marge: "finance", margePct: "finance",
-  commandes: "orders", revenuCommandes: "orders", panierMoyen: "orders", tauxRetour: "orders",
-  tresorerie: "cashflow", marketing: "campaigns", roas: "campaigns",
-};
-
-export function buildComparison(ctx, type, now) {
-  const ranges = getPeriodRanges(type, now);
-  const current = computeMetrics(ctx, ranges.current.start, ranges.current.end);
-  const previous = computeMetrics(ctx, ranges.previous.start, ranges.previous.end);
-
-  const labels = {
-    revenus: "Revenus",
-    depenses: "Dépenses",
-    marge: "Marge brute",
-    margePct: "Marge %",
-    commandes: "Commandes",
-    revenuCommandes: "Revenu commandes",
-    panierMoyen: "Panier moyen",
-    tauxRetour: "Taux de retour",
-    tresorerie: "Trésorerie",
-    marketing: "Dépenses marketing",
-    roas: "ROAS",
-    nouveauxClients: "Nouveaux clients",
-  };
-  const units = {
-    revenus: "$",
-    depenses: "$",
-    marge: "$",
-    margePct: "%",
-    commandes: "",
-    revenuCommandes: "$",
-    panierMoyen: "$",
-    tauxRetour: "%",
-    tresorerie: "$",
-    marketing: "$",
-    roas: "",
-    nouveauxClients: "",
-  };
-  // For these keys, lower is better (a decrease is positive)
-  const invertKeys = ["depenses", "tauxRetour", "marketing"];
-
-  const metrics = Object.keys(labels).map((key) => {
-    const cur = Number(current[key]) || 0;
-    const prev = Number(previous[key]) || 0;
-    // A period with NO underlying rows (no transaction/order/campaign
-    // imported for it) sums to 0 by construction, same as a period that was
-    // genuinely flat at $0. Comparing the two as a normal delta produced a
-    // false "-100%" collapse whenever real prior data met an unmeasured
-    // current period, so those comparisons are marked non mesurable instead.
-    const source = METRIC_SOURCE[key];
-    const mesurable = !source || (current.hasData[source] && previous.hasData[source]);
-    const invert = invertKeys.includes(key);
-    if (!mesurable) {
-      return { key, label: labels[key], current: cur, previous: prev, delta: null, deltaPct: null, trend: "non-mesurable", unit: units[key], invert };
-    }
-    const delta = cur - prev;
-    const deltaPct = prev !== 0 ? Math.round((delta / Math.abs(prev)) * 1000) / 10 : cur !== 0 ? 100 : 0;
-    let trend = "stable";
-    if (delta > 0) trend = invert ? "down" : "up";
-    else if (delta < 0) trend = invert ? "up" : "down";
-    return {
-      key,
-      label: labels[key],
-      current: cur,
-      previous: prev,
-      delta,
-      deltaPct,
-      trend,
-      unit: units[key],
-      invert,
-    };
-  });
-
-  return {
-    currentLabel: ranges.current.label,
-    previousLabel: ranges.previous.label,
-    currentRange: { start: ranges.current.start.toISOString(), end: ranges.current.end.toISOString() },
-    previousRange: { start: ranges.previous.start.toISOString(), end: ranges.previous.end.toISOString() },
-    metrics,
-  };
-}
-
-export function comparisonToText(comparison) {
-  const lines = comparison.metrics.map((m) => {
-    if (m.trend === "non-mesurable") {
-      return `${m.label}: non mesurable sur au moins une des deux périodes (aucune donnée importée) — comparaison non pertinente`;
-    }
-    const arrow = m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→";
-    const sign = m.delta > 0 ? "+" : "";
-    return `${m.label}: ${m.current}${m.unit} (précédent ${m.previous}${m.unit}, ${sign}${m.delta}${m.unit} ${arrow} ${m.deltaPct}%)`;
-  });
-  return lines.join("\n");
-}
 
 export default async function (req) {
   try {
@@ -219,41 +11,49 @@ export default async function (req) {
     if (!user) return Response.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await req.json();
-    const { type, comparison: wantComparison } = body;
+    const { type } = body;
     if (!type) return Response.json({ error: "type requis" }, { status: 400 });
+    // Les chiffres viennent du moteur KPI de l'ecran (rapportChiffres.js) : le
+    // serveur ne calcule plus ses propres totaux.
+    const chiffres = lireChiffresRapport(body);
+    if (!chiffres) {
+      return Response.json({ error: "Chiffres du rapport manquants : rechargez la page et relancez la génération." }, { status: 400 });
+    }
 
     const ctx = await buildBusinessContext(base44);
     if (!ctx.company) {
       return Response.json({ error: "Configurez votre entreprise d'abord." }, { status: 400 });
     }
 
-    const now = new Date();
-    const period =
-      type === "quotidien"
-        ? now.toLocaleDateString("fr-CA")
-        : type === "hebdomadaire"
-        ? `semaine du ${now.toLocaleDateString("fr-CA")}`
-        : now.toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const period = chiffres.periode?.libelle || new Date().toLocaleDateString("fr-CA");
 
     const reportSpecs = {
-      quotidien: `Génère le rapport quotidien: résumé de l'état général, évolution et événements importants; performance en ventes, finance et opérations; principaux risques et opportunités; actualité externe pertinente; 3 à 5 actions prioritaires; automatisations disponibles.`,
-      hebdomadaire: `Génère le rapport hebdomadaire: compare la semaine actuelle, la semaine précédente et la tendance historique sur la performance, les KPI, les anomalies, les risques, les opportunités, le marché, la concurrence, les actions réalisées, les actions restantes et les recommandations.`,
-      mensuel: `Génère le rapport mensuel: approfondit les résultats financiers, les ventes, les clients, le marketing, les opérations, la trésorerie, la productivité, les risques, les opportunités et l'évolution externe. Termine par un résumé exécutif automatique.`,
+      quotidien: `Génère le rapport quotidien (SURVEILLER) : état général de la journée, performance en ventes, finance et opérations, points d'attention, 3 à 5 actions prioritaires.`,
+      hebdomadaire: `Génère le rapport hebdomadaire (COMPRENDRE) : compare la semaine et la semaine précédente, explique les variations, les anomalies, les risques et les opportunités, puis les priorités de la semaine suivante.`,
+      mensuel: `Génère le rapport mensuel (PILOTER) : résultats financiers, ventes, clients, trésorerie, productivité, risques et opportunités, et termine par un résumé exécutif.`,
     };
 
-    const comparisonData = wantComparison ? buildComparison(ctx, type, now) : null;
-    const comparisonBlock = comparisonData
-      ? `\n\n=== COMPARAISON PÉRIODE CONTRE PÉRIODE (données calculées) ===\nPériode actuelle: ${comparisonData.currentLabel}\nPériode précédente: ${comparisonData.previousLabel}\n${comparisonToText(comparisonData)}\n\nAnalyse l'évolution de chaque indicateur: identifie les progressions et régressions significatives, et propose une explication probable pour les variations les plus marquantes.\n\nPour CHAQUE explication de variation (champ variationAnalysis ci-dessous), tu dois impérativement classifier ton affirmation, comme pour un diagnostic financier rigoureux :\n- FACT : fait brut directement vérifiable dans les chiffres ci-dessus.\n- CALCULATION : résultat d'un calcul arithmétique direct sur ces chiffres (delta, %, ratio).\n- OBSERVATION : constat factuel d'une tendance sans en expliquer la cause.\n- INFERENCE : déduction logique croisant plusieurs indicateurs.\n- HYPOTHESIS : explication plausible de la variation qui nécessite une validation terrain (aucune donnée externe ne la confirme directement).\n- RECOMMENDATION : action recommandée en réaction à cette variation.\nRenseigne aussi "confidence" (0.0 à 1.0) et "sources" (les indicateurs/tables précis utilisés). N'utilise JAMAIS FACT ou CALCULATION pour une explication causale non vérifiable dans les données (ex: "probablement dû à la météo") — classe-la HYPOTHESIS avec une confidence reflétant cette incertitude.`
+    const comparisonData = chiffres.precedente ? comparaisonDepuisChiffres(chiffres) : null;
+    const consignesVariations = comparisonData
+      ? `\n\nPour CHAQUE explication de variation (champ variationAnalysis), classe ton affirmation :\n- FACT : fait brut directement vérifiable dans les CHIFFRES CALCULÉS.\n- CALCULATION : calcul arithmétique direct sur ces chiffres (écart, %, ratio).\n- OBSERVATION : constat d'une tendance sans en expliquer la cause.\n- INFERENCE : déduction croisant plusieurs indicateurs.\n- HYPOTHESIS : explication plausible qui demande une validation terrain.\n- RECOMMENDATION : action recommandée.\nRenseigne "confidence" (0.0 à 1.0) et "sources" (les indicateurs précis utilisés). N'utilise JAMAIS FACT ou CALCULATION pour une cause non vérifiable dans les données : classe-la HYPOTHESIS.`
       : "";
 
     const prompt = `Tu es GESCOP. ${reportSpecs[type] || reportSpecs.quotidien}
-${comparisonBlock}
 
+${blocChiffresRapport(chiffres)}
+
+CONTEXTE BUSINESS (qualitatif, pour l'analyse) :
 ${ctx.context}
 
-Toutes les valeurs textuelles (résumé, contenu, sections, insights, etc.) doivent être rédigées en français.
+RÈGLES
+0. Les CHIFFRES CALCULÉS PAR GESCOP font foi : cite-les tels quels, ne les recalcule pas. Si le CONTEXTE BUSINESS donne un autre montant pour le même indicateur, c'est le CHIFFRE CALCULÉ qui compte. Un chiffre « non mesuré » reste non mesuré : dis-le, n'en propose aucune estimation. Un chiffre « partiel » se cite avec cette réserve.
+1. Tout nombre que tu écris doit apparaître dans les CHIFFRES CALCULÉS, ou être un calcul simple (écart, pourcentage de variation, ratio) sur ces seuls nombres.
+2. Aucune valeur de référence sectorielle, aucun ordre de grandeur « typique », aucun scénario chiffré inventé. Un élément mieux vaut absent que chiffré à l'aveugle.
+3. Chaque CONSTAT CROISÉ doit être repris sans être contredit.${consignesVariations}
 
-Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), content (le rapport complet en markdown bien structuré avec titres et sections), sections (un objet où chaque clé est un nom de section et la valeur est le contenu de cette section)${comparisonData ? ", variationAnalysis (un tableau de 3 à 5 objets {label, classification, text, confidence, sources} — un par variation marquante, voir le format de classification exigé plus haut), keyInsights (un tableau de 3 à 5 chaînes, chaque chaîne étant un insight sur l'évolution marquante d'un indicateur)" : ""}.`;
+Toutes les valeurs textuelles doivent être rédigées en français.
+
+Réponds avec un JSON contenant : summary (résumé exécutif en 2-3 phrases), content (le rapport complet en markdown avec titres et sections), sections (un objet : nom de section -> contenu)${comparisonData ? ", variationAnalysis (3 à 5 objets {label, classification, text, confidence, sources}, un par variation marquante), keyInsights (3 à 5 chaînes, chacune un constat sur l'évolution d'un indicateur)" : ""}.`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
@@ -327,6 +127,7 @@ Réponds avec un JSON contenant: summary (résumé exécutif en 2-3 phrases), co
       summary: data.summary || "",
       content: data.content || "",
       sections: data.sections || {},
+      chiffres,
       comparison: comparisonData
         ? {
             ...comparisonData,

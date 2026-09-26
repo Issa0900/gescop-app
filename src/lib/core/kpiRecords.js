@@ -59,6 +59,21 @@ export function moisLigne(r) {
 }
 
 /**
+ * Date d'une ligne de flux avec son grain : { jour: "AAAA-MM-JJ" } quand le
+ * jour est connu, { mois: "AAAA-MM" } pour une ligne mensuelle (paie
+ * « 2026-08 »), null sinon. Premier champ lisible, comme moisLigne.
+ */
+export function dateLigne(r) {
+  for (const brut of [r?.date, r?.period, r?.pay_period, r?.order_date, r?.payment_date]) {
+    if (brut == null) continue;
+    const s = String(brut);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return { jour: s.slice(0, 10) };
+    if (/^\d{4}-\d{2}$/.test(s.slice(0, 7)) && s.length === 7) return { mois: s };
+  }
+  return null;
+}
+
+/**
  * Periode commune a plusieurs sources de flux : l'intersection de l'etendue
  * (premier -> dernier mois) de chaque entite presente avec des lignes datees.
  * null quand moins de deux sources ou quand l'intersection couvre deja

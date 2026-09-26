@@ -24,6 +24,10 @@
     },
     "comparison": {
       "type": "object"
+    },
+    "chiffres": {
+      "type": "object",
+      "description": "Chiffres du moteur KPI sur la période du rapport (src/lib/core/rapportChiffres.js), stockés tels qu'affichés"
     }
   },
   "required": [

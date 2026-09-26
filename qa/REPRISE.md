@@ -63,7 +63,7 @@ Banc DEMO sur quelques fichiers : `node tests/banc/lancer-demo.cjs demo-modules 
 
 ## Contrat de calcul des KPI (25 sept. 2026)
 
-Avant toute modification d'une formule : lire `.claude/skills/gescop-kpi-contract/SKILL.md` (règles des 15 KPI critiques, méthode de preuve, sonde du moteur). Les anomalies corrigées et ouvertes sont listées dans `AGENTS.md` (« Audit du moteur KPI »). **ANO-15 à traiter en priorité** : le rapport mensuel affiche des chiffres codés en dur.
+Avant toute modification d'une formule : lire `.claude/skills/gescop-kpi-contract/SKILL.md` (règles des 15 KPI critiques, méthode de preuve, sonde du moteur). Les anomalies corrigées et ouvertes sont listées dans `AGENTS.md` (« Audit du moteur KPI »). ANO-15 (rapports à chiffres codés en dur) est résolu : les rapports lisent les chiffres du moteur (`rapportChiffres.js`). Parcours navigateur : `cd qa && PW_CHROMIUM=<chromium> npx playwright test -c playwright.qa.config.js e2e/rapports.spec.js`.
 
 ## Points restants
 

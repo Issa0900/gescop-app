@@ -129,8 +129,13 @@ This project is maintained by a swarm of specialized AI experts. When you (the g
     - **ANO-10 :** taux d'amortissement 30 ramené à 0,30.
     - **ANO-13 :** « Dépenses totales » n'est plus partiel à tort.
     - **ANO-16 :** `Payroll.period` est ramené à AAAA-MM. Avant, « Janvier 2026 » sortait la paie de toutes les fenêtres.
+    - **ANO-15 (rapports, 25-26 sept.) :**
+      - **Le problème :** tout l'affichage des rapports montrait un dossier de démonstration comme les résultats du client. Dans `reportDataExtractor.js` : chiffres par défaut (« 42 850 $ », « 1 184 000 $ », stock de 420 000 $), score de fiabilité de 91 %, nom « Nordik Plein Air », diagnostics, scénarios et plan d'action inventés. Le mensuel contenait 46 nombres fixes. Les flèches de tendance, le diaporama et le PowerPoint étaient codés en dur. `generateReport` calculait en plus ses propres totaux : revenus = transactions seulement, « marge brute » = revenus − dépenses, CA TTC.
+      - **Le correctif :** la page calcule les chiffres avec le moteur (`src/lib/core/rapportChiffres.js`, fenêtres par date réelle). `generateReport` les valide (`shared/chiffresRapport.ts`) et les stocke (`Report.chiffres`, champ ajouté au schéma) ; l'IA les commente sous la règle « les chiffres font foi ». Les vues (`RapportBlocs.jsx`), le diaporama et le PowerPoint n'affichent que ces chiffres et le texte de l'IA, étiqueté comme tel. Un ancien rapport s'affiche avec un avertissement.
+      - **Corrigé au passage :** le diaporama restait enfermé dans le bloc du rapport (il passe par un portail). Les indicateurs sont répartis par 9 par diapositive ; le PowerPoint perdait ceux au-delà de 12. `ReportComparison` et le PDF perdaient le signe « − » et affichaient « null % ».
+      - **Tests :** `tests/rapport_chiffres.test.js` ; `tests/rapports_sans_invention.test.js`, avec un garde-fou qui échoue si un chiffre ou un nom est réécrit en dur ; la recette DS11 réécrite ; le parcours `qa/e2e/rapports.spec.js`.
+      - **À déployer ensemble :** le schéma `Report`, la fonction et l'interface.
   - **Ouvert :**
-    - ANO-15 (P0) : `MonthlyReportView.jsx` affiche 46 montants et pourcentages codés en dur comme s'ils étaient le rapport de l'entreprise.
     - ANO-11 : le `cash_runway` du registre est faux (non affiché).
     - BFR et heures supplémentaires : une donnée absente est comptée 0, mais signalée « partiel ».
     - Aucun KPI OPEX.

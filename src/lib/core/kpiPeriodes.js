@@ -10,7 +10,7 @@
 
 import { buildKpiDataset } from "./kpiDataset";
 import { computeKpiBatch } from "./kpiEngine";
-import { moisLigne } from "./kpiRecords";
+import { moisLigne, dateLigne } from "./kpiRecords";
 
 // Entites datees dont les lignes sont des flux d'une periode. Les autres
 // (clients, produits, employes, campagnes recapitulatives, stock) sont des
@@ -71,6 +71,36 @@ export function lignesFenetre(prep, debut, fin) {
   const d = (r) => String(r.date ?? r.period ?? "");
   out.sort((a, b) => (d(a) < d(b) ? -1 : d(a) > d(b) ? 1 : 0));
   return out;
+}
+
+/** Dernier jour (AAAA-MM-JJ) d'un mois AAAA-MM. */
+export const finDeMois = (mois) => {
+  const [a, m] = mois.split("-").map(Number);
+  return `${mois}-${String(new Date(Date.UTC(a, m, 0)).getUTCDate()).padStart(2, "0")}`;
+};
+
+/**
+ * Lignes d'une periode [debut, fin] en DATES (AAAA-MM-JJ, bornes incluses) +
+ * tous les referentiels. Une ligne datee au jour y entre si son jour est dans
+ * la periode ; une ligne mensuelle (paie « 2026-08 ») seulement si la periode
+ * couvre tout son mois : elle ne se repartit pas sur une journee ou une semaine.
+ */
+export function lignesEntreDates(prep, debut, fin) {
+  const out = [...prep.referentiels];
+  for (const lignes of prep.parMois.values()) {
+    for (const r of lignes) {
+      const d = dateLigne(r);
+      if (!d) continue;
+      if (d.jour ? d.jour >= debut && d.jour <= fin : `${d.mois}-01` >= debut && finDeMois(d.mois) <= fin) out.push(r);
+    }
+  }
+  const cle = (r) => { const d = dateLigne(r); return d?.jour ?? (d ? finDeMois(d.mois) : ""); };
+  out.sort((a, b) => (cle(a) < cle(b) ? -1 : cle(a) > cle(b) ? 1 : 0));
+  return out;
+}
+
+export function kpisEntreDates(prep, ids, debut, fin) {
+  return computeKpiBatch(ids, lignesEntreDates(prep, debut, fin), prep.semantics);
 }
 
 export function kpisSurFenetre(prep, ids, debut, fin) {

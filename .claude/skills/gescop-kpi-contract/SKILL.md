@@ -49,6 +49,15 @@ Montant HT : la même règle existe deux fois, `montantHT` (moteur, `kpiRecords.
   - Les fenêtres sont des mois civils complets (dernier mois, 3 derniers mois, période importée). Il n'existe ni cumul annuel, ni trimestre, ni exercice fiscal avec mois de début, ni plage libre, ni notion de période clôturée.
 - **Cible V3 (à concevoir avec Issa, pas à improviser) :** un objet `Period { debut, fin, grain: "DAY" | "MONTH", cloturee }` produit par un sélecteur (YTD, T1–T4, exercice, plage libre), passé au moteur à la place des chaînes `AAAA-MM`. Le moteur filtrerait les flux par date réelle et prendrait les soldes au dernier jour. `alignerPeriode` et `lignesFenetre` en seraient les premiers consommateurs.
 
+## Rapports (quotidien, hebdomadaire, mensuel)
+
+Les chiffres d'un rapport viennent **du même moteur**, calculés à l'écran par `chiffresRapport()` (`src/lib/core/rapportChiffres.js`) et stockés dans `Report.chiffres`. Le serveur ne calcule rien et l'IA ne fait que commenter. Périodes :
+- **Mensuel :** dernier mois complet (`moisComplets`, comme la page Indicateurs).
+- **Hebdomadaire :** 7 jours finissant à la dernière vente.
+- **Quotidien :** la dernière journée avec des ventes.
+
+Une ligne mensuelle (paie « 2026-08 ») n'entre que dans une fenêtre qui couvre tout son mois (`lignesEntreDates`). Aucun chiffre, pourcentage ou nom d'entreprise ne s'écrit en dur dans l'affichage des rapports : `tests/rapports_sans_invention.test.js` échoue si c'est le cas.
+
 ## Méthode de preuve (obligatoire avant de dire « c'est juste » ou « c'est corrigé »)
 
 1. **Écrire le cas en données** : un petit JSON par entité (`orders`, `expenses`, `payrolls`, `employees`, `customers`, `cashflow`, `inventory`, `assets`, `transactions`…) avec le résultat attendu calculé à la main.

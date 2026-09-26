@@ -1,18 +1,9 @@
 import React from "react";
 import { TrendingUp, TrendingDown, Minus, ArrowRight, Sparkles, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fmtValeur } from "@/components/reports/reportDataExtractor";
 
-function formatValue(value, unit) {
-  if (value === null || value === undefined) return "-";
-  const num = Number(value) || 0;
-  if (unit === "$") {
-    return num.toLocaleString("fr-CA", { maximumFractionDigits: 0 }) + " $";
-  }
-  if (unit === "%") {
-    return num + " %";
-  }
-  return num.toLocaleString("fr-CA", { maximumFractionDigits: 2 });
-}
+const formatValue = (value, unit) => fmtValeur(value, unit);
 
 function TrendIcon({ trend }) {
   if (trend === "up") return <TrendingUp className="h-3.5 w-3.5" />;
@@ -26,13 +17,14 @@ function trendClasses(trend) {
   return "text-muted-foreground bg-muted";
 }
 
+// Ecart signe (l'ancien Math.abs faisait disparaitre le « - » d'une baisse) ;
+// un pourcentage varie en points ; pas de variation si une valeur manque.
 function deltaLabel(metric) {
-  const sign = metric.delta > 0 ? "+" : "";
-  const deltaStr = metric.unit === "$"
-    ? `${sign}${Math.abs(metric.delta).toLocaleString("fr-CA", { maximumFractionDigits: 0 })} $`
-    : `${sign}${metric.delta}${metric.unit}`;
-  const pctStr = metric.deltaPct > 0 ? `+${metric.deltaPct}%` : `${metric.deltaPct}%`;
-  return `${deltaStr} (${pctStr})`;
+  if (metric.trend === "non-mesurable" || metric.delta === null || metric.delta === undefined) return "non mesurable";
+  const signe = metric.delta > 0 ? "+" : metric.delta < 0 ? "-" : "";
+  if (metric.unit === "%") return `${signe}${fmtValeur(Math.abs(metric.delta)).replace(/ %$/, "")} pt`;
+  const ecart = `${signe}${fmtValeur(Math.abs(metric.delta), metric.unit)}`;
+  return Number.isFinite(metric.deltaPct) ? `${ecart} (${metric.deltaPct > 0 ? "+" : ""}${metric.deltaPct} %)` : ecart;
 }
 
 export default function ReportComparison({ comparison }) {
@@ -63,7 +55,7 @@ export default function ReportComparison({ comparison }) {
       {/* Metrics grid */}
       <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:divide-y-0 sm:[&>*:nth-child(odd)]:border-r sm:[&>*]:border-border">
         {metrics.map((m) => {
-          const hasPrevious = m.previous !== 0 || m.current !== 0;
+          const hasPrevious = m.previous !== null && m.previous !== undefined;
           return (
             <div key={m.key} className="flex items-center justify-between gap-3 px-5 py-3.5">
               <div className="min-w-0">

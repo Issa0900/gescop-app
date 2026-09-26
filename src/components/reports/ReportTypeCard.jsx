@@ -10,10 +10,10 @@ const config = {
     label: "Rapport quotidien",
     subtitle: "Les éléments qui méritent votre attention aujourd'hui.",
     bullets: [
-      "État général et indicateurs clés",
-      "Points d'attention et écarts notables",
-      "Actions prioritaires à examiner",
-      "Indicateur de fiabilité des données",
+      "Indicateurs clés de la dernière journée d'activité",
+      "Comparaison avec la veille",
+      "Points d'attention et constats croisés",
+      "Analyse rédigée par l'IA à partir de ces chiffres",
     ],
     gradient: "from-blue-500/10 via-blue-500/5 to-card",
     accent: "text-blue-600",
@@ -27,9 +27,9 @@ const config = {
     subtitle: "Les principales évolutions de la semaine et leurs facteurs associés.",
     bullets: [
       "Comparaison semaine contre semaine",
-      "Évolution observée sur 5 semaines",
+      "Évolution sur 5 semaines",
       "Ce qui s'améliore et ce qui recule",
-      "Diagnostic factuel : faits, calculs, facteurs",
+      "Explications classées : fait, calcul, hypothèse",
     ],
     gradient: "from-violet-500/10 via-violet-500/5 to-card",
     accent: "text-violet-600",
@@ -43,10 +43,10 @@ const config = {
     label: "Rapport mensuel",
     subtitle: "Une vue complète de la rentabilité, des tendances et des points à examiner.",
     bullets: [
-      "Synthèse exécutive et 4 piliers de gestion",
-      "Décomposition financière et flux transversaux",
-      "Facteurs observés et simulation de scénarios",
-      "Plan d'action structuré et audit des sources",
+      "Résultats du mois : CA, marges, résultat, trésorerie",
+      "Évolution sur 6 mois et comparaison au mois précédent",
+      "Progrès, reculs et constats croisés",
+      "Analyse de l'IA par thème et couverture des données",
     ],
     gradient: "from-emerald-500/10 via-emerald-500/5 to-card",
     accent: "text-emerald-600",
@@ -54,7 +54,7 @@ const config = {
   },
 };
 
-export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
+export default function ReportTypeCard({ typeKey, onGenerate, isGenerating, disabled = false }) {
   const cfg = config[typeKey];
   if (!cfg) return null;
   const Icon = cfg.icon;
@@ -106,7 +106,8 @@ export default function ReportTypeCard({ typeKey, onGenerate, isGenerating }) {
         size="sm"
         className="mt-5 w-full shadow-sm"
         onClick={() => onGenerate(typeKey)}
-        disabled={isGenerating}
+        disabled={isGenerating || disabled}
+        title={disabled ? "Chargement des données en cours" : undefined}
       >
         {isGenerating ? (
           <>

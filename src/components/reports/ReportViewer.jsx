@@ -34,7 +34,7 @@ export default function ReportViewer({ report, company, onClose }) {
 
   if (!report) return null;
   const cfg = typeConfig[report.type] || typeConfig.quotidien;
-  const extractedData = extractReportData(report);
+  const extractedData = extractReportData(report, company);
 
   const handleExportPPTX = async () => {
     try {

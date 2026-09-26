@@ -1,5 +1,9 @@
 // CSV + PDF export utilities.
 import { jsPDF } from "jspdf";
+import { fmtValeur } from "@/components/reports/reportDataExtractor";
+
+// Helvetica (WinAnsi) n'a pas les espaces insécables fines de fr-CA (U+202F).
+const pdfTexte = (t) => String(t).replace(/[\u202f\u00a0]/g, " ");
 
 function escapeCsv(value) {
   if (value == null) return "";
@@ -225,9 +229,9 @@ export function downloadReportPDF(report) {
       doc.setTextColor(...INK);
       doc.text(m.label, x + 2, y, { maxWidth: cols[0].w - 3 });
       x += cols[0].w;
-      doc.text(m.current != null ? `${m.current}${m.unit}` : "-", x + 2, y, { maxWidth: cols[1].w - 3 });
+      doc.text(pdfTexte(fmtValeur(m.current, m.unit)), x + 2, y, { maxWidth: cols[1].w - 3 });
       x += cols[1].w;
-      doc.text(m.previous != null ? `${m.previous}${m.unit}` : "-", x + 2, y, { maxWidth: cols[2].w - 3 });
+      doc.text(pdfTexte(fmtValeur(m.previous, m.unit)), x + 2, y, { maxWidth: cols[2].w - 3 });
       x += cols[2].w;
       if (m.trend === "non-mesurable") {
         doc.setTextColor(...MUTED);
@@ -240,7 +244,8 @@ export function downloadReportPDF(report) {
         // la même information, donc on la retire plutôt que de la remplacer
         // par un glyphe tout aussi risqué.
         const sign = m.delta > 0 ? "+" : "";
-        doc.text(`${sign}${m.delta}${m.unit} (${m.deltaPct}%)`, x + 2, y, { maxWidth: cols[3].w - 3 });
+        const ecart = m.unit === "%" ? `${sign}${m.delta} pt` : `${sign}${m.delta}${m.unit ? ` ${m.unit}` : ""}`;
+        doc.text(Number.isFinite(m.deltaPct) ? `${ecart} (${m.deltaPct} %)` : ecart, x + 2, y, { maxWidth: cols[3].w - 3 });
       }
       y += 6.5;
     });

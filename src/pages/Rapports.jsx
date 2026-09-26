@@ -11,6 +11,8 @@ import ReportTypeCard from "@/components/reports/ReportTypeCard";
 import ReportViewer from "@/components/reports/ReportViewer";
 import { cn } from "@/lib/utils";
 import { useObservations } from "@/hooks/useObservations";
+import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { chiffresRapport } from "@/lib/core/rapportChiffres";
 
 const reportTypes = ["quotidien", "hebdomadaire", "mensuel"];
 
@@ -64,10 +66,16 @@ export default function Rapports() {
     s.total_revenue != null || s.total_cost != null || s.gross_margin != null || s.total_orders != null
   );
 
+  // Les chiffres du rapport sont ceux du moteur KPI (mêmes formules que la
+  // page Indicateurs), calculés ici sur la période du rapport ; le serveur les
+  // stocke et l'IA les commente sans les recalculer.
+  const { data: donnees, pret: donneesPretes } = useDonneesKpi();
+
   const generate = async (type) => {
     setGenerating(type);
     try {
-      const res = await base44.functions.invoke("generateReport", { type, comparison: withComparison });
+      const chiffres = chiffresRapport(donnees, type, { comparer: withComparison });
+      const res = await base44.functions.invoke("generateReport", { type, chiffres });
       const data = res.data || res;
       if (data.error) {
         toast({ title: data.error, variant: "destructive" });
@@ -222,7 +230,7 @@ export default function Rapports() {
       {/* Generate buttons */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {reportTypes.map((rt) => (
-          <ReportTypeCard key={rt} typeKey={rt} onGenerate={generate} isGenerating={generating === rt} />
+          <ReportTypeCard key={rt} typeKey={rt} onGenerate={generate} isGenerating={generating === rt} disabled={!donneesPretes} />
         ))}
       </div>
 
