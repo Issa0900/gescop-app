@@ -197,7 +197,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             <BrandLogo className="h-8 w-8 shrink-0 shadow-xs transition-transform group-hover:scale-105" />
             <div className="flex flex-col">
               <span className="text-sm font-bold tracking-tight text-foreground leading-none">GESCOP</span>
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">Pilotage intelligent</span>
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">Pilotage et rentabilité</span>
             </div>
           </Link>
         </div>
@@ -245,7 +245,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
             {!compact && (
               <div>
                 <p className="text-base font-bold tracking-tight text-white">GESCOP</p>
-                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Pilotage intelligent</p>
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">Pilotage et rentabilité</p>
               </div>
             )}
           </div>

@@ -31,7 +31,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
           <BrandLogo className="h-11 w-11 shrink-0 shadow-lg shadow-black/20" />
           <div>
             <p className="text-xl font-bold tracking-tight text-sidebar-accent-foreground">GESCOP</p>
-            <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">Pilotage intelligent</p>
+            <p className="text-[11px] uppercase tracking-wider text-sidebar-foreground/50">Pilotage et rentabilité</p>
           </div>
         </div>
 
@@ -48,30 +48,30 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             </p>
           </div>
 
-          <div className="space-y-3 max-w-md">
+          <div className="space-y-3.5 max-w-md">
             <p className="text-xs font-bold text-sidebar-accent-foreground/90 uppercase tracking-widest">
               La clarté financière immédiate :
             </p>
             {[
               {
                 icon: Activity,
-                title: "Caractéristiques",
-                desc: "Rapprochement automatisé de vos fichiers bruts (ventes, paie, banque, stocks).",
+                title: "Rapprochement automatisé",
+                desc: "Ventes, dépenses, paie et relevés bancaires croisés sans saisie manuelle.",
               },
               {
                 icon: Target,
-                title: "Avantages",
-                desc: "Détection instantanée des écarts de marge et des dépenses non justifiées.",
+                title: "Contrôle continu des marges",
+                desc: "Détection instantanée des écarts de coûts et des dépenses non justifiées.",
               },
               {
                 icon: TrendingUp,
-                title: "Bénéfices",
-                desc: "Maîtrisez votre marge nette exacte et gagnez 10 à 15 heures chaque semaine.",
+                title: "Trésorerie et résultat net",
+                desc: "Maîtrisez votre marge exacte et libérez 10 à 15 heures chaque semaine.",
               },
               {
                 icon: ShieldCheck,
-                title: "Sécurité",
-                desc: "Calculs déterministes vérifiables · Données hébergées au Canada (Loi 25).",
+                title: "Sécurité & Loi 25",
+                desc: "Calculs déterministes vérifiables · Données hébergées au Canada.",
               },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: `${0.1 + i * 0.1}s` }}>
@@ -79,8 +79,8 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
                   <item.icon className="h-4 w-4 text-sidebar-primary" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-sidebar-primary uppercase tracking-wider">{item.title} : </span>
-                  <span className="text-sm leading-snug text-sidebar-foreground/80">{item.desc}</span>
+                  <span className="text-xs font-bold text-sidebar-accent-foreground block">{item.title}</span>
+                  <span className="text-xs leading-snug text-sidebar-foreground/80">{item.desc}</span>
                 </div>
               </div>
             ))}
@@ -101,7 +101,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <BrandLogo className="h-10 w-10 shrink-0 shadow-lg shadow-primary/20" />
             <div>
               <p className="text-lg font-bold tracking-tight">GESCOP</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pilotage intelligent</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pilotage et rentabilité</p>
             </div>
           </div>
 

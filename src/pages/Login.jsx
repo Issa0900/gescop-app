@@ -54,6 +54,10 @@ export default function Login() {
           >
             Créer un compte
           </Link>
+          <span className="mx-1.5 text-muted-foreground/50">·</span>
+          <Link to="/#demonstration" className="text-muted-foreground hover:text-foreground hover:underline">
+            Voir la démonstration
+          </Link>
         </>
       }
     >
