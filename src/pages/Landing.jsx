@@ -5,25 +5,19 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   CheckCircle2,
-  TrendingUp,
   ShieldCheck,
   BarChart3,
   Database,
   FileSpreadsheet,
   FileText,
   Clock,
-  DollarSign,
   Layers,
   Activity,
   AlertTriangle,
   Scale,
-  Sparkles,
-  ChevronRight,
   ExternalLink,
   Wallet,
-  Play,
   Eye,
-  Building,
 } from "lucide-react";
 
 export default function Landing() {
@@ -38,13 +32,14 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-primary selection:text-white">
+    <div className="min-h-screen overflow-x-clip bg-slate-950 text-slate-100 selection:bg-primary selection:text-white">
       {/* ─── Barre de navigation supérieure ─── */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3 group">
             <BrandLogo className="h-9 w-9 shrink-0 transition-transform group-hover:scale-105" />
-            <div className="flex flex-col">
+            {/* Sous 360 px (iPhone SE), seul le logo reste : place aux boutons de connexion. */}
+            <div className="flex flex-col max-[359px]:hidden">
               <span className="text-lg font-bold tracking-tight text-white leading-none">GESCOP</span>
               <span className="text-[10px] uppercase tracking-wider text-slate-400 font-medium mt-0.5">
                 Pilotage et rentabilité
@@ -52,7 +47,7 @@ export default function Landing() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-300">
             <a href="#demonstration" onClick={scrollToDemo} className="hover:text-white transition-colors">
               Démonstration
             </a>
@@ -70,16 +65,20 @@ export default function Landing() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* Libellés courts sur mobile : les libellés complets ne tenaient pas à côté
+              du logo et élargissaient la page (défilement horizontal). */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-slate-800">
-                Se connecter
+              <Button variant="ghost" size="sm" className="px-2.5 sm:px-3 text-slate-300 hover:text-white hover:bg-slate-800">
+                <span className="sm:hidden">Connexion</span>
+                <span className="hidden sm:inline">Se connecter</span>
               </Button>
             </Link>
             <Link to="/register">
-              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/25">
-                Démarrer l'essai
-                <ArrowRight className="ml-1.5 h-4 w-4" />
+              <Button size="sm" className="px-2.5 sm:px-3 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/25">
+                <span className="sm:hidden">Essai gratuit</span>
+                <span className="hidden sm:inline">Démarrer l'essai</span>
+                <ArrowRight className="ml-1.5 h-4 w-4 hidden sm:inline" />
               </Button>
             </Link>
           </div>
@@ -116,7 +115,7 @@ export default function Landing() {
           </p>
 
           {/* Boutons d'action */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-4">
             <Link to="/register" className="w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base bg-primary hover:bg-primary/90 text-white font-bold shadow-xl shadow-primary/30">
                 Ouvrir mon tableau de bord
@@ -345,8 +344,8 @@ export default function Landing() {
             {/* Bouton d'accès direct sous la démo */}
             <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
               <span>Vous souhaitez tester avec vos propres fichiers ?</span>
-              <Link to="/register">
-                <Button size="sm" className="bg-primary hover:bg-primary/90 text-white font-semibold">
+              <Link to="/register" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto h-auto min-h-9 py-2 whitespace-normal text-center bg-primary hover:bg-primary/90 text-white font-semibold">
                   Ouvrir un compte d'essai immédiat (14 jours gratuits)
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
@@ -616,7 +615,7 @@ export default function Landing() {
           <p className="mt-4 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto">
             Importez vos premiers fichiers en 2 minutes et découvrez vos marges exactes dès aujourd'hui.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-4">
             <Link to="/register" className="w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base bg-primary hover:bg-primary/90 text-white font-bold shadow-xl shadow-primary/30">
                 Démarrer sans engagement
@@ -647,7 +646,7 @@ export default function Landing() {
             <span className="ml-2 text-slate-600">· © {new Date().getFullYear()}</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <Link to="/tarifs" className="hover:text-slate-300 transition-colors">
               Tarifs
             </Link>
