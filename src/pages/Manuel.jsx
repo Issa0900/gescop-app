@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { 
   ChevronDown, Lightbulb, Upload, LayoutDashboard, AlertTriangle, MessageSquare, Sparkles, Brain, Calculator, Target, 
   Users, Package, Wallet, ShieldCheck, CheckCircle2, Building2, Landmark, Wrench,
-  ShoppingCart, Columns3
+  Calendar, FileText, BarChart3, HelpCircle, ArrowRight, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ManualTableOfContents from "@/components/ManualTableOfContents";
@@ -10,522 +10,331 @@ import BrandLogo from "@/components/BrandLogo";
 
 const groups = [
   {
-    label: "1. Cadrage & Prérequis",
+    label: "1. Démarrage Rapide (3 min)",
     sections: [
       {
-        id: "perimetre",
-        title: "Périmètre, Cible & Prérequis",
-        icon: Target,
-        badge: "Fondations",
-        objective: "Identifier les prérequis techniques, les rôles d'accès et les règles de conformité avant toute manipulation.",
-        content: [
-          {
-            h: "1. Public cible & Niveau technique requis",
-            action: "Identifiez votre rôle d'accès dans GESCOP pour adapter votre usage :",
-            steps: [
-              "Direction Générale (CEO / Fondateur) : Consultation du Score de Santé, des priorités du jour et dialogue stratégique avec l'Assistant.",
-              "Direction Financière & Comptabilité (CFO / DAF / Contrôleur) : Validation des imports P&L, suivi de trésorerie, DPA et clôtures mensuelles.",
-              "Direction des Opérations & Ventes (COO / Responsable Magasins) : Pilotage multi-succursales, gestion des stocks et marges par produit.",
-              "Équipe Marketing & Service Client : Mesure du ROAS, coûts d'acquisition (CAC) et gestion des réclamations clients."
-            ],
-            successIndicator: "Aucune compétence en programmation n'est requise. La maîtrise d'un tableur (Excel ou Google Sheets) suffit pour exploiter 100% de la plateforme.",
-            tip: "Un mode démonstration préchargé avec une simulation complète est disponible pour tester les fonctionnalités sans risque."
-          },
-          {
-            h: "2. Objectif unique du document",
-            action: "Ce que vous saurez accomplir à la fin de la lecture de ce guide :",
-            steps: [
-              "Configurer votre profil d'entreprise en moins de 3 minutes.",
-              "Glisser-déposer vos classeurs Excel comptables et opérationnels sans rejet ni blocage.",
-              "Interpréter les indicateurs financiers clés ($ CAD) et piloter vos succursales.",
-              "Poser des questions complexes à l'Assistant IA pour obtenir des décisions chiffrées actionnables."
-            ],
-            successIndicator: "Vous serez en mesure de mener un cycle de pilotage mensuel complet en totale autonomie."
-          },
-          {
-            h: "3. Prérequis matériels & Données sources",
-            action: "Rassemblez les éléments suivants avant d'entamer les étapes :",
-            steps: [
-              "Navigateur web récent : Google Chrome, Microsoft Edge, Mozilla Firefox ou Apple Safari (résolution recommandée : 1280×800 minimum).",
-              "Vos fichiers de données d'entreprise : Relevés bancaires CSV, exports de caisse POS, fichiers de paie ou exports Excel de vos logiciels (QuickBooks, Shopify, Acomba, Sage).",
-              "Un compte utilisateur actif avec le rôle Administrateur ou Analyste."
-            ],
-            successIndicator: "Vos fichiers sont prêts sur votre poste de travail au format .xlsx ou .csv."
-          },
-          {
-            h: "4. Règles critiques & Conformité Loi 25 (Québec)",
-            action: "Respectez impérativement ces trois consignes de gouvernance des données :",
-            steps: [
-              "Souveraineté des données : GESCOP héberge l'ensemble des données au Canada dans des centres certifiés SOC2 et ISO 27001.",
-              "Protection des renseignements personnels : Ne chargez jamais de numéros d'assurance sociale (NAS) ou de cartes de crédit complètes.",
-              "Traçabilité immuable : Chaque écriture importée conserve un identifiant d'import et son contenu original d'archive."
-            ],
-            warning: "Conformité Loi 25 : En cas de suppression demandée par un client, utilisez le module Clients pour anonymiser sa fiche en un clic."
-          }
-        ]
-      }
-    ]
-  },
-  {
-    label: "2. Mise en route pas-à-pas",
-    sections: [
-      {
-        id: "onboarding",
-        title: "Étape 1 : Configuration initiale (3 minutes)",
+        id: "demarrage",
+        title: "Configuration & Prise en Main",
         icon: Sparkles,
         badge: "Démarrage",
-        objective: "Établir la carte d'identité de l'entreprise pour contextualiser l'ensemble des analyses financières et prédictives.",
+        objective: "Configurer votre entreprise en 60 secondes et naviguer avec aisance sur ordinateur et mobile.",
         content: [
           {
-            h: "Action 1 : Renseigner l'identité de l'entreprise",
-            action: "Complétez la fiche d'identification dès votre première connexion :",
+            h: "Action 1 : Renseigner la fiche de votre entreprise",
+            action: "Complétez votre profil d'entreprise dès votre première connexion :",
             steps: [
-              "Accédez à l'écran de configuration initiale ou rendez-vous dans le menu « Paramètres ».",
-              "Saisissez la raison sociale légale, le secteur d'activité (ex. Commerce de détail plein air) et la localisation principale.",
-              "Renseignez l'URL publique de votre site web et cliquez sur le bouton « Auto-remplir avec l'IA ».",
-              "Vérifiez les données extraites automatiquement (description d'activité, effectif estimé) et validez."
+              "Accédez à l'écran d'accueil ou ouvrez la section « Paramètres » dans le menu.",
+              "Indiquez la raison sociale, votre secteur d'activité principal et votre localisation.",
+              "Renseignez l'URL de votre site web et cliquez sur « Auto-remplir avec l'IA » pour extraire automatiquement le modèle d'affaires.",
+              "Dans l'onglet Succursales, ajoutez vos points de vente réels (ex. Boutique Web, Magasin Lévis, Siège social)."
             ],
-            successIndicator: "La fiche affiche le badge vert « Entreprise configurée » avec le logo et la devise par défaut ($ CAD).",
-            tip: "Si votre site web est protégé par un mot de passe ou indisponible, vous pouvez saisir les champs manuellement en moins de 60 secondes."
+            successIndicator: "La fiche affiche le badge vert « Entreprise configurée » avec votre devise par défaut ($ CAD).",
+            tip: "Vous pouvez modifier ces informations à tout moment depuis les Paramètres sans impacter vos données déjà importées."
           },
           {
-            h: "Action 2 : Définir le modèle d'affaires & les succursales",
-            action: "Précisez l'organisation opérationnelle de votre entreprise :",
+            h: "Action 2 : Naviguer sur smartphone et tablette (Version Mobile)",
+            action: "Profitez d'une expérience fluide et complète sur tous vos appareils :",
             steps: [
-              "Sélectionnez vos canaux de distribution : Magasins physiques, Boutique en ligne (E-commerce), Vente B2B aux professionnels.",
-              "Dans la section Succursales, enregistrez vos points de vente réels (ex. Web, Lévis, Chicoutimi, Québec, Trois-Rivières).",
-              "Sélectionnez les logiciels tiers que vous utilisez déjà pour adapter le vocabulaire d'ingestion."
+              "La barre supérieure fixe affiche le logo officiel GESCOP, le nom de votre entreprise et l'état des alertes en direct.",
+              "Touchez le bouton de menu (☰) en haut à gauche pour ouvrir le volet de navigation complet.",
+              "Accédez à vos modules favoris ou épinglez les pages que vous consultez chaque matin.",
+              "Ajoutez GESCOP à l'écran d'accueil de votre téléphone (PWA) pour un accès direct instantané en un clic."
             ],
-            successIndicator: "La liste des succursales actives est visible dans les filtres de rapport.",
-            warning: "Ne confondez pas une « Succursale » (lieu physique de vente ou entrepôt) avec un « Département » (service interne comme Comptabilité ou RH)."
-          },
-          {
-            h: "Action 3 : Fixer vos objectifs stratégiques de l'exercice",
-            action: "Indiquez à GESCOP vos cibles prioritaires pour guider ses recommandations :",
-            steps: [
-              "Définissez un objectif de rentabilité (ex. Marge brute cible : 50 %).",
-              "Définissez un seuil de sécurité de trésorerie (ex. Réserve minimale : 50 000 $ CAD).",
-              "Enregistrez vos priorités de croissance (ex. Réduction du coût d'acquisition client de 10 %)."
-            ],
-            successIndicator: "Les barres de progression de vos objectifs apparaissent sur le Tableau de bord avec les écarts en temps réel."
+            successIndicator: "Tous vos graphiques, indicateurs et rapports s'adaptent automatiquement à la taille de votre écran."
           }
         ]
       },
       {
-        id: "import",
-        title: "Étape 2 : Ingestion Universelle des Données",
+        id: "import-simple",
+        title: "Importation Facile de vos Données",
         icon: Upload,
-        badge: "Import V3",
-        objective: "Importer vos données comptables, commerciales et de stocks sans friction grâce au moteur d'ingestion sémantique.",
+        badge: "Zéro Effort",
+        objective: "Importer vos fichiers comptables, de ventes et de stocks sans modèle rigide ni blocage.",
         content: [
           {
-            h: "Action 1 : Préparer et déposer vos fichiers",
-            action: "Glissez vos fichiers dans la zone d'importation dédiée :",
+            h: "Action 1 : Glisser-déposer vos classeurs Excel ou CSV",
+            action: "Déposez vos fichiers pour une ingestion sémantique automatique :",
             steps: [
               "Cliquez sur « Importer des données » dans le menu latéral gauche.",
-              "Glissez-déposez votre classeur Excel (.xlsx) complet ou sélectionnez plusieurs fichiers CSV en même temps.",
-              "Patientez 3 à 5 secondes pendant que le Moteur Universel V3 profile la structure de chaque feuille."
+              "Glissez votre classeur Excel (.xlsx multi-feuilles) ou vos fichiers CSV exportés de vos outils habituels (QuickBooks, Shopify, Acomba, Sage, caisse POS).",
+              "Le Moteur Universel V3 analyse automatiquement chaque feuille, élimine les colonnes vides parasites et associe les données aux bons concepts métier.",
+              "Consultez la prévisualisation et cliquez sur « Confirmer et importer »."
             ],
-            successIndicator: "Un panneau d'analyse s'affiche en listant chaque feuille détectée avec son entité cible (ex. Ventes → Order, Stocks → Inventory).",
-            tip: "GESCOP gère les classeurs multi-feuilles : un seul fichier Excel contenant 7 à 14 feuilles est reconnu et ventilé automatiquement !"
+            successIndicator: "Le bandeau de confirmation affiche « Données importées avec succès » avec le décompte exact des enregistrements créés.",
+            tip: "Un seul fichier Excel contenant plusieurs onglets (ex. Ventes, Dépenses, Trésorerie, Stocks) est reconnu et ventilé en une seule opération !"
           },
           {
-            h: "Action 2 : Vérifier la reconnaissance des colonnes",
-            action: "Contrôlez l'alignement des colonnes suggéré par le système :",
-            steps: [
-              "Vérifiez que chaque colonne source est reliée au concept métier équivalent (ex. « Qte_En_Stock » → closing_stock).",
-              "Les variations d'écritures, abréviations (Qte, Mnt, Tx, Ca) et devises ($ CAD) sont résolues automatiquement.",
-              "Les colonnes vides de grille Excel (ex. col_7, col_8) sont automatiquement neutralisées sans bloquer l'import.",
-              "Cliquez sur « Confirmer et importer »."
-            ],
-            successIndicator: "Le rapport d'importation affiche : « 100% des lignes traitées avec succès — 0 rejet ».",
-            warning: "Si une colonne affiche « Ignorer » alors qu'elle contient une donnée importante, cliquez dessus et sélectionnez manuellement le champ dans la liste déroulante."
-          },
-          {
-            h: "Action 3 : Valider le score de qualité des données",
-            action: "Vérifiez la conformité de l'ingestion sur la page Audit :",
-            steps: [
-              "Consultez l'indicateur de complétude globale (viser un score supérieur à 90%).",
-              "Vérifiez que le tableau de quarantaine est vide (0 ligne rejetée).",
-              "Si des lignes sont en quarantaine, consultez le motif explicatif (ex. date invalide ou montant textuel) pour corriger votre source."
-            ],
-            successIndicator: "La pastille de statut affiche « Données saines » et l'ensemble des modules applicatifs sont instantanément alimentés."
+            h: "Action 2 : Les 5 types de fichiers clés (Guide ultra-simple)",
+            action: "Pour que vos indicateurs soient calculés avec une précision optimale, voici les quelques colonnes essentielles par domaine :",
+            table: {
+              headers: ["Domaine de données", "Colonnes minimales recommandées", "Ce que GESCOP calcule pour vous"],
+              rows: [
+                ["Commandes / Ventes", "Date, ID Commande, Montant Total, ID Client (optionnel)", "Chiffre d'affaires, Panier moyen (AOV), Volume de commandes, Répartition par succursale"],
+                ["Dépenses", "Date, Catégorie ou Description, Montant", "Structure de coûts d'exploitation (OpEx), Suivi des charges mensuelles"],
+                ["Trésorerie", "Date, Solde de clôture (ou Entrées / Sorties)", "Solde bancaire à date, Variation nette de trésorerie, Autonomie financière (Runway)"],
+                ["Stocks / Inventaire", "Date, Nom du produit ou SKU, Quantité en stock, Prix vente", "Valeur du stock, Alertes de rupture imminente, Détection du stock dormant"],
+                ["Paie & Salaires", "Période (mois), ID Employé, Salaire régulier ou Coût total", "Masse salariale totale, Poids de la paie sur le CA, Productivité par employé"]
+              ]
+            },
+            tip: "GESCOP reconnaît automatiquement les synonymes courants (ex. Qte, Mnt, Ca, Tx, Montant, Total) et tolère les accents français.",
+            warning: "Conformité Loi 25 (Québec) : Ne chargez jamais de numéros d'assurance sociale (NAS) ou de cartes de crédit complètes. Vos données d'entreprise restent hébergées au Canada dans des centres sécurisés SOC2."
           }
         ]
       }
     ]
   },
   {
-    label: "2bis. Référence : Nommage des colonnes d'import",
+    label: "2. Le Filtre Temporel & La Règle d'Or",
     sections: [
       {
-        id: "nommage-ventes",
-        title: "Nommer vos colonnes — Ventes, Clients, Produits & Stocks",
-        icon: ShoppingCart,
-        badge: "Référence",
-        objective: "Donner à chaque colonne de vos fichiers un en-tête proche de la liste ci-dessous pour que le mapping automatique n'ait rien à deviner.",
+        id: "filtre-temporel",
+        title: "Sélecteur Universel & Logique Temporelle",
+        icon: Calendar,
+        badge: "Règle d'Or",
+        objective: "Comprendre la synchronisation exacte entre vos flux d'activité et vos soldes de situation.",
         content: [
           {
-            h: "Commandes / Ventes (Order)",
-            action: "Une ligne par vente ou transaction commerciale. Le moteur reconnaît aussi de nombreux synonymes courants (Qte, Mnt, Tx, Ca...) — ces en-têtes restent la valeur la plus sûre.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Bénéfice brut","gross_profit"],["Catégorie","category"],["Coût","cost"],["Coût total","total_cost"],["Coût unitaire","unit_cost"],["Date","date"],["Département","department"],["ID Client","customer_id"],["ID Commande","order_id"],["ID Employé","employee_id"],["ID Produit","product_id"],["ID Succursale","location_id"],["Livraison","shipping"],["Magasin","store"],["Marge brute","gross_margin"],["Mode de paiement","payment_method"],["Nom de l'employé","employee_name"],["Nom du client","customer_name"],["Nom du produit","product_name"],["Prix unitaire","price"],["Prix unitaire","unit_price"],["Province","province"],["Quantité","quantity"],["Région","region"],["Remise","discount"],["Revenu total","total_revenue"],["Sous-total","subtotal"],["Statut","status"],["Succursale","succursale"],["Taxe fédérale","tax_federal"],["Taxe provinciale","tax_provincial"],["Taxes","tax"],["Total","total"]]},
+            h: "Action 1 : La Règle d'Or GESCOP (Flux vs Soldes)",
+            action: "Chaque métrique réagit de façon rigoureuse selon sa nature financière :",
+            steps: [
+              "1. Les FLUX (Chiffre d'affaires, Dépenses, Paie, Commandes) : Ils s'additionnent sur l'intervalle sélectionné (ex. somme du 1er au 31 août 2026).",
+              "2. Les SOLDES & SITUATIONS (Trésorerie bancaire, Valeur du stock) : Ils se mesurent à la date de clôture exacte de la période (ex. solde au 31 août à 23h59).",
+              "3. La Cohérence absolue : Quand vous examinez le mois d'août 2026, la trésorerie affiche automatiquement vos liquidités réelles fin août, sans déconnexion avec vos charges du mois."
+            ],
+            successIndicator: "Fini les écarts incompréhensibles : tous vos indicateurs partagent la même borne de clôture temporelle."
           },
           {
-            h: "Clients (Customer)",
-            action: "Une ligne par client.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Adresse","address"],["Code postal","postal_code"],["Commandes totales","total_orders"],["Date 1er achat","first_purchase_date"],["Date d'acquisition","acquisition_date"],["Date dernier achat","last_purchase_date"],["Email","email"],["ID Client","customer_id"],["Langue","language"],["Limite de crédit","credit_limit"],["Nom","name"],["Nom complet","full_name"],["Nom de famille","last_name"],["Numéro exemption taxe","tax_exemption_number"],["Panier moyen","average_order_value"],["Points fidélité","loyalty_points"],["Prénom","first_name"],["Province","province"],["Région","region"],["Revenu total","total_revenue"],["Risque de départ (%)","churn_risk"],["Valeur à vie (LTV)","lifetime_value"],["Ville","city"]]},
+            h: "Action 2 : Maîtriser le Sélecteur Rapide de Période",
+            action: "Changez de perspective en un seul clic grâce aux boutons prédéfinis :",
+            steps: [
+              "« Mois clos » (Mode par défaut) : Sélectionne automatiquement le dernier mois complet (ex. Août 2026). Garantit que les écritures de paie et factures sont stabilisées.",
+              "« Mois en cours (MDT) » : Affiche l'activité du 1er du mois jusqu'au jour présent avec un badge visible « En cours ».",
+              "« Trimestre (QTD) » : Idéal pour lisser les variations ponctuelles d'un mois à l'autre.",
+              "« Année (YTD) » : Agrège l'activité depuis le début de l'exercice fiscal jusqu'à aujourd'hui.",
+              "Flèches de navigation [ < ] Août 2026 [ > ] : Permettent de remonter l'historique mois par mois en toute simplicité."
+            ],
+            tip: "Vous pouvez également sélectionner une plage de dates sur-mesure (Du ... Au ...) : la trésorerie prendra automatiquement la valeur arrêtée au dernier jour de votre sélection."
           },
           {
-            h: "Produits (Product)",
-            action: "Catalogue produit — un produit par ligne.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Coût d'achat","purchase_cost"],["Date de lancement","launch_date"],["ID Fournisseur","supplier_id"],["ID Produit","product_id"],["Marge brute","gross_margin"],["Niveau de stock","inventory_level"],["Nom du fournisseur","supplier_name"],["Nom du produit","product_name"],["Point de commande","reorder_point"],["Prix de vente","selling_price"],["SKU","sku"],["Sous-catégorie","subcategory"],["Ventes mensuelles","monthly_sales"]]},
-          },
-          {
-            h: "Inventaire / Stocks (Inventory)",
-            action: "Un relevé de stock par produit et par date.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Achats","purchases"],["Catégorie","category"],["Code douanier","customs_code"],["Coût unitaire","unit_cost"],["Date","date"],["Endommagés","damaged"],["ID Entrepôt","warehouse_id"],["ID Fournisseur","supplier_id"],["ID Inventaire","inventory_id"],["ID Produit","product_id"],["Jours en inventaire","days_in_inventory"],["Niveau de stock","inventory_level"],["Nom de l'entrepôt","warehouse_name"],["Nom du fournisseur","supplier_name"],["Nom du produit","product_name"],["Pays d'origine","origin_country"],["Point de commande","reorder_point"],["Prix de vente","selling_price"],["Qté disponible","available_qty"],["Qté en transit","in_transit_qty"],["Qté réappro","reorder_qty_eoq"],["Qté réservée","reserved_qty"],["Quantité disponible","quantite_disponible"],["Quantité en stock","qte_en_stock"],["Retours","returns"],["Stock d'ouverture","opening_stock"],["Stock final","closing_stock"],["Unités vendues","units_sold"],["Valeur du stock","inventory_value"],["Valeur stock (vente)","selling_inventory_value"],["Valeur stock (vente)","valeur_stock_vente"]]},
-          },
-        ],
-      },
-      {
-        id: "nommage-finance",
-        title: "Nommer vos colonnes — Finance, Trésorerie, RH & Fournisseurs",
-        icon: Landmark,
-        badge: "Référence",
-        content: [
-          {
-            h: "Transactions financières (Transaction)",
-            action: "Mouvements bancaires ou comptables bruts (revenu/dépense).",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Catégorie","category"],["Client","client"],["Date","date"],["Description","description"],["Devise","currency"],["Montant","amount"],["Produit","product"],["Source","source"]]},
-          },
-          {
-            h: "Dépenses (Expense)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Catégorie","category"],["Date","date"],["Département","department"],["Description","description"],["Fournisseur","supplier"],["ID Dépense","expense_id"],["Mode de paiement","payment_method"],["Montant","amount"],["Récurrent","recurring"]]},
-          },
-          {
-            h: "Trésorerie (Cashflow)",
-            action: "Un solde de caisse par date.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Comptes clients","accounts_receivable"],["Comptes fournisseurs","accounts_payable"],["Date","date"],["Entrées de fonds","cash_in"],["Flux net de trésorerie","net_cash_flow"],["Solde d'ouverture","opening_cash"],["Solde de clôture","closing_cash"],["Sorties de fonds","cash_out"]]},
-          },
-          {
-            h: "Employés (Employee)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Années d'ancienneté","seniority_years"],["Assurance collective","group_insurance"],["Charges sociales totales","total_social_charges"],["CNESST","cnesst"],["Coût employeur total","total_employer_cost"],["Date d'embauche","hire_date"],["Emplacement","location"],["FSS (QC)","fss_qc"],["Heures hebdo","weekly_hours"],["ID Employé","employee_id"],["Nom","name"],["Nom complet","full_name"],["Nom de famille","last_name"],["Prénom","first_name"],["REER employeur","rrsp_employer"],["Rôle","role"],["RQAP employeur","qpip_employer"],["RRQ employeur","cpp_employer"],["Salaire","salary"],["Salaire annuel","annual_salary"],["Statut syndical","union_status"],["Succursale","branch"],["Taux commission","commission_rate"],["Taux horaire","hourly_rate"]]},
-          },
-          {
-            h: "Paie (Payroll)",
-            action: "Un relevé de paie par employé et par période.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Bonus","bonus"],["Coût employeur","employer_cost"],["Coût total","total_cost"],["Heures","hours"],["Heures supplémentaires","overtime"],["ID Employé","employee_id"],["ID Paie","payroll_id"],["Période","period"],["Salaire régulier","regular_pay"]]},
-          },
-          {
-            h: "Fournisseurs (Supplier)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Catégorie","category"],["Conditions de paiement","payment_terms"],["Délai livraison moyen (j)","average_delivery_days"],["Devise d'achat","purchase_currency"],["Email","email"],["Évolution prix (12m)","price_change_last_12_months"],["ID Fournisseur","supplier_id"],["Nom du contact","contact_name"],["Nom du fournisseur","supplier_name"],["Numéro NEQ","neq_number"],["Numéro TPS","gst_number"],["Numéro TVQ","qst_number"],["Pays","country"],["Score de fiabilité","reliability_score"],["Score de qualité","quality_score"],["Score ESG","esg_score"],["Ville","city"],["Volume d'achat","purchase_volume"]]},
-          },
-          {
-            h: "Achats fournisseurs (Purchase)",
-            action: "Une commande fournisseur par ligne.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Coût total","total_cost"],["Coût unitaire","unit_cost"],["Date","date"],["ID Achat","purchase_id"],["ID Fournisseur","supplier_id"],["ID Produit","product_id"],["Jours de retard","delay_days"],["Livraison prévue","expected_delivery"],["Livraison réelle","actual_delivery"],["Quantité","quantity"]]},
-          },
-        ],
-      },
-      {
-        id: "nommage-autres",
-        title: "Nommer vos colonnes — Marketing, Immobilisations & Modules avancés",
-        icon: Columns3,
-        badge: "Référence",
-        content: [
-          {
-            h: "Campagnes marketing (Campaign)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Budget","budget"],["CAC","cac"],["Clics","clicks"],["Conversions","conversions"],["Coût par clic","cout_clic"],["Coût par clic","cost_per_click"],["CPC","cpc"],["Date de début","start_date"],["Date de fin","end_date"],["Dépense","spend"],["ID Campagne","campaign_id"],["Impressions","impressions"],["Nom de la campagne","campaign_name"],["Nouveaux clients","new_customers"],["Revenu","revenue"],["ROAS","roas"]]},
-          },
-          {
-            h: "Performance quotidienne (CampaignDaily)",
-            action: "Détail jour par jour des mêmes campagnes.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Clics","clicks"],["Conversions","conversions"],["CPC","cpc"],["Date","date"],["Dépense","spend"],["ID Campagne","campaign_id"],["Impressions","impressions"],["Portée","reach"],["Revenu","revenue"],["ROAS","roas"],["Taux de clic (CTR)","ctr"],["Taux de conversion","conversion_rate"]]},
-          },
-          {
-            h: "Immobilisations (Asset)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Amortissement cumulé","accumulated_depreciation"],["Classe DPA","dpa_class"],["Commentaire historique","historical_comment"],["Coût initial","initial_cost"],["Date d'acquisition","acquisition_date"],["Description","description"],["ID Immobilisation","asset_id"],["ID Succursale","location_id"],["Taux d'amortissement","dpa_rate"],["Valeur nette comptable","net_book_value"]]},
-          },
-          {
-            h: "Sommaire exécutif (ExecutiveSummary)",
-            action: "Feuille de synthèse déjà calculée (ex. export comptable) plutôt que des lignes détaillées.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Amortissement cumulé","accumulated_depreciation"],["Bénéfice brut","gross_profit"],["Classe DPA","dpa_class"],["Commandes totales","total_orders"],["Commentaire historique","historical_comment"],["Coût","cost"],["Coût initial","initial_cost"],["Coût total","total_cost"],["Date","date"],["Date d'acquisition","acquisition_date"],["Description","description"],["ID Immobilisation","asset_id"],["ID Sommaire","summary_id"],["ID Succursale","location_id"],["Magasin","store"],["Marge brute","gross_margin"],["Nom de l'indicateur","indicator_name"],["Notes","notes"],["Période","period"],["Revenu total","total_revenue"],["Succursale","succursale"],["Taux d'amortissement","dpa_rate"],["Taux de marge brute","gross_margin_rate"],["Total","total"],["Unité / Formule","unit_formula"],["Valeur de la métrique","metric_value"],["Valeur nette comptable","net_book_value"]]},
-          },
-          {
-            h: "Interactions clients (Interaction)",
-            action: "Contacts service client : appel, courriel, plainte.",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Date","date"],["Délai de résolution","resolution_time"],["ID Client","customer_id"],["ID Interaction","interaction_id"],["Résolu","resolved"],["Score de satisfaction","satisfaction_score"],["Sujet","subject"]]},
-          },
-          {
-            h: "Concurrents (Competitor)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Emplacement","location"],["ID Concurrent","competitor_id"],["Nom","name"],["Nombre d'employés","employee_count"],["Note moyenne","average_rating"],["Revenu estimé","estimated_revenue"],["Secteur","sector"],["Site web","website"]]},
-          },
-          {
-            h: "Objectifs (Goal)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Cible","target"],["ID Objectif","goal_id"],["Indicateur","metric"],["Période","period"],["Valeur actuelle","current"]]},
-          },
-          {
-            h: "Événements (Event)",
-            action: "Journal des événements marquants (promotion, rupture, incident...).",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Date","date"],["Description","description"],["Domaine d'impact","impact_area"],["ID Événement","event_id"],["Type d'événement","event_type"]]},
-          },
-          {
-            h: "Signaux externes (ExternalSignal)",
-            table: {"headers":["En-tête recommandé","Champ interne (référence)"],"rows":[["Action recommandée","recommended_action"],["Date","date"],["Description","description"],["Motif de pertinence","relevance_reason"],["Score de pertinence","relevance_score"],["Source","source"],["Titre","title"],["URL","url"]]},
-          },
-        ],
-      },
-    ],
+            h: "Action 3 : Choisir le bon mode de comparaison (MoM vs YoY)",
+            action: "Donnez un sens réel à vos pourcentages d'évolution :",
+            steps: [
+              "MoM (vs Mois précédent) : Recommandé pour surveiller la trésorerie et la gestion des dépenses immédiates.",
+              "YoY (vs Même période l'an passé) : Indispensable dans le commerce pour neutraliser la saisonnalité (ex. comparer août 2026 à août 2025)."
+            ],
+            successIndicator: "Les hausses et baisses sont colorées intelligemment : une baisse de charge est affichée en vert (favorable), une baisse de revenu en rouge."
+          }
+        ]
+      }
+    ]
   },
   {
-    label: "3. Pilotage opérationnel & Modules",
+    label: "3. Les Modules de Pilotage",
     sections: [
       {
-        id: "dashboard",
-        title: "Tableau de Bord & Score de Santé 360°",
+        id: "cockpit",
+        title: "Cockpit & Priorités Décisionnelles",
         icon: LayoutDashboard,
         badge: "Quotidien",
-        objective: "Évaluer la santé globale de l'entreprise en un coup d'œil et identifier les priorités d'action du matin.",
+        objective: "Évaluer la santé globale de l'entreprise en 10 secondes et connaître les priorités d'action du jour.",
         content: [
           {
-            h: "Action 1 : Consulter le Score de Santé Global",
-            action: "Analysez la jauge centrale dès votre connexion quotidienne :",
+            h: "Action 1 : Consulter le Score de Santé 360°",
+            action: "Vérifiez la viabilité de votre entreprise dès votre première gorgée de café :",
             steps: [
-              "La jauge centrale indique un score de 0 à 100 calculé exclusivement sur vos données réelles.",
-              "Vert (80-100) : Excellente situation financière et opérationnelle.",
-              "Jaune (60-79) : Points de vigilance modérés nécessitant un arbitrage.",
-              "Rouge (< 60) : Tension critique sur la trésorerie, la rentabilité ou les ruptures de stock."
+              "La jauge centrale indique un score global de 0 à 100 basé exclusivement sur vos données réelles.",
+              "Vert (80-100) : Situation financière et opérationnelle saine.",
+              "Jaune (60-79) : Points de vigilance nécessitant un arbitrage ou une optimisation de coûts.",
+              "Rouge (< 60) : Tension critique sur la trésorerie, la rentabilité ou des ruptures de stocks."
             ],
-            successIndicator: "Chaque dimension mesurée affiche sa tendance par rapport au mois précédent (▲ Hausse, ▼ Baisse, ▬ Stable)."
+            successIndicator: "Chaque domaine clé (Finance, Ventes, Trésorerie, Stocks, RH...) indique sa note individuelle et sa tendance."
           },
           {
-            h: "Action 2 : Déclencher l'Audit Stratégique IA",
-            action: "Lancez une mise à jour complète de l'analyse décisionnelle :",
+            h: "Action 2 : Appliquer les Priorités Stratégiques du Jour",
+            action: "Traitez les recommandations hiérarchisées par impact financier :",
             steps: [
-              "Cliquez sur le bouton « Lancer l'analyse » situé en haut à droite du tableau de bord.",
-              "L'algorithme croise simultanément les 11 domaines (ventes, trésorerie, paie, stocks, campagnes marketing).",
-              "Patientez pendant l'audit (généralement 5 à 10 secondes)."
+              "Consultez les 3 à 5 priorités du jour générées par le moteur d'audit.",
+              "Chaque recommandation est quantifiée avec son gain ou son économie potentielle chiffrée en $ CAD.",
+              "Après un nouvel import de données, cliquez sur « Actualiser l'analyse » pour recalculer les priorités en 5 secondes."
             ],
-            successIndicator: "Le bloc « Priorités critiques du jour » est renouvelé avec des actions concrètes et chiffrées."
+            successIndicator: "Chaque recommandation vous propose une action concrète à appliquer dans votre exploitation."
           }
         ]
       },
       {
-        id: "finance",
-        title: "Module Finance & Compte de Résultat (P&L)",
+        id: "finance-treso",
+        title: "Finance (P&L) & Trésorerie (Cash)",
         icon: Landmark,
-        badge: "Rentabilité",
-        objective: "Contrôler le chiffre d'affaires, la structure de coûts (COGS/OpEx) et la marge nette réelle.",
+        badge: "Rentabilité & Cash",
+        objective: "Suivre la rentabilité nette réelle et anticiper l'autonomie financière de l'entreprise.",
         content: [
           {
-            h: "Action 1 : Analyser la cascade de marge",
-            action: "Suivez la décomposition de vos résultats financiers :",
+            h: "Action 1 : Piloter la cascade de rentabilité (P&L)",
+            action: "Suivez la décomposition rigoureuse de vos marges :",
             steps: [
-              "Consultez les 4 indicateurs cardinaux : Chiffre d'affaires total, Coût des ventes (CMV), Résultat net et Marge nette %.",
-              "Survolez les barres du graphique mensuel pour comparer l'évolution des revenus face aux charges directes.",
-              "Vérifiez que la marge brute se maintient au-dessus de votre seuil de rentabilité cible."
+              "Consultez le Chiffre d'affaires hors taxes, le Coût des marchandises vendues (COGS) et la Marge brute.",
+              "Analysez la marge nette (%) et l'EBITDA après déduction des charges d'exploitation et de la paie.",
+              "Intégrité des calculs : Si vos fichiers de vente n'incluaient pas les coûts d'achat unitaires, GESCOP indique honnêtement « Non mesuré » ou « Partiel » plutôt que d'afficher une marge fictive."
             ],
-            successIndicator: "Tous les chiffres sont exprimés en dollars canadiens ($ CAD) arrondis pour une lisibilité exécutive immédiate.",
-            tip: "En l'absence de grand livre bancaire complet, GESCOP calcule votre compte de résultat directement à partir de vos commandes et sommaires exécutifs."
+            successIndicator: "Tous vos indicateurs financiers sont exprimés en dollars canadiens ($ CAD) arrondis pour une prise de décision rapide."
+          },
+          {
+            h: "Action 2 : Sécuriser la trésorerie & l'Autonomie (Cash Runway)",
+            action: "Anticipez vos liquidités pour éviter toute cessation de paiement :",
+            steps: [
+              "Consultez le Solde bancaire disponible au dernier jour de la période choisie.",
+              "Vérifiez le Flux net de trésorerie (Total des encaissements réels moins Décaissements réels).",
+              "Surveillez le Cash Runway : nombre estimé de mois d'autonomie financière sans nouveau revenu à rythme de dépenses constant."
+            ],
+            warning: "Si votre autonomie financière descend sous le seuil d'alerte des 60 jours, une notification critique rouge s'active sur votre bandeau."
           }
         ]
       },
       {
-        id: "tresorerie",
-        title: "Module Trésorerie & Prévisions de Flux",
-        icon: Wallet,
-        badge: "Liquidité",
-        objective: "Protéger la pérennité financière en anticipant le solde bancaire et les engagements futurs.",
-        content: [
-          {
-            h: "Action 1 : Piloter les flux de trésorerie réels",
-            action: "Inspectez les mouvements de liquidités de la période :",
-            steps: [
-              "Vérifiez le Solde disponible actuel en banque.",
-              "Examinez le flux net mensuel : Encaissements réels moins Décaissements réels.",
-              "Consultez l'indicateur d'Autonomie financière (Cash Runway) indiquant le nombre de mois de fonctionnement sans nouveau revenu."
-            ],
-            successIndicator: "La courbe de trésorerie prévisionnelle projette votre solde sur les 3 prochains mois.",
-            warning: "Si l'autonomie financière passe sous les 60 jours, une alerte critique est automatiquement émise."
-          }
-        ]
-      },
-      {
-        id: "succursales",
-        title: "Module Succursales & Multi-Points de Vente",
-        icon: Building2,
-        badge: "Réseau",
-        objective: "Comparer la rentabilité et le volume de ventes entre vos magasins physiques et votre boutique Web.",
-        content: [
-          {
-            h: "Action 1 : Évaluer la performance par succursale",
-            action: "Détectez les écarts de rentabilité géographique :",
-            steps: [
-              "Consultez le tableau comparatif ventilant le Chiffre d'affaires, la Marge brute et le Panier moyen (AOV) par emplacement.",
-              "Identifiez les succursales motrices (ex. Web, Lévis, Chicoutimi) et celles nécessitant un soutien commercial.",
-              "Filtrez les résultats par succursale pour afficher un compte de résultat dédié à chaque point de vente."
-            ],
-            successIndicator: "Chaque succursale affiche sa contribution relative (%) au chiffre d'affaires global de l'entreprise."
-          }
-        ]
-      },
-      {
-        id: "operations",
-        title: "Clients, Produits, Stocks, RH & Fournisseurs",
+        id: "stocks-succursales",
+        title: "Stocks, Produits & Succursales",
         icon: Package,
         badge: "Opérations",
-        objective: "Gérer l'ensemble des leviers opérationnels quotidiens pour éliminer les gaspillages.",
+        objective: "Éliminer le capital immobilisé, éviter les ruptures et comparer vos points de vente.",
         content: [
           {
-            h: "Action 1 : Piloter l'inventaire et les ruptures (Stocks)",
-            action: "Évitez les ruptures de stock tout en limitant le capital immobilisé :",
+            h: "Action 1 : Gérer l'inventaire & neutraliser les faux stocks dormants",
+            action: "Optimisez vos commandes d'approvisionnement et vos liquidités :",
             steps: [
-              "Consultez la Valeur d'inventaire totale et le nombre d'unités physiques en entrepôt.",
-              "Triez le tableau par statut pour isoler les articles en statut « Proche rupture » ou « Rupture ».",
-              "Vérifiez les seuils de réapprovisionnement pour émettre les bons de commande fournisseurs à temps."
+              "Consultez la Valeur d'inventaire totale et le nombre d'articles en stock.",
+              "Isolez les références en statut « Proche rupture » pour relancer vos fournisseurs avant la rupture physique.",
+              "Surveillez le « Stock dormant » : produits sans rotation depuis plus de 90 jours représentant du cash immobilisé.",
+              "Date de référence historique intelligente : Si vos données importées s'arrêtent par exemple au 31 mars, GESCOP calcule l'ancienneté du stock par rapport au 31 mars pour éviter toute fausse alerte liée au décalage dans le temps."
             ],
-            successIndicator: "La valeur du stock dormant immobilisé est chiffrée en dollars CAD.",
-            tip: "Un stock dormant depuis plus de 90 jours fait l'objet d'une recommandation automatique de déstockage ou promotion."
+            tip: "Un stock dormant détecté s'accompagne d'une proposition automatique de déstockage ou d'action commerciale ciblée."
           },
           {
-            h: "Action 2 : Segmenter la clientèle & lutter contre le churn (Clients)",
-            action: "Identifiez les clients à forte valeur et ceux sur le point de partir :",
+            h: "Action 2 : Comparer la rentabilité de vos Succursales",
+            action: "Analysez la contribution relative de chaque emplacement physique et de votre canal Web :",
             steps: [
-              "Consultez le Chiffre d'affaires consolidé et le panier moyen par client.",
-              "Isolez le segment « Clients à risque » (inactifs depuis plus de 90 jours avec historique d'achat élevé).",
-              "Exportez la liste ciblée pour déclencher une campagne marketing de réactivation."
+              "Accédez à la page « Succursales » pour comparer le Chiffre d'affaires, le panier moyen et les marges par point de vente.",
+              "Identifiez les succursales motrices et celles qui nécessitent une révision de leurs frais fixes.",
+              "Filtrez vos rapports par succursale pour afficher un compte de résultat dédié à un emplacement spécifique."
             ],
-            successIndicator: "Le taux d'attrition (churn) est mesuré mensuellement."
-          },
-          {
-            h: "Action 3 : Mesurer la masse salariale et la productivité (RH)",
-            action: "Contrôlez l'adéquation entre effectif et volume d'affaires :",
-            steps: [
-              "Consultez la Masse salariale globale (salaires fixes, horaires et commissions sur ventes).",
-              "Vérifiez le ratio Masse salariale / Chiffre d'affaires (généralement entre 15% et 35% selon le secteur).",
-              "Examinez le CA moyen généré par employé."
-            ],
-            successIndicator: "Chaque vendeur commissionné voit ses commissions calculées en direct sur les commandes enregistrées."
-          },
-          {
-            h: "Action 4 : Suivre l'amortissement et la DPA fiscale (Immobilisations)",
-            action: "Gérez vos actifs matériels, véhicules et bâtiments selon les normes fiscales canadiennes :",
-            steps: [
-              "Consultez le Coût d'acquisition brut (VBA) et la Valeur Nette Comptable (VNC) globale.",
-              "Vérifiez le Taux de vétusté moyen du parc (Amortissements cumulés / Valeur brute).",
-              "Consultez les classes fiscales de DPA (ex. Classe 1 pour bâtiments, Classe 0 pour terrains)."
-            ],
-            successIndicator: "La valeur de dépréciation annuelle déductible est calculée automatiquement pour votre bilan."
+            successIndicator: "La part de chaque magasin dans le chiffre d'affaires total est calculée automatiquement en pourcentage."
           }
         ]
       }
     ]
   },
   {
-    label: "4. Intelligence & Aide à la décision",
+    label: "4. Rapports Automatisés & Décisions IA",
     sections: [
       {
-        id: "assistant",
-        title: "Assistant GESCOP Analyst (CFO Conversationnel)",
-        icon: MessageSquare,
-        badge: "Analyste IA",
-        objective: "Interroger vos données en langage naturel pour obtenir des recommandations d'affaires de niveau Direction Financière.",
+        id: "rapports",
+        title: "Rapports en 1 Clic & Constats Croisés",
+        icon: FileText,
+        badge: "Audit & Synthèse",
+        objective: "Générer des comptes-rendus de direction professionnels et détecter les anomalies croisées.",
         content: [
           {
-            h: "Action 1 : Poser une question stratégique",
-            action: "Formulez votre demande dans la barre de discussion :",
+            h: "Action 1 : Générer vos rapports exécutifs (Quotidien, Hebdo, Mensuel)",
+            action: "Créez des documents clairs et prêts à partager avec vos associés, investisseurs ou banquiers :",
             steps: [
-              "Accédez à l'onglet « Assistant » dans le menu de navigation.",
-              "Cliquez sur une suggestion exécutive (ex. « Analyse la rentabilité de mes succursales » ou « Où puis-je économiser ? »), ou saisissez votre propre question.",
-              "Appuyez sur la touche Entrée ou sur le bouton d'envoi."
+              "Rendez-vous dans l'onglet « Rapports » et sélectionnez la périodicité désirée :",
+              "• Rapport Quotidien : Indicateurs de la dernière journée d'activité vs veille, points de vigilance immédiats.",
+              "• Rapport Hebdomadaire : Synthèse des 7 derniers jours avec tendance sur 5 semaines consécutives.",
+              "• Rapport Mensuel : Bilan complet de rentabilité, marge, trésorerie et évolution du CA sur 6 mois.",
+              "Téléchargez votre rapport d'un clic en PDF propre ou en présentation PowerPoint (.pptx) modifiable."
             ],
-            successIndicator: "L'assistant répond en 3 à 5 secondes avec une synthèse exécutive structurée et chiffrée."
+            successIndicator: "Le rapport inclut une synthèse exécutive rédigée par l'IA à partir de vos chiffres certifiés sans invention."
           },
           {
-            h: "Action 2 : Interpréter les badges de certification de réponse",
-            action: "Comprenez le degré de certitude de chaque réponse apportée par l'analyste :",
+            h: "Action 2 : Exploiter les « Constats Croisés » (Audit Multi-Tables)",
+            action: "Le moteur scanne 100 % de votre Data Core (l'ensemble de vos 14 sources de données) pour déceler ce que l'œil humain ne remarque pas :",
             steps: [
-              "🔵 Fait vérifié (FACT) : Donnée brute indiscutable extraite directement de vos fichiers importés.",
-              "🟢 Calcul arithmétique (CALCULATION) : Résultat d'une formule mathématique rigoureuse appliquée aux données.",
-              "🟣 Analyse déductive (INFERENCE) : Croisement logique de plusieurs indicateurs pour expliquer une cause.",
-              "🟡 Hypothèse (HYPOTHESIS) : Piste explicative plausible nécessitant une vérification sur le terrain.",
-              "🟢 Recommandation stratégique (RECOMMENDATION) : Plan d'action opérationnel préconisé avec impact chiffré en $ CAD."
+              "Marketing vs Ventes réelles : Compare le revenu déclaré par les régies publicitaires (ex. Facebook, Google Ads) à vos ventes réelles pour éviter de payer du budget sur un faux ROAS.",
+              "Conversions vs Commandes : Rapproche les conversions web du nombre de commandes réellement payées.",
+              "Masse salariale vs CA : Alerte si la paie dépasse le chiffre d'affaires ou si des montants annuels ont été importés comme mensuels.",
+              "Dates incohérentes : Isole automatiquement les écritures datées dans le futur pour ne pas fausser les clôtures."
             ],
-            successIndicator: "L'indice de confiance (%) et la liste des sources exactes utilisées sont affichés au bas de chaque réponse."
+            successIndicator: "Chaque anomalie est classée par niveau de gravité (Critique, Important, Modéré) avec l'action corrective recommandée."
           }
         ]
       },
       {
-        id: "simulateur",
-        title: "Simulateur d'Impact & Décisions Stratégiques",
-        icon: Calculator,
-        badge: "Scénarios",
-        objective: "Simuler l'impact financier de vos décisions avant de les appliquer dans le monde réel.",
+        id: "assistant",
+        title: "Assistant CFO & Simulateur de Scénarios",
+        icon: Brain,
+        badge: "Intelligence",
+        objective: "Interroger vos chiffres en langage naturel et tester l'impact financier de vos décisions avant de les exécuter.",
         content: [
           {
-            h: "Action 1 : Tester un scénario de gestion",
-            action: "Évaluez les conséquences d'un choix opérationnel :",
+            h: "Action 1 : Poser une question stratégique à l'Assistant IA",
+            action: "Dialoguez avec votre conseiller financier virtuel disponible 24/7 :",
             steps: [
-              "Rendez-vous dans la page « Simulateur ».",
-              "Choisissez un levier : Hausse ou baisse des prix de vente (+5%), Embauche d'un nouvel employé, Réallocation du budget publicitaire.",
-              "Visualisez immédiatement l'impact prévisionnel sur votre résultat net et sur votre trésorerie à 90 jours."
+              "Ouvrez la page « Assistant IA » et tapez votre question (ex. « Où sont mes plus grandes fuites de rentabilité ? », « Quel est mon point mort ce mois-ci ? »).",
+              "L'assistant analyse l'ensemble de votre base et répond en quelques secondes avec des données vérifiées.",
+              "Badges de transparence : Chaque affirmation est certifiée (🔵 Fait vérifié dans vos données, 🟢 Calcul mathématique strict, 🟣 Déduction analytique)."
             ],
-            successIndicator: "Un tableau comparatif Avant / Après chiffre le gain ou le risque net en dollars CAD."
+            successIndicator: "Garantie Zéro Hallucination : si une donnée n'est pas présente dans vos fichiers, l'IA vous l'indique clairement au lieu d'inventer.",
+            tip: "Cliquez sur l'une des questions suggérées pour un diagnostic rapide de votre rentabilité."
+          },
+          {
+            h: "Action 2 : Simuler une décision avant de l'appliquer dans la réalité",
+            action: "Évaluez immédiatement les répercussions d'un changement de gestion :",
+            steps: [
+              "Accédez au « Simulateur » dans le menu latéral.",
+              "Ajustez les curseurs : Hausse ou baisse des prix (+5%), Recrutement d'un nouvel employé, Réduction des dépenses d'exploitation (-10%).",
+              "Visualisez instantanément l'impact comparatif Avant / Après sur votre Résultat net et votre Trésorerie à 90 jours."
+            ],
+            successIndicator: "Un tableau comparatif chiffre le gain net ou le risque financier en dollars CAD."
           }
         ]
       }
     ]
   },
   {
-    label: "5. Dépannage & FAQ",
+    label: "5. FAQ & Dépannage Immédiat",
     sections: [
       {
-        id: "troubleshooting",
-        title: "Guide de Dépannage Rapide (Troubleshooting)",
-        icon: Wrench,
+        id: "faq",
+        title: "Questions Fréquentes & Solutions Rapides",
+        icon: HelpCircle,
         badge: "Support",
-        objective: "Résoudre instantanément les anomalies ou interrogations les plus fréquentes sans effort cognitif.",
+        objective: "Résoudre instantanément les questions les plus courantes sans jargon technique.",
         content: [
           {
-            h: "Symptôme 1 : « Un module affiche un écran vide ou 0 $ »",
-            action: "Résolution pas-à-pas en 3 étapes :",
+            h: "1. « Pourquoi un indicateur affiche-t-il Partiel ou Non mesuré ? »",
+            action: "C'est la garantie d'intégrité de GESCOP :",
             steps: [
-              "Cause probable : Le fichier correspondant à ce module n'a pas encore été importé (ex. pas d'actifs importés pour Immobilisations).",
-              "Solution : Rendez-vous sur la page « Importer » et déposez la feuille ou le fichier contenant ces données.",
-              "Vérification : Dès la fin de l'import, rafraîchissez la page du module pour voir vos indicateurs calculés instantanément."
+              "Explication : Si votre fichier de ventes ne contient pas le coût d'achat unitaire de chaque produit, le système refuse d'inventer une fausse marge brute.",
+              "Solution : Importez votre catalogue de produits avec les prix d'achat réels. Dès l'import terminé, l'indicateur passera automatiquement en statut « Mesuré »."
             ],
-            successIndicator: "Les cartes de statistiques affichent les volumes réels consolidés."
+            successIndicator: "Vous avez l'assurance qu'aucun chiffre de votre tableau de bord n'est inventé."
           },
           {
-            h: "Symptôme 2 : « Des colonnes sont signalées non reconnues lors de l'import »",
-            action: "Résolution pas-à-pas :",
+            h: "2. « Pourquoi mes totaux diffèrent entre le Cockpit et un rapport annuel ? »",
+            action: "Comprendre le périmètre temporel sélectionné :",
             steps: [
-              "Cause probable : Votre en-tête utilise un libellé métier rare ou votre fichier comporte des cellules fusionnées.",
-              "Solution 1 : Le Moteur V3 écarte automatiquement les colonnes fantômes vides (ex. col_7). Vous pouvez ignorer l'alerte si vos colonnes clés sont bien associées.",
-              "Solution 2 : Si la colonne contient une donnée importante, cliquez sur le menu déroulant face au nom de la colonne et choisissez le champ cible.",
-              "Solution 3 : Ajoutez l'équivalence dans le Dictionnaire de l'entreprise (Paramètres → Intelligence) pour que GESCOP s'en souvienne pour toujours."
+              "Explication : Le Cockpit affiche par défaut le mois sélectionné (ex. Août 2026), tandis qu'un rapport annuel agrège les 12 mois de l'exercice.",
+              "Solution : Vérifiez toujours la date indiquée dans le sélecteur temporel universel en haut de page pour comparer des périodes équivalentes."
             ],
-            successIndicator: "La colonne est rattachée et ses valeurs sont intégrées dans la base de données."
+            tip: "Utilisez les boutons rapides (« Mois clos », « Trimestre », « Année ») pour aligner vos analyses en un instant."
           },
           {
-            h: "Symptôme 3 : « L'Assistant IA répond que l'information n'est pas disponible »",
-            action: "Résolution pas-à-pas :",
+            h: "3. « Une colonne affiche Ignorer lors de l'import, que faire ? »",
+            action: "Ajustez le raccordement en un instant :",
             steps: [
-              "Cause probable : GESCOP applique une règle stricte de ZÉRO hallucination. Si une donnée n'est pas dans votre base, l'IA refuse d'inventer.",
-              "Solution : Consultez la section « Sources » de l'assistant pour identifier le fichier manquant (ex. Dépenses, Fournisseurs ou Campagnes) et importez-le.",
-              "Vérification : Reposez votre question : l'assistant cite immédiatement les nouveaux chiffres importés."
+              "Colonnes vides : Si votre fichier Excel contenait des colonnes fantômes (ex. col_7, col_8), laissez-les sur « Ignorer » sans crainte.",
+              "Colonne importante non reconnue : Cliquez simplement sur la liste déroulante face au nom de la colonne pour sélectionner le concept correspondant (ex. « Mt_Vente » → Montant total)."
             ],
-            successIndicator: "L'assistant produit une réponse chiffrée avec badge « Fait vérifié » ou « Calcul arithmétique »."
+            successIndicator: "Vos données sont intégrées sans aucune perte d'information."
           },
           {
-            h: "Symptôme 4 : « Les montants financiers diffèrent entre l'écran d'accueil et le rapport annuel »",
-            action: "Comprendre les fenêtres temporelles :",
+            h: "4. « Mes données d'entreprise sont-elles protégées et confidentielles ? »",
+            action: "Une protection de niveau institutionnel :",
             steps: [
-              "Fenêtre par défaut : Le tableau de bord et les cartes de synthèse affichent par défaut une fenêtre récente (ex. 3 derniers mois) pour refléter la dynamique actuelle.",
-              "Fenêtre consolidée : Les rapports d'audit et les totaux globaux agrègent l'ensemble de l'historique importé.",
-              "Solution : Utilisez le sélecteur de période situé en haut de page pour aligner les plages de dates comparées."
+              "Hébergement souverain : 100 % de vos données sont hébergées au Canada dans des centres de données sécurisés.",
+              "Conformité Loi 25 du Québec : Vos informations ne sont jamais partagées avec des tiers ni utilisées pour entraîner des modèles publics d'intelligence artificielle.",
+              "Isolation totale : Votre espace entreprise est étanche et accessible uniquement aux utilisateurs autorisés par votre administrateur."
             ],
-            successIndicator: "Les totaux coïncident au dollar près sur la période sélectionnée."
+            successIndicator: "Sécurité et conformité juridique garanties pour votre gouvernance d'entreprise."
           }
         ]
       }
@@ -533,12 +342,11 @@ const groups = [
   }
 ];
 
-// Flatten for lookup
 const allSections = groups.flatMap((g) => g.sections);
 
 export default function Manuel() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const firstSectionId = groups[0]?.sections[0]?.id || "perimetre";
+  const firstSectionId = groups[0]?.sections[0]?.id || "demarrage";
   const [activeSection, setActiveSection] = useState(firstSectionId);
 
   return (
@@ -547,69 +355,69 @@ export default function Manuel() {
       <div className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-10 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
           <div className="flex items-center gap-4">
-            <BrandLogo className="h-14 w-14 shrink-0 rounded-2xl border border-border shadow-sm" />
+            <BrandLogo className="h-14 w-14 shrink-0 rounded-2xl border border-border shadow-sm p-1" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/25">
-                  Documentation Officielle
+                  Guide Pratique de Pilotage
                 </span>
-                <span className="text-xs font-semibold text-muted-foreground">Version 2.4 · Septembre 2026</span>
+                <span className="text-xs font-semibold text-muted-foreground">Édition 2026</span>
               </div>
               <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-                Manuel de Pilotage & Guide d'Utilisation
+                Manuel d'Utilisation GESCOP
               </h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Système d'Intelligence Stratégique & Contrôle de Gestion pour PME Canadiennes & Québécoises
+                Pilotage Financier, Décisionnel & Opérationnel pour PME
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-xl border border-border bg-background px-3 py-2 text-right">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Devise standard</p>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Devise de référence</p>
               <p className="text-sm font-bold text-foreground">$ CAD</p>
             </div>
             <div className="rounded-xl border border-border bg-background px-3 py-2 text-right">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Conformité</p>
               <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <ShieldCheck className="h-4 w-4" /> Loi 25 QC
+                <ShieldCheck className="h-4 w-4" /> Loi 25 QC · SOC2
               </p>
             </div>
           </div>
         </div>
 
-        {/* Fiche de cadrage rapide (Objectif, Cible, Méthode) */}
+        {/* Fiche de cadrage rapide (Objectif, Méthode, Garantie) */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
           <div className="rounded-2xl border border-border/80 bg-background/80 p-4">
             <div className="flex items-center gap-2 font-bold text-foreground mb-1">
               <Target className="h-4 w-4 text-primary" />
-              <span>Objectif Unique</span>
+              <span>Simplicité & Autonomie</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Amener le gestionnaire à l'autonomie totale pour importer ses données, suivre ses marges et piloter son entreprise sans effort cognitif.
+              Prenez les devants sur votre gestion sans expertise comptable ni compétences informatiques poussées.
             </p>
           </div>
           <div className="rounded-2xl border border-border/80 bg-background/80 p-4">
             <div className="flex items-center gap-2 font-bold text-foreground mb-1">
-              <Users className="h-4 w-4 text-primary" />
-              <span>Public Cible</span>
+              <Calendar className="h-4 w-4 text-primary" />
+              <span>Cohérence Temporelle</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Dirigeants (CEO), Directeurs Financiers (CFO), Contrôleurs de gestion et Gestionnaires d'opérations de PME (tous niveaux).
+              Vos flux de rentabilité et vos soldes de trésorerie sont rigoureusement alignés sur les mêmes dates d'arrêt.
             </p>
           </div>
           <div className="rounded-2xl border border-border/80 bg-background/80 p-4">
             <div className="flex items-center gap-2 font-bold text-foreground mb-1">
               <Brain className="h-4 w-4 text-primary" />
-              <span>Règle Zéro Hallucination</span>
+              <span>Zéro Hallucination</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              100 % des chiffres et recommandations sont mathématiquement étayés par vos données réelles importées.
+              100 % de vos chiffres, alertes et recommandations s'appuient uniquement sur vos données réelles importées.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Corps du manuel : Sommaire dynamique à gauche, Contenu à droite */}
+      {/* Corps du manuel : Sommaire interactif à gauche, Contenu à droite */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sommaire interactif sticky */}
         <aside className="lg:w-72 shrink-0">
@@ -622,7 +430,7 @@ export default function Manuel() {
                 onClick={() => setMobileNavOpen(!mobileNavOpen)}
                 className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium lg:hidden"
               >
-                <span>Naviguer</span>
+                <span>Chapitres</span>
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", mobileNavOpen && "rotate-180")} />
               </button>
             </div>
@@ -635,7 +443,7 @@ export default function Manuel() {
 
         {/* Contenu textuel et visuel orienté action */}
         <div className="min-w-0 flex-1 max-w-4xl space-y-10">
-          {allSections.map((s, idx) => (
+          {allSections.map((s) => (
             <section
               key={s.id}
               id={`section-${s.id}`}
@@ -651,7 +459,7 @@ export default function Manuel() {
                     <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{s.title}</h2>
                     {s.objective && (
                       <p className="mt-0.5 text-xs text-muted-foreground flex items-center gap-1.5">
-                        <span className="font-semibold text-foreground/80">Mission :</span> {s.objective}
+                        <span className="font-semibold text-foreground/80">Objectif :</span> {s.objective}
                       </p>
                     )}
                   </div>
@@ -691,23 +499,23 @@ export default function Manuel() {
                       </div>
                     )}
 
-                    {/* Table de référence (ex. guide de nommage des colonnes) */}
+                    {/* Table simple et lisible */}
                     {block.table && (
-                      <div className="pl-8">
+                      <div className="pl-8 pt-1">
                         <div className="overflow-x-auto rounded-xl border border-border">
-                          <table className="w-full min-w-[420px] text-sm">
-                            <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+                          <table className="w-full min-w-[500px] text-sm">
+                            <thead className="bg-muted/60 text-left text-xs uppercase text-muted-foreground">
                               <tr>
                                 {block.table.headers.map((h, hIdx) => (
-                                  <th key={hIdx} className="px-3 py-2 font-medium">{h}</th>
+                                  <th key={hIdx} className="px-4 py-2.5 font-semibold">{h}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
                               {block.table.rows.map((row, rIdx) => (
-                                <tr key={rIdx} className="hover:bg-muted/30">
+                                <tr key={rIdx} className="hover:bg-muted/30 transition-colors">
                                   {row.map((cell, cIdx) => (
-                                    <td key={cIdx} className={cn("px-3 py-2 align-top", cIdx === 0 ? "font-mono text-xs font-medium text-foreground" : "text-muted-foreground")}>
+                                    <td key={cIdx} className={cn("px-4 py-3 align-top", cIdx === 0 ? "font-bold text-foreground text-xs" : cIdx === 1 ? "font-mono text-xs text-primary" : "text-xs text-muted-foreground")}>
                                       {cell}
                                     </td>
                                   ))}
@@ -719,34 +527,34 @@ export default function Manuel() {
                       </div>
                     )}
 
-                    {/* Indicateur de succès explicite (Règle d'or #3) */}
+                    {/* Indicateur de succès */}
                     {block.successIndicator && (
                       <div className="ml-8 mt-3 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-300">
                         <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
                         <div>
-                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Indicateur de succès :</span>
+                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Résultat attendu :</span>
                           <span>{block.successIndicator}</span>
                         </div>
                       </div>
                     )}
 
-                    {/* Astuce / Conseil pratique */}
+                    {/* Astuce de gestion */}
                     {block.tip && (
                       <div className="ml-8 mt-2 flex items-start gap-2.5 rounded-xl border border-blue-500/25 bg-blue-500/10 p-3 text-xs text-blue-800 dark:text-blue-300">
                         <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
                         <div>
-                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Conseil d'expert :</span>
+                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Conseil pratique :</span>
                           <span>{block.tip}</span>
                         </div>
                       </div>
                     )}
 
-                    {/* Avertissement critique */}
+                    {/* Point de vigilance */}
                     {block.warning && (
                       <div className="ml-8 mt-2 flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
                         <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                         <div>
-                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Point de vigilance critique :</span>
+                          <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5">Point de vigilance :</span>
                           <span>{block.warning}</span>
                         </div>
                       </div>
@@ -762,9 +570,9 @@ export default function Manuel() {
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <MessageSquare className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-bold text-foreground">Une interrogation sur vos données ?</h3>
+            <h3 className="text-base font-bold text-foreground">Une question sur vos chiffres ?</h3>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-              L'Assistant GESCOP Analyst est disponible en permanence dans le menu latéral pour inspecter vos chiffres et simuler vos scénarios.
+              L'Assistant GESCOP Analyst est disponible en tout temps dans le menu latéral pour analyser vos performances, expliquer vos constats et simuler vos scénarios.
             </p>
           </div>
         </div>
