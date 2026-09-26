@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  * 2. Navigation pas-à-pas (Chevrons [ ◄ ] [ ► ])
  * 3. Commutateur de comparaison (MoM vs YoY)
  */
-export default function PeriodSelector({ periodFilter, className }) {
+export function PeriodSelector({ periodFilter, className }) {
   if (!periodFilter || !periodFilter.filter) return null;
 
   const { filter, setPreset, setCompareType, step, setCustomRange } = periodFilter;
@@ -169,3 +169,5 @@ export default function PeriodSelector({ periodFilter, className }) {
     </div>
   );
 }
+
+export default PeriodSelector;

@@ -8,15 +8,16 @@
 
 const STORAGE_PREFIX = "gescop.kpiPrefs.";
 
-/** Stable id for a KPI card, derived from its domain and name. */
+/** Stable id for a KPI card, derived from its domain and stable id or name. */
 export function kpiId(kpi) {
-  const slug = String(kpi.name || "")
+  if (kpi?.id) return `${kpi.domain || "autre"}.${kpi.id}`;
+  const slug = String(kpi?.name || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-  return `${kpi.domain || "autre"}.${slug}`;
+  return `${kpi?.domain || "autre"}.${slug}`;
 }
 
 const EMPTY_PREFS = { hidden: [], order: {}, added: [] };

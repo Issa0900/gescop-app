@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/exportUtils";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { usePeriodFilter } from "@/hooks/usePeriodFilter";
+import { PeriodSelector } from "@/components/ui/PeriodSelector";
 import { FENETRE_MOIS, moisLisible } from "@/lib/graphiques";
 import { preparerPeriodes, kpisParFenetre, serieMensuelle, decalerMois } from "@/lib/core/kpiPeriodes";
 import { useCompany } from "@/hooks/useCompany";
@@ -91,13 +93,20 @@ export default function Kpis() {
   const { data: donnees, isLoading } = useDonneesKpi();
   const { transactions, orders, customers, campaigns, products, inventory, cashflow, campaignDaily, executiveSummary } = donnees;
 
+  // Filtre temporel universel : règle stricte Flux (P&L) vs Soldes (Bilan)
+  const periodFilter = usePeriodFilter(donnees);
+
   // Finance et ventes : le MOTEUR sur des fenetres de mois (kpiPeriodes). La
   // « marge nette (3 mois) » est la marge nette du moteur sur 3 mois, pas une
   // formule propre a cette page (qui oubliait la paie et le cout des ventes).
   const periodes = useMemo(() => {
-    const prep = preparerPeriodes(donnees);
+    const prep = periodFilter.prep || preparerPeriodes(donnees);
     return { prep, fen: kpisParFenetre(prep, IDS_FENETRES), serie: financialMonthlySeries(donnees) };
-  }, [donnees]);
+  }, [donnees, periodFilter.prep]);
+
+  const filteredKpis = useMemo(() => {
+    return periodFilter.computeKpis(IDS_FENETRES);
+  }, [periodFilter]);
 
   const donneesMoteur = useMemo(() => ({ ...donnees, observations: observations || [] }), [donnees, observations]);
   const { kpis: engineKpis } = useKpiEngine(donneesMoteur, KPI_MOTEUR);
@@ -147,6 +156,10 @@ export default function Kpis() {
 
     // === FINANCE === (if transactions, orders or executiveSummary exist)
     const { fen, serie } = periodes;
+    const currBatch = filteredKpis?.current || fen.mois;
+    const prevBatch = filteredKpis?.previous || fen.moisPrec;
+    const periodLabel = periodFilter.filter.label;
+
     const V = (fenetre, id) => { const x = fenetre?.get(id)?.value; return Number.isFinite(x) ? x : null; };
     const pousser = (name, domain, value, previous, unit, extra = {}) => {
       // Non mesure = pas de carte, jamais une carte a 0.
@@ -163,38 +176,50 @@ export default function Kpis() {
     };
     const hasFinance = (transactions || []).length > 0 || (orders || []).length > 0 || (executiveSummary || []).length > 0;
     if (hasFinance) {
-      pousser("Chiffre d'affaires (mois)", "finance", V(fen.mois, "total_revenue"), V(fen.moisPrec, "total_revenue"), "$", statut(fen.mois, "total_revenue"));
-      pousser("Charges totales (mois)", "finance", V(fen.mois, "total_charges"), V(fen.moisPrec, "total_charges"), "$",
-        { lowerIsBetter: true, ...statut(fen.mois, "total_charges", "Coût des ventes + dépenses + masse salariale (+ amortissement des immobilisations)") });
-      pousser("Marge nette (mois)", "finance", V(fen.mois, "net_margin_pct"), V(fen.moisPrec, "net_margin_pct"), "%", statut(fen.mois, "net_margin_pct"));
-      if (fen.trim) pousser("Marge nette (3 mois)", "finance", V(fen.trim, "net_margin_pct"), V(fen.trimPrec, "net_margin_pct"), "%", statut(fen.trim, "net_margin_pct"));
-      else pousser("Marge nette (période importée)", "finance", V(fen.total, "net_margin_pct"), null, "%", statut(fen.total, "net_margin_pct"));
+      pousser(`Chiffre d'affaires (${periodLabel})`, "finance", V(currBatch, "total_revenue"), V(prevBatch, "total_revenue"), "$", { id: "total_revenue", ...statut(currBatch, "total_revenue") });
+      pousser(`Charges totales (${periodLabel})`, "finance", V(currBatch, "total_charges"), V(prevBatch, "total_charges"), "$",
+        { id: "total_charges", lowerIsBetter: true, ...statut(currBatch, "total_charges", "Coût des ventes + dépenses + masse salariale (+ amortissement des immobilisations)") });
+      pousser(`Marge nette (${periodLabel})`, "finance", V(currBatch, "net_margin_pct"), V(prevBatch, "net_margin_pct"), "%", { id: "net_margin_pct", ...statut(currBatch, "net_margin_pct") });
+      if (fen.trim && periodFilter.filter.preset === "CLOSED_MONTH") {
+        pousser("Marge nette (3 mois)", "finance", V(fen.trim, "net_margin_pct"), V(fen.trimPrec, "net_margin_pct"), "%", { id: "net_margin_pct_3m", ...statut(fen.trim, "net_margin_pct") });
+      }
 
-      // Cash: latest balance, compared on a 7-day average to avoid daily noise.
-      const cfSorted = (cashflow || []).slice().sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
-      const avgCash = (arr) =>
-        arr.length > 0 ? arr.reduce((s, c) => s + (Number(c.closing_cash) || 0), 0) / arr.length : 0;
-      const latestCash = latestCashBalance(cashflow);
-      const cash7 = avgCash(cfSorted.slice(0, 7));
-      // Only compare against a full prior week, never against 2 stray rows.
-      const cashPrev7 = cfSorted.length >= 14 ? avgCash(cfSorted.slice(7, 14)) : null;
+      // Trésorerie : snapshot strict à date d'arrêt (<= filter.endDate) vs comparatif (<= filter.compareEndDate)
+      const cfCurrent = (cashflow || []).filter((c) => !c.date || c.date <= periodFilter.filter.endDate).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+      const cfPrev = (cashflow || []).filter((c) => !c.date || c.date <= periodFilter.filter.compareEndDate).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+
+      const latestCash = cfCurrent.length > 0 && cfCurrent[0].closing_cash != null
+        ? Number(cfCurrent[0].closing_cash)
+        : latestCashBalance(cashflow);
+      const prevCash = cfPrev.length > 0 && cfPrev[0].closing_cash != null
+        ? Number(cfPrev[0].closing_cash)
+        : null;
 
       if (latestCash !== null) {
-        result.push({ name: "Trésorerie actuelle", domain: "finance", value: Math.round(latestCash), previous: cashPrev7 !== null ? Math.round(cashPrev7) : null, trend: trendDir(cash7, cashPrev7, 1), unit: "$" });
-        // Autonomie : solde du releve / consommation mesuree sur le MEME releve
-        // (consommationTresorerie, regle commune a toutes les pages).
+        const cashDateNote = cfCurrent[0]?.date ? `Solde au ${cfCurrent[0].date}` : null;
+        result.push({
+          id: "closing_cash",
+          name: `Trésorerie de clôture (${periodLabel})`,
+          domain: "finance",
+          value: Math.round(latestCash),
+          previous: prevCash !== null ? Math.round(prevCash) : null,
+          trend: prevCash !== null ? trendDir(latestCash, prevCash, 1) : "stable",
+          unit: "$",
+          note: cashDateNote,
+        });
+
+        // Autonomie : solde du relevé / consommation mesurée sur la même base
         const { burn, base } = consommationTresorerie({
-          cashflow,
+          cashflow: cfCurrent,
           revSeries: serie.map((p) => ({ month: p.month, val: p.income })),
           expSeries: serie.map((p) => ({ month: p.month, val: p.expense })),
         }, 3);
         const runway = runwayMonths(latestCash, burn);
         const noteBase = base === "resultat" ? "Estimée sur le résultat (aucun flux de trésorerie importé)" : null;
         if (runway === Infinity) {
-          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: "Autofinancée", previous: null, trend: "stable", unit: "", note: noteBase });
+          result.push({ id: "cash_runway", name: "Autonomie de trésorerie", domain: "finance", value: "Autofinancée", previous: null, trend: "stable", unit: "", note: noteBase });
         } else if (runway !== null && Number.isFinite(runway)) {
-          // No previous window is computed for runway, so no arrow is shown.
-          result.push({ name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: "stable", unit: " mois", note: noteBase });
+          result.push({ id: "cash_runway", name: "Autonomie de trésorerie", domain: "finance", value: Math.round(runway * 10) / 10, previous: null, trend: "stable", unit: " mois", note: noteBase });
         }
       }
     }
@@ -206,29 +231,22 @@ export default function Kpis() {
     // donc explicitement la source pour qu'un ecart ne passe pas pour une erreur.
     // === VENTES === (only if orders exist)
     if ((orders || []).length > 0) {
-      // Return rate is measured on EVERY order (refunded or not - that's the
-      // point). Revenue figures below use only the orders whose money stayed
-      // with the business: a refunded order's total was already reversed and
-      // must not be counted as revenue.
-      // Montants HORS TAXES, une ligne par commande (kpiRecords) : le total
-      // est TTC des qu'un fichier fournit les taxes, et un fichier d'une ligne
-      // par article comptait chaque article comme une commande.
       const noteCA = noteBaseCA(orders);
-      const returns = orders.filter(isRefundedOrder);
-      // Taux de retour EN NOMBRE de commandes, lu sur les statuts : different
-      // du taux « en valeur » du moteur (lignes d'avoir), d'ou un nom distinct.
-      // 0 % only means "no returns" when at least one column could have
-      // reported one; otherwise the KPI is withheld rather than shown as zero.
-      const hasReturnSignal = anyColumnPresent(orders, ["return_status", "payment_status", "fulfillment_status"]);
-      const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
+      const ordersInPeriod = (orders || []).filter((o) => {
+        const d = (o.date || "").slice(0, 10);
+        return !d || (d >= periodFilter.filter.startDate && d <= periodFilter.filter.endDate);
+      });
+      const returns = ordersInPeriod.filter(isRefundedOrder);
+      const hasReturnSignal = anyColumnPresent(ordersInPeriod, ["return_status", "payment_status", "fulfillment_status"]);
+      const returnRate = ordersInPeriod.length > 0 ? (returns.length / ordersInPeriod.length) * 100 : 0;
 
-      pousser("Panier moyen (mois)", "ventes", V(fen.mois, "aov"), V(fen.moisPrec, "aov"), "$", { note: noteCA, ...statut(fen.mois, "aov") });
-      pousser("Commandes (mois)", "ventes", V(fen.mois, "order_count"), V(fen.moisPrec, "order_count"), "", statut(fen.mois, "order_count"));
+      pousser(`Panier moyen (${periodLabel})`, "ventes", V(currBatch, "aov"), V(prevBatch, "aov"), "$", { id: "aov", note: noteCA, ...statut(currBatch, "aov") });
+      pousser(`Commandes (${periodLabel})`, "ventes", V(currBatch, "order_count"), V(prevBatch, "order_count"), "", { id: "order_count", ...statut(currBatch, "order_count") });
       if (hasReturnSignal) {
-        result.push({ name: "Taux de retour (en nombre de commandes)", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%", lowerIsBetter: true });
+        result.push({ id: "return_rate", name: "Taux de retour (en nombre de commandes)", domain: "ventes", value: Math.round(returnRate * 10) / 10, previous: null, trend: "stable", unit: "%", lowerIsBetter: true });
       }
-      if (fen.trim) pousser("CA commandes (3 mois)", "ventes", V(fen.trim, "order_revenue"), V(fen.trimPrec, "order_revenue"), "$", { note: noteCA, ...statut(fen.trim, "order_revenue") });
-      pousser("CA commandes (total)", "ventes", V(fen.total, "order_revenue"), null, "$", { note: noteCA, ...statut(fen.total, "order_revenue") });
+      pousser(`CA commandes (${periodLabel})`, "ventes", V(currBatch, "order_revenue"), V(prevBatch, "order_revenue"), "$", { id: "order_revenue", note: noteCA, ...statut(currBatch, "order_revenue") });
+      pousser("CA commandes (total)", "ventes", V(fen.total, "order_revenue"), null, "$", { id: "order_revenue_total", note: noteCA, ...statut(fen.total, "order_revenue") });
     }
 
     // === MARKETING === (only if campaigns exist)
@@ -286,10 +304,9 @@ export default function Kpis() {
     // === OPÉRATIONS === (only if products or inventory exist)
     if ((products || []).length > 0 || (inventory || []).length > 0) {
       // Same shortage definition as the Produits page and the alert centre -
-      // the company threshold included. "Alertes rupture" used to read the
-      // imported stock_status alone and never moved when the user changed their
-      // threshold, so the two screens disagreed on the same rows.
-      const stock = computeStockAlerts(products, inventory, stockSettings, orders);
+      // the company threshold included. Pass periodFilter.filter.endDate to neutralise
+      // false dormancy on historical datasets.
+      const stock = computeStockAlerts(products, inventory, stockSettings, orders, periodFilter.filter.endDate);
       const prods = (products && products.length > 0) ? products : (inventory || []);
       const margins = prods
         .map((p) => productMarginPct(p))
@@ -298,15 +315,10 @@ export default function Kpis() {
         ? margins.reduce((s, m) => s + m, 0) / margins.length
         : 0;
 
-      result.push({ name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
-      // Counts, not trends: there is no previous snapshot to compare against.
-      // Les deux compteurs ci-dessous mesurent des choses differentes et
-      // s'affichent cote a cote : alertCount = produits AU OU SOUS leur seuil de
-      // reapprovisionnement, outOfStockCount = produits a stock nul. Nommer les
-      // deux "rupture" faisait lire "24 ruptures" a cote de "0 rupture".
-      result.push({ name: `Stock dormant (${stock.dormantMonths} mois)`, domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Stock à réapprovisionner", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
-      result.push({ name: "Produits en rupture", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
+      result.push({ id: "product_margin_pct", name: "Marge produit moyenne", domain: "operations", value: Math.round(avgMargin * 10) / 10, previous: null, trend: "stable", unit: "%" });
+      result.push({ id: "dormant_stock_count", name: `Stock dormant (${stock.dormantMonths} mois)`, domain: "operations", value: stock.dormantCount, previous: null, trend: "stable", unit: "" });
+      result.push({ id: "reorder_stock_count", name: "Stock à réapprovisionner", domain: "operations", value: stock.alertCount, previous: null, trend: "stable", unit: "" });
+      result.push({ id: "out_of_stock_count", name: "Produits en rupture", domain: "operations", value: stock.outOfStockCount, previous: null, trend: "stable", unit: "" });
     }
 
     // === CLIENTS === (only if customers exist)
@@ -315,7 +327,7 @@ export default function Kpis() {
       const churn = churnStats(customers, orders);
       const custMonthly = monthlyAggComplete(customers, "acquisition_date", "customer_id", "count");
       const lastEntry = custMonthly.length > 0 ? custMonthly[custMonthly.length - 1] : null;
-      const moisCible = fen.dernierMois || lastEntry?.month;
+      const moisCible = periodFilter.filter.anchorMonth || fen.dernierMois || lastEntry?.month;
       let newCustomers = 0;
       let prevNewCustomers = 0;
       if (moisCible) {
@@ -342,30 +354,30 @@ export default function Kpis() {
       // field is unfilled, not a perfect 0 % churn - showing "0" here would
       // claim a clean base instead of "we don't know".
       if (churn.statusMeasured) {
-        result.push({ name: "Clients actifs", domain: "clients", value: churn.active, previous: null, trend: "stable", unit: "" });
+        result.push({ id: "active_customers", name: "Clients actifs", domain: "clients", value: churn.active, previous: null, trend: "stable", unit: "" });
         // Cumulative share of the base ever lost - named as such, because it is
         // not a rate over a period and can never go down.
-        result.push({ name: "Clients perdus (cumul)", domain: "clients", value: Math.round(churn.rate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+        result.push({ id: "churned_customers_cumul", name: "Clients perdus (cumul)", domain: "clients", value: Math.round(churn.rate * 10) / 10, previous: null, trend: "stable", unit: "%" });
       }
       // The actionable one: attrition measured on real purchase behaviour.
       if (churn.behaviourRate !== null) {
-        result.push({ name: `Inactifs depuis ${churn.inactiveMonths} mois`, domain: "clients", value: Math.round(churn.behaviourRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
+        result.push({ id: "inactive_customers", name: `Inactifs depuis ${churn.inactiveMonths} mois`, domain: "clients", value: Math.round(churn.behaviourRate * 10) / 10, previous: null, trend: "stable", unit: "%" });
       }
       if (churn.atRisk > 0) {
-        result.push({ name: "Clients actifs à risque", domain: "clients", value: churn.atRisk, previous: null, trend: "stable", unit: "" });
+        result.push({ id: "at_risk_customers", name: "Clients actifs à risque", domain: "clients", value: churn.atRisk, previous: null, trend: "stable", unit: "" });
       }
-      result.push({ name: `Nouveaux clients (${moisNom})`, domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
+      result.push({ id: "new_customers", name: `Nouveaux clients (${moisNom})`, domain: "clients", value: newCustomers, previous: prevNewCustomers, trend: trendDir(newCustomers, prevNewCustomers), unit: "" });
       if (value.avgRevenue !== null) {
-        result.push({ name: "Revenu moyen par client", domain: "clients", value: Math.round(value.avgRevenue), previous: null, trend: "stable", unit: "$" });
+        result.push({ id: "arpu", name: "Revenu moyen par client", domain: "clients", value: Math.round(value.avgRevenue), previous: null, trend: "stable", unit: "$" });
       }
       // A real LTV is value, not turnover - only shown when a margin is known.
       if (value.ltv !== null) {
-        result.push({ name: "LTV client (marge brute)", domain: "clients", value: Math.round(value.ltv), previous: null, trend: "stable", unit: "$" });
+        result.push({ id: "clv", name: "LTV client (marge brute)", domain: "clients", value: Math.round(value.ltv), previous: null, trend: "stable", unit: "$" });
       }
     }
 
     return result;
-  }, [donnees, periodes, stockSettings.threshold, stockSettings.useReorderPoint, engineKpis]);
+  }, [donnees, periodes, periodFilter, filteredKpis, stockSettings.threshold, stockSettings.useReorderPoint, stockSettings.dormantMonths, engineKpis]);
 
   // Les KPI viennent du moteur uniquement. Les cartes ecrites par l'IA
   // (entite Kpi) affichaient des valeurs qu'elle avait calculees elle-meme, a
@@ -456,6 +468,8 @@ export default function Kpis() {
           </Button>
         </div>
       </div>
+
+      <PeriodSelector periodFilter={periodFilter} />
 
       {trendData.length > 0 && <KpiTrendChart data={trendData} />}
 
