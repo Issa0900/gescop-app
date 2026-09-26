@@ -31,7 +31,7 @@ export function useSubscription() {
       const codeParam = (params.get("code") || "").toUpperCase().trim();
       if (pilotParam === "true" || (codeParam && VALID_PILOT_CODES.includes(codeParam))) {
         localStorage.setItem("gescop_pilot_access", "true");
-        localStorage.setItem("gescop_pilot_code", codeParam || "PILOTE2026");
+        localStorage.setItem("gescop_pilot_code", codeParam || "ACCES-PILOTE");
       }
     } catch (_) {}
   }

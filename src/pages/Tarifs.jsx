@@ -176,7 +176,7 @@ export default function Tarifs() {
             <p className="text-xs text-muted-foreground">
               {isAdmin 
                 ? "Connecté avec le compte Administrateur principal (Accès illimité permanent)."
-                : `Vous participez à la phase pilote avec le code ${pilotCode || "PILOTE2026"}. Toutes les fonctionnalités avancées sont ouvertes.`}
+                : "Vous bénéficiez d'un accès réservé dans le cadre du programme pilote. Toutes les fonctionnalités avancées sont ouvertes."}
             </p>
             {!isAdmin && (
               <div className="pt-1">
@@ -201,12 +201,12 @@ export default function Tarifs() {
                 </h3>
               </div>
               <p className="text-xs text-muted-foreground">
-                Entrez le code d'accès fourni par l'équipe (ex. <strong className="font-mono text-primary">PILOTE2026</strong>) pour débloquer immédiatement GESCOP Pro sans carte bancaire.
+                Entrez le code d'accès confidentiel remis par l'équipe pour débloquer votre accès sans carte bancaire.
               </p>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Code pilote (ex: PILOTE2026)"
+                  placeholder="Entrez votre code d'accès..."
                   value={pilotInput}
                   onChange={(e) => setPilotInput(e.target.value)}
                   className="flex-1 h-9 rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase tracking-wider font-mono font-medium"
