@@ -37,6 +37,7 @@ import { KPI_STATUS } from "./semanticTypes";
  * @property {string} evidenceTag    - FAIT | CALCUL | INFÉRENCE | HYPOTHÈSE
  * @property {string[]} warnings     - Any warnings about data quality or methodology
  * @property {string} methodology    - Explanation of calculation method
+ * @property {Object<string, number|null>} [detail] - Decomposition d'un total, calculee avec la valeur (meme periode)
  * @property {{debut: string|null, fin: string|null, mois: number}} [periodeCommune] - Periode commune des sources quand le KPI y a ete realigne
  */
 

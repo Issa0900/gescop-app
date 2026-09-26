@@ -186,7 +186,7 @@ export default function Kpis() {
         const { burn, base } = consommationTresorerie({
           cashflow,
           revSeries: serie.map((p) => ({ month: p.month, val: p.income })),
-          expSeries: serie.map((p) => ({ month: p.month, val: p.expense })),
+          expSeries: serie.map((p) => ({ month: p.month, val: p.decaissements })),
         }, 3);
         const runway = runwayMonths(latestCash, burn);
         const noteBase = base === "resultat" ? "Estimée sur le résultat (aucun flux de trésorerie importé)" : null;

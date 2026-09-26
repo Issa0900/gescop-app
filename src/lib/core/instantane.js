@@ -42,7 +42,7 @@ export function instantaneKpi(data, { aujourdhui = new Date() } = {}) {
     const { burn, base } = consommationTresorerie({
       cashflow: data.cashflow,
       revSeries: serie.map((p) => ({ month: p.month, val: p.income })),
-      expSeries: serie.map((p) => ({ month: p.month, val: p.expense })),
+      expSeries: serie.map((p) => ({ month: p.month, val: p.decaissements })),
     }, 3);
     const autonomie = runwayMonths(solde, burn);
     chiffres.push({ id: "cash_balance", nom: "Trésorerie (dernier solde du relevé)", periode: "actuel", valeur: Math.round(solde), unite: "$", statut: "mesuré" });

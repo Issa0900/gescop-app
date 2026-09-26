@@ -21,7 +21,7 @@ import PaiementsCard from "@/components/finance/PaiementsCard";
 // totales = resultat net (tests/coherence_kpi.test.js). La page affichait
 // « Depenses totales » (depenses seules) a cote d'un resultat qui retranchait
 // aussi le cout des ventes et la paie : 568 519 - 996 484 affichait -2 222 935.
-const IDS_FINANCE = ["total_revenue", "total_charges", "cogs_total", "total_expense", "payroll_total", "net_income", "net_margin_pct"];
+const IDS_FINANCE = ["total_revenue", "total_charges", "net_income", "net_margin_pct"];
 
 const fmt$ = montant;
 
@@ -55,11 +55,12 @@ export default function Finance() {
   // Resultat, charges et marge peuvent porter sur la periode commune des
   // sources, plus courte que celle du CA : la carte le dit.
   const periode = notePeriodeCommune(engineKpis.get("net_income"));
-  const detailCharges = [
-    ["coût des ventes", v("cogs_total")],
-    ["dépenses", v("total_expense")],
-    ["masse salariale", v("payroll_total")],
-  ].filter(([, x]) => x !== null).map(([nom, x]) => `${nom} ${fmt$(x)}`).join(" · ");
+  // Detail calcule par le moteur AVEC le total (meme periode) : relire
+  // cogs_total, total_expense et payroll_total a part donnait des composantes
+  // sur 6 et 3 mois sous un total de 2 mois, sans l'amortissement.
+  const detailCharges = Object.entries(engineKpis.get("total_charges")?.detail || {})
+    .filter(([nom, x]) => Number.isFinite(x) && !(nom === "amortissement" && x === 0))
+    .map(([nom, x]) => `${nom} ${fmt$(x)}`).join(" · ");
   const chartData = monthly.slice(-FENETRE_MOIS).map((point) => ({
     date: point.month,
     revenus: Math.round(point.income),

@@ -117,7 +117,7 @@ function computeDomainScoresBrut(data) {
   const latestCash = latestCashBalance(cashflow);
 
   // A profitable business does not have a runway problem: burn is revenue-net.
-  const { burn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: expMonthly }, 3);
+  const { burn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: financialMonthly.map((p) => ({ month: p.month, val: p.decaissements })) }, 3);
   const runway = latestCash === null ? null : runwayMonths(latestCash, burn);
 
   let tresoScore;

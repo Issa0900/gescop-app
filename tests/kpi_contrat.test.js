@@ -283,3 +283,66 @@ test("ANO-16 : une paie importée avant la normalisation garde la même empreint
     generateFingerprint("Payroll", { employee_id: "E1", period: "2026-01" }),
   );
 });
+
+// ── Détail des charges : calculé dans le même calcul que le total ───────────
+// Bug signalé par Issa (26 sept.) : « Charges totales » 186 345 $ (juin-juillet,
+// période commune) mais « dont coût des ventes 36 160 $ (6 mois) · dépenses
+// 80 418 $ (3 mois) · masse salariale 175 366 $ (3 mois) » : les composantes
+// étaient relues ailleurs, chacune sur sa période, sans l'amortissement.
+
+test("Charges totales : le détail porte sur la même période que le total et s'additionne", () => {
+  const orders = [], expenses = [], payrolls = [], transactions = [];
+  ["03", "04", "05", "06", "07", "08"].forEach((m, i) => orders.push({ order_id: `O${m}`, date: `2026-${m}-15`, total_revenue: 10000 + i, cost: 6000 + i, status: "completed" }));
+  ["06", "07", "08"].forEach((m) => {
+    expenses.push({ expense_id: `E${m}`, date: `2026-${m}-10`, amount: 26000 });
+    payrolls.push({ payroll_id: `P${m}`, period: `2026-${m}`, total_cost: 57000 });
+  });
+  // Relevé bancaire de juin à juillet seulement : période commune = juin-juillet.
+  ["06", "07"].forEach((m) => transactions.push({ date: `2026-${m}-20`, amount: 100, type: "expense", description: `Frais ${m}` }));
+  const assets = [{ asset_id: "A1", net_book_value: 27636, dpa_rate: 1 }];
+  const k = calcul({ orders, expenses, payrolls, transactions, assets }, ["total_charges", "net_income"]);
+  const r = k.total_charges.r;
+  assert.deepEqual(r.periodeCommune, { debut: "2026-06", fin: "2026-07", mois: 2 });
+  const d = r.detail;
+  assert.equal(d["coût des ventes"], 6003 + 6004, "coût des ventes de juin et juillet seulement");
+  assert.equal(d["dépenses"], 2 * 26000 + 2 * 100);
+  assert.equal(d["masse salariale"], 2 * 57000);
+  assert.equal(d["amortissement"], 27636 * 2 / 12);
+  const somme = Object.values(d).reduce((s, x) => s + (x || 0), 0);
+  assert.ok(Math.abs(somme - r.value) < 1e-6, `détail ${somme} = total ${r.value}`);
+});
+
+test("Charges totales sans réalignement : détail présent, amortissement absent sans immobilisations", () => {
+  const data = {
+    orders: [{ order_id: "O1", date: "2026-06-10", total_revenue: 100000, cost: 40000, status: "completed" }],
+    expenses: [{ expense_id: "E1", date: "2026-06-11", amount: 10000 }],
+    payrolls: [{ payroll_id: "P1", period: "2026-06", total_cost: 20000 }],
+  };
+  const r = calcul(data, ["total_charges"]).total_charges.r;
+  assert.deepEqual(r.detail, { "coût des ventes": 40000, "dépenses": 10000, "masse salariale": 20000, "amortissement": null });
+});
+
+// ── Autonomie de trésorerie sans relevé : l'amortissement n'est pas une sortie d'argent ──
+
+import { financialMonthlySeries } from "../src/lib/financialData.js";
+import { consommationTresorerie } from "../src/lib/metrics.js";
+
+test("Consommation estimée sur le résultat : amortissement exclu (non décaissé)", () => {
+  const orders = [], payrolls = [];
+  ["2026-06", "2026-07", "2026-08"].forEach((m, i) => {
+    orders.push({ order_id: `O${i}`, date: `${m}-10`, total_revenue: 10000, cost: 6000, status: "completed" });
+    payrolls.push({ payroll_id: `P${i}`, period: m, total_cost: 50000 });
+  });
+  const assets = [{ asset_id: "A1", net_book_value: 120000, dpa_rate: 0.2 }]; // 24 000 $/an = 2 000 $/mois
+  const serie = financialMonthlySeries({ orders, payrolls, assets });
+  const p = serie.find((x) => x.month === "2026-07");
+  assert.equal(p.expense, 6000 + 50000 + 2000, "les charges comptables incluent l'amortissement");
+  assert.equal(p.decaissements, 6000 + 50000, "les sorties d'argent ne l'incluent pas");
+  const { burn, base } = consommationTresorerie({
+    cashflow: [],
+    revSeries: serie.map((x) => ({ month: x.month, val: x.income })),
+    expSeries: serie.map((x) => ({ month: x.month, val: x.decaissements })),
+  }, 3);
+  assert.equal(base, "resultat");
+  assert.equal(burn, 56000 - 10000, "consommation mensuelle = sorties décaissées - encaissements");
+});

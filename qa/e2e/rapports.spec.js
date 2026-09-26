@@ -33,8 +33,8 @@ const DONNEES = {
     comparison: { currentLabel: 'mois A', previousLabel: 'mois B', metrics: [{ key: 'revenus', label: 'Revenus', current: 0, previous: 900, unit: '$', trend: 'non-mesurable', delta: null, deltaPct: null }] } }],
 };
 
-async function fauxBackend(page, envois) {
-  const store = JSON.parse(JSON.stringify(DONNEES));
+async function fauxBackend(page, envois, ajouts = {}) {
+  const store = JSON.parse(JSON.stringify({ ...DONNEES, ...ajouts }));
   await page.route(/^https:\/\/(base44\.com|media\.base44\.com|static\.wixstatic\.com|.*\.base44\.app)\//, (r) =>
     r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
   await page.route((u) => u.pathname.startsWith('/api/'), async (route) => {
@@ -154,11 +154,41 @@ test('Ancien rapport : lisible, avec avertissement, sans chiffre inventé', asyn
   await page.goto('/login');
   await page.evaluate(() => localStorage.setItem('PLAYWRIGHT_TEST', 'true'));
   await page.goto('/rapports');
-  await page.getByRole('button', { name: 'Consulter' }).first().click();
+  const consulter = page.getByRole('button', { name: 'Consulter' }).first();
+  await expect(consulter).toBeVisible({ timeout: 20000 });
+  await consulter.click();
   await expect(page.getByText(/ancien calcul/)).toBeVisible({ timeout: 20000 });
   const texte = await page.locator('main').innerText();
   expect(texte).toContain('Non mesuré');
   for (const re of INTERDITS) expect(texte).not.toMatch(re);
   await page.screenshot({ path: path.join(OUT, 'rapport-ancien.png'), fullPage: true });
+  expect(erreurs).toEqual([]);
+});
+
+test('Finance : le détail des charges porte sur la même période que le total et s\'additionne', async ({ page }) => {
+  const erreurs = [];
+  page.on('pageerror', (ex) => erreurs.push(String(ex.message || ex)));
+  // Relevé bancaire sur les 2 derniers mois seulement : période commune plus
+  // courte que les ventes (cas signalé par Issa le 26 sept.).
+  const Transaction = [2, 1].map((n) => ({ id: `t${n}`, date: mois(n, 18), amount: 100, type: 'expense', description: 'Frais bancaires' }));
+  await fauxBackend(page, [], { Transaction });
+  await page.goto('/login');
+  await page.evaluate(() => localStorage.setItem('PLAYWRIGHT_TEST', 'true'));
+  await page.goto('/finance');
+  const carte = page.locator('div', { hasText: /^Charges totales/ }).filter({ hasText: /dont/ }).last();
+  await expect(carte).toBeVisible({ timeout: 20000 });
+  const texte = await carte.innerText();
+  const montant = (re) => Number((texte.match(re)?.[1] || '').replace(/[\s\u202f\u00a0]/g, ''));
+  const total = montant(/^Charges totales\s*([\d\s\u202f\u00a0]+)\s*\$/m);
+  const parts = [...texte.matchAll(/(?:coût des ventes|dépenses|masse salariale|amortissement) ([\d\s\u202f\u00a0]+) \$/g)]
+    .map((m) => Number(m[1].replace(/[\s\u202f\u00a0]/g, '')));
+  // Juillet + août : coût 3000 + 4000 + 6000 (la commande de juin est hors période), dépenses 1500 + 1000 + 200, paie 2 x 2000.
+  expect(total).toBe(13000 + 2700 + 4000);
+  expect(parts.reduce((a, b) => a + b, 0)).toBe(total);
+  expect(texte).toMatch(/mois couverts par toutes les sources/);
+  // Capture a la taille de la fenetre : une capture « page entiere » la redimensionne,
+  // ce qui relance l'animation des graphiques (barres vides sur l'image).
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: path.join(OUT, 'finance-charges.png') });
   expect(erreurs).toEqual([]);
 });

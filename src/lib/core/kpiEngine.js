@@ -145,6 +145,12 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
     }
   }
 
+  // Detail d'un total (charges : cout des ventes, depenses, paie,
+  // amortissement), calcule avec les MEMES dependances que la valeur : un
+  // ecran qui relisait chaque composante a part les prenait chacune sur sa
+  // periode, et le detail ne s'additionnait plus au total.
+  const detail = value !== null && kpiDef.detailler ? kpiDef.detailler(resolvedDeps) : undefined;
+
   // 3. Build lineage
   const lineage = buildKpiLineage({
     kpiKey: kpiId,
@@ -168,7 +174,7 @@ export function computeKpi({ kpiId, records, fieldSemantics, context = {} }) {
     });
   }
 
-  return lineage;
+  return detail ? { ...lineage, detail } : lineage;
 }
 
 /**

@@ -51,7 +51,7 @@ function computeLiveAlertsBrut(data) {
   // aux dépenses BRUTES déclenchait une alerte critique sur une société qui
   // encaissait plus qu'elle ne dépensait.
   const latestCash = latestCashBalance(cashflow);
-  const { burn: recentBurn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: expMonthly }, 3);
+  const { burn: recentBurn } = consommationTresorerie({ cashflow, revSeries: revMonthly, expSeries: financialMonthly.map((p) => ({ month: p.month, val: p.decaissements })) }, 3);
   if (latestCash !== null && recentBurn !== null && recentBurn > 0) {
     const runway = runwayMonths(latestCash, recentBurn);
     if (runway < 3) {

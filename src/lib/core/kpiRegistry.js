@@ -397,6 +397,13 @@ export const KPI_REGISTRY = Object.freeze({
       if (deps.total_expense == null && deps.payroll_total == null) return null;
       return (deps.cogs || 0) + (deps.total_expense || 0) + (deps.payroll_total || 0) + amortissementPeriode(deps);
     },
+    // Decomposition affichee sous le total : memes dependances, meme periode.
+    detailler: (deps) => ({
+      "coût des ventes": deps.cogs ?? null,
+      "dépenses": deps.total_expense ?? null,
+      "masse salariale": deps.payroll_total ?? null,
+      "amortissement": deps.dpa_annual_total == null ? null : amortissementPeriode(deps),
+    }),
   },
 
   net_margin_pct: {

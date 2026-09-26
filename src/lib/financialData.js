@@ -44,19 +44,24 @@ export function financialSummary(data) {
 
 /**
  * @param {Object} data - { transactions, orders, expenses, payrolls, executiveSummary, ... }
- * @returns {{month: string, income: number, expense: number, margin: number, chargesMesurees: boolean}[]}
+ * @returns {{month: string, income: number, expense: number, decaissements: number, margin: number, chargesMesurees: boolean}[]}
  */
 function financialMonthlySeriesBrut(data) {
   if (Array.isArray(data)) {
     throw new Error("financialMonthlySeries attend l'objet de donnees du moteur ({ transactions, orders, expenses, payrolls, ... }).");
   }
   const d = normaliser(data);
-  const serie = serieMensuelle(preparerPeriodes(d), IDS);
+  const serie = serieMensuelle(preparerPeriodes(d), [...IDS, "dpa_annual_total"]);
   const points = serie
     .map((p) => {
       const income = p.total_revenue ?? 0;
       const expense = p.total_charges ?? 0;
-      return { month: p.month, income, expense, margin: income - expense, chargesMesurees: p.total_charges != null };
+      // Les charges comptables incluent l'amortissement du mois (DPA / 12) ;
+      // ce n'est pas une sortie d'argent. La consommation de tresorerie
+      // estimee sur le resultat se lit sur les DECAISSEMENTS, sinon elle etait
+      // gonflee de l'amortissement.
+      const amortissement = p.total_charges != null && p.dpa_annual_total != null ? p.dpa_annual_total / 12 : 0;
+      return { month: p.month, income, expense, decaissements: expense - amortissement, margin: income - expense, chargesMesurees: p.total_charges != null };
     });
   if (points.some((p) => p.income > 0 || p.expense > 0)) return points;
   // Aucune vente ni transaction : la synthese du fichier sert d'affichage
@@ -72,7 +77,7 @@ function financialMonthlySeriesBrut(data) {
   }
   if (parMois.size === 0) return points;
   return [...parMois.values()].sort((a, b) => (a.month < b.month ? -1 : 1))
-    .map((p) => ({ ...p, margin: p.income - p.expense, chargesMesurees: true }));
+    .map((p) => ({ ...p, decaissements: p.expense, margin: p.income - p.expense, chargesMesurees: true }));
 }
 
 

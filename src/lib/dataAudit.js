@@ -570,7 +570,7 @@ export function buildMetricTraces(d) {
 
   const cfSorted = [...cashflow].sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
   const latestCash = latestCashBalance(cashflow);
-  const { burn, base: baseBurn } = consommationTresorerie({ cashflow, revSeries: revM, expSeries: expM }, 3);
+  const { burn, base: baseBurn } = consommationTresorerie({ cashflow, revSeries: revM, expSeries: financialMonthly.map((p) => ({ month: p.month, val: p.decaissements })) }, 3);
   const runway = latestCash === null ? null : runwayMonths(latestCash, burn);
   traces.push({
     domain: "Trésorerie",
