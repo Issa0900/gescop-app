@@ -182,14 +182,54 @@ export default function Sidebar({ compact, onToggleCompact }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Ouvrir le menu de navigation"
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/70 shadow-md backdrop-blur transition-transform hover:scale-105 md:hidden"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-      {open && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
+      {/* Barre de navigation mobile supérieure avec logo officiel GESCOP */}
+      <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border/80 bg-background/95 px-3.5 backdrop-blur-md md:hidden">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Ouvrir le menu de navigation"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/90 text-foreground shadow-xs transition-transform active:scale-95 hover:bg-accent"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <BrandLogo className="h-8 w-8 shrink-0 shadow-xs transition-transform group-hover:scale-105" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-tight text-foreground leading-none">GESCOP</span>
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">Pilotage intelligent</span>
+            </div>
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {company?.name && (
+            <span className="hidden sm:inline-block max-w-[120px] truncate text-xs font-medium text-muted-foreground">
+              {company.name}
+            </span>
+          )}
+          <Link
+            to="/alertes"
+            aria-label="Voir les alertes"
+            className="flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-card/80 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-[11px] font-semibold text-muted-foreground">Alertes</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* Rideau d'arrière-plan mobile */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs md:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       <aside
         className={cn(
@@ -198,7 +238,7 @@ export default function Sidebar({ compact, onToggleCompact }) {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Header */}
+        {/* Header du tiroir */}
         <div className={cn("flex items-center py-5", compact ? "justify-center px-2" : "justify-between px-5")}>
           <div className="flex items-center gap-2.5">
             <BrandLogo className="h-9 w-9 shrink-0 p-0.5 shadow-lg shadow-black/20" />
@@ -209,11 +249,13 @@ export default function Sidebar({ compact, onToggleCompact }) {
               </div>
             )}
           </div>
-          {!compact && (
-            <button aria-label="Fermer le menu de navigation" onClick={() => setOpen(false)} className="rounded-lg p-1 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white md:hidden">
-              <X className="h-5 w-5" />
-            </button>
-          )}
+          <button
+            aria-label="Fermer le menu de navigation"
+            onClick={() => setOpen(false)}
+            className="rounded-lg p-1.5 text-sidebar-foreground/80 hover:bg-white/10 hover:text-white md:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Filet décoratif */}

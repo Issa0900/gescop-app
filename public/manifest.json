@@ -5,16 +5,24 @@
     {
       "src": "/favicon.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     },
     {
       "src": "/gescop-logo.png",
       "type": "image/png",
-      "sizes": "1024x1024"
+      "sizes": "1024x1024",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
   "background_color": "#0F172A",
-  "theme_color": "#2563EB",
+  "theme_color": "#0F172A",
   "display": "standalone"
 }
