@@ -105,8 +105,18 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setAuthChecked(true);
       
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
+      // If user auth fails, it might be an expired or invalid token
+      if (
+        error.status === 401 ||
+        error.status === 403 ||
+        error.status === 404 ||
+        error.response?.data?.error_type === 'ObjectNotFoundError' ||
+        error.message?.includes('introuvable')
+      ) {
+        try {
+          localStorage.removeItem('base44_access_token');
+          localStorage.removeItem('token');
+        } catch (_) {}
         setAuthError({
           type: 'auth_required',
           message: 'Authentication required'
