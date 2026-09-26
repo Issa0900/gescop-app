@@ -14,8 +14,11 @@ import { financialMonthlySeries } from "@/lib/financialData";
 import { useKpiEngine } from "@/lib/useKpiEngine";
 import DataErrorState from "@/components/DataErrorState";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
+import { usePeriodFilter } from "@/hooks/usePeriodFilter";
+import { PeriodSelector } from "@/components/ui/PeriodSelector";
 import { noteBaseCA, notePeriodeCommune } from "@/lib/core/kpiRecords";
 import PaiementsCard from "@/components/finance/PaiementsCard";
+import { cn } from "@/lib/utils";
 
 // Chaque carte est un KPI du moteur, et elles s'additionnent : CA - charges
 // totales = resultat net (tests/coherence_kpi.test.js). La page affichait
@@ -29,6 +32,11 @@ export default function Finance() {
   const { data: donnees, isLoading, isError, refetch } = useDonneesKpi();
   const { transactions, expenses, orders, assets, executiveSummary } = donnees;
   const { data: payments } = useQuery({ queryKey: ["payments-finance"], queryFn: () => fetchAll(base44.entities.Payment, "-date") });
+
+  const periodFilter = usePeriodFilter(donnees);
+  const filteredKpis = useMemo(() => {
+    return periodFilter.computeKpis(IDS_FINANCE);
+  }, [periodFilter]);
 
   const { kpis: engineKpis } = useKpiEngine(donnees, IDS_FINANCE);
   const monthly = useMemo(() => financialMonthlySeries(donnees), [donnees]);
@@ -45,16 +53,33 @@ export default function Finance() {
     );
   }
 
-  const v = (id) => { const x = engineKpis.get(id)?.value; return Number.isFinite(x) ? x : null; };
+  const v = (id) => {
+    const x = filteredKpis?.current?.get(id)?.value ?? engineKpis.get(id)?.value;
+    return Number.isFinite(x) ? x : null;
+  };
   const summary = {
     revenue: v("total_revenue"),
     charges: v("total_charges"),
     netIncome: v("net_income"),
     marginPct: v("net_margin_pct"),
   };
+
+  const renderTrend = (id, lowerIsBetter = false) => {
+    const item = filteredKpis?.variations?.get(id);
+    if (!item || item.previous == null || item.pct == null) return null;
+    const isUp = item.pct > 0;
+    const isGood = lowerIsBetter ? !isUp : isUp;
+    const colorClass = isGood ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400";
+    return (
+      <span className={cn("inline-flex items-center gap-1 font-semibold text-[11px]", colorClass)}>
+        {isUp ? "↑ +" : "↓ "}{Math.round(item.pct * 10) / 10} % {periodFilter.filter.compareLabel}
+      </span>
+    );
+  };
+
   // Resultat, charges et marge peuvent porter sur la periode commune des
   // sources, plus courte que celle du CA : la carte le dit.
-  const periode = notePeriodeCommune(engineKpis.get("net_income"));
+  const periode = notePeriodeCommune(filteredKpis?.current?.get("net_income") || engineKpis.get("net_income"));
   const detailCharges = [
     ["coût des ventes", v("cogs_total")],
     ["dépenses", v("total_expense")],
@@ -67,6 +92,8 @@ export default function Finance() {
     résultat: Math.round(point.margin),
   }));
 
+  const periodLabel = periodFilter.filter.label;
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -74,11 +101,13 @@ export default function Finance() {
         <p className="mt-1 text-muted-foreground">Suivez vos marges, résultats et structure de coûts sur la période analysée.</p>
       </div>
 
+      <PeriodSelector periodFilter={periodFilter} />
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Chiffre d'affaires" value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
-        <StatCard label="Charges totales" value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" sublabel={[detailCharges ? `dont ${detailCharges}` : null, notePeriodeCommune(engineKpis.get("total_charges"))].filter(Boolean).join(" · ") || undefined} />
-        <StatCard label="Résultat net" value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} sublabel={periode || "CA − charges totales"} icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
-        <StatCard label="Marge nette" value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} sublabel={notePeriodeCommune(engineKpis.get("net_margin_pct")) || undefined} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
+        <StatCard label={`Chiffre d'affaires (${periodLabel})`} value={summary.revenue == null ? "Non mesuré" : fmt$(summary.revenue)} icon={TrendingUp} accent="bg-emerald-50 text-emerald-600" trend={renderTrend("total_revenue")} sublabel={orders?.length ? noteBaseCA(orders) : undefined} />
+        <StatCard label={`Charges totales (${periodLabel})`} value={summary.charges == null ? "Non mesuré" : fmt$(summary.charges)} icon={TrendingDown} accent="bg-red-50 text-red-600" trend={renderTrend("total_charges", true)} sublabel={[detailCharges ? `dont ${detailCharges}` : null, notePeriodeCommune(filteredKpis?.current?.get("total_charges") || engineKpis.get("total_charges"))].filter(Boolean).join(" · ") || undefined} />
+        <StatCard label={`Résultat net (${periodLabel})`} value={summary.netIncome == null ? "Non mesuré" : fmt$(summary.netIncome)} trend={renderTrend("net_income")} sublabel={periode || "CA − charges totales"} icon={DollarSign} accent={summary.netIncome == null ? "bg-slate-100 text-slate-500" : summary.netIncome < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"} />
+        <StatCard label={`Marge nette (${periodLabel})`} value={summary.marginPct == null ? "Non mesuré" : pourcent(summary.marginPct, 1)} trend={renderTrend("net_margin_pct")} sublabel={notePeriodeCommune(filteredKpis?.current?.get("net_margin_pct") || engineKpis.get("net_margin_pct")) || undefined} icon={PieChart} accent={summary.marginPct == null ? "bg-slate-100 text-slate-500" : summary.marginPct < 0 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">

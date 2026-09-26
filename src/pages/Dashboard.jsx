@@ -29,7 +29,8 @@ import ForecastCard from "@/components/dashboard/ForecastCard";
 import ActionCard from "@/components/dashboard/ActionCard";
 import OnboardingHero from "@/components/dashboard/OnboardingHero";
 import TodayPriorities from "@/components/dashboard/TodayPriorities";
-import TimeFilter from "@/components/dashboard/TimeFilter";
+import { usePeriodFilter } from "@/hooks/usePeriodFilter";
+import { PeriodSelector } from "@/components/ui/PeriodSelector";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { instantaneKpi } from "@/lib/core/instantane";
@@ -107,24 +108,16 @@ export default function Dashboard() {
     queryKey: ["tasks-dashboard"],
     queryFn: async () => { const l = await base44.entities.Task.list("-created_date", 50); return l || []; },
   });
-  const [period, setPeriod] = useState("month");
+  // Filtre temporel universel : règle stricte Flux (P&L) vs Soldes (Bilan)
+  const periodFilter = usePeriodFilter(donnees);
+  const filteredKpis = useMemo(() => {
+    return periodFilter.computeKpis(IDS_DASH);
+  }, [periodFilter]);
 
-  // Periode = fenetre de MOIS COMPLETS du moteur (kpiPeriodes). L'ancien
-  // filtre (aujourd'hui - 30 jours) prenait toute la paie du mois en cours et
-  // 23 jours de ventes : -2 716 % de marge en haut de l'ecran, -508 % plus bas.
-  const prepDash = useMemo(() => preparerPeriodes({ ...donnees, observations: observations || [] }), [donnees, observations]);
-  const fenetre = useMemo(() => {
-    const mois = moisComplets(prepDash);
-    if (!mois.length) return null;
-    const fin = mois[mois.length - 1];
-    return { debut: decalerMois(fin, -((MOIS_PAR_PERIODE[period] || 1) - 1)), fin };
-  }, [prepDash, period]);
-  const libellePeriode = !fenetre ? "" : fenetre.debut === fenetre.fin
-    ? moisLisible(fenetre.fin)
-    : `${moisLisible(fenetre.debut)} – ${moisLisible(fenetre.fin)}`;
+  const prepDash = periodFilter.prep || preparerPeriodes({ ...donnees, observations: observations || [] });
   const dansFenetre = (dateStr) => {
-    const m = String(dateStr || "").slice(0, 7);
-    return !!fenetre && m >= fenetre.debut && m <= fenetre.fin;
+    const d = String(dateStr || "").slice(0, 10);
+    return !d || (d >= periodFilter.filter.startDate && d <= periodFilter.filter.endDate);
   };
 
   const handleAnalyze = async () => {
@@ -152,10 +145,10 @@ export default function Dashboard() {
   };
 
   // GESCOP Phase 4 SSOT : Centralisation
-  const fOrders = useMemo(() => (orders || []).filter((o) => dansFenetre(o.date)), [orders, fenetre]);
+  const fOrders = useMemo(() => (orders || []).filter((o) => dansFenetre(o.date)), [orders, periodFilter.filter]);
   const engineKpis = useMemo(
-    () => (fenetre ? kpisSurFenetre(prepDash, IDS_DASH, fenetre.debut, fenetre.fin) : new Map()),
-    [prepDash, fenetre],
+    () => filteredKpis?.current || new Map(),
+    [filteredKpis],
   );
 
   // === COMPUTATIONS (Hybride : Ancien + Nouveau) ===
@@ -176,8 +169,16 @@ export default function Dashboard() {
     const customerSentiment = engineKpis.get("customer_sentiment_score")?.value ?? null;
     const totalExpenseAmount = totalExpensesTxn;
 
-    // Trésorerie : cashflow ne se filtre pas par période car c'est un stock continu
-    let latestCash = latestCashBalance(cashflow) || 0;
+    // Trésorerie : snapshot strict à date d'arrêt (<= filter.endDate) vs comparatif (<= filter.compareEndDate)
+    const cfCurrent = (cashflow || []).filter((c) => !c.date || c.date <= periodFilter.filter.endDate).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+    const cfPrev = (cashflow || []).filter((c) => !c.date || c.date <= periodFilter.filter.compareEndDate).sort((a, b) => ((a.date || "") < (b.date || "") ? 1 : -1));
+
+    const latestCash = cfCurrent.length > 0 && cfCurrent[0].closing_cash != null
+      ? Number(cfCurrent[0].closing_cash)
+      : (latestCashBalance(cashflow) || 0);
+    const prevCash = cfPrev.length > 0 && cfPrev[0].closing_cash != null
+      ? Number(cfPrev[0].closing_cash)
+      : null;
     
     // Fallback temporaire pour les statistiques non couvertes
     const commandesPeriode = commandesDistinctes(validSalesOrders(fOrders));
@@ -203,14 +204,17 @@ export default function Dashboard() {
     const clientMode = validateChartAggregation(METRIC_TYPES.STOCK, "count", "Clients"); // or FLOW
     const clientsMonthly = monthlyAggComplete(customers || [], "acquisition_date", "customer_id", "count");
 
-    const sparkCount = { day: 3, month: 3, quarter: 6, year: 12 }[period];
+    const sparkCount = { CLOSED_MONTH: 3, MTD: 3, QTD: 6, YTD: 12, CUSTOM: 6 }[periodFilter.filter.preset] || 3;
     const spark = (arr) => arr.slice(-sparkCount).map((d) => d.val);
 
-    const revTrend = trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
+    const revTrend = filteredKpis?.variations?.get("total_revenue")?.pct ?? trendPct(lastVal(revenueMonthly), prevVal(revenueMonthly));
     // Une marge bouge en POINTS : +104 % d'une marge de -143 % ne veut rien dire.
     const mDer = lastVal(marginMonthly), mPrec = prevVal(marginMonthly);
-    const marginTrend = marginMonthly.length > 1 && Number.isFinite(mDer) && Number.isFinite(mPrec) ? mDer - mPrec : null;
-    const cashTrend = trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
+    const mDelta = filteredKpis?.variations?.get("net_margin_pct")?.delta;
+    const marginTrend = mDelta != null ? mDelta : (marginMonthly.length > 1 && Number.isFinite(mDer) && Number.isFinite(mPrec) ? mDer - mPrec : null);
+    const cashTrend = prevCash != null && prevCash !== 0
+      ? ((latestCash - prevCash) / Math.abs(prevCash)) * 100
+      : trendPct(lastVal(cashMonthly), prevVal(cashMonthly));
     
     // Refunded orders' money went back to the customer - excluded so a
     // refund-heavy month doesn't inflate the basket-size trend shown here.
@@ -275,7 +279,7 @@ export default function Dashboard() {
       projectedRevenue, projectedCash, forecastRevData, forecastCashData,
       revProbability, cashRisk,
     };
-  }, [donnees, engineKpis, period, fOrders]);
+  }, [donnees, engineKpis, periodFilter, filteredKpis, fOrders]);
 
   const alertesLive = useMemo(() => computeLiveAlerts({ ...donnees, company }), [donnees, company]);
 
@@ -447,12 +451,8 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut", delay: 0.08 }}
-          className="flex flex-wrap items-center justify-between gap-3"
         >
-          <p className="text-sm font-medium text-muted-foreground">
-            {libellePeriode ? `Période : ${libellePeriode}` : "Aucun mois complet importé"}
-          </p>
-          <TimeFilter period={period} onChange={setPeriod} />
+          <PeriodSelector periodFilter={periodFilter} />
         </motion.div>
       )}
 

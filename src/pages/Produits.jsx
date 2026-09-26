@@ -146,17 +146,19 @@ export default function Produits() {
     ? products.reduce((s, p) => s + (Number(p.gross_margin) || 0), 0) / total
     : 0;
 
+  // Sales per product over the last 3 COMPLETE months.
+  // The in-progress month is excluded, and three months are used.
+  const cm = currentMonthKey();
+  const completeMonths = Array.from(
+    new Set((orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean)),
+  ).filter((m) => m !== cm).sort();
+  const dernierMoisDonnees = completeMonths.length > 0 ? completeMonths[completeMonths.length - 1] : null;
+
   // Inventory arrives as one row per product per date. Counting every historical
   // row multiplies each situation by its number of recorded days, so all stock
   // figures use the most recent snapshot per product.
-  //
-  // One shared computation drives the cards, the alert list and the table, and
-  // it follows the threshold. The cards used to count the imported stock_status
-  // label instead: on a file where every row says "optimal" they showed 0 en
-  // rupture right above a panel reporting 20 produits en alerte, from the same
-  // rows. A label from the source system is not a substitute for looking at the
-  // stock actually on hand.
-  const stock = computeStockAlerts(products, inventory, alertSettings, orders);
+  // Pass dernierMoisDonnees to ensure historical datasets don't falsely flag active items as dormant.
+  const stock = computeStockAlerts(products, inventory, alertSettings, orders, dernierMoisDonnees);
   const invByProduct = stock.byProduct;
   const stockOf = (p) => {
     const snap = invByProduct[p.product_id];
@@ -168,18 +170,6 @@ export default function Produits() {
   // Products the source system itself flagged as out of stock, kept separate so
   // the card can say how many are a hard rupture versus simply low.
   const outOfStockCount = stock.outOfStockCount;
-
-  // Sales per product over the last 3 COMPLETE months.
-  //
-  // This used to rank products on the single most recent month present in the
-  // orders - which is the month in progress. With 11 days of September against
-  // 18 months of history, almost every product scored 0 and the "Top 10" chart
-  // came up empty. The in-progress month is excluded here like everywhere else,
-  // and three months are used so one quiet month cannot empty the ranking.
-  const cm = currentMonthKey();
-  const completeMonths = Array.from(
-    new Set((orders || []).map((o) => (o.date || "").slice(0, 7)).filter(Boolean)),
-  ).filter((m) => m !== cm).sort();
   // === Analyse saisonnière ===
   // Regroupe le CA par mois calendaire (jan-déc, cumulé sur toutes les
   // années présentes) pour révéler des cycles récurrents (ex. pic hiver vs
