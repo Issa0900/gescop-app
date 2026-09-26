@@ -39,31 +39,49 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
         <div className="relative z-10 space-y-8 pb-10">
           <div>
             <h2 className="text-3xl font-bold leading-tight text-sidebar-accent-foreground">
-              Ne subissez plus vos données.<br />Prenez les devants.
+              Ne subissez plus vos données.<br />Pilotez votre rentabilité réelle.
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-sidebar-foreground/70 max-w-md">
-              GESCOP analyse l'information pour vous : comprenez vos performances, détectez les failles et prenez les bonnes décisions.
+            <p className="mt-4 text-base leading-relaxed text-sidebar-foreground/75 max-w-md">
+              GESCOP centralise et rapproche vos ventes, vos dépenses, votre paie et vos relevés bancaires. 
               <br /><br />
-              <strong className="text-sidebar-foreground/90">Aucune expertise technique requise.</strong> Importez vos fichiers, l'IA s'occupe du reste.
+              <strong className="text-sidebar-foreground/95">Zéro formule complexe, zéro estimation floue :</strong> le moteur croise vos faits comptables réels pour protéger votre trésorerie.
             </p>
           </div>
 
           <div className="space-y-3 max-w-md">
-            <p className="text-sm font-medium text-sidebar-accent-foreground mb-4 uppercase tracking-wider">
-              En quelques minutes, GESCOP vous permet de :
+            <p className="text-xs font-bold text-sidebar-accent-foreground/90 uppercase tracking-widest">
+              La clarté financière immédiate :
             </p>
             {[
-              { icon: Activity, label: "Surveiller vos performances et KPI stratégiques" },
-              { icon: Target, label: "Détecter les anomalies et identifier les risques" },
-              { icon: TrendingUp, label: "Maximiser votre rentabilité et anticiper la trésorerie" },
-              { icon: Zap, label: "Transformer la donnée brute en actions concrètes" },
-              { icon: ShieldCheck, label: "Vos données. Votre entreprise. Vos décisions." },
+              {
+                icon: Activity,
+                title: "Caractéristiques",
+                desc: "Rapprochement automatisé de vos fichiers bruts (ventes, paie, banque, stocks).",
+              },
+              {
+                icon: Target,
+                title: "Avantages",
+                desc: "Détection instantanée des écarts de marge et des dépenses non justifiées.",
+              },
+              {
+                icon: TrendingUp,
+                title: "Bénéfices",
+                desc: "Maîtrisez votre marge nette exacte et gagnez 10 à 15 heures chaque semaine.",
+              },
+              {
+                icon: ShieldCheck,
+                title: "Sécurité",
+                desc: "Calculs déterministes vérifiables · Données hébergées au Canada (Loi 25).",
+              },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: `${0.1 + i * 0.1}s` }}>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary/15">
                   <item.icon className="h-4 w-4 text-sidebar-primary" />
                 </div>
-                <p className="pt-1.5 text-sm leading-snug text-sidebar-foreground/80">{item.label}</p>
+                <div>
+                  <span className="text-xs font-bold text-sidebar-primary uppercase tracking-wider">{item.title} : </span>
+                  <span className="text-sm leading-snug text-sidebar-foreground/80">{item.desc}</span>
+                </div>
               </div>
             ))}
           </div>

@@ -13,6 +13,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import FeatureGate from '@/components/FeatureGate';
+const Landing = lazy(() => import('@/pages/Landing'));
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
@@ -51,7 +52,7 @@ const Tarifs = lazy(() => import('@/pages/Tarifs'));
 const Facturation = lazy(() => import('@/pages/Facturation'));
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -81,10 +82,18 @@ const AuthenticatedApp = () => {
   return (
     <Suspense fallback={chargement}>
     <Routes>
+      <Route path="/landing" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/tarifs" element={<Tarifs />} />
+      <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+      <Route path="/manuel" element={<Manuel />} />
+
+      {/* Visiteurs non connectés : la racine affiche la Landing page CAB */}
+      {!isAuthenticated && <Route path="/" element={<Landing />} />}
+
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<Layout />}>
