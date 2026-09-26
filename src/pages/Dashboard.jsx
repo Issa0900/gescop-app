@@ -34,12 +34,11 @@ import { PeriodSelector } from "@/components/ui/PeriodSelector";
 import { computeDomainScores } from "@/lib/domainScores";
 import { useDonneesKpi } from "@/hooks/useDonneesKpi";
 import { instantaneKpi } from "@/lib/core/instantane";
-import { COULEURS, moisLisible } from "@/lib/graphiques";
-import { preparerPeriodes, moisComplets, decalerMois, kpisSurFenetre } from "@/lib/core/kpiPeriodes";
+import { COULEURS } from "@/lib/graphiques";
+import { preparerPeriodes } from "@/lib/core/kpiPeriodes";
 import { computeLiveAlerts } from "@/lib/liveAlerts";
 import { monthlyAgg, monthlyAggComplete, lastVal, prevVal, trendPct } from "@/lib/periods";
 
-const MOIS_PAR_PERIODE = { month: 1, quarter: 3, year: 12 };
 const IDS_DASH = ["total_revenue", "total_expense", "net_income", "net_margin_pct", "aov", "active_customers", "customer_sentiment_score"];
 
 const analysisSteps = [

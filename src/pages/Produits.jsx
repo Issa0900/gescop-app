@@ -11,7 +11,7 @@ import ProductFilters from "@/components/produits/ProductFilters";
 import StockThresholdSettings from "@/components/produits/StockThresholdSettings";
 import { useCompany } from "@/hooks/useCompany";
 import { getStockAlertSettings, isStockAlert, computeStockAlerts, aggregateLatestInventory } from "@/lib/stockAlerts";
-import { latestByKey, currentMonthKey, dateReferenceInventaire } from "@/lib/periods";
+import { latestByKey, currentMonthKey } from "@/lib/periods";
 import { validSalesOrders, columnPresent, productMarginPct } from "@/lib/metrics";
 import DataErrorState from "@/components/DataErrorState";
 import { Package, AlertTriangle, Boxes, DollarSign } from "lucide-react";
