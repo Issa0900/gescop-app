@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { 
   ChevronDown, Lightbulb, Upload, LayoutDashboard, AlertTriangle, MessageSquare, Sparkles, Brain, Calculator, Target, 
   Users, Package, Wallet, ShieldCheck, CheckCircle2, Building2, Landmark, Wrench,
-  Calendar, FileText, BarChart3, HelpCircle, ArrowRight, TrendingUp
+  Calendar, FileText, BarChart3, HelpCircle, ArrowRight, TrendingUp, Radar as RadarIcon,
+  ShieldAlert, Activity, CheckSquare, Search, Compass, Sliders, Layers, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ManualTableOfContents from "@/components/ManualTableOfContents";
@@ -10,173 +11,177 @@ import BrandLogo from "@/components/BrandLogo";
 
 const groups = [
   {
-    label: "1. Démarrage Rapide (3 min)",
+    label: "1. Démarrage & Fondations",
     sections: [
       {
         id: "demarrage",
-        title: "Configuration & Prise en Main",
+        title: "Configuration & Prise en Main (Desktop & Mobile)",
         icon: Sparkles,
-        badge: "Démarrage",
-        objective: "Configurer votre entreprise en 60 secondes et naviguer avec aisance sur ordinateur et mobile.",
+        badge: "3 minutes",
+        objective: "Établir la carte d'identité de l'entreprise et naviguer avec aisance sur ordinateur, tablette et smartphone.",
         content: [
           {
-            h: "Action 1 : Renseigner la fiche de votre entreprise",
-            action: "Complétez votre profil d'entreprise dès votre première connexion :",
+            h: "Action 1 : Renseigner le profil de votre entreprise",
+            action: "Configurez l'environnement de travail dès votre première connexion :",
             steps: [
-              "Accédez à l'écran d'accueil ou ouvrez la section « Paramètres » dans le menu.",
-              "Indiquez la raison sociale, votre secteur d'activité principal et votre localisation.",
-              "Renseignez l'URL de votre site web et cliquez sur « Auto-remplir avec l'IA » pour extraire automatiquement le modèle d'affaires.",
-              "Dans l'onglet Succursales, ajoutez vos points de vente réels (ex. Boutique Web, Magasin Lévis, Siège social)."
+              "Accédez au menu « Paramètres » ou complétez le formulaire initial d'accueil.",
+              "Renseignez la raison sociale, votre secteur d'activité (ex. Commerce de détail plein air) et la devise par défaut ($ CAD).",
+              "Saisissez l'adresse de votre site web et cliquez sur « Auto-remplir avec l'IA » pour extraire automatiquement le modèle d'affaires et la description d'activité.",
+              "Dans l'onglet Succursales, enregistrez vos points de vente réels (ex. Boutique Web, Magasin Lévis, Siège social)."
             ],
-            successIndicator: "La fiche affiche le badge vert « Entreprise configurée » avec votre devise par défaut ($ CAD).",
-            tip: "Vous pouvez modifier ces informations à tout moment depuis les Paramètres sans impacter vos données déjà importées."
+            successIndicator: "La fiche affiche le badge vert « Entreprise configurée » et vos tableaux s'adaptent instantanément à votre secteur.",
+            tip: "Vous pouvez modifier ces informations à tout moment depuis les Paramètres sans impacter les données déjà importées."
           },
           {
             h: "Action 2 : Naviguer sur smartphone et tablette (Version Mobile)",
-            action: "Profitez d'une expérience fluide et complète sur tous vos appareils :",
+            action: "Profitez d'une expérience de pilotage fluide et réactive sur tous vos appareils :",
             steps: [
-              "La barre supérieure fixe affiche le logo officiel GESCOP, le nom de votre entreprise et l'état des alertes en direct.",
-              "Touchez le bouton de menu (☰) en haut à gauche pour ouvrir le volet de navigation complet.",
-              "Accédez à vos modules favoris ou épinglez les pages que vous consultez chaque matin.",
-              "Ajoutez GESCOP à l'écran d'accueil de votre téléphone (PWA) pour un accès direct instantané en un clic."
+              "La barre de navigation supérieure mobile fixe affiche en permanence le logo officiel GESCOP, le nom de votre entreprise et l'état des alertes.",
+              "Touchez le bouton de menu (☰) en haut à gauche pour ouvrir le volet latéral et basculer d'un module à l'autre d'un simple geste.",
+              "Accédez rapidement aux Alertes en direct en cliquant sur la pastille pulsante de la barre supérieure.",
+              "Ajoutez GESCOP à l'écran d'accueil de votre téléphone (PWA) pour un lancement direct et instantané comme une application native."
             ],
-            successIndicator: "Tous vos graphiques, indicateurs et rapports s'adaptent automatiquement à la taille de votre écran."
+            successIndicator: "Tous les graphiques, tableaux financiers et fiches de décision s'ajustent automatiquement à la largeur de votre écran mobile."
           }
         ]
       },
       {
-        id: "import-simple",
-        title: "Importation Facile de vos Données",
+        id: "import-donnees",
+        title: "Ingestion Universelle des Données (Import V3)",
         icon: Upload,
-        badge: "Zéro Effort",
-        objective: "Importer vos fichiers comptables, de ventes et de stocks sans modèle rigide ni blocage.",
+        badge: "Zéro Rejet",
+        objective: "Déposer vos fichiers comptables, de ventes, de stocks et de paie sans modèle rigide ni blocage.",
         content: [
           {
             h: "Action 1 : Glisser-déposer vos classeurs Excel ou CSV",
-            action: "Déposez vos fichiers pour une ingestion sémantique automatique :",
+            action: "Importez vos données en quelques secondes grâce au moteur sémantique V3 :",
             steps: [
               "Cliquez sur « Importer des données » dans le menu latéral gauche.",
-              "Glissez votre classeur Excel (.xlsx multi-feuilles) ou vos fichiers CSV exportés de vos outils habituels (QuickBooks, Shopify, Acomba, Sage, caisse POS).",
-              "Le Moteur Universel V3 analyse automatiquement chaque feuille, élimine les colonnes vides parasites et associe les données aux bons concepts métier.",
-              "Consultez la prévisualisation et cliquez sur « Confirmer et importer »."
+              "Glissez votre classeur Excel (.xlsx multi-onglets) ou vos fichiers CSV exportés de vos logiciels (QuickBooks, Shopify, Acomba, Sage, caisse POS).",
+              "Le Moteur Universel V3 analyse le contenu de chaque feuille, élimine les colonnes vides parasites (ex. col_7) et associe automatiquement vos données aux bons concepts métier.",
+              "Vérifiez le tableau récapitulatif de prévisualisation et validez en un clic (« Confirmer et importer »)."
             ],
-            successIndicator: "Le bandeau de confirmation affiche « Données importées avec succès » avec le décompte exact des enregistrements créés.",
-            tip: "Un seul fichier Excel contenant plusieurs onglets (ex. Ventes, Dépenses, Trésorerie, Stocks) est reconnu et ventilé en une seule opération !"
+            successIndicator: "Un résumé vert confirme l'importation avec le nombre exact d'enregistrements créés pour chaque table.",
+            tip: "Un seul fichier Excel contenant plusieurs onglets (Ventes, Dépenses, Trésorerie, Stocks, Paie) est reconnu et ventilé en une seule opération !"
           },
           {
-            h: "Action 2 : Les 5 types de fichiers clés (Guide ultra-simple)",
-            action: "Pour que vos indicateurs soient calculés avec une précision optimale, voici les quelques colonnes essentielles par domaine :",
+            h: "Action 2 : Les formats indispensables à retenir",
+            action: "Pour garantir des calculs de rentabilité d'une précision chirurgicale, voici les quelques colonnes clés par domaine :",
             table: {
-              headers: ["Domaine de données", "Colonnes minimales recommandées", "Ce que GESCOP calcule pour vous"],
+              headers: ["Table métier", "Colonnes minimales recommandées", "Ce que GESCOP calcule pour vous"],
               rows: [
-                ["Commandes / Ventes", "Date, ID Commande, Montant Total, ID Client (optionnel)", "Chiffre d'affaires, Panier moyen (AOV), Volume de commandes, Répartition par succursale"],
-                ["Dépenses", "Date, Catégorie ou Description, Montant", "Structure de coûts d'exploitation (OpEx), Suivi des charges mensuelles"],
-                ["Trésorerie", "Date, Solde de clôture (ou Entrées / Sorties)", "Solde bancaire à date, Variation nette de trésorerie, Autonomie financière (Runway)"],
-                ["Stocks / Inventaire", "Date, Nom du produit ou SKU, Quantité en stock, Prix vente", "Valeur du stock, Alertes de rupture imminente, Détection du stock dormant"],
-                ["Paie & Salaires", "Période (mois), ID Employé, Salaire régulier ou Coût total", "Masse salariale totale, Poids de la paie sur le CA, Productivité par employé"]
+                ["Commandes / Ventes", "Date, ID Commande, Montant Total, ID Client (optionnel : Quantité, Succursale)", "Chiffre d'affaires hors taxes, Panier moyen (AOV), Volume de commandes, Ventes par succursale"],
+                ["Dépenses", "Date, Catégorie ou Description, Montant, Fournisseur (optionnel)", "Coûts d'exploitation (OpEx), Structure des dépenses par pôle"],
+                ["Trésorerie", "Date, Solde de clôture (ou Entrées / Sorties de fonds)", "Solde bancaire à date, Variation nette mensuelle, Autonomie financière (Cash Runway)"],
+                ["Stocks / Inventaire", "Date, SKU ou Nom Produit, Quantité disponible, Prix vente (optionnel : Coût unitaire)", "Valeur d'inventaire, Alertes de rupture imminente, Détection du stock dormant"],
+                ["Paie & Salaires", "Période (mois), ID Employé, Salaire régulier ou Coût total", "Masse salariale totale, Poids de la paie sur le CA, Productivité par employé"],
+                ["Campagnes Marketing", "Nom campagne, Dépense, Clics, Conversions, Revenu attribué", "ROAS réel, Coût par clic (CPC), Coût d'acquisition client (CAC)"],
+                ["Immobilisations", "Description, Date d'acquisition, Coût initial, Amortissement cumulé", "Valeur Nette Comptable (VNC), Déduction pour amortissement fiscal (DPA)"]
               ]
             },
-            tip: "GESCOP reconnaît automatiquement les synonymes courants (ex. Qte, Mnt, Ca, Tx, Montant, Total) et tolère les accents français.",
-            warning: "Conformité Loi 25 (Québec) : Ne chargez jamais de numéros d'assurance sociale (NAS) ou de cartes de crédit complètes. Vos données d'entreprise restent hébergées au Canada dans des centres sécurisés SOC2."
+            tip: "Le moteur reconnaît automatiquement les synonymes usuels (Qte, Mnt, Ca, Tx, Montant, Total) et tolère les fautes de frappe et variations de casse.",
+            warning: "Conformité Loi 25 (Québec) : Ne téléversez jamais de données confidentielles comme les numéros d'assurance sociale (NAS) ou les numéros complets de cartes bancaires. Vos données d'entreprise demeurent hébergées au Canada dans des centres certifiés SOC2."
           }
         ]
       }
     ]
   },
   {
-    label: "2. Le Filtre Temporel & La Règle d'Or",
+    label: "2. La Règle d'Or Temporelle",
     sections: [
       {
-        id: "filtre-temporel",
-        title: "Sélecteur Universel & Logique Temporelle",
+        id: "regle-temporelle",
+        title: "Sélecteur de Période Universel & Règle d'Or",
         icon: Calendar,
-        badge: "Règle d'Or",
-        objective: "Comprendre la synchronisation exacte entre vos flux d'activité et vos soldes de situation.",
+        badge: "Architecture Clé",
+        objective: "Comprendre la synchronisation parfaite entre les flux du compte de résultat et les soldes de situation.",
         content: [
           {
             h: "Action 1 : La Règle d'Or GESCOP (Flux vs Soldes)",
-            action: "Chaque métrique réagit de façon rigoureuse selon sa nature financière :",
+            action: "Chaque métrique réagit selon sa véritable nature financière :",
             steps: [
-              "1. Les FLUX (Chiffre d'affaires, Dépenses, Paie, Commandes) : Ils s'additionnent sur l'intervalle sélectionné (ex. somme du 1er au 31 août 2026).",
-              "2. Les SOLDES & SITUATIONS (Trésorerie bancaire, Valeur du stock) : Ils se mesurent à la date de clôture exacte de la période (ex. solde au 31 août à 23h59).",
-              "3. La Cohérence absolue : Quand vous examinez le mois d'août 2026, la trésorerie affiche automatiquement vos liquidités réelles fin août, sans déconnexion avec vos charges du mois."
+              "1. Les FLUX (Chiffre d'affaires, Dépenses, Paie, Commandes) : Ils s'additionnent sur l'intervalle sélectionné (ex. total des ventes du 1er au 31 août 2026).",
+              "2. Les SOLDES & SITUATIONS (Trésorerie en banque, Valeur du stock) : Ils se mesurent à la date de clôture exacte de la période (ex. solde bancaire au 31 août à 23h59).",
+              "3. Cohérence totale : Quand vous examinez le mois d'août 2026, la trésorerie affiche automatiquement vos liquidités réelles fin août, sans décalage avec vos charges du mois."
             ],
-            successIndicator: "Fini les écarts incompréhensibles : tous vos indicateurs partagent la même borne de clôture temporelle."
+            successIndicator: "Fini les discordances : tous vos indicateurs partagent la même borne de clôture temporelle."
           },
           {
-            h: "Action 2 : Maîtriser le Sélecteur Rapide de Période",
-            action: "Changez de perspective en un seul clic grâce aux boutons prédéfinis :",
+            h: "Action 2 : Naviguer avec le Sélecteur Rapide de Période",
+            action: "Passez d'une perspective à l'autre en un seul clic :",
             steps: [
-              "« Mois clos » (Mode par défaut) : Sélectionne automatiquement le dernier mois complet (ex. Août 2026). Garantit que les écritures de paie et factures sont stabilisées.",
-              "« Mois en cours (MDT) » : Affiche l'activité du 1er du mois jusqu'au jour présent avec un badge visible « En cours ».",
-              "« Trimestre (QTD) » : Idéal pour lisser les variations ponctuelles d'un mois à l'autre.",
-              "« Année (YTD) » : Agrège l'activité depuis le début de l'exercice fiscal jusqu'à aujourd'hui.",
-              "Flèches de navigation [ < ] Août 2026 [ > ] : Permettent de remonter l'historique mois par mois en toute simplicité."
+              "« Mois clos » (Mode recommandé par défaut) : Sélectionne automatiquement le dernier mois complet (ex. Août 2026). Garantit que les écritures de paie, factures et écritures bancaires sont stabilisées.",
+              "« Mois en cours (MDT) » : Pour suivre l'activité du mois entamé au jour le jour, avec un badge visible « En cours ».",
+              "« Trimestre (QTD) » : Idéal pour lisser les effets de saisonnalité d'un mois sur l'autre.",
+              "« Année (YTD) » : Agrège l'activité cumulée depuis le début de l'exercice fiscal.",
+              "Flèches de navigation [ < ] Mois [ > ] : Remontez ou avancez dans le temps mois par mois sans ouvrir de calendrier complexe."
             ],
-            tip: "Vous pouvez également sélectionner une plage de dates sur-mesure (Du ... Au ...) : la trésorerie prendra automatiquement la valeur arrêtée au dernier jour de votre sélection."
+            tip: "Vous pouvez également choisir une plage de dates personnalisée (Du ... Au ...) : la trésorerie et les stocks prendront automatiquement la valeur arrêtée au dernier jour de votre sélection."
           },
           {
-            h: "Action 3 : Choisir le bon mode de comparaison (MoM vs YoY)",
-            action: "Donnez un sens réel à vos pourcentages d'évolution :",
+            h: "Action 3 : Choisir le bon comparatif (MoM vs YoY)",
+            action: "Donnez une signification réelle à vos pourcentages d'évolution :",
             steps: [
-              "MoM (vs Mois précédent) : Recommandé pour surveiller la trésorerie et la gestion des dépenses immédiates.",
+              "MoM (vs Mois précédent) : Recommandé pour surveiller la trésorerie immédiate et la dérive des coûts d'exploitation.",
               "YoY (vs Même période l'an passé) : Indispensable dans le commerce pour neutraliser la saisonnalité (ex. comparer août 2026 à août 2025)."
             ],
-            successIndicator: "Les hausses et baisses sont colorées intelligemment : une baisse de charge est affichée en vert (favorable), une baisse de revenu en rouge."
+            successIndicator: "Les variations sont colorées selon leur impact : une baisse de dépense s'affiche en vert (favorable), une baisse de revenu en rouge."
           }
         ]
       }
     ]
   },
   {
-    label: "3. Les Modules de Pilotage",
+    label: "3. Les Modules de Pilotage Opérationnel",
     sections: [
       {
-        id: "cockpit",
-        title: "Cockpit & Priorités Décisionnelles",
+        id: "cockpit-kpis",
+        title: "Cockpit Décisionnel & Bibliothèque de KPIs",
         icon: LayoutDashboard,
         badge: "Quotidien",
-        objective: "Évaluer la santé globale de l'entreprise en 10 secondes et connaître les priorités d'action du jour.",
+        objective: "Évaluer la santé globale de l'entreprise en 10 secondes et suivre vos indicateurs stratégiques.",
         content: [
           {
-            h: "Action 1 : Consulter le Score de Santé 360°",
-            action: "Vérifiez la viabilité de votre entreprise dès votre première gorgée de café :",
+            h: "Action 1 : Consulter le Score de Santé 360° & Priorités du Jour",
+            action: "Vérifiez l'état de votre entreprise dès votre arrivée le matin :",
             steps: [
               "La jauge centrale indique un score global de 0 à 100 basé exclusivement sur vos données réelles.",
-              "Vert (80-100) : Situation financière et opérationnelle saine.",
+              "Vert (80-100) : Situation saine et pérenne.",
               "Jaune (60-79) : Points de vigilance nécessitant un arbitrage ou une optimisation de coûts.",
-              "Rouge (< 60) : Tension critique sur la trésorerie, la rentabilité ou des ruptures de stocks."
+              "Rouge (< 60) : Tension critique sur la trésorerie, la rentabilité ou des ruptures de stocks.",
+              "Consultez les 3 à 5 priorités du jour générées par le moteur d'audit, chiffrées avec leur gain potentiel en $ CAD."
             ],
-            successIndicator: "Chaque domaine clé (Finance, Ventes, Trésorerie, Stocks, RH...) indique sa note individuelle et sa tendance."
+            successIndicator: "Après chaque nouvel import, cliquez sur « Actualiser l'analyse » pour recalculer vos priorités en 5 secondes."
           },
           {
-            h: "Action 2 : Appliquer les Priorités Stratégiques du Jour",
-            action: "Traitez les recommandations hiérarchisées par impact financier :",
+            h: "Action 2 : Explorer la page Indicateurs (KPIs)",
+            action: "Approfondissez chaque dimension de votre activité :",
             steps: [
-              "Consultez les 3 à 5 priorités du jour générées par le moteur d'audit.",
-              "Chaque recommandation est quantifiée avec son gain ou son économie potentielle chiffrée en $ CAD.",
-              "Après un nouvel import de données, cliquez sur « Actualiser l'analyse » pour recalculer les priorités en 5 secondes."
+              "Consultez les métriques clés réparties par domaine (Finance, Ventes, Clients, Opérations, Marketing).",
+              "Chaque carte KPI affiche la valeur de la période, sa comparaison historique et son statut de complétude.",
+              "Cliquez sur un indicateur pour afficher sa tendance graphique et sa formule de calcul certifiée."
             ],
-            successIndicator: "Chaque recommandation vous propose une action concrète à appliquer dans votre exploitation."
+            successIndicator: "Tous vos indicateurs s'adaptent instantanément à la période sélectionnée dans le filtre supérieur."
           }
         ]
       },
       {
-        id: "finance-treso",
-        title: "Finance (P&L) & Trésorerie (Cash)",
+        id: "finance-tresorerie",
+        title: "Finance (P&L) & Trésorerie (Cash Runway)",
         icon: Landmark,
         badge: "Rentabilité & Cash",
-        objective: "Suivre la rentabilité nette réelle et anticiper l'autonomie financière de l'entreprise.",
+        objective: "Maîtriser la cascade de rentabilité et protéger la liquidité bancaire de l'entreprise.",
         content: [
           {
-            h: "Action 1 : Piloter la cascade de rentabilité (P&L)",
+            h: "Action 1 : Piloter la cascade de rentabilité (Compte de résultat)",
             action: "Suivez la décomposition rigoureuse de vos marges :",
             steps: [
-              "Consultez le Chiffre d'affaires hors taxes, le Coût des marchandises vendues (COGS) et la Marge brute.",
-              "Analysez la marge nette (%) et l'EBITDA après déduction des charges d'exploitation et de la paie.",
-              "Intégrité des calculs : Si vos fichiers de vente n'incluaient pas les coûts d'achat unitaires, GESCOP indique honnêtement « Non mesuré » ou « Partiel » plutôt que d'afficher une marge fictive."
+              "Chiffre d'affaires total : Revenus réels hors taxes tirés des commandes et ventes.",
+              "Coût des marchandises vendues (COGS) & Marge brute : Rentabilité directe sur vos produits vendus.",
+              "Charges d'exploitation (OpEx) & Masse salariale : Totalité des frais de fonctionnement et de paie.",
+              "Résultat net & EBITDA : Bénéfice ou perte réelle dégagée par l'exploitation de la période."
             ],
-            successIndicator: "Tous vos indicateurs financiers sont exprimés en dollars canadiens ($ CAD) arrondis pour une prise de décision rapide."
+            successIndicator: "Intégrité des calculs : Si vos fichiers de commandes n'incluaient pas les coûts d'achat unitaires, GESCOP indique honnêtement « Non mesuré » ou « Partiel » plutôt que d'afficher une marge fictive."
           },
           {
             h: "Action 2 : Sécuriser la trésorerie & l'Autonomie (Cash Runway)",
@@ -191,128 +196,372 @@ const groups = [
         ]
       },
       {
-        id: "stocks-succursales",
-        title: "Stocks, Produits & Succursales",
+        id: "stocks-produits",
+        title: "Stocks, Ruptures & Neutralisation des Dormants",
         icon: Package,
         badge: "Opérations",
-        objective: "Éliminer le capital immobilisé, éviter les ruptures et comparer vos points de vente.",
+        objective: "Éliminer le capital immobilisé, éviter les ruptures et piloter la marge par produit.",
         content: [
           {
-            h: "Action 1 : Gérer l'inventaire & neutraliser les faux stocks dormants",
-            action: "Optimisez vos commandes d'approvisionnement et vos liquidités :",
+            h: "Action 1 : Piloter les stocks et les réapprovisionnements",
+            action: "Maintenez le juste niveau d'inventaire en entrepôt :",
             steps: [
-              "Consultez la Valeur d'inventaire totale et le nombre d'articles en stock.",
-              "Isolez les références en statut « Proche rupture » pour relancer vos fournisseurs avant la rupture physique.",
-              "Surveillez le « Stock dormant » : produits sans rotation depuis plus de 90 jours représentant du cash immobilisé.",
-              "Date de référence historique intelligente : Si vos données importées s'arrêtent par exemple au 31 mars, GESCOP calcule l'ancienneté du stock par rapport au 31 mars pour éviter toute fausse alerte liée au décalage dans le temps."
+              "Visualisez la Valeur d'inventaire totale et le volume d'unités physiques en rayon.",
+              "Isolez les articles en statut « Proche rupture » ou « Rupture » pour émettre vos bons de commande fournisseurs à temps.",
+              "Consultez le point de commande recommandé (seuil critique de réapprovisionnement) pour chaque référence."
             ],
-            tip: "Un stock dormant détecté s'accompagne d'une proposition automatique de déstockage ou d'action commerciale ciblée."
+            successIndicator: "La valeur du stock immobilisé est chiffrée au dollar près."
           },
           {
-            h: "Action 2 : Comparer la rentabilité de vos Succursales",
-            action: "Analysez la contribution relative de chaque emplacement physique et de votre canal Web :",
+            h: "Action 2 : Neutraliser les faux positifs sur le « Stock dormant »",
+            action: "Comprenez la détection intelligente de l'ancienneté des stocks :",
             steps: [
-              "Accédez à la page « Succursales » pour comparer le Chiffre d'affaires, le panier moyen et les marges par point de vente.",
-              "Identifiez les succursales motrices et celles qui nécessitent une révision de leurs frais fixes.",
-              "Filtrez vos rapports par succursale pour afficher un compte de résultat dédié à un emplacement spécifique."
+              "Définition : Une référence est classée « dormante » si aucune vente n'a été enregistrée sur une période prolongée (ex. 90 jours).",
+              "Date de référence historique intelligente : Si vos données importées s'arrêtent au 31 mars, GESCOP calcule l'ancienneté par rapport au 31 mars, et non par rapport à la date du jour !",
+              "Résultat : Fini les fausses alertes où 100 % de votre inventaire était déclaré dormant simplement parce que l'export datait de quelques mois."
             ],
-            successIndicator: "La part de chaque magasin dans le chiffre d'affaires total est calculée automatiquement en pourcentage."
-          }
-        ]
-      }
-    ]
-  },
-  {
-    label: "4. Rapports Automatisés & Décisions IA",
-    sections: [
-      {
-        id: "rapports",
-        title: "Rapports en 1 Clic & Constats Croisés",
-        icon: FileText,
-        badge: "Audit & Synthèse",
-        objective: "Générer des comptes-rendus de direction professionnels et détecter les anomalies croisées.",
-        content: [
-          {
-            h: "Action 1 : Générer vos rapports exécutifs (Quotidien, Hebdo, Mensuel)",
-            action: "Créez des documents clairs et prêts à partager avec vos associés, investisseurs ou banquiers :",
-            steps: [
-              "Rendez-vous dans l'onglet « Rapports » et sélectionnez la périodicité désirée :",
-              "• Rapport Quotidien : Indicateurs de la dernière journée d'activité vs veille, points de vigilance immédiats.",
-              "• Rapport Hebdomadaire : Synthèse des 7 derniers jours avec tendance sur 5 semaines consécutives.",
-              "• Rapport Mensuel : Bilan complet de rentabilité, marge, trésorerie et évolution du CA sur 6 mois.",
-              "Téléchargez votre rapport d'un clic en PDF propre ou en présentation PowerPoint (.pptx) modifiable."
-            ],
-            successIndicator: "Le rapport inclut une synthèse exécutive rédigée par l'IA à partir de vos chiffres certifiés sans invention."
-          },
-          {
-            h: "Action 2 : Exploiter les « Constats Croisés » (Audit Multi-Tables)",
-            action: "Le moteur scanne 100 % de votre Data Core (l'ensemble de vos 14 sources de données) pour déceler ce que l'œil humain ne remarque pas :",
-            steps: [
-              "Marketing vs Ventes réelles : Compare le revenu déclaré par les régies publicitaires (ex. Facebook, Google Ads) à vos ventes réelles pour éviter de payer du budget sur un faux ROAS.",
-              "Conversions vs Commandes : Rapproche les conversions web du nombre de commandes réellement payées.",
-              "Masse salariale vs CA : Alerte si la paie dépasse le chiffre d'affaires ou si des montants annuels ont été importés comme mensuels.",
-              "Dates incohérentes : Isole automatiquement les écritures datées dans le futur pour ne pas fausser les clôtures."
-            ],
-            successIndicator: "Chaque anomalie est classée par niveau de gravité (Critique, Important, Modéré) avec l'action corrective recommandée."
+            tip: "Utilisez la recommandation de déstockage automatique pour libérer des liquidités sur les références à rotation lente."
           }
         ]
       },
       {
-        id: "assistant",
-        title: "Assistant CFO & Simulateur de Scénarios",
-        icon: Brain,
-        badge: "Intelligence",
-        objective: "Interroger vos chiffres en langage naturel et tester l'impact financier de vos décisions avant de les exécuter.",
+        id: "succursales-reseau",
+        title: "Succursales & Multi-Points de Vente",
+        icon: Building2,
+        badge: "Réseau",
+        objective: "Comparer la rentabilité et le volume de ventes entre vos magasins physiques et votre boutique en ligne.",
         content: [
           {
-            h: "Action 1 : Poser une question stratégique à l'Assistant IA",
-            action: "Dialoguez avec votre conseiller financier virtuel disponible 24/7 :",
+            h: "Action 1 : Évaluer la performance comparative des succursales",
+            action: "Détectez les disparités de rentabilité géographique :",
             steps: [
-              "Ouvrez la page « Assistant IA » et tapez votre question (ex. « Où sont mes plus grandes fuites de rentabilité ? », « Quel est mon point mort ce mois-ci ? »).",
-              "L'assistant analyse l'ensemble de votre base et répond en quelques secondes avec des données vérifiées.",
-              "Badges de transparence : Chaque affirmation est certifiée (🔵 Fait vérifié dans vos données, 🟢 Calcul mathématique strict, 🟣 Déduction analytique)."
+              "Accédez à la page « Succursales » pour comparer le Chiffre d'affaires, le panier moyen (AOV) et la marge ventilés par emplacement (ex. Boutique Web, Lévis, Chicoutimi).",
+              "Identifiez les succursales motrices et celles dont les frais de fonctionnement pèsent trop lourd sur le résultat.",
+              "Filtrez vos rapports par succursale pour afficher un compte de résultat dédié à un emplacement spécifique."
             ],
-            successIndicator: "Garantie Zéro Hallucination : si une donnée n'est pas présente dans vos fichiers, l'IA vous l'indique clairement au lieu d'inventer.",
-            tip: "Cliquez sur l'une des questions suggérées pour un diagnostic rapide de votre rentabilité."
+            successIndicator: "La contribution relative (%) de chaque point de vente au chiffre d'affaires global de l'entreprise est affichée automatiquement."
+          }
+        ]
+      },
+      {
+        id: "marketing-rh-achats",
+        title: "Marketing, RH, Achats & Immobilisations",
+        icon: Users,
+        badge: "Pôles Métier",
+        objective: "Superviser vos investissements publicitaires, la masse salariale, les achats fournisseurs et vos actifs.",
+        content: [
+          {
+            h: "Action 1 : Marketing & Publicité (ROAS & CAC)",
+            action: "Mesurez la rentabilité réelle de vos canaux d'acquisition :",
+            steps: [
+              "Consultez les dépenses publicitaires, le volume de clics, les conversions et le revenu déclaré par campagne.",
+              "Suivez le coût d'acquisition client (CAC) et le retour sur investissement publicitaire (ROAS).",
+              "GESCOP croise ces chiffres avec vos commandes réelles pour détecter si les plateformes ne s'attribuent pas du chiffre d'affaires fictif."
+            ],
+            successIndicator: "Le budget marketing est piloté sur les ventes réellement encaissées."
           },
           {
-            h: "Action 2 : Simuler une décision avant de l'appliquer dans la réalité",
-            action: "Évaluez immédiatement les répercussions d'un changement de gestion :",
+            h: "Action 2 : Ressources Humaines & Productivité",
+            action: "Contrôlez l'adéquation entre masse salariale et volume d'affaires :",
             steps: [
-              "Accédez au « Simulateur » dans le menu latéral.",
-              "Ajustez les curseurs : Hausse ou baisse des prix (+5%), Recrutement d'un nouvel employé, Réduction des dépenses d'exploitation (-10%).",
-              "Visualisez instantanément l'impact comparatif Avant / Après sur votre Résultat net et votre Trésorerie à 90 jours."
+              "Consultez la masse salariale globale (salaires fixes, horaires, heures supplémentaires et commissions).",
+              "Surveillez le ratio Masse salariale / Chiffre d'affaires (généralement entre 15 % et 35 % selon le secteur).",
+              "Mesurez le chiffre d'affaires moyen généré par employé."
             ],
-            successIndicator: "Un tableau comparatif chiffre le gain net ou le risque financier en dollars CAD."
+            successIndicator: "Chaque vendeur commissionné voit ses commissions calculées en direct sur les commandes enregistrées."
+          },
+          {
+            h: "Action 3 : Achats, Fournisseurs & Immobilisations (DPA)",
+            action: "Gérez vos relations fournisseurs et l'amortissement fiscal de vos actifs :",
+            steps: [
+              "Fournisseurs : Suivez les délais moyens de livraison, les conditions de paiement et les scores de fiabilité.",
+              "Immobilisations : Suivez le coût initial d'acquisition, les amortissements cumulés et la Valeur Nette Comptable (VNC).",
+              "Fiscalité canadienne : Consultez les classes de Déduction pour Amortissement (DPA) calculées pour votre clôture annuelle."
+            ],
+            successIndicator: "La dépréciation annuelle déductible est calculée sans calculatrice externe."
           }
         ]
       }
     ]
   },
   {
-    label: "5. FAQ & Dépannage Immédiat",
+    label: "4. Le Moteur de Détection & d'Analyse Croisée",
     sections: [
       {
-        id: "faq",
-        title: "Questions Fréquentes & Solutions Rapides",
+        id: "analyse-croisee",
+        title: "L'Analyse Croisée entre Modules (Cross-Signal Engine)",
+        icon: Activity,
+        badge: "Cœur Invisible",
+        objective: "Découvrir ce qu'aucune table ne révèle seule en croisant automatiquement vos 14 sources de données.",
+        content: [
+          {
+            h: "Action 1 : Le principe du croisement déterministe",
+            action: "Comment GESCOP détecte les incohérences invisibles :",
+            steps: [
+              "Dans un tableur classique, chaque fichier est isolé : les ventes ne parlent pas à la paie, la trésorerie ignore les campagnes publicitaires.",
+              "Le Moteur de Croisement GESCOP confronte mathématiquement les tables entre elles pour révéler les contradictions cachées.",
+              "Aucune règle n'invente de chiffres : le moteur compare deux faits réels et signale immédiatement l'écart."
+            ],
+            successIndicator: "Chaque constat croisé indique sa source, le calcul exact effectué et l'action corrective recommandée."
+          },
+          {
+            h: "Action 2 : Les 6 grands audits croisés automatiques",
+            action: "Les vérifications opérées en continu sur votre base :",
+            table: {
+              headers: ["Audit Croisé", "Sources comparées", "Problème détecté & Risque évité"],
+              rows: [
+                ["Marketing vs Ventes réelles", "Campagnes publicitaires vs Commandes réelles", "Détecte si les régies s'attribuent plus de revenus que le CA réel total (évite de payer du budget sur un faux ROAS)."],
+                ["Conversions vs Commandes", "Conversions publicitaires vs Commandes encaissées", "Détecte si les plateformes comptent de simples clics ou visites comme des achats (coût par conversion artificiellement bas)."],
+                ["Masse salariale vs CA", "Fiches de paie vs Chiffre d'affaires global", "Alerte si la paie dépasse le chiffre d'affaires ou si des salaires annuels ont été importés par erreur comme des montants mensuels."],
+                ["Couverture de la paie", "Fiches de paie mensuelles vs Liste des employés actifs", "Vérifie si tous les salariés enregistrés reçoivent bien une paie ou si certains employés inactifs polluent la base."],
+                ["Cohérence Coût vs Salaire", "Coût employeur total vs Salaires + Primes versées", "Alerte si la colonne coût total est inférieure au salaire versé (colonne mal nommée à l'export comptable)."],
+                ["Trésorerie vs Résultat net", "Variation du solde bancaire vs Résultat net comptable", "Alerte si la trésorerie augmente alors que le résultat est en perte (charges non payées), ou si le résultat est positif mais que le cash fond (impayés clients)."],
+                ["Écritures datées dans le futur", "Toutes les dates vs Date du jour", "Isole les écritures prévisionnelles ou erreurs d'inversion jour/mois qui fausseraient vos clôtures."]
+              ]
+            },
+            tip: "Consultez l'onglet « Rapports » ou le bandeau d'audit pour visualiser ces constats croisés actualisés."
+          }
+        ]
+      },
+      {
+        id: "anomalies-risques",
+        title: "Détection des Anomalies, Risques & Alertes en Direct",
+        icon: ShieldAlert,
+        badge: "Protection 360°",
+        objective: "Identifier les fuites de rentabilité, cartographier les risques et recevoir des alertes instantanées.",
+        content: [
+          {
+            h: "Action 1 : Traiter les Anomalies Détectées",
+            action: "Corrigez les failles opérationnelles avant qu'elles ne coûtent cher :",
+            steps: [
+              "Rendez-vous sur la page « Anomalies » dans le menu latéral.",
+              "Le système répertorie les écarts anormaux : marges négatives sur un produit, commandes anormalement élevées, doublons de facturation, écritures orphelines.",
+              "Chaque anomalie indique son impact financier direct en dollars ($ CAD) et le lien direct vers l'enregistrement concerné."
+            ],
+            successIndicator: "La résolution d'une anomalie met à jour instantanément votre score de santé global."
+          },
+          {
+            h: "Action 2 : Suivre la Matrice des Risques d'Entreprise",
+            action: "Anticipez les menaces financières et opérationnelles :",
+            steps: [
+              "Accédez à la page « Risques » pour visualiser la cartographie classée par gravité (Critique, Élevé, Modéré).",
+              "Risque de dépendance client : Détecte si un client unique pèse plus de 20 % de votre chiffre d'affaires.",
+              "Risque d'attrition (Churn) : Isole les clients stratégiques n'ayant pas commandé depuis plus de 90 jours.",
+              "Risque d'illiquidité : Alerte en amont d'une tension de trésorerie prévisible à court terme."
+            ],
+            successIndicator: "Chaque fiche de risque propose un plan d'atténuation concret."
+          },
+          {
+            h: "Action 3 : Le Centre d'Alertes en Direct",
+            action: "Restez informé sans être submergé de notifications :",
+            steps: [
+              "La pastille lumineuse dans le menu latéral et dans la barre supérieure mobile indique le niveau d'alerte en direct.",
+              "Cliquez sur « Alertes » pour voir la liste priorisée des événements requérant une intervention immédiate.",
+              "Filtrez les alertes par sévérité pour traiter les urgences en priorité."
+            ],
+            successIndicator: "Une alerte traitée disparaît automatiquement du centre de notification."
+          }
+        ]
+      },
+      {
+        id: "audit-calculs",
+        title: "Audit des Calculs, Complétude & Quarantaine",
+        icon: Search,
+        badge: "Transparence",
+        objective: "Vérifier la traçabilité complète de chaque chiffre et inspecter les lignes de données mises en quarantaine.",
+        content: [
+          {
+            h: "Action 1 : Inspecter l'intégrité de vos données",
+            action: "Assurez-vous de la qualité irréprochable de votre base :",
+            steps: [
+              "Ouvrez la page « Audit des calculs » dans le menu.",
+              "Consultez l'indice de complétude globale (% des champs requis effectivement renseignés dans vos fichiers).",
+              "Vérifiez l'historique d'importation : chaque lot importé conserve sa date, son créateur et son fichier source."
+            ],
+            successIndicator: "Vous disposez d'une piste d'audit complète et vérifiable pour votre comptable ou réviseur."
+          },
+          {
+            h: "Action 2 : Gérer le tableau de Quarantaine",
+            action: "Comprenez pourquoi une ligne de fichier n'a pas été retenue :",
+            steps: [
+              "Si un fichier contenait une ligne invalide (ex. texte dans une colonne montant, date illisible), elle est automatiquement isolée dans la Quarantaine.",
+              "Consultez le motif précis du rejet (ex. montant textuel au lieu d'un nombre).",
+              "Corrigez votre fichier source ou retraitez l'import en un clic."
+            ],
+            successIndicator: "Zéro corruption de votre base de données : seules les données saines participent aux calculs financiers."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: "5. Le Radar Stratégique & Veille de Marché",
+    sections: [
+      {
+        id: "radar-strategique",
+        title: "Le Radar Décisionnel & Signaux Externes",
+        icon: RadarIcon,
+        badge: "Intelligence Externe",
+        objective: "Surveiller les mouvements de marché, la concurrence, la réglementation et l'environnement économique.",
+        content: [
+          {
+            h: "Action 1 : Explorer les 8 Familles du Radar",
+            action: "Captez les signaux faibles qui impactent votre rentabilité :",
+            steps: [
+              "Ouvrez la page « Radar » dans le menu.",
+              "Le radar surveille en continu 8 familles sectorielles :",
+              "1. Marché & Demande : Évolution de la demande globale, comportement des acheteurs et tendances de prix.",
+              "2. Concurrence : Mouvements des concurrents, nouveaux entrants, ouvertures et fermetures de magasins.",
+              "3. Commercial & Marketing : Tendances publicitaires du marché et canaux émergents.",
+              "4. Technologie : Outils d'automatisation, IA, plateformes et cybersécurité.",
+              "5. Économie & Finance : Taux d'intérêt, inflation, pouvoir d'achat et coûts des matières.",
+              "6. Réglementation : Lois (ex. Loi 25), fiscalité québécoise et canadienne, normes du travail.",
+              "7. Territoire & Environnement : Dynamique des zones commerciales locales, météo et saisonnalité.",
+              "8. Écosystème & Talents : Marché de l'emploi, pénurie de main-d'œuvre et relations fournisseurs."
+            ],
+            successIndicator: "Le radar profile automatiquement les domaines prioritaires selon votre secteur d'activité."
+          },
+          {
+            h: "Action 2 : Gérer vos concurrents directs & lancer un Scan",
+            action: "Gardez une longueur d'avance sur vos rivaux locaux :",
+            steps: [
+              "Dans l'onglet Concurrents, enregistrez vos rivaux directs avec leur localisation et leur positionnement de prix.",
+              "Cliquez sur « Lancer un scan Radar » pour actualiser la veille externe.",
+              "GESCOP croise ces signaux externes avec vos chiffres internes : si un concurrent baisse ses prix sur une catégorie où votre marge est faible, une alerte stratégique vous avertit."
+            ],
+            successIndicator: "Vos décisions d'affaires intègrent la réalité de votre marché concurrentiel local."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: "6. Décisions, Tâches & Projections",
+    sections: [
+      {
+        id: "decisions-taches",
+        title: "Du Diagnostic au Plan d'Action (Décisions & Tâches)",
+        icon: CheckSquare,
+        badge: "Exécution",
+        objective: "Transformer chaque constat analytique en arbitrage formel et en plan d'action opérationnel.",
+        content: [
+          {
+            h: "Action 1 : Enregistrer et arbitrer vos Décisions Stratégiques",
+            action: "Conservez l'historique et la justification de chaque choix de gestion :",
+            steps: [
+              "Accédez à la page « Décisions » pour consigner les arbitrages de la direction (ex. augmentation de prix de 4 %, fermeture d'un rayon non rentable, renégociation fournisseur).",
+              "Chaque décision est documentée avec son objectif chiffré, sa date d'effet et son impact prévisionnel en $ CAD.",
+              "Suivez le statut de chaque décision : En réflexion → Validée → En cours d'application → Mesurée."
+            ],
+            successIndicator: "Mesurez quelques mois plus tard l'impact réel de vos décisions sur votre compte de résultat."
+          },
+          {
+            h: "Action 2 : Assigner et suivre vos Tâches Opérationnelles",
+            action: "Coordonnez votre équipe pour appliquer les recommandations :",
+            steps: [
+              "Rendez-vous dans la page « Tâches ».",
+              "Créez ou convertissez une recommandation d'audit en tâche concrète (ex. « Négocier délai de paiement avec Fournisseur X », « Ajuster les prix du rayon Camping »).",
+              "Définissez un responsable, une priorité et une date d'échéance.",
+              "Basculez entre la vue Liste et la vue Kanban pour suivre l'avancement des chantiers."
+            ],
+            successIndicator: "Votre équipe sait exactement quelles actions mener pour améliorer la rentabilité."
+          }
+        ]
+      },
+      {
+        id: "previsions-simulateur",
+        title: "Prévisions & Simulateur de Scénarios",
+        icon: Calculator,
+        badge: "Projections",
+        objective: "Tester l'impact financier de vos décisions avant de les appliquer dans le monde réel.",
+        content: [
+          {
+            h: "Action 1 : Consulter les Prévisions d'Atterrissage",
+            action: "Projetez vos résultats futurs sur les 3 à 12 prochains mois :",
+            steps: [
+              "Ouvrez la page « Prévisions » pour visualiser la projection automatique de vos ventes et de votre trésorerie.",
+              "Le modèle tient compte de votre tendance historique, des variations saisonnières et du rythme de dépenses actuel.",
+              "Visualisez le corridor prévisionnel (scénario prudent vs scénario dynamique)."
+            ],
+            successIndicator: "Vous anticipez vos besoins en fonds de roulement bien avant la fin de l'exercice."
+          },
+          {
+            h: "Action 2 : Simuler un scénario de gestion dans le Simulateur",
+            action: "Mesurez les répercussions chiffrées d'un arbitrage :",
+            steps: [
+              "Ouvrez la page « Simulateur » dans le menu.",
+              "Ajustez les leviers d'action :",
+              "• Hausse ou baisse des prix de vente (+3 % à +10 %)",
+              "• Embauche d'un nouvel employé (salaire et charges sociales)",
+              "• Réduction des frais généraux ou des dépenses marketing (-10 %)",
+              "Visualisez immédiatement le tableau comparatif Avant / Après calculant l'impact net sur votre Résultat et votre Solde de trésorerie à 90 jours."
+            ],
+            successIndicator: "Prenez vos décisions d'investissement sur la base d'un calcul mathématique clair et sans risque."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    label: "7. Rapports, Assistant IA & Dépannage",
+    sections: [
+      {
+        id: "rapports-ia",
+        title: "Rapports en 1 Clic & Assistant CFO Conversationnel",
+        icon: Brain,
+        badge: "Direction & IA",
+        objective: "Générer des rapports exécutifs prêts pour votre banquier et dialoguer avec votre analyste IA.",
+        content: [
+          {
+            h: "Action 1 : Générer vos rapports exécutifs (Quotidien, Hebdo, Mensuel)",
+            action: "Produisez des comptes-rendus professionnels en un seul clic :",
+            steps: [
+              "Rendez-vous dans la page « Rapports » et choisissez le format souhaité :",
+              "• Rapport Quotidien : Indicateurs de la dernière journée d'activité vs veille, points de vigilance immédiats.",
+              "• Rapport Hebdomadaire : Bilan des 7 derniers jours avec tendance sur 5 semaines consécutives.",
+              "• Rapport Mensuel : Analyse complète de rentabilité, trésorerie, marges et évolution du CA sur 6 mois.",
+              "Téléchargez votre rapport au format PDF soigné ou en présentation PowerPoint (.pptx) modifiable pour votre conseil d'administration ou votre banquier."
+            ],
+            successIndicator: "Le rapport inclut une synthèse rédigée par l'IA à partir de vos chiffres certifiés sans invention."
+          },
+          {
+            h: "Action 2 : Dialoguer avec l'Assistant GESCOP Analyst",
+            action: "Posez vos questions d'affaires en langage naturel 24h/24 :",
+            steps: [
+              "Ouvrez la page « Assistant IA » et tapez votre question (ex. « Où sont mes plus grandes pertes de rentabilité ? », « Comment optimiser ma trésorerie ce trimestre ? »).",
+              "L'assistant analyse instantanément l'ensemble de votre base de données et répond avec des chiffres précis et vérifiés.",
+              "Comprenez les badges de certification de réponse :",
+              "• 🔵 Fait vérifié (FACT) : Donnée brute indiscutable extraite de vos fichiers.",
+              "• 🟢 Calcul arithmétique (CALCULATION) : Résultat d'une formule mathématique stricte.",
+              "• 🟣 Analyse déductive (INFERENCE) : Croisement logique entre plusieurs indicateurs.",
+              "• 🟡 Hypothèse (HYPOTHESIS) : Piste explicative plausible nécessitant une validation terrain.",
+              "• 🟢 Recommandation (RECOMMENDATION) : Plan d'action préconisé chiffré en $ CAD."
+            ],
+            successIndicator: "Garantie Zéro Hallucination : si une donnée est absente de vos fichiers, l'IA vous l'indique clairement au lieu d'inventer."
+          }
+        ]
+      },
+      {
+        id: "faq-support",
+        title: "Questions Fréquentes & Dépannage Immédiat",
         icon: HelpCircle,
         badge: "Support",
-        objective: "Résoudre instantanément les questions les plus courantes sans jargon technique.",
+        objective: "Résoudre instantanément les interrogations les plus fréquentes en toute autonomie.",
         content: [
           {
             h: "1. « Pourquoi un indicateur affiche-t-il Partiel ou Non mesuré ? »",
-            action: "C'est la garantie d'intégrité de GESCOP :",
+            action: "C'est le gage d'intégrité de GESCOP :",
             steps: [
               "Explication : Si votre fichier de ventes ne contient pas le coût d'achat unitaire de chaque produit, le système refuse d'inventer une fausse marge brute.",
               "Solution : Importez votre catalogue de produits avec les prix d'achat réels. Dès l'import terminé, l'indicateur passera automatiquement en statut « Mesuré »."
             ],
-            successIndicator: "Vous avez l'assurance qu'aucun chiffre de votre tableau de bord n'est inventé."
+            successIndicator: "Vous avez l'assurance qu'aucun chiffre de votre tableau de bord n'est fictif."
           },
           {
             h: "2. « Pourquoi mes totaux diffèrent entre le Cockpit et un rapport annuel ? »",
-            action: "Comprendre le périmètre temporel sélectionné :",
+            action: "Comprenez le périmètre temporel sélectionné :",
             steps: [
-              "Explication : Le Cockpit affiche par défaut le mois sélectionné (ex. Août 2026), tandis qu'un rapport annuel agrège les 12 mois de l'exercice.",
+              "Explication : Le Cockpit affiche par défaut le mois sélectionné (ex. Août 2026), tandis qu'un rapport annuel agrège l'ensemble des 12 mois de l'exercice.",
               "Solution : Vérifiez toujours la date indiquée dans le sélecteur temporel universel en haut de page pour comparer des périodes équivalentes."
             ],
             tip: "Utilisez les boutons rapides (« Mois clos », « Trimestre », « Année ») pour aligner vos analyses en un instant."
@@ -359,21 +608,21 @@ export default function Manuel() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/25">
-                  Guide Pratique de Pilotage
+                  Manuel Complet de Référence
                 </span>
-                <span className="text-xs font-semibold text-muted-foreground">Édition 2026</span>
+                <span className="text-xs font-semibold text-muted-foreground">Version 2026 · Intégrale</span>
               </div>
               <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-foreground">
                 Manuel d'Utilisation GESCOP
               </h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Pilotage Financier, Décisionnel & Opérationnel pour PME
+                Système d'Intelligence Stratégique, Contrôle de Gestion & Décision PME
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-xl border border-border bg-background px-3 py-2 text-right">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Devise de référence</p>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Devise standard</p>
               <p className="text-sm font-bold text-foreground">$ CAD</p>
             </div>
             <div className="rounded-xl border border-border bg-background px-3 py-2 text-right">
@@ -393,16 +642,16 @@ export default function Manuel() {
               <span>Simplicité & Autonomie</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Prenez les devants sur votre gestion sans expertise comptable ni compétences informatiques poussées.
+              Pilotez l'ensemble de votre entreprise sans expertise comptable ni compétences informatiques poussées.
             </p>
           </div>
           <div className="rounded-2xl border border-border/80 bg-background/80 p-4">
             <div className="flex items-center gap-2 font-bold text-foreground mb-1">
-              <Calendar className="h-4 w-4 text-primary" />
-              <span>Cohérence Temporelle</span>
+              <Activity className="h-4 w-4 text-primary" />
+              <span>Analyse Croisée Multi-Modules</span>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Vos flux de rentabilité et vos soldes de trésorerie sont rigoureusement alignés sur les mêmes dates d'arrêt.
+              Vos 14 sources de données sont croisées pour révéler les failles invisibles (marketing, paie, trésorerie).
             </p>
           </div>
           <div className="rounded-2xl border border-border/80 bg-background/80 p-4">
