@@ -11,11 +11,48 @@ import { Check, Sparkles, Zap, ShieldCheck, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Tarifs() {
-  const { planId, isPro, isGescop, isFree, refetch } = useSubscription();
+  const { 
+    planId, 
+    isPro, 
+    isGescop, 
+    isFree, 
+    isPilot, 
+    isAdmin, 
+    pilotCode, 
+    activatePilotCode, 
+    deactivatePilot, 
+    refetch 
+  } = useSubscription();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loadingPlan, setLoadingPlan] = useState(null);
+  const [pilotInput, setPilotInput] = useState("");
+  const [isActivatingPilot, setIsActivatingPilot] = useState(false);
+
+  const handleActivatePilot = async (e) => {
+    e?.preventDefault();
+    if (!pilotInput.trim()) return;
+    setIsActivatingPilot(true);
+    try {
+      const res = await activatePilotCode(pilotInput);
+      if (res.success) {
+        toast({
+          title: "Accès Pilote Activé !",
+          description: "Félicitations, vous disposez désormais du forfait GESCOP Pro complet sans restriction.",
+        });
+        setPilotInput("");
+      } else {
+        toast({
+          title: "Code invalide",
+          description: res.message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsActivatingPilot(false);
+    }
+  };
 
   const handleSelectPlan = async (planKey) => {
     const targetPlan = PLANS[planKey];
@@ -126,6 +163,61 @@ export default function Tarifs() {
         <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
           Transformez vos données en décisions stratégiques. Commencez gratuitement, évoluez selon vos besoins.
         </p>
+      </div>
+
+      {/* Encart Code d'accès Pilote VIP */}
+      <div className="max-w-xl mx-auto w-full">
+        {isPilot ? (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center space-y-2 shadow-xs">
+            <div className="inline-flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
+              <Sparkles className="h-4 w-4" />
+              <span>Accès Pilote VIP Actif — Forfait GESCOP Pro débloqué</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isAdmin 
+                ? "Connecté avec le compte Administrateur principal (Accès illimité permanent)."
+                : `Vous participez à la phase pilote avec le code ${pilotCode || "PILOTE2026"}. Toutes les fonctionnalités avancées sont ouvertes.`}
+            </p>
+            {!isAdmin && (
+              <div className="pt-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs text-muted-foreground hover:text-foreground h-7"
+                  onClick={() => deactivatePilot()}
+                >
+                  Désactiver l'accès pilote
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+            <form onSubmit={handleActivatePilot} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">
+                  Vous participez au programme pilote ?
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Entrez le code d'accès fourni par l'équipe (ex. <strong className="font-mono text-primary">PILOTE2026</strong>) pour débloquer immédiatement GESCOP Pro sans carte bancaire.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Code pilote (ex: PILOTE2026)"
+                  value={pilotInput}
+                  onChange={(e) => setPilotInput(e.target.value)}
+                  className="flex-1 h-9 rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase tracking-wider font-mono font-medium"
+                />
+                <Button type="submit" size="sm" className="h-9 font-medium" disabled={isActivatingPilot || !pilotInput.trim()}>
+                  {isActivatingPilot ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Pricing Cards */}
@@ -284,7 +376,7 @@ export default function Tarifs() {
                   Connexion Stripe...
                 </>
               ) : planId === "PLAN_PRO" ? (
-                "Forfait actif"
+                isPilot ? (isAdmin ? "Forfait Administrateur Actif" : "Forfait actif (Accès Pilote)") : "Forfait actif"
               ) : (
                 PLANS.PRO.cta
               )}
@@ -306,4 +398,3 @@ export default function Tarifs() {
     </div>
   );
 }
-
