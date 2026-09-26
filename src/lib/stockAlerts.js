@@ -23,16 +23,26 @@ function shiftMonth(key, n) {
 
 /**
  * Products that recorded at least one sale within the last n COMPLETE months.
- * The month in progress is excluded: a product that simply has not sold yet
- * this month is not dormant.
+ * Excludes the in-progress month when measuring from the wall clock,
+ * or measures up to referenceDateOrMonth when a reference/closing period is provided.
  */
-function soldRecently(orders, months) {
-  const cutoff = shiftMonth(currentMonthKey(), -Math.max(1, months));
+function soldRecently(orders, months, referenceDateOrMonth) {
+  let ref;
+  let isOngoingMonth = false;
+  if (referenceDateOrMonth) {
+    ref = referenceDateOrMonth.slice(0, 7);
+  } else {
+    ref = currentMonthKey();
+    isOngoingMonth = true;
+  }
+  const cutoff = isOngoingMonth ? shiftMonth(ref, -Math.max(1, months)) : shiftMonth(ref, -Math.max(1, months) + 1);
+  const maxMonth = isOngoingMonth ? shiftMonth(ref, -1) : ref;
+
   const sold = new Set();
   (orders || []).forEach((o) => {
     const m = (o.date || "").slice(0, 7);
     if (!o.product_id || !m) return;
-    if (m < cutoff || m >= currentMonthKey()) return;
+    if (m < cutoff || m > maxMonth) return;
     if ((Number(o.quantity) || 0) <= 0 && (Number(o.total_revenue) || Number(o.total) || 0) <= 0) return;
     sold.add(o.product_id);
   });
@@ -126,7 +136,7 @@ export function aggregateLatestInventory(inventory) {
  * the status carries what the source system concluded, the threshold carries
  * what this business considers too low.
  */
-export function computeStockAlerts(products, inventory, settings, orders) {
+export function computeStockAlerts(products, inventory, settings, orders, referenceDateOrMonth) {
   const latestInv = aggregateLatestInventory(inventory || []);
   const invByProduct = {};
   latestInv.forEach((i) => { invByProduct[i.product_id] = i; });
@@ -143,9 +153,9 @@ export function computeStockAlerts(products, inventory, settings, orders) {
   // product holding stock that recorded no sale over the chosen window is
   // dormant, whatever the label says. Only applied when order history exists -
   // without it every product would look dormant.
-  const months = Math.max(1, Number(settings.dormantMonths) || DEFAULT_DORMANT_MONTHS);
+  const months = Math.max(1, Number(settings?.dormantMonths) || DEFAULT_DORMANT_MONTHS);
   const hasOrderHistory = (orders || []).some((o) => o.product_id && o.date);
-  const recentlySold = hasOrderHistory ? soldRecently(orders, months) : null;
+  const recentlySold = hasOrderHistory ? soldRecently(orders, months, referenceDateOrMonth) : null;
 
   const rows = base.map((p) => {
     const snap = invByProduct[p.product_id];
