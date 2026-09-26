@@ -32,6 +32,8 @@ export default function Facturation() {
     plan,
     status,
     isFree,
+    isPilot,
+    isAdmin,
     isPendingCancellation,
     currentPeriodEndFormatted,
     canCancel,
@@ -243,11 +245,12 @@ export default function Facturation() {
             <div className="text-3xl font-extrabold tracking-tight text-foreground">
               {plan.price} $ <span className="text-sm font-normal text-muted-foreground">CAD / mois</span>
             </div>
-            {subscription?.current_period_end && (
+            {currentPeriodEndFormatted && (
               <p className="text-xs text-muted-foreground mt-1 flex items-center sm:justify-end gap-1">
                 <Calendar className="h-3 w-3" />
-                {subscription.cancel_at_period_end ? "Prend fin le " : "Renouvellement le "}
-                {currentPeriodEndFormatted}
+                {isPilot && !isAdmin 
+                  ? `Accès pilote offert jusqu'au ${currentPeriodEndFormatted}`
+                  : (subscription?.cancel_at_period_end ? "Prend fin le " : "Renouvellement le ") + currentPeriodEndFormatted}
               </p>
             )}
           </div>

@@ -7,7 +7,7 @@ import { PLANS } from "@/lib/entitlements";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Sparkles, Zap, ShieldCheck, Loader2 } from "lucide-react";
+import { Check, Sparkles, Zap, ShieldCheck, Loader2, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function Tarifs() {
@@ -17,6 +17,10 @@ export default function Tarifs() {
     isGescop, 
     isFree, 
     isPilot, 
+    isPilotExpired,
+    pilotExpiresAt,
+    pilotDaysRemaining,
+    currentPeriodEndFormatted,
     isAdmin, 
     pilotCode, 
     activatePilotCode, 
@@ -165,7 +169,7 @@ export default function Tarifs() {
         </p>
       </div>
 
-      {/* Encart Code d'accès Pilote VIP */}
+      {/* Encart Code d'accès Pilote VIP (1 mois gratuit) */}
       <div className="max-w-xl mx-auto w-full">
         {isPilot ? (
           <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center space-y-2 shadow-xs">
@@ -176,7 +180,7 @@ export default function Tarifs() {
             <p className="text-xs text-muted-foreground">
               {isAdmin 
                 ? "Connecté avec le compte Administrateur principal (Accès illimité permanent)."
-                : "Vous bénéficiez d'un accès réservé dans le cadre du programme pilote. Toutes les fonctionnalités avancées sont ouvertes."}
+                : `Vous bénéficiez d'un mois gratuit dans le cadre du programme pilote${currentPeriodEndFormatted ? ` (valable jusqu'au ${currentPeriodEndFormatted}${pilotDaysRemaining !== null ? ` · ${pilotDaysRemaining} jour${pilotDaysRemaining > 1 ? "s" : ""} restant${pilotDaysRemaining > 1 ? "s" : ""}` : ""})` : ""}. Toutes les fonctionnalités avancées sont ouvertes.`}
             </p>
             {!isAdmin && (
               <div className="pt-1">
@@ -191,6 +195,30 @@ export default function Tarifs() {
               </div>
             )}
           </div>
+        ) : isPilotExpired ? (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-center space-y-3 shadow-xs">
+            <div className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-sm">
+              <Clock className="h-4 w-4" />
+              <span>Période Pilote de 1 mois terminée</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Votre accès pilote gratuit d'un mois est arrivé à échéance{currentPeriodEndFormatted ? ` le ${currentPeriodEndFormatted}` : ""}. Choisissez un forfait ci-dessous pour continuer à profiter de toutes les fonctionnalités de GESCOP Pro.
+            </p>
+            <div className="pt-1">
+              <form onSubmit={handleActivatePilot} className="flex gap-2 max-w-sm mx-auto">
+                <input
+                  type="text"
+                  placeholder="Nouveau code d'accès..."
+                  value={pilotInput}
+                  onChange={(e) => setPilotInput(e.target.value)}
+                  className="flex-1 h-8 rounded-lg border border-input bg-background px-3 py-1 text-xs shadow-xs uppercase tracking-wider font-mono font-medium"
+                />
+                <Button type="submit" size="sm" className="h-8 text-xs font-medium" disabled={isActivatingPilot || !pilotInput.trim()}>
+                  {isActivatingPilot ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Valider"}
+                </Button>
+              </form>
+            </div>
+          </div>
         ) : (
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
             <form onSubmit={handleActivatePilot} className="space-y-3">
@@ -201,7 +229,7 @@ export default function Tarifs() {
                 </h3>
               </div>
               <p className="text-xs text-muted-foreground">
-                Entrez le code d'accès confidentiel remis par l'équipe pour débloquer votre accès sans carte bancaire.
+                Entrez le code d'accès confidentiel remis par l'équipe pour débloquer 1 mois gratuit à GESCOP Pro sans carte bancaire.
               </p>
               <div className="flex gap-2">
                 <input
