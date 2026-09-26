@@ -18,8 +18,7 @@ Règles de calcul décidées avec Issa (25 sept. 2026) après l'audit du moteur.
 ## Les 15 KPI critiques
 
 | KPI (id) | Règle | Non mesuré quand |
-|---|---|---|
-| Chiffre d'affaires (`total_revenue`) | Somme HT des ventes (`montantHT`), nette de remises, sans annulations ni retours (`commandeHorsCA`), avoirs déduits. Une transaction qui encaisse une commande importée n'est pas recomptée. Hors revenu attribué aux campagnes. | ni commande ni transaction de recette |
+| Chiffre d'affaires (`total_revenue`) | Règle d'ingestion stricte (26 sept. 2026) : calculé à partir de la feuille Commandes (ventes de détail unitaires, `deps.revenue`) quand elle est présente, ou à partir des lignes income de Transactions (`income_amount` / `transaction_amount`) si aucune commande n'existe. JAMAIS la somme des deux (évite le cumul Commandes+Transactions). Hors revenu attribué aux campagnes. | ni commande ni transaction de recette |
 | Montant HT d'une ligne (`montantHT`) | `total_revenue` s'il existe. Sinon le sous-total ; la remise n'en est retranchée que si le sous-total est brut (preuve : qté × prix, ou sous-total + taxe + livraison ≠ total). Sinon total − taxe : **un total est après remise** sauf preuve contraire (qté × prix = total − taxe). | aucun montant |
 | Commandes (`order_count`) | Commandes **distinctes** (`order_id`), ventes seulement (`estVente`). | aucune commande |
 | Panier moyen (`aov`) | (CA des commandes + avoirs) / commandes distinctes. | aucune commande identifiée |

@@ -283,3 +283,37 @@ test("ANO-16 : une paie importée avant la normalisation garde la même empreint
     generateFingerprint("Payroll", { employee_id: "E1", period: "2026-01" }),
   );
 });
+
+// ── Ingestion CA : Commandes priment sur Transactions, jamais de cumul ─────────
+
+test("Ingestion CA : Commandes priment sur Transactions, jamais de cumul", () => {
+  // 1. Transactions seules
+  const onlyTx = {
+    transactions: [
+      { date: "2026-06-01", amount: 500, type: "income" },
+      { date: "2026-06-02", amount: 300, type: "income" },
+    ],
+  };
+  assert.equal(calcul(onlyTx, ["total_revenue"]).total_revenue.v, 800, "CA = transactions quand pas de commandes");
+
+  // 2. Commandes seules
+  const onlyOrders = {
+    orders: [
+      { order_id: "O1", date: "2026-06-01", total_revenue: 1200, status: "completed" },
+    ],
+  };
+  assert.equal(calcul(onlyOrders, ["total_revenue"]).total_revenue.v, 1200, "CA = commandes");
+
+  // 3. Commandes ET Transactions présentes : PAS de cumul, Commandes priment
+  const both = {
+    orders: [
+      { order_id: "O1", date: "2026-06-01", total_revenue: 1200, status: "completed" },
+    ],
+    transactions: [
+      { date: "2026-06-01", amount: 1200, type: "income" },
+      { date: "2026-06-02", amount: 500, type: "income" },
+    ],
+  };
+  assert.equal(calcul(both, ["total_revenue"]).total_revenue.v, 1200, "CA = commandes seules, jamais la somme avec transactions");
+});
+

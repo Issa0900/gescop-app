@@ -197,10 +197,30 @@ export async function buildBusinessContext(base44) {
 
   // === FOURNISSEURS ===
   const totalSuppliers = suppliers.length;
-  const problematicSuppliers = suppliers.filter((s) => s.status === "problematique" || (s.average_delivery_days || 0) > 21 || (s.quality_score || 100) < 70);
+  const isProblematic = (s) => {
+    if (s.status === "problematique") return true;
+    if ((s.average_delivery_days || 0) > 21) return true;
+    if (s.quality_score != null) {
+      const q = Number(s.quality_score);
+      // Échelle sur 5 si <= 5 (ex: 3.1/5 -> seuil à 3.0), sur 100 sinon (seuil à 70)
+      if (q <= 5 ? q < 3.0 : q < 70) return true;
+    }
+    return false;
+  };
+  const problematicSuppliers = suppliers.filter(isProblematic);
   const supplierStr = suppliers.slice(0, 10).map((s) => {
     const pct = s.price_change_last_12_months || 0;
-    return `${s.supplier_name}: délai ${s.average_delivery_days || "?"}j, qualité ${s.quality_score || "?"}/100, prix ${pct > 0 ? "+" : ""}${round(pct)}%, ${s.status}`;
+    const scores = [];
+    if (s.quality_score != null) {
+      const q = Number(s.quality_score);
+      scores.push(q <= 5 ? `qualité ${s.quality_score}/5` : `qualité ${s.quality_score}/100`);
+    }
+    if (s.reliability_score != null) {
+      const r = Number(s.reliability_score);
+      scores.push(r <= 5 ? `fiabilité ${r}/5` : `fiabilité ${r}/100`);
+    }
+    const scoresText = scores.length > 0 ? scores.join(", ") : `qualité ${s.quality_score || "?"}/100`;
+    return `${s.supplier_name}: délai ${s.average_delivery_days || "?"}j, ${scoresText}, prix ${pct > 0 ? "+" : ""}${round(pct)}%, ${s.status}`;
   }).join("\n");
 
   // === ACHATS ===

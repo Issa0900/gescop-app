@@ -79,8 +79,8 @@ export default function Achats() {
     ...(hasPaymentTerms ? [{ key: "payment_terms", header: "Conditions paiement", render: (s) => s.payment_terms || "-" }] : []),
     ...(hasPurchaseVolume ? [{ key: "purchase_volume", header: "Volume d'achats", align: "right", sortValue: (s) => Number(s.purchase_volume) || 0, render: (s) => s.purchase_volume != null ? formatCAD(s.purchase_volume) : "-" }] : []),
     { key: "average_delivery_days", header: "Délai moyen", align: "right", sortValue: (s) => Number(s.average_delivery_days) || 0, render: (s) => s.average_delivery_days != null ? `${s.average_delivery_days} j` : "-" },
-    { key: "quality_score", header: "Score qualité", align: "right", sortValue: (s) => Number(s.quality_score) || 0, render: (s) => s.quality_score ?? "-" },
-    { key: "reliability_score", header: "Fiabilité", align: "right", sortValue: (s) => Number(s.reliability_score) || 0, render: (s) => s.reliability_score ?? "-" },
+    { key: "quality_score", header: "Score qualité", align: "right", sortValue: (s) => Number(s.quality_score) || 0, render: (s) => s.quality_score != null ? (Number(s.quality_score) <= 5 ? `${s.quality_score} / 5` : `${s.quality_score} / 100`) : "-" },
+    { key: "reliability_score", header: "Fiabilité", align: "right", sortValue: (s) => Number(s.reliability_score) || 0, render: (s) => s.reliability_score != null ? (Number(s.reliability_score) <= 5 ? `${s.reliability_score} / 5` : `${s.reliability_score} / 100`) : "-" },
     {
       key: "status",
       header: "Statut",

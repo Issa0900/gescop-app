@@ -47,7 +47,7 @@ test("Panier moyen : commandes distinctes, pas lignes d'articles", () => {
   assert.equal(kpi({ orders }, ["aov"]).aov, 100);
 });
 
-test("Une vente presente en commande ET en transaction n'est comptee qu'une fois", () => {
+test("Une vente presente en commande ET en transaction n'est comptee qu'une fois (commandes priment, pas de cumul)", () => {
   const orders = [{ order_id: "ORD-20260601-1", date: "2026-06-01", total: 349.99 }];
   const transactions = [
     { date: "2026-06-01", description: "Vente ORD-20260601-1", amount: 349.99, type: "income" },
@@ -55,7 +55,8 @@ test("Une vente presente en commande ET en transaction n'est comptee qu'une fois
   ];
   const { records } = buildKpiDataset({ orders, transactions });
   assert.equal(recettesDejaCommandees(records), 349.99);
-  assert.equal(kpi({ orders, transactions }, ["total_revenue"]).total_revenue, 369.99);
+  // Les commandes priment sur les transactions : CA = 349.99, pas 369.99
+  assert.equal(kpi({ orders, transactions }, ["total_revenue"]).total_revenue, 349.99);
 });
 
 test("Une depense saisie en depense ET en transaction n'est comptee qu'une fois", () => {

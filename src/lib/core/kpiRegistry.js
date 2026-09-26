@@ -54,29 +54,21 @@ export const KPI_REGISTRY = Object.freeze({
     dependencies: ["revenue", "income_amount", "transaction_amount"],
     // Chaque dependance est une source possible du CA, pas une piece requise.
     sourcesAlternatives: true,
-    // income_amount and transaction_amount are ALTERNATIVE readings of the
-    // same Transaction rows (income-only vs. every row regardless of type):
-    // never additive between each other, summing them would double-count.
-    // income_amount is preferred over transaction_amount whenever available.
-    // `revenue` is a DIFFERENT source entirely (Order.total, e-commerce
-    // orders) and must be ADDED to the Transaction-derived figure, not
-    // treated as a third alternative: a business with real order revenue in
-    // the millions and a handful of manual Transaction rows for petty cash
-    // used to see Order revenue silently discarded the moment ANY Transaction
-    // income existed, because income_amount was checked first and returned
-    // immediately - reproduced with DS02's 4659 orders ($1.3M) vs a few
-    // Transaction rows: total_revenue read as the tiny Transaction figure
-    // alone.
+    // Règle d'ingestion stricte (26 sept. 2026) :
+    // Soit le CA est calculé à partir de la feuille Commandes (ventes de détail unitaires, deps.revenue),
+    // soit à partir des écritures de Transactions (income_amount / transaction_amount),
+    // mais JAMAIS la somme des deux (évite le cumul Commandes + Transactions).
     calculate: (deps) => {
-      const txnRevenue = deps.income_amount != null ? deps.income_amount
-        : (deps.revenue == null && deps.transaction_amount != null) ? deps.transaction_amount
-        : null;
-      if (txnRevenue == null && deps.revenue == null) return null;
-      // Une transaction qui encaisse une commande deja importee est le MEME
-      // argent que la commande : la compter aussi doublait le CA (Xplorer
-      // 3 mois : « Vente ORD-20260601-1 » en transaction et en commande).
-      const doublon = deps.revenue != null && txnRevenue != null ? recettesDejaCommandees(deps._records || []) : 0;
-      return Math.max(0, (txnRevenue || 0) - doublon) + (deps.revenue || 0);
+      if (deps.revenue != null) {
+        return deps.revenue;
+      }
+      if (deps.income_amount != null) {
+        return deps.income_amount;
+      }
+      if (deps.transaction_amount != null) {
+        return deps.transaction_amount;
+      }
+      return null;
     }
   },
 

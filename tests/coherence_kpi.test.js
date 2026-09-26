@@ -151,6 +151,6 @@ test("Un ecran qui calcule un KPI lit ses donnees par useDonneesKpi", () => {
 
 test("Panier moyen : CA des commandes / commandes, jamais les encaissements hors commandes", () => {
   const k = kpisTotal(preparerPeriodes(donnees()), ["aov", "order_revenue", "order_count", "total_revenue"]);
-  assert.ok(val(k, "total_revenue") > val(k, "order_revenue"), "le jeu de test a des encaissements hors commandes");
+  assert.equal(val(k, "total_revenue"), val(k, "order_revenue"), "les commandes priment sur les transactions pour le CA");
   proche(val(k, "aov"), val(k, "order_revenue") / val(k, "order_count"), "panier moyen");
 });
